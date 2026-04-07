@@ -4,9 +4,14 @@ let paddleInstance: Paddle | null = null;
 
 // Module-level error handler — set once per page via registerPaddleErrorHandler()
 let _onError: ((message: string) => void) | null = null;
+let _onSuccess: (() => void) | null = null;
 
 export function registerPaddleErrorHandler(cb: (message: string) => void) {
   _onError = cb;
+}
+
+export function registerPaddleSuccessHandler(cb: () => void) {
+  _onSuccess = cb;
 }
 
 export async function getPaddle(): Promise<Paddle | null> {
@@ -20,6 +25,9 @@ export async function getPaddle(): Promise<Paddle | null> {
     token,
     environment,
     eventCallback(event) {
+      if (event.name === 'checkout.completed') {
+        _onSuccess?.();
+      }
       if (event.name === 'checkout.error') {
         const msg = 'Payment processing is temporarily unavailable. Please try again later or contact support.';
         _onError?.(msg);

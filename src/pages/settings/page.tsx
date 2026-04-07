@@ -12,7 +12,7 @@ import ProfileSettingsPanel from './components/ProfileSettingsPanel';
 import ProjectMembersPanel from '../project-detail/components/ProjectMembersPanel';
 import InviteMemberModal from '../project-detail/components/InviteMemberModal';
 import { getPaymentProvider, openCheckout } from '../../lib/payment';
-import { registerPaddleErrorHandler } from '../../lib/paddle';
+import { registerPaddleErrorHandler, registerPaddleSuccessHandler } from '../../lib/paddle';
 import { useToast, ToastContainer } from '../../components/Toast';
 
 interface JiraSettings {
@@ -308,6 +308,14 @@ export default function SettingsPage() {
 
   useEffect(() => {
     registerPaddleErrorHandler((msg) => showToast(msg, 'error'));
+    registerPaddleSuccessHandler(() => {
+      setShowAllPlansModal(false);
+      // Delay refetch slightly to give webhook time to update tier
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['settings'] });
+      }, 2000);
+      showToast('Your subscription is now active. Welcome to your new plan!', 'success');
+    });
   }, [showToast]);
 
   const [activeTab, setActiveTab] = useState<'profile' | 'billing' | 'preferences' | 'members' | 'integrations' | 'api' | 'notifications'>('profile');
@@ -2029,53 +2037,11 @@ def pytest_sessionfinish(session, exitstatus):
                         <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-1">Invoice History</h3>
                         <p className="text-[0.8125rem] text-[#64748B] mb-5">View and download your past invoices.</p>
 
-                        {currentTier <= 1 && !userProfile?.is_trial ? (
-                          <div className="text-center py-10 text-[0.8125rem] text-[#94A3B8]">
-                            <i className="ri-file-list-3-line text-3xl block mb-2 text-[#CBD5E1]"></i>
-                            No invoices yet. Upgrade to a paid plan to see your billing history.
-                          </div>
-                        ) : (
-                          <table className="w-full border-collapse">
-                            <thead>
-                              <tr>
-                                {['Date', 'Description', 'Amount', 'Status', ''].map((h, i) => (
-                                  <th
-                                    key={i}
-                                    className="bg-[#F8FAFC] text-[0.6875rem] font-semibold uppercase tracking-[0.04em] text-[#94A3B8] px-3 py-[0.625rem] text-left border-b border-[#E2E8F0]"
-                                    style={i === 4 ? { textAlign: 'right' } : {}}
-                                  >
-                                    {h}
-                                  </th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {[
-                                { date: 'Mar 15, 2026', desc: `${tierInfo.name} — Monthly`, amount: `$${tierInfo.monthlyPrice}.00` },
-                                { date: 'Feb 15, 2026', desc: `${tierInfo.name} — Monthly`, amount: `$${tierInfo.monthlyPrice}.00` },
-                                { date: 'Jan 15, 2026', desc: `${tierInfo.name} — Monthly`, amount: `$${tierInfo.monthlyPrice}.00` },
-                              ].map((row, idx) => (
-                                <tr key={idx} className="hover:bg-[#FAFAFF] transition-colors">
-                                  <td className="px-3 py-[0.625rem] text-[0.75rem] text-[#94A3B8] border-b border-[#F1F5F9]">{row.date}</td>
-                                  <td className="px-3 py-[0.625rem] text-[0.8125rem] text-[#334155] border-b border-[#F1F5F9]">{row.desc}</td>
-                                  <td className="px-3 py-[0.625rem] text-[0.8125rem] font-semibold text-[#334155] border-b border-[#F1F5F9]">{row.amount}</td>
-                                  <td className="px-3 py-[0.625rem] border-b border-[#F1F5F9]">
-                                    <span className="text-[0.625rem] font-bold px-[0.4375rem] py-0.5 rounded-full bg-[#DCFCE7] text-[#166534]">Paid</span>
-                                  </td>
-                                  <td className="px-3 py-[0.625rem] text-right border-b border-[#F1F5F9]">
-                                    <button
-                                      title="Download PDF"
-                                      onClick={() => alert('Invoice PDF export is coming soon. Contact hello@testably.app for manual invoice requests.')}
-                                      className="w-7 h-7 rounded flex items-center justify-center border border-[#E2E8F0] bg-white text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#475569] transition-colors cursor-pointer text-sm"
-                                    >
-                                      <i className="ri-download-2-line"></i>
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        )}
+                        {/* TODO: Fetch real invoices from Paddle API or invoices table */}
+                        <div className="text-center py-10 text-[0.8125rem] text-[#94A3B8]">
+                          <i className="ri-file-list-3-line text-3xl block mb-2 text-[#CBD5E1]"></i>
+                          No invoices yet. Your invoices will appear here after your first payment.
+                        </div>
                       </div>
                     </div>
                   )}
