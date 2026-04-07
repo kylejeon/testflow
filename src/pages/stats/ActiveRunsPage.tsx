@@ -1,7 +1,10 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { LogoMark } from '../../components/Logo';
 import { useActiveRuns, type RunStatus } from '../../hooks/useActiveRuns';
 import PageLoader from '../../components/PageLoader';
+import { supabase } from '../../lib/supabase';
+import { Avatar } from '../../components/Avatar';
 
 const statusMeta: Record<RunStatus, { label: string; bg: string; color: string; dotColor: string; pulse: boolean }> = {
   'new':          { label: 'New',        bg: '#F0FDF4', color: '#16A34A', dotColor: '#16A34A', pulse: false },
@@ -23,6 +26,17 @@ function timeAgo(dateStr: string): string {
 
 export default function ActiveRunsPage() {
   const { data, loading, error } = useActiveRuns();
+  const [avatarProps, setAvatarProps] = useState<{ userId?: string; name?: string; email?: string; photoUrl?: string }>({});
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase.from('profiles').select('full_name, avatar_url').eq('id', user.id).maybeSingle()
+        .then(({ data: profile }) => {
+          setAvatarProps({ userId: user.id, name: profile?.full_name || undefined, email: user.email || undefined, photoUrl: profile?.avatar_url || undefined });
+        });
+    });
+  }, []);
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", background: '#F8FAFC', color: '#1E293B', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -62,6 +76,7 @@ export default function ActiveRunsPage() {
           <button style={{ fontSize: '0.75rem', padding: '0.375rem 0.75rem', borderRadius: '0.5rem', border: '1px solid #E2E8F0', background: '#fff', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
             <i className="ri-notification-3-line" />
           </button>
+          <Avatar {...avatarProps} size="sm" />
         </div>
       </header>
 

@@ -7,6 +7,7 @@ import PageLoader from '../../components/PageLoader';
 import NotificationBell from '../../components/feature/NotificationBell';
 import QuickCreateTCModal from '../project-detail/components/QuickCreateTCModal';
 import { supabase } from '../../lib/supabase';
+import { Avatar } from '../../components/Avatar';
 
 /* ── Types ──────────────────────────────────────────────── */
 interface UserProfile {
@@ -14,6 +15,8 @@ interface UserProfile {
   full_name: string;
   subscription_tier: number;
   avatar_emoji: string;
+  avatar_url?: string;
+  user_id?: string;
 }
 
 const TIER_INFO = {
@@ -139,10 +142,10 @@ export default function TestCasesOverviewPage() {
         if (!user) return;
         const { data: profile } = await supabase
           .from('profiles')
-          .select('email, full_name, subscription_tier, avatar_emoji')
+          .select('email, full_name, subscription_tier, avatar_emoji, avatar_url')
           .eq('id', user.id)
           .maybeSingle();
-        if (profile) setUserProfile({ email: profile.email || user.email || '', full_name: profile.full_name || '', subscription_tier: profile.subscription_tier || 1, avatar_emoji: profile.avatar_emoji || '' });
+        if (profile) setUserProfile({ email: profile.email || user.email || '', full_name: profile.full_name || '', subscription_tier: profile.subscription_tier || 1, avatar_emoji: profile.avatar_emoji || '', avatar_url: profile.avatar_url || undefined, user_id: user.id });
       } catch {}
     })();
   }, []);
@@ -246,11 +249,9 @@ export default function TestCasesOverviewPage() {
           <div ref={profileMenuRef} style={{ position: 'relative' }}>
             <div
               onClick={() => setShowProfileMenu(v => !v)}
-              style={{ width: '1.75rem', height: '1.75rem', borderRadius: '50%', background: 'linear-gradient(135deg, #818CF8, #6366F1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.625rem', fontWeight: 700, color: '#fff', cursor: 'pointer', overflow: 'hidden' }}
+              style={{ cursor: 'pointer' }}
             >
-              {userProfile?.avatar_emoji
-                ? <span style={{ fontSize: '1rem', lineHeight: 1 }}>{userProfile.avatar_emoji}</span>
-                : <span>{userProfile?.full_name?.charAt(0) || 'U'}</span>}
+              <Avatar userId={userProfile?.user_id} name={userProfile?.full_name} email={userProfile?.email} photoUrl={userProfile?.avatar_url} size="sm" />
             </div>
             {showProfileMenu && (
               <>

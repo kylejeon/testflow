@@ -5,6 +5,7 @@ import { LogoMark } from '../../components/Logo';
 import { usePassRateReport, type PeriodFilter } from '../../hooks/usePassRateReport';
 import PageLoader from '../../components/PageLoader';
 import { supabase } from '../../lib/supabase';
+import { Avatar } from '../../components/Avatar';
 import { toCanvas } from 'html-to-image';
 import jsPDF from 'jspdf';
 
@@ -35,6 +36,10 @@ export default function PassRateReportPage() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { data, loading, error } = usePassRateReport(period);
   const [userInitials, setUserInitials] = useState('');
+  const [userAvatarUrl, setUserAvatarUrl] = useState<string | undefined>();
+  const [userAvatarId, setUserAvatarId] = useState<string | undefined>();
+  const [userAvatarName, setUserAvatarName] = useState<string | undefined>();
+  const [userAvatarEmail, setUserAvatarEmail] = useState<string | undefined>();
   const [exporting, setExporting] = useState(false);
   const pdfContentRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -110,8 +115,12 @@ export default function PassRateReportPage() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
-      supabase.from('profiles').select('full_name, avatar_emoji').eq('id', user.id).maybeSingle()
+      supabase.from('profiles').select('full_name, avatar_emoji, avatar_url').eq('id', user.id).maybeSingle()
         .then(({ data: profile }) => {
+          setUserAvatarId(user.id);
+          setUserAvatarEmail(user.email || undefined);
+          setUserAvatarName(profile?.full_name || undefined);
+          setUserAvatarUrl(profile?.avatar_url || undefined);
           if (profile?.avatar_emoji) { setUserInitials(profile.avatar_emoji); return; }
           const name = profile?.full_name || user.email || '';
           const parts = name.split(/\s+/);
@@ -193,9 +202,7 @@ export default function PassRateReportPage() {
           <button style={{ fontSize: '0.75rem', padding: '0.375rem 0.75rem', borderRadius: '0.5rem', border: '1px solid #E2E8F0', background: '#fff', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
             <i className="ri-notification-3-line" />
           </button>
-          <div style={{ width: '1.75rem', height: '1.75rem', borderRadius: '50%', background: '#6366F1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.625rem', fontWeight: 700, color: '#fff', cursor: 'pointer', flexShrink: 0 }}>
-            {userInitials || '?'}
-          </div>
+          <Avatar userId={userAvatarId} name={userAvatarName} email={userAvatarEmail} photoUrl={userAvatarUrl} size="sm" style={{ cursor: 'pointer' }} />
         </div>
       </header>
 

@@ -1,8 +1,10 @@
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { LogoMark } from '../../components/Logo';
 import { useTeamActivity } from '../../hooks/useTeamActivity';
 import PageLoader from '../../components/PageLoader';
+import { supabase } from '../../lib/supabase';
+import { Avatar } from '../../components/Avatar';
 
 const badgeStyle: Record<string, { bg: string; color: string }> = {
   created:   { bg: '#EEF2FF', color: '#6366F1' },
@@ -140,6 +142,17 @@ function formatResponseTime(hours: number | null): string {
 
 export default function TeamActivityPage() {
   const { data, loading, error } = useTeamActivity();
+  const [avatarProps, setAvatarProps] = useState<{ userId?: string; name?: string; email?: string; photoUrl?: string }>({});
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase.from('profiles').select('full_name, avatar_url').eq('id', user.id).maybeSingle()
+        .then(({ data: profile }) => {
+          setAvatarProps({ userId: user.id, name: profile?.full_name || undefined, email: user.email || undefined, photoUrl: profile?.avatar_url || undefined });
+        });
+    });
+  }, []);
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", background: '#F8FAFC', color: '#1E293B', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -178,6 +191,7 @@ export default function TeamActivityPage() {
           <button style={{ fontSize: '0.75rem', padding: '0.375rem 0.75rem', borderRadius: '0.5rem', border: '1px solid #E2E8F0', background: '#fff', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
             <i className="ri-notification-3-line" />
           </button>
+          <Avatar {...avatarProps} size="sm" />
         </div>
       </header>
 

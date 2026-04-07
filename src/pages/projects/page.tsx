@@ -71,7 +71,7 @@ export default function ProjectsPage() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('email, full_name, subscription_tier, avatar_emoji')
+        .select('email, full_name, subscription_tier, avatar_emoji, avatar_url')
         .eq('id', user.id)
         .maybeSingle();
 
@@ -83,6 +83,7 @@ export default function ProjectsPage() {
           full_name: data.full_name || '',
           subscription_tier: data.subscription_tier || 1,
           avatar_emoji: data.avatar_emoji || '',
+          avatar_url: data.avatar_url || undefined,
           user_id: user.id,
         });
       }
