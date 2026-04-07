@@ -3189,101 +3189,146 @@ export default function RunDetail() {
                           <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-3">Steps</label>
                             <div className="space-y-2">
-                              {flatSteps.map((fs) => {
-                                const ref2 = fs.groupHeader ? ssRefByHeader2[fs.groupHeader] : null;
-                                const latestInfo2 = ref2 ? ssLatestVersions[ref2.shared_step_id] : null;
-                                const hasNew2 = ref2 && latestInfo2 && ref2.shared_step_version != null && latestInfo2.version > ref2.shared_step_version;
-                                const canUp2 = selectedTestCase && canUpdateTC(selectedTestCase);
-                                const diffKey2 = ref2 ? `${selectedTestCase.id}:${ref2.shared_step_id}` : null;
-                                const isDiff2 = diffKey2 && expandedDiffKey === diffKey2;
-                                const oldKey2 = ref2 ? `${ref2.shared_step_id}:${ref2.shared_step_version}` : null;
-                                return (
-                                <div key={fs.flatIndex}>
-                                  {fs.groupHeader && (() => {
-                                    const [ssCustomId2, ...ssNameParts2] = (fs.groupHeader ?? '').split(': ');
-                                    const ssName2 = ssNameParts2.join(': ');
+                              {(() => {
+                                const execGroups: any[] = [];
+                                let curExecGroup: any = null;
+                                for (const fs of flatSteps) {
+                                  if (fs.groupHeader) {
+                                    if (curExecGroup) execGroups.push(curExecGroup);
+                                    curExecGroup = { isShared: true, header: fs.groupHeader, ref: ssRefByHeader2[fs.groupHeader] ?? null, steps: [fs] };
+                                  } else if (fs.isSubStep && curExecGroup) {
+                                    curExecGroup.steps.push(fs);
+                                  } else {
+                                    if (curExecGroup) { execGroups.push(curExecGroup); curExecGroup = null; }
+                                    execGroups.push({ isShared: false, steps: [fs] });
+                                  }
+                                }
+                                if (curExecGroup) execGroups.push(curExecGroup);
+                                return execGroups.map((group, gi) => {
+                                  if (!group.isShared) {
+                                    const fs = group.steps[0];
                                     return (
-                                    <>
-                                    <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-indigo-50 border border-indigo-200 border-b-0">
-                                      <div className="flex-shrink-0 w-4 h-4 rounded-full bg-indigo-200 text-indigo-600 flex items-center justify-center">
-                                        <i className="ri-links-line text-[0.55rem]" />
-                                      </div>
-                                      <span className="text-[0.65rem] font-mono font-bold text-indigo-600 bg-indigo-100 border border-indigo-200 px-1.5 py-0.5 rounded">{ssCustomId2}</span>
-                                      <span className="text-xs font-medium text-slate-700 truncate flex-1 min-w-0">{ssName2}</span>
-                                      {ref2 && <span className="text-[0.65rem] text-indigo-400 flex-shrink-0">v{ref2.shared_step_version}</span>}
-                                      {hasNew2 && (
-                                        <span
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (isDiff2) { setExpandedDiffKey(null); }
-                                            else { setExpandedDiffKey(diffKey2!); if (ref2) fetchOldVersionSteps(ref2.shared_step_id, ref2.shared_step_version); }
-                                          }}
-                                          className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[0.5625rem] font-bold cursor-pointer transition-all duration-200 flex-shrink-0 ${canUp2 ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-slate-100 text-slate-500'}`}
-                                          title={canUp2 ? `New version: v${latestInfo2!.version}` : 'Locked: test result recorded'}
+                                      <div key={fs.flatIndex} className="border border-gray-200 rounded-lg p-3">
+                                        <div className="flex items-start gap-3 mb-2">
+                                          <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                            <span className="text-indigo-700 text-xs font-bold">{fs.flatIndex + 1}</span>
+                                          </div>
+                                          <div className="flex-1">
+                                            <p className="text-sm text-gray-700 whitespace-pre-wrap">{fs.step}</p>
+                                            {fs.expectedResult && (
+                                              <div className="mt-1 flex items-start gap-1">
+                                                <i className="ri-checkbox-circle-line text-green-500 text-sm flex-shrink-0 mt-[0.05rem]" />
+                                                <p className="text-sm text-green-600 leading-relaxed">{fs.expectedResult}</p>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                        <select
+                                          value={stepStatuses[fs.flatIndex] || 'untested'}
+                                          onChange={(e) => handleStepStatusChange(fs.flatIndex, e.target.value)}
+                                          className="w-full px-3 py-1.5 border border-gray-300 rounded text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                         >
-                                          {canUp2 ? <><i className="ri-arrow-up-line text-[0.5rem]" /> v{latestInfo2!.version}</> : <><i className="ri-lock-line text-[0.5rem]" /> v{latestInfo2!.version}</>}
-                                        </span>
-                                      )}
-                                      <span className="text-[0.6rem] font-bold text-indigo-500 bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-full uppercase tracking-wide flex-shrink-0">Shared</span>
-                                    </div>
-                                    {isDiff2 && hasNew2 && (
-                                      <div className="border border-indigo-200 border-t-0 rounded-b-lg overflow-hidden mb-1 transition-all duration-200">
-                                        <div className="flex items-center justify-between px-3 py-2 bg-amber-50 border-b border-amber-200">
-                                          <span className="text-xs font-semibold text-amber-700">v{ref2.shared_step_version} → v{latestInfo2!.version} Changes</span>
-                                          <div className="flex items-center gap-2">
-                                            {canUp2 && <button onClick={() => handleUpdateSSVersion(selectedTestCase.id, ref2.shared_step_id)} className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[0.625rem] font-bold rounded cursor-pointer transition-colors duration-200">Update</button>}
-                                            {!canUp2 && <span className="flex items-center gap-1 text-[0.625rem] text-slate-500"><i className="ri-lock-line" /> Locked to preserve test results</span>}
-                                          </div>
-                                        </div>
-                                        <div className="grid grid-cols-2 divide-x divide-gray-200">
-                                          <div className="p-2">
-                                            <div className="text-[0.5625rem] font-bold text-red-500 uppercase tracking-wider mb-1.5">Current (v{ref2.shared_step_version})</div>
-                                            {oldKey2 && oldVersionStepsCache[oldKey2] !== undefined
-                                              ? (oldVersionStepsCache[oldKey2] as any[]).length > 0
-                                                ? (oldVersionStepsCache[oldKey2] as any[]).map((s: any, i: number) => <div key={i} className="text-[0.6875rem] text-red-700 bg-red-50 px-2 py-1 rounded leading-relaxed mb-1"><span className="font-semibold text-red-400 mr-1">{i+1}.</span>{s.step}</div>)
-                                                : <div className="text-[0.6875rem] text-gray-400 py-2 italic">Version history unavailable</div>
-                                              : <div className="text-[0.6875rem] text-gray-400 py-2">Loading...</div>
-                                            }
-                                          </div>
-                                          <div className="p-2">
-                                            <div className="text-[0.5625rem] font-bold text-emerald-500 uppercase tracking-wider mb-1.5">Latest (v{latestInfo2!.version})</div>
-                                            {latestInfo2!.steps.map((s: any, i: number) => <div key={i} className="text-[0.6875rem] text-emerald-700 bg-emerald-50 px-2 py-1 rounded leading-relaxed mb-1"><span className="font-semibold text-emerald-400 mr-1">{i+1}.</span>{s.step}</div>)}
-                                          </div>
-                                        </div>
+                                          <option value="untested">Untested</option>
+                                          <option value="passed">Passed</option>
+                                          <option value="failed">Failed</option>
+                                          <option value="blocked">Blocked</option>
+                                        </select>
                                       </div>
-                                    )}
-                                    </>
                                     );
-                                  })()}
-                                  <div className={`border p-3 ${fs.isSubStep ? 'border-indigo-200 bg-indigo-50/30 ml-3' + (fs.groupHeader ? ' rounded-b-lg rounded-tr-lg' : ' rounded-lg') : 'border-gray-200 rounded-lg'}`}>
-                                    <div className="flex items-start gap-3 mb-2">
-                                      <div className={`w-6 h-6 ${fs.isSubStep ? 'bg-indigo-100' : 'bg-indigo-100'} rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5`}>
-                                        <span className={`${fs.isSubStep ? 'text-indigo-700' : 'text-indigo-700'} text-xs font-bold`}>{fs.flatIndex + 1}</span>
-                                      </div>
-                                      <div className="flex-1">
-                                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{fs.step}</p>
-                                        {fs.expectedResult && (
-                                          <div className="mt-1 flex items-start gap-1">
-                                            <i className="ri-checkbox-circle-line text-green-500 text-sm flex-shrink-0 mt-[0.05rem]" />
-                                            <p className="text-sm text-green-600 leading-relaxed">{fs.expectedResult}</p>
-                                          </div>
+                                  }
+                                  const ref2 = group.ref;
+                                  const latestInfo2 = ref2 ? ssLatestVersions[ref2.shared_step_id] : null;
+                                  const hasNew2 = ref2 && latestInfo2 && ref2.shared_step_version != null && latestInfo2.version > ref2.shared_step_version;
+                                  const canUp2 = selectedTestCase && canUpdateTC(selectedTestCase);
+                                  const diffKey2 = ref2 ? `${selectedTestCase.id}:${ref2.shared_step_id}` : null;
+                                  const isDiff2 = diffKey2 && expandedDiffKey === diffKey2;
+                                  const oldKey2 = ref2 ? `${ref2.shared_step_id}:${ref2.shared_step_version}` : null;
+                                  const [ssCustomId2, ...ssNameParts2] = group.header.split(': ');
+                                  const ssName2 = ssNameParts2.join(': ');
+                                  return (
+                                    <div key={`ss-exec-${gi}`} className="border border-indigo-200 rounded-lg overflow-hidden">
+                                      <div className="flex items-center gap-2 px-3 py-2 bg-indigo-50 border-b border-indigo-100">
+                                        <div className="flex-shrink-0 w-4 h-4 rounded-full bg-indigo-200 text-indigo-600 flex items-center justify-center">
+                                          <i className="ri-links-line text-[0.55rem]" />
+                                        </div>
+                                        <span className="text-[0.65rem] font-mono font-bold text-indigo-600 bg-indigo-100 border border-indigo-200 px-1.5 py-0.5 rounded">{ssCustomId2}</span>
+                                        <span className="text-xs font-medium text-slate-700 truncate flex-1 min-w-0">{ssName2}</span>
+                                        {ref2 && <span className="text-[0.65rem] text-indigo-400 flex-shrink-0">v{ref2.shared_step_version}</span>}
+                                        {hasNew2 && (
+                                          <span
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              if (isDiff2) { setExpandedDiffKey(null); }
+                                              else { setExpandedDiffKey(diffKey2!); if (ref2) fetchOldVersionSteps(ref2.shared_step_id, ref2.shared_step_version); }
+                                            }}
+                                            className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[0.5625rem] font-bold cursor-pointer transition-all duration-200 flex-shrink-0 ${canUp2 ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-slate-100 text-slate-500'}`}
+                                            title={canUp2 ? `New version: v${latestInfo2!.version}` : 'Locked: test result recorded'}
+                                          >
+                                            {canUp2 ? <><i className="ri-arrow-up-line text-[0.5rem]" /> v{latestInfo2!.version}</> : <><i className="ri-lock-line text-[0.5rem]" /> v{latestInfo2!.version}</>}
+                                          </span>
                                         )}
+                                        <span className="text-[0.6rem] font-bold text-indigo-500 bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-full uppercase tracking-wide flex-shrink-0">Shared</span>
+                                      </div>
+                                      {isDiff2 && hasNew2 && (
+                                        <div className="border-b border-indigo-200 overflow-hidden">
+                                          <div className="flex items-center justify-between px-3 py-2 bg-amber-50 border-b border-amber-200">
+                                            <span className="text-xs font-semibold text-amber-700">v{ref2.shared_step_version} → v{latestInfo2!.version} Changes</span>
+                                            <div className="flex items-center gap-2">
+                                              {canUp2 && <button onClick={() => handleUpdateSSVersion(selectedTestCase.id, ref2.shared_step_id)} className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[0.625rem] font-bold rounded cursor-pointer transition-colors duration-200">Update</button>}
+                                              {!canUp2 && <span className="flex items-center gap-1 text-[0.625rem] text-slate-500"><i className="ri-lock-line" /> Locked to preserve test results</span>}
+                                            </div>
+                                          </div>
+                                          <div className="grid grid-cols-2 divide-x divide-gray-200">
+                                            <div className="p-2">
+                                              <div className="text-[0.5625rem] font-bold text-red-500 uppercase tracking-wider mb-1.5">Current (v{ref2.shared_step_version})</div>
+                                              {oldKey2 && oldVersionStepsCache[oldKey2] !== undefined
+                                                ? (oldVersionStepsCache[oldKey2] as any[]).length > 0
+                                                  ? (oldVersionStepsCache[oldKey2] as any[]).map((s: any, i: number) => <div key={i} className="text-[0.6875rem] text-red-700 bg-red-50 px-2 py-1 rounded leading-relaxed mb-1"><span className="font-semibold text-red-400 mr-1">{i+1}.</span>{s.step}</div>)
+                                                  : <div className="text-[0.6875rem] text-gray-400 py-2 italic">Version history unavailable</div>
+                                                : <div className="text-[0.6875rem] text-gray-400 py-2">Loading...</div>
+                                              }
+                                            </div>
+                                            <div className="p-2">
+                                              <div className="text-[0.5625rem] font-bold text-emerald-500 uppercase tracking-wider mb-1.5">Latest (v{latestInfo2!.version})</div>
+                                              {latestInfo2!.steps.map((s: any, i: number) => <div key={i} className="text-[0.6875rem] text-emerald-700 bg-emerald-50 px-2 py-1 rounded leading-relaxed mb-1"><span className="font-semibold text-emerald-400 mr-1">{i+1}.</span>{s.step}</div>)}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                      <div className="divide-y divide-indigo-100 bg-white">
+                                        {group.steps.map((fs: any) => (
+                                          <div key={fs.flatIndex} className="p-3">
+                                            <div className="flex items-start gap-3 mb-2">
+                                              <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                <span className="text-indigo-700 text-xs font-bold">{fs.flatIndex + 1}</span>
+                                              </div>
+                                              <div className="flex-1">
+                                                <p className="text-sm text-gray-700 whitespace-pre-wrap">{fs.step}</p>
+                                                {fs.expectedResult && (
+                                                  <div className="mt-1 flex items-start gap-1">
+                                                    <i className="ri-checkbox-circle-line text-green-500 text-sm flex-shrink-0 mt-[0.05rem]" />
+                                                    <p className="text-sm text-green-600 leading-relaxed">{fs.expectedResult}</p>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </div>
+                                            <select
+                                              value={stepStatuses[fs.flatIndex] || 'untested'}
+                                              onChange={(e) => handleStepStatusChange(fs.flatIndex, e.target.value)}
+                                              className="w-full px-3 py-1.5 border border-gray-300 rounded text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            >
+                                              <option value="untested">Untested</option>
+                                              <option value="passed">Passed</option>
+                                              <option value="failed">Failed</option>
+                                              <option value="blocked">Blocked</option>
+                                            </select>
+                                          </div>
+                                        ))}
                                       </div>
                                     </div>
-                                    <select
-                                      value={stepStatuses[fs.flatIndex] || 'untested'}
-                                      onChange={(e) => handleStepStatusChange(fs.flatIndex, e.target.value)}
-                                      className="w-full px-3 py-1.5 border border-gray-300 rounded text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                    >
-                                      <option value="untested">Untested</option>
-                                      <option value="passed">Passed</option>
-                                      <option value="failed">Failed</option>
-                                      <option value="blocked">Blocked</option>
-                                    </select>
-                                  </div>
-                                </div>
-                                );
-                              })}
+                                  );
+                                });
+                              })()}
                             </div>
                           </div>
                         );
@@ -3964,52 +4009,94 @@ function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, ste
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-3">Step Results</label>
                   <div className="space-y-1.5">
-                    {stepsSnapshot.map((fs) => {
-                      const status = result.stepStatuses?.[fs.flatIndex] || 'untested';
-                      const statusInfo = getStepStatusInfo(status);
-                      return (
-                        <div key={fs.flatIndex}>
-                          {fs.groupHeader && (() => {
-                            const [ssCustomIdR, ...ssNamePartsR] = (fs.groupHeader ?? '').split(': ');
-                            const ssNameR = ssNamePartsR.join(': ');
-                            const refSnap = ssRefByHeaderSnap[fs.groupHeader!];
-                            return (
-                              <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-indigo-50 border border-indigo-200 border-b-0 mt-2">
-                                <div className="flex-shrink-0 w-4 h-4 rounded-full bg-indigo-200 text-indigo-600 flex items-center justify-center">
-                                  <i className="ri-links-line text-[0.55rem]" />
+                    {(() => {
+                      const snapGroups: any[] = [];
+                      let curSnapGroup: any = null;
+                      for (const fs of stepsSnapshot) {
+                        if (fs.groupHeader) {
+                          if (curSnapGroup) snapGroups.push(curSnapGroup);
+                          curSnapGroup = { isShared: true, header: fs.groupHeader, ref: ssRefByHeaderSnap[fs.groupHeader] ?? null, steps: [fs] };
+                        } else if (fs.isSubStep && curSnapGroup) {
+                          curSnapGroup.steps.push(fs);
+                        } else {
+                          if (curSnapGroup) { snapGroups.push(curSnapGroup); curSnapGroup = null; }
+                          snapGroups.push({ isShared: false, steps: [fs] });
+                        }
+                      }
+                      if (curSnapGroup) snapGroups.push(curSnapGroup);
+                      return snapGroups.map((group, gi) => {
+                        if (!group.isShared) {
+                          const fs = group.steps[0];
+                          const status = result.stepStatuses?.[fs.flatIndex] || 'untested';
+                          const statusInfo = getStepStatusInfo(status);
+                          return (
+                            <div key={fs.flatIndex} className="border border-gray-200 rounded-lg p-3">
+                              <div className="flex items-start gap-3">
+                                <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                  <span className="text-indigo-700 text-xs font-bold">{fs.flatIndex + 1}</span>
                                 </div>
-                                <span className="text-[0.65rem] font-mono font-bold text-indigo-600 bg-indigo-100 border border-indigo-200 px-1.5 py-0.5 rounded">{ssCustomIdR}</span>
-                                <span className="text-xs font-medium text-slate-700 truncate flex-1 min-w-0">{ssNameR}</span>
-                                {refSnap?.shared_step_version != null && <span className="text-[0.65rem] text-indigo-400 flex-shrink-0">v{refSnap.shared_step_version}</span>}
-                                <span className="text-[0.6rem] font-bold text-indigo-500 bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-full uppercase tracking-wide flex-shrink-0">Shared</span>
-                              </div>
-                            );
-                          })()}
-                          <div className={`border p-3 ${fs.isSubStep ? 'border-indigo-200 bg-indigo-50/30 ml-3' + (fs.groupHeader ? ' rounded-b-lg rounded-tr-lg' : ' rounded-lg') : 'border-gray-200 rounded-lg'}`}>
-                            <div className="flex items-start gap-3">
-                              <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                                <span className="text-indigo-700 text-xs font-bold">{fs.flatIndex + 1}</span>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm text-gray-700 whitespace-pre-wrap">{fs.step}</p>
-                                {fs.expectedResult && (
-                                  <div className="mt-1 flex items-start gap-1">
-                                    <i className="ri-checkbox-circle-line text-green-500 text-sm flex-shrink-0 mt-[0.05rem]" />
-                                    <p className="text-sm text-green-600 leading-relaxed">{fs.expectedResult}</p>
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2 flex-shrink-0">
-                                <i className={`${statusInfo.icon} ${statusInfo.color}`}></i>
-                                <span className={`px-2 py-1 text-xs font-semibold rounded ${statusInfo.bgColor}`}>
-                                  {statusInfo.label}
-                                </span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{fs.step}</p>
+                                  {fs.expectedResult && (
+                                    <div className="mt-1 flex items-start gap-1">
+                                      <i className="ri-checkbox-circle-line text-green-500 text-sm flex-shrink-0 mt-[0.05rem]" />
+                                      <p className="text-sm text-green-600 leading-relaxed">{fs.expectedResult}</p>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <i className={`${statusInfo.icon} ${statusInfo.color}`}></i>
+                                  <span className={`px-2 py-1 text-xs font-semibold rounded ${statusInfo.bgColor}`}>{statusInfo.label}</span>
+                                </div>
                               </div>
                             </div>
+                          );
+                        }
+                        const [ssCustomIdR, ...ssNamePartsR] = group.header.split(': ');
+                        const ssNameR = ssNamePartsR.join(': ');
+                        return (
+                          <div key={`ss-snap-${gi}`} className="border border-indigo-200 rounded-lg overflow-hidden">
+                            <div className="flex items-center gap-2 px-3 py-2 bg-indigo-50 border-b border-indigo-100">
+                              <div className="flex-shrink-0 w-4 h-4 rounded-full bg-indigo-200 text-indigo-600 flex items-center justify-center">
+                                <i className="ri-links-line text-[0.55rem]" />
+                              </div>
+                              <span className="text-[0.65rem] font-mono font-bold text-indigo-600 bg-indigo-100 border border-indigo-200 px-1.5 py-0.5 rounded">{ssCustomIdR}</span>
+                              <span className="text-xs font-medium text-slate-700 truncate flex-1 min-w-0">{ssNameR}</span>
+                              {group.ref?.shared_step_version != null && <span className="text-[0.65rem] text-indigo-400 flex-shrink-0">v{group.ref.shared_step_version}</span>}
+                              <span className="text-[0.6rem] font-bold text-indigo-500 bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-full uppercase tracking-wide flex-shrink-0">Shared</span>
+                            </div>
+                            <div className="divide-y divide-indigo-100 bg-white">
+                              {group.steps.map((fs: any) => {
+                                const status = result.stepStatuses?.[fs.flatIndex] || 'untested';
+                                const statusInfo = getStepStatusInfo(status);
+                                return (
+                                  <div key={fs.flatIndex} className="p-3">
+                                    <div className="flex items-start gap-3">
+                                      <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                        <span className="text-indigo-700 text-xs font-bold">{fs.flatIndex + 1}</span>
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{fs.step}</p>
+                                        {fs.expectedResult && (
+                                          <div className="mt-1 flex items-start gap-1">
+                                            <i className="ri-checkbox-circle-line text-green-500 text-sm flex-shrink-0 mt-[0.05rem]" />
+                                            <p className="text-sm text-green-600 leading-relaxed">{fs.expectedResult}</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-2 flex-shrink-0">
+                                        <i className={`${statusInfo.icon} ${statusInfo.color}`}></i>
+                                        <span className={`px-2 py-1 text-xs font-semibold rounded ${statusInfo.bgColor}`}>{statusInfo.label}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
               );
@@ -4032,52 +4119,94 @@ function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, ste
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-3">Step Results</label>
                   <div className="space-y-1.5">
-                    {flatSteps.map((fs) => {
-                      const status = result.stepStatuses?.[fs.flatIndex] || 'untested';
-                      const statusInfo = getStepStatusInfo(status);
-                      return (
-                        <div key={fs.flatIndex}>
-                          {fs.groupHeader && (() => {
-                            const [ssCustomIdP, ...ssNamePartsP] = (fs.groupHeader ?? '').split(': ');
-                            const ssNameP = ssNamePartsP.join(': ');
-                            const refP = ssRefByHeaderP[fs.groupHeader!];
-                            return (
-                              <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-indigo-50 border border-indigo-200 border-b-0 mt-2">
-                                <div className="flex-shrink-0 w-4 h-4 rounded-full bg-indigo-200 text-indigo-600 flex items-center justify-center">
-                                  <i className="ri-links-line text-[0.55rem]" />
+                    {(() => {
+                      const parsedGroups: any[] = [];
+                      let curParsedGroup: any = null;
+                      for (const fs of flatSteps) {
+                        if (fs.groupHeader) {
+                          if (curParsedGroup) parsedGroups.push(curParsedGroup);
+                          curParsedGroup = { isShared: true, header: fs.groupHeader, ref: ssRefByHeaderP[fs.groupHeader] ?? null, steps: [fs] };
+                        } else if (fs.isSubStep && curParsedGroup) {
+                          curParsedGroup.steps.push(fs);
+                        } else {
+                          if (curParsedGroup) { parsedGroups.push(curParsedGroup); curParsedGroup = null; }
+                          parsedGroups.push({ isShared: false, steps: [fs] });
+                        }
+                      }
+                      if (curParsedGroup) parsedGroups.push(curParsedGroup);
+                      return parsedGroups.map((group, gi) => {
+                        if (!group.isShared) {
+                          const fs = group.steps[0];
+                          const status = result.stepStatuses?.[fs.flatIndex] || 'untested';
+                          const statusInfo = getStepStatusInfo(status);
+                          return (
+                            <div key={fs.flatIndex} className="border border-gray-200 rounded-lg p-3">
+                              <div className="flex items-start gap-3">
+                                <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                  <span className="text-indigo-700 text-xs font-bold">{fs.flatIndex + 1}</span>
                                 </div>
-                                <span className="text-[0.65rem] font-mono font-bold text-indigo-600 bg-indigo-100 border border-indigo-200 px-1.5 py-0.5 rounded">{ssCustomIdP}</span>
-                                <span className="text-xs font-medium text-slate-700 truncate flex-1 min-w-0">{ssNameP}</span>
-                                {refP?.shared_step_version != null && <span className="text-[0.65rem] text-indigo-400 flex-shrink-0">v{refP.shared_step_version}</span>}
-                                <span className="text-[0.6rem] font-bold text-indigo-500 bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-full uppercase tracking-wide flex-shrink-0">Shared</span>
-                              </div>
-                            );
-                          })()}
-                          <div className={`border p-3 ${fs.isSubStep ? 'border-indigo-200 bg-indigo-50/30 ml-3' + (fs.groupHeader ? ' rounded-b-lg rounded-tr-lg' : ' rounded-lg') : 'border-gray-200 rounded-lg'}`}>
-                            <div className="flex items-start gap-3">
-                              <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                                <span className="text-indigo-700 text-xs font-bold">{fs.flatIndex + 1}</span>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm text-gray-700 whitespace-pre-wrap">{fs.step}</p>
-                                {fs.expectedResult && (
-                                  <div className="mt-1 flex items-start gap-1">
-                                    <i className="ri-checkbox-circle-line text-green-500 text-sm flex-shrink-0 mt-[0.05rem]" />
-                                    <p className="text-sm text-green-600 leading-relaxed">{fs.expectedResult}</p>
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2 flex-shrink-0">
-                                <i className={`${statusInfo.icon} ${statusInfo.color}`}></i>
-                                <span className={`px-2 py-1 text-xs font-semibold rounded ${statusInfo.bgColor}`}>
-                                  {statusInfo.label}
-                                </span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{fs.step}</p>
+                                  {fs.expectedResult && (
+                                    <div className="mt-1 flex items-start gap-1">
+                                      <i className="ri-checkbox-circle-line text-green-500 text-sm flex-shrink-0 mt-[0.05rem]" />
+                                      <p className="text-sm text-green-600 leading-relaxed">{fs.expectedResult}</p>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <i className={`${statusInfo.icon} ${statusInfo.color}`}></i>
+                                  <span className={`px-2 py-1 text-xs font-semibold rounded ${statusInfo.bgColor}`}>{statusInfo.label}</span>
+                                </div>
                               </div>
                             </div>
+                          );
+                        }
+                        const [ssCustomIdP, ...ssNamePartsP] = group.header.split(': ');
+                        const ssNameP = ssNamePartsP.join(': ');
+                        return (
+                          <div key={`ss-parsed-${gi}`} className="border border-indigo-200 rounded-lg overflow-hidden">
+                            <div className="flex items-center gap-2 px-3 py-2 bg-indigo-50 border-b border-indigo-100">
+                              <div className="flex-shrink-0 w-4 h-4 rounded-full bg-indigo-200 text-indigo-600 flex items-center justify-center">
+                                <i className="ri-links-line text-[0.55rem]" />
+                              </div>
+                              <span className="text-[0.65rem] font-mono font-bold text-indigo-600 bg-indigo-100 border border-indigo-200 px-1.5 py-0.5 rounded">{ssCustomIdP}</span>
+                              <span className="text-xs font-medium text-slate-700 truncate flex-1 min-w-0">{ssNameP}</span>
+                              {group.ref?.shared_step_version != null && <span className="text-[0.65rem] text-indigo-400 flex-shrink-0">v{group.ref.shared_step_version}</span>}
+                              <span className="text-[0.6rem] font-bold text-indigo-500 bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-full uppercase tracking-wide flex-shrink-0">Shared</span>
+                            </div>
+                            <div className="divide-y divide-indigo-100 bg-white">
+                              {group.steps.map((fs: any) => {
+                                const status = result.stepStatuses?.[fs.flatIndex] || 'untested';
+                                const statusInfo = getStepStatusInfo(status);
+                                return (
+                                  <div key={fs.flatIndex} className="p-3">
+                                    <div className="flex items-start gap-3">
+                                      <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                        <span className="text-indigo-700 text-xs font-bold">{fs.flatIndex + 1}</span>
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{fs.step}</p>
+                                        {fs.expectedResult && (
+                                          <div className="mt-1 flex items-start gap-1">
+                                            <i className="ri-checkbox-circle-line text-green-500 text-sm flex-shrink-0 mt-[0.05rem]" />
+                                            <p className="text-sm text-green-600 leading-relaxed">{fs.expectedResult}</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-2 flex-shrink-0">
+                                        <i className={`${statusInfo.icon} ${statusInfo.color}`}></i>
+                                        <span className={`px-2 py-1 text-xs font-semibold rounded ${statusInfo.bgColor}`}>{statusInfo.label}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
               );

@@ -1089,119 +1089,112 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                     )}
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                    {steps.map((s, i) => {
-                      const result = currentStepResults[i];
-                      const isPassed = result === 'passed';
-                      const isFailed = result === 'failed';
-                      const isFirst = i === 0;
-                      const isLast = i === steps.length - 1;
-                      const isOnly = steps.length === 1;
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {(() => {
+                      const focusGroups: any[] = [];
+                      let curFocusGroup: any = null;
+                      for (let i = 0; i < steps.length; i++) {
+                        const s = steps[i] as any;
+                        if (s.groupHeader) {
+                          if (curFocusGroup) focusGroups.push(curFocusGroup);
+                          curFocusGroup = { isShared: true, header: s.groupHeader, steps: [{ s, i }] };
+                        } else if (s.isSubStep && curFocusGroup) {
+                          curFocusGroup.steps.push({ s, i });
+                        } else {
+                          if (curFocusGroup) { focusGroups.push(curFocusGroup); curFocusGroup = null; }
+                          focusGroups.push({ isShared: false, s, i });
+                        }
+                      }
+                      if (curFocusGroup) focusGroups.push(curFocusGroup);
 
-                      const rowStyle: React.CSSProperties = {
-                        display: 'flex', gap: '0.75rem', padding: '0.875rem 1rem',
-                        border: '1px solid #E2E8F0',
-                        borderTop: isFirst ? '1px solid #E2E8F0' : 'none',
-                        borderRadius: isOnly ? '0.5rem' : isFirst ? '0.5rem 0.5rem 0 0' : isLast ? '0 0 0.5rem 0.5rem' : '0',
-                        background: isPassed ? '#F0FDF4' : isFailed ? '#FEF2F2' : '#fff',
-                        borderColor: isPassed ? '#BBF7D0' : isFailed ? '#FECACA' : '#E2E8F0',
-                        position: 'relative',
+                      const renderStepRow = (s: any, i: number, opts?: { borderTop?: string; borderRadius?: string; borderBottom?: string }) => {
+                        const result = currentStepResults[i];
+                        const isPassed = result === 'passed';
+                        const isFailed = result === 'failed';
+                        const isHtml = /<[^>]+>/.test(s.step);
+                        return (
+                          <div key={i} style={{
+                            display: 'flex', gap: '0.75rem', padding: '0.875rem 1rem',
+                            background: isPassed ? '#F0FDF4' : isFailed ? '#FEF2F2' : '#fff',
+                            borderTop: opts?.borderTop ?? 'none',
+                            borderRadius: opts?.borderRadius ?? '0',
+                            borderBottom: opts?.borderBottom ?? 'none',
+                          }}>
+                            <div style={{
+                              width: '1.5rem', height: '1.5rem', borderRadius: '50%',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: '0.6875rem', fontWeight: 700, flexShrink: 0,
+                              background: isPassed ? '#22C55E' : isFailed ? '#EF4444' : '#EEF2FF',
+                              color: isPassed || isFailed ? '#fff' : '#6366F1',
+                            }}>{i + 1}</div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              {isHtml ? (
+                                <div style={{ fontSize: '0.875rem', color: '#334155', lineHeight: 1.6 }} className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: s.step }} />
+                              ) : (
+                                <p style={{ fontSize: '0.875rem', color: '#334155', lineHeight: 1.6 }}>{s.step}</p>
+                              )}
+                              {s.expectedResult && (
+                                <div className="flex items-start gap-1" style={{ marginTop: '0.375rem' }}>
+                                  <i className="ri-checkbox-circle-line flex-shrink-0" style={{ fontSize: '0.875rem', color: '#22C55E', marginTop: '0.125rem' }} />
+                                  <p style={{ fontSize: '0.875rem', color: '#16A34A', lineHeight: 1.6 }}>{s.expectedResult.replace(/<[^>]*>/g, '').trim()}</p>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex gap-1 shrink-0" style={{ marginTop: '0.125rem' }}>
+                              <button
+                                onClick={() => handleStepResult(i, isPassed ? null : 'passed')}
+                                title="Pass this step"
+                                className="flex items-center justify-center cursor-pointer transition-all"
+                                style={{
+                                  width: '1.75rem', height: '1.75rem', borderRadius: '0.375rem',
+                                  border: isPassed ? '1px solid #22C55E' : '1px solid #E2E8F0',
+                                  background: isPassed ? '#22C55E' : '#fff',
+                                  color: isPassed ? '#fff' : '#94A3B8', fontSize: '0.75rem',
+                                }}
+                                onMouseEnter={(e) => { if (!isPassed) { (e.currentTarget as HTMLElement).style.background = '#F0FDF4'; (e.currentTarget as HTMLElement).style.color = '#16A34A'; (e.currentTarget as HTMLElement).style.borderColor = '#86EFAC'; } }}
+                                onMouseLeave={(e) => { if (!isPassed) { (e.currentTarget as HTMLElement).style.background = '#fff'; (e.currentTarget as HTMLElement).style.color = '#94A3B8'; (e.currentTarget as HTMLElement).style.borderColor = '#E2E8F0'; } }}
+                              ><i className="ri-check-line" /></button>
+                              <button
+                                onClick={() => handleStepResult(i, isFailed ? null : 'failed')}
+                                title="Fail this step"
+                                className="flex items-center justify-center cursor-pointer transition-all"
+                                style={{
+                                  width: '1.75rem', height: '1.75rem', borderRadius: '0.375rem',
+                                  border: isFailed ? '1px solid #EF4444' : '1px solid #E2E8F0',
+                                  background: isFailed ? '#EF4444' : '#fff',
+                                  color: isFailed ? '#fff' : '#94A3B8', fontSize: '0.75rem',
+                                }}
+                                onMouseEnter={(e) => { if (!isFailed) { (e.currentTarget as HTMLElement).style.background = '#FEF2F2'; (e.currentTarget as HTMLElement).style.color = '#DC2626'; (e.currentTarget as HTMLElement).style.borderColor = '#FCA5A5'; } }}
+                                onMouseLeave={(e) => { if (!isFailed) { (e.currentTarget as HTMLElement).style.background = '#fff'; (e.currentTarget as HTMLElement).style.color = '#94A3B8'; (e.currentTarget as HTMLElement).style.borderColor = '#E2E8F0'; } }}
+                              ><i className="ri-close-line" /></button>
+                            </div>
+                          </div>
+                        );
                       };
 
-                      const numStyle: React.CSSProperties = {
-                        width: '1.5rem', height: '1.5rem', borderRadius: '50%',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '0.6875rem', fontWeight: 700, flexShrink: 0,
-                        background: isPassed ? '#22C55E' : isFailed ? '#EF4444' : '#EEF2FF',
-                        color: isPassed || isFailed ? '#fff' : '#6366F1',
-                      };
-
-                      const isHtml = /<[^>]+>/.test(s.step);
-
-                      return (
-                        <div key={i} style={rowStyle}>
-                          <div style={numStyle}>{i + 1}</div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            {isHtml ? (
-                              <div
-                                style={{ fontSize: '0.875rem', color: '#334155', lineHeight: 1.6 }}
-                                className="prose prose-sm max-w-none"
-                                dangerouslySetInnerHTML={{ __html: s.step }}
-                              />
-                            ) : (
-                              <p style={{ fontSize: '0.875rem', color: '#334155', lineHeight: 1.6 }}>{s.step}</p>
-                            )}
-                            {s.expectedResult && (
-                              <div className="flex items-start gap-1" style={{ marginTop: '0.375rem' }}>
-                                <i className="ri-checkbox-circle-line flex-shrink-0" style={{ fontSize: '0.875rem', color: '#22C55E', marginTop: '0.125rem' }} />
-                                <p style={{ fontSize: '0.875rem', color: '#16A34A', lineHeight: 1.6 }}>
-                                  {s.expectedResult.replace(/<[^>]*>/g, '').trim()}
-                                </p>
+                      return focusGroups.map((group, gi) => {
+                        if (!group.isShared) {
+                          return renderStepRow(group.s, group.i, { borderTop: '1px solid #E2E8F0', borderRadius: '0.5rem' });
+                        }
+                        const [ssCustomId, ...ssNameParts] = group.header.split(': ');
+                        const ssName = ssNameParts.join(': ');
+                        return (
+                          <div key={`ss-focus-${gi}`} style={{ border: '1px solid #C7D2FE', borderRadius: '0.5rem', overflow: 'hidden' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', background: '#EEF2FF', borderBottom: '1px solid #C7D2FE' }}>
+                              <div style={{ width: '1rem', height: '1rem', borderRadius: '50%', background: '#C7D2FE', color: '#4F46E5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <i className="ri-links-line" style={{ fontSize: '0.5rem' }} />
                               </div>
+                              <span style={{ fontSize: '0.65rem', fontFamily: 'monospace', fontWeight: 700, color: '#4F46E5', background: '#E0E7FF', border: '1px solid #C7D2FE', padding: '0.125rem 0.375rem', borderRadius: '0.25rem' }}>{ssCustomId}</span>
+                              <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>{ssName}</span>
+                              <span style={{ fontSize: '0.6rem', fontWeight: 700, color: '#6366F1', background: '#E0E7FF', border: '1px solid #C7D2FE', padding: '0.125rem 0.5rem', borderRadius: '999px', textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0 }}>Shared</span>
+                            </div>
+                            {group.steps.map(({ s, i }: { s: any; i: number }, si: number) =>
+                              renderStepRow(s, i, { borderTop: si > 0 ? '1px solid #E0E7FF' : 'none' })
                             )}
                           </div>
-                          {/* Step-level Pass/Fail buttons — 4-state toggle */}
-                          <div className="flex gap-1 shrink-0" style={{ marginTop: '0.125rem' }}>
-                            <button
-                              onClick={() => handleStepResult(i, isPassed ? null : 'passed')}
-                              title="Pass this step"
-                              className="flex items-center justify-center cursor-pointer transition-all"
-                              style={{
-                                width: '1.75rem', height: '1.75rem', borderRadius: '0.375rem',
-                                border: isPassed ? '1px solid #22C55E' : '1px solid #E2E8F0',
-                                background: isPassed ? '#22C55E' : '#fff',
-                                color: isPassed ? '#fff' : '#94A3B8',
-                                fontSize: '0.75rem',
-                              }}
-                              onMouseEnter={(e) => {
-                                if (!isPassed) {
-                                  (e.currentTarget as HTMLElement).style.background = '#F0FDF4';
-                                  (e.currentTarget as HTMLElement).style.color = '#16A34A';
-                                  (e.currentTarget as HTMLElement).style.borderColor = '#86EFAC';
-                                }
-                              }}
-                              onMouseLeave={(e) => {
-                                if (!isPassed) {
-                                  (e.currentTarget as HTMLElement).style.background = '#fff';
-                                  (e.currentTarget as HTMLElement).style.color = '#94A3B8';
-                                  (e.currentTarget as HTMLElement).style.borderColor = '#E2E8F0';
-                                }
-                              }}
-                            >
-                              <i className="ri-check-line" />
-                            </button>
-                            <button
-                              onClick={() => handleStepResult(i, isFailed ? null : 'failed')}
-                              title="Fail this step"
-                              className="flex items-center justify-center cursor-pointer transition-all"
-                              style={{
-                                width: '1.75rem', height: '1.75rem', borderRadius: '0.375rem',
-                                border: isFailed ? '1px solid #EF4444' : '1px solid #E2E8F0',
-                                background: isFailed ? '#EF4444' : '#fff',
-                                color: isFailed ? '#fff' : '#94A3B8',
-                                fontSize: '0.75rem',
-                              }}
-                              onMouseEnter={(e) => {
-                                if (!isFailed) {
-                                  (e.currentTarget as HTMLElement).style.background = '#FEF2F2';
-                                  (e.currentTarget as HTMLElement).style.color = '#DC2626';
-                                  (e.currentTarget as HTMLElement).style.borderColor = '#FCA5A5';
-                                }
-                              }}
-                              onMouseLeave={(e) => {
-                                if (!isFailed) {
-                                  (e.currentTarget as HTMLElement).style.background = '#fff';
-                                  (e.currentTarget as HTMLElement).style.color = '#94A3B8';
-                                  (e.currentTarget as HTMLElement).style.borderColor = '#E2E8F0';
-                                }
-                              }}
-                            >
-                              <i className="ri-close-line" />
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
               )}
