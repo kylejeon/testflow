@@ -254,40 +254,62 @@ export default function ExportImportModal({
   const clearFilters   = () => { setTcSearch(''); setTcSectionFilter(''); setTcPriorityFilter(''); };
 
   const handleExport = async () => {
-    // Collect all SharedStepRefs across all export TCs
-    const refMap: Record<string, { shared_step_id: string; version: number; name: string; custom_id: string }> = {};
+    // Collect all unique SharedStepRef IDs and their pinned versions
+    const allRefs: { shared_step_id: string; version: number; name: string; custom_id: string }[] = [];
+    const seenIds = new Set<string>();
     for (const tc of exportTargetCases) {
       if (!tc.steps) continue;
       try {
         const parsed = JSON.parse(tc.steps);
         if (Array.isArray(parsed)) {
           (parsed as AnyStep[]).filter(isSharedStepRef).forEach(r => {
-            const key = `${r.shared_step_id}:${r.shared_step_version}`;
-            if (!refMap[key]) refMap[key] = { shared_step_id: r.shared_step_id, version: r.shared_step_version, name: r.shared_step_name, custom_id: r.shared_step_custom_id };
+            if (!seenIds.has(r.shared_step_id)) {
+              seenIds.add(r.shared_step_id);
+              allRefs.push({ shared_step_id: r.shared_step_id, version: r.shared_step_version, name: r.shared_step_name, custom_id: r.shared_step_custom_id });
+            }
           });
         }
       } catch { /* plain text steps — no refs */ }
     }
 
-    // Batch-fetch all needed shared step version data
+    // Build cache: fetch latest steps from shared_steps, then patch outdated versions
     const cache: SharedStepCache = {};
-    const refs = Object.values(refMap);
-    if (refs.length > 0) {
-      await Promise.all(refs.map(async (r) => {
-        const { data } = await supabase
-          .from('shared_step_versions')
-          .select('steps')
-          .eq('shared_step_id', r.shared_step_id)
-          .eq('version', r.version)
-          .maybeSingle();
-        const steps: NormalStep[] = Array.isArray(data?.steps) ? data!.steps as NormalStep[] : [];
-        cache[`${r.shared_step_id}:${r.version}`] = { name: r.name, custom_id: r.custom_id, steps };
-        // Also index by id-only for latest-version fallback
-        cache[r.shared_step_id] = { name: r.name, custom_id: r.custom_id, steps };
-      }));
+    if (allRefs.length > 0) {
+      const ids = allRefs.map(r => r.shared_step_id);
+      const { data: latest } = await supabase
+        .from('shared_steps')
+        .select('id, name, custom_id, steps, version')
+        .in('id', ids);
+
+      (latest ?? []).forEach((ss: any) => {
+        const steps: NormalStep[] = Array.isArray(ss.steps) ? ss.steps : [];
+        // Index by id (latest) and id:version (current version)
+        cache[ss.id] = { name: ss.name, custom_id: ss.custom_id, steps };
+        cache[`${ss.id}:${ss.version}`] = { name: ss.name, custom_id: ss.custom_id, steps };
+      });
+
+      // For pinned refs that are older than latest, fetch from shared_step_versions
+      const outdated = allRefs.filter(r => {
+        const live = latest?.find((ss: any) => ss.id === r.shared_step_id);
+        return live && r.version < live.version;
+      });
+      if (outdated.length > 0) {
+        await Promise.all(outdated.map(async r => {
+          const { data: hist } = await supabase
+            .from('shared_step_versions')
+            .select('steps')
+            .eq('shared_step_id', r.shared_step_id)
+            .eq('version', r.version)
+            .maybeSingle();
+          if (hist?.steps) {
+            const steps: NormalStep[] = Array.isArray(hist.steps) ? hist.steps : [];
+            cache[`${r.shared_step_id}:${r.version}`] = { name: r.name, custom_id: r.custom_id, steps };
+          }
+        }));
+      }
     }
 
-    // Pre-expand steps for each TC, replacing raw JSON with flat text
+    // Expand steps for each TC into plain numbered text
     const expandedCases = exportTargetCases.map(tc => {
       let stepsText = tc.steps || '';
       let expectedText = tc.expected_result || '';
@@ -295,11 +317,17 @@ export default function ExportImportModal({
         const parsed = JSON.parse(tc.steps || '');
         if (Array.isArray(parsed)) {
           const flat = expandFlatSteps(parsed as AnyStep[], cache);
-          stepsText = flat.map((f, i) => {
-            const prefix = f.groupHeader ? `[${f.groupHeader}] ` : '';
-            return `${i + 1}. ${prefix}${f.step}`;
-          }).join('\n');
-          expectedText = flat.map((f, i) => `${i + 1}. ${f.expectedResult}`).filter(l => !l.endsWith('. ')).join('\n');
+          let stepNum = 1;
+          const stepLines: string[] = [];
+          const expectedLines: string[] = [];
+          for (const f of flat) {
+            if (f.step === 'Loading…') continue; // skip unresolved refs
+            stepLines.push(`${stepNum}. ${f.step}`);
+            if (f.expectedResult) expectedLines.push(`${stepNum}. ${f.expectedResult}`);
+            stepNum++;
+          }
+          stepsText = stepLines.join('\n');
+          expectedText = expectedLines.join('\n');
         }
       } catch { /* plain text — use as-is */ }
       return { ...tc, steps: stepsText, expected_result: expectedText };
