@@ -993,6 +993,27 @@ export default function ProjectRunsPage() {
               .update({ steps_snapshot: stepsSnapshot })
               .eq('id', newRunId);
           }
+
+          // ── Build TC version snapshot ─────────────────────────────────────
+          // Capture current TC versions so Run shows the version at creation time.
+          const { data: tcVerData } = await supabase
+            .from('test_cases')
+            .select('id, version_major, version_minor, version_status')
+            .in('id', testCaseIds);
+          if (tcVerData && tcVerData.length > 0) {
+            const tcVersionSnapshot: Record<string, { major: number; minor: number; status: string }> = {};
+            tcVerData.forEach((tc: any) => {
+              tcVersionSnapshot[tc.id] = {
+                major: tc.version_major ?? 1,
+                minor: tc.version_minor ?? 0,
+                status: tc.version_status ?? 'published',
+              };
+            });
+            await supabase
+              .from('test_runs')
+              .update({ tc_versions_snapshot: tcVersionSnapshot })
+              .eq('id', newRunId);
+          }
           // ────────────────────────────────────────────────────────────────────
         }
 

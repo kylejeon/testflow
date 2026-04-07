@@ -146,6 +146,8 @@ export default function RunDetail() {
   // stepsSnapshot: loaded from test_runs.steps_snapshot at run load time
   // keyed by tc_id → FlatStep[] (SharedStepRefs already expanded at run creation)
   const [stepsSnapshot, setStepsSnapshot] = useState<Record<string, FlatStep[]>>({});
+  // tcVersionsSnapshot: TC version at run creation time, keyed by tc_id
+  const [tcVersionsSnapshot, setTcVersionsSnapshot] = useState<Record<string, { major: number; minor: number; status: string }>>({});
   const [uploadingFile, setUploadingFile] = useState(false);
   const [selectedResult, setSelectedResult] = useState<TestResult | null>(null);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
@@ -749,6 +751,10 @@ export default function RunDetail() {
       // Load steps snapshot captured at run creation time (if present)
       if (runData.steps_snapshot && typeof runData.steps_snapshot === 'object') {
         setStepsSnapshot(runData.steps_snapshot as Record<string, FlatStep[]>);
+      }
+      // Load TC version snapshot (if present)
+      if (runData.tc_versions_snapshot && typeof runData.tc_versions_snapshot === 'object') {
+        setTcVersionsSnapshot(runData.tc_versions_snapshot as Record<string, { major: number; minor: number; status: string }>);
       }
 
       if (runData.test_case_ids && runData.test_case_ids.length > 0) {
@@ -1608,6 +1614,27 @@ export default function RunDetail() {
       }
     }
     setVersionBannerDismissed(true);
+  };
+
+  const handleUpdateTCVersion = async (tcId: string) => {
+    if (!run?.id) return;
+    const tc = testCases.find(t => t.id === tcId);
+    if (!tc || !canUpdateTC(tc)) return;
+    try {
+      const newSnapshot = {
+        ...tcVersionsSnapshot,
+        [tcId]: {
+          major: (tc as any).version_major ?? 1,
+          minor: (tc as any).version_minor ?? 0,
+          status: (tc as any).version_status ?? 'published',
+        },
+      };
+      setTcVersionsSnapshot(newSnapshot);
+      await supabase.from('test_runs').update({ tc_versions_snapshot: newSnapshot }).eq('id', run.id);
+      showToast('success', `TC updated to v${(tc as any).version_major ?? 1}.${(tc as any).version_minor ?? 0}`);
+    } catch {
+      showToast('error', 'Failed to update TC version');
+    }
   };
 
   const filteredTestCases = testCases.filter(testCase => {
@@ -2814,16 +2841,40 @@ export default function RunDetail() {
                           <span className="font-mono text-[0.8125rem] text-indigo-600 font-semibold whitespace-nowrap">
                             {(testCase as any).custom_id || '-'}
                           </span>
-                          {(testCase as any).version_major !== undefined && (
-                            <span className={`text-[0.5625rem] font-semibold ${
-                              (testCase as any).version_status === 'draft'
-                                ? 'text-amber-600'
-                                : 'text-emerald-600'
-                            }`}>
-                              TC v{(testCase as any).version_major ?? 1}.{(testCase as any).version_minor ?? 0}
-                              {(testCase as any).version_status === 'draft' && ' ⚠'}
-                            </span>
-                          )}
+                          {(() => {
+                            const snapVer = tcVersionsSnapshot[testCase.id];
+                            const liveMajor = (testCase as any).version_major;
+                            const liveMinor = (testCase as any).version_minor ?? 0;
+                            const displayMajor = snapVer?.major ?? liveMajor;
+                            const displayMinor = snapVer?.minor ?? liveMinor;
+                            const displayStatus = snapVer?.status ?? (testCase as any).version_status ?? 'published';
+                            if (displayMajor === undefined) return null;
+                            const hasNewVer = snapVer && liveMajor !== undefined &&
+                              (liveMajor > snapVer.major || (liveMajor === snapVer.major && liveMinor > snapVer.minor));
+                            const canUp = hasNewVer && canUpdateTC(testCase);
+                            return (
+                              <>
+                                <span className={`text-[0.5625rem] font-semibold ${displayStatus === 'draft' ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                  TC v{displayMajor}.{displayMinor}
+                                  {displayStatus === 'draft' && ' ⚠'}
+                                </span>
+                                {hasNewVer && (
+                                  <span
+                                    onClick={canUp ? (e) => { e.stopPropagation(); handleUpdateTCVersion(testCase.id); } : undefined}
+                                    className={`inline-flex items-center gap-0.5 px-1 py-0.5 rounded-full text-[0.5rem] font-bold ml-0.5 transition-all duration-200 ${
+                                      canUp ? 'bg-amber-100 text-amber-700 hover:bg-amber-200 cursor-pointer' : 'bg-slate-100 text-slate-500 cursor-default'
+                                    }`}
+                                    title={canUp ? `TC updated to v${liveMajor}.${liveMinor} — click to update` : 'Locked: test result recorded'}
+                                  >
+                                    {canUp
+                                      ? <><i className="ri-arrow-up-line" />v{liveMajor}.{liveMinor}</>
+                                      : <><i className="ri-lock-line" />v{liveMajor}.{liveMinor}</>
+                                    }
+                                  </span>
+                                )}
+                              </>
+                            );
+                          })()}
                         </div>
                         <div className="col-span-3 flex items-center gap-1.5 min-w-0">
                           <span className="text-[0.8125rem] font-semibold text-[#0F172A] truncate hover:text-indigo-600 min-w-0">
