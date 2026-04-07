@@ -2,6 +2,8 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { exportToTestRail } from '../../../utils/testRailExport';
 import { parseCSVImport, parseExcelImport, type ImportedTestCase } from '../../../utils/excelImport';
 import { supabase } from '../../../lib/supabase';
+import { expandFlatSteps, type SharedStepCache } from '../../../lib/expandSharedSteps';
+import { isSharedStepRef, type AnyStep, type NormalStep } from '../../../types/shared-steps';
 
 interface TestCase {
   id: string;
@@ -251,8 +253,59 @@ export default function ExportImportModal({
   const clearSelection = () => setSelectedExportTcIds(new Set());
   const clearFilters   = () => { setTcSearch(''); setTcSectionFilter(''); setTcPriorityFilter(''); };
 
-  const handleExport = () => {
-    exportToTestRail(exportTargetCases, resolvedProjectName, selectedColumns);
+  const handleExport = async () => {
+    // Collect all SharedStepRefs across all export TCs
+    const refMap: Record<string, { shared_step_id: string; version: number; name: string; custom_id: string }> = {};
+    for (const tc of exportTargetCases) {
+      if (!tc.steps) continue;
+      try {
+        const parsed = JSON.parse(tc.steps);
+        if (Array.isArray(parsed)) {
+          (parsed as AnyStep[]).filter(isSharedStepRef).forEach(r => {
+            const key = `${r.shared_step_id}:${r.shared_step_version}`;
+            if (!refMap[key]) refMap[key] = { shared_step_id: r.shared_step_id, version: r.shared_step_version, name: r.shared_step_name, custom_id: r.shared_step_custom_id };
+          });
+        }
+      } catch { /* plain text steps — no refs */ }
+    }
+
+    // Batch-fetch all needed shared step version data
+    const cache: SharedStepCache = {};
+    const refs = Object.values(refMap);
+    if (refs.length > 0) {
+      await Promise.all(refs.map(async (r) => {
+        const { data } = await supabase
+          .from('shared_step_versions')
+          .select('steps')
+          .eq('shared_step_id', r.shared_step_id)
+          .eq('version', r.version)
+          .maybeSingle();
+        const steps: NormalStep[] = Array.isArray(data?.steps) ? data!.steps as NormalStep[] : [];
+        cache[`${r.shared_step_id}:${r.version}`] = { name: r.name, custom_id: r.custom_id, steps };
+        // Also index by id-only for latest-version fallback
+        cache[r.shared_step_id] = { name: r.name, custom_id: r.custom_id, steps };
+      }));
+    }
+
+    // Pre-expand steps for each TC, replacing raw JSON with flat text
+    const expandedCases = exportTargetCases.map(tc => {
+      let stepsText = tc.steps || '';
+      let expectedText = tc.expected_result || '';
+      try {
+        const parsed = JSON.parse(tc.steps || '');
+        if (Array.isArray(parsed)) {
+          const flat = expandFlatSteps(parsed as AnyStep[], cache);
+          stepsText = flat.map((f, i) => {
+            const prefix = f.groupHeader ? `[${f.groupHeader}] ` : '';
+            return `${i + 1}. ${prefix}${f.step}`;
+          }).join('\n');
+          expectedText = flat.map((f, i) => `${i + 1}. ${f.expectedResult}`).filter(l => !l.endsWith('. ')).join('\n');
+        }
+      } catch { /* plain text — use as-is */ }
+      return { ...tc, steps: stepsText, expected_result: expectedText };
+    });
+
+    exportToTestRail(expandedCases, resolvedProjectName, selectedColumns);
     onClose();
   };
 
