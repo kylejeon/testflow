@@ -560,8 +560,8 @@ export default function ProjectDetail() {
   const prPassed = projectPassRateData?.passed ?? testRuns.reduce((acc, r) => acc + (r.passed||0), 0);
   const passRate = prTotal > 0 ? Math.round((prPassed / prTotal) * 100) : 0;
   const healthColor = passRate >= 80 ? '#16A34A' : passRate >= 50 ? '#D97706' : '#DC2626';
-  const AI_LIMITS: Record<number, number> = { 1: 5, 2: 30, 3: 150, 4: -1, 5: -1, 6: -1 };
-  const aiLimit = AI_LIMITS[currentTier] ?? 5;
+  const AI_LIMITS: Record<number, number> = { 1: 3, 2: 15, 3: 30, 4: 150, 5: -1, 6: -1, 7: -1 };
+  const aiLimit = AI_LIMITS[currentTier] ?? 3;
 
   // ── Active milestones filter ──
   const activeMilestones = milestones.filter(m => {
@@ -1301,7 +1301,7 @@ export default function ProjectDetail() {
                           <p className="text-xl font-bold text-gray-900">Unlimited</p>
                           <p className="text-[11px] text-gray-400 mt-0.5">AI generations</p>
                         </div>
-                        <span className="text-xs font-semibold text-violet-700 bg-violet-50 px-2 py-1 rounded-full">Enterprise</span>
+                        <span className={`text-xs font-semibold px-2 py-1 rounded-full ${currentTier >= 5 ? 'text-amber-700 bg-amber-50' : 'text-violet-700 bg-violet-50'}`}>{tierInfo?.name || 'Professional'}</span>
                       </div>
                     ) : (
                       <>
