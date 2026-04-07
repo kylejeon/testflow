@@ -1664,24 +1664,39 @@ export default function RunDetail() {
     });
 
     // Fetch fresh TC steps from DB (handles cached/stale tc.steps in state)
-    try {
-      const { data: freshTC } = await supabase
-        .from('test_cases')
-        .select('steps')
-        .eq('id', tc.id)
-        .single();
-
-      let liveSteps: FlatStep[] = [];
-      if (freshTC?.steps) {
+    // Helper: parse steps regardless of whether they are a JSON string or already-parsed JSONB array
+    const parseStepsField = (raw: unknown): AnyStep[] => {
+      if (!raw) return [];
+      if (Array.isArray(raw)) return raw as AnyStep[];
+      if (typeof raw === 'string') {
         try {
-          const parsed = JSON.parse(freshTC.steps) as AnyStep[];
-          if (Array.isArray(parsed)) {
-            liveSteps = expandFlatSteps(parsed, sharedStepsCache);
-          }
-        } catch { /* non-JSON steps format */ }
+          const p = JSON.parse(raw);
+          return Array.isArray(p) ? p : [];
+        } catch { return []; }
+      }
+      return [];
+    };
+
+    try {
+      // Fetch live steps AND the run's steps_snapshot in one go
+      const [{ data: freshTC }, { data: freshRun }] = await Promise.all([
+        supabase.from('test_cases').select('steps').eq('id', tc.id).single(),
+        run?.id
+          ? supabase.from('test_runs').select('steps_snapshot').eq('id', run.id).single()
+          : Promise.resolve({ data: null }),
+      ]);
+
+      // Live steps (v_new)
+      const liveSteps = expandFlatSteps(parseStepsField(freshTC?.steps), sharedStepsCache);
+
+      // Snapshot steps (v_old): prefer in-memory state, fall back to fresh DB fetch
+      let snapSteps = stepsSnapshot[tc.id] ?? [];
+      if (snapSteps.length === 0 && freshRun?.steps_snapshot) {
+        const freshSnap = freshRun.steps_snapshot as Record<string, FlatStep[]>;
+        snapSteps = freshSnap[tc.id] ?? [];
       }
 
-      setTcDiffModal(prev => prev ? { ...prev, liveSteps, loading: false } : null);
+      setTcDiffModal(prev => prev ? { ...prev, liveSteps, snapSteps, loading: false } : null);
     } catch {
       setTcDiffModal(prev => prev ? { ...prev, loading: false } : null);
     }
