@@ -94,21 +94,10 @@ export default function SharedStepModal({ projectId, sharedStep, onClose, onSave
       };
 
       if (isEdit) {
-        const newVersion = sharedStep!.version + 1;
-
-        // Record the current (old) version content in shared_step_versions before updating
-        await supabase.from('shared_step_versions').insert({
-          shared_step_id: sharedStep!.id,
-          version: sharedStep!.version,
-          steps: sharedStep!.steps,
-          name: sharedStep!.name,
-          changed_by: user.id,
-          change_summary: `Updated to v${newVersion}`,
-        });
-
+        // Version increment and history are handled by the DB trigger (record_shared_step_version)
         const { error: err } = await supabase
           .from('shared_steps')
-          .update({ ...payload, version: newVersion })
+          .update(payload)
           .eq('id', sharedStep!.id);
         if (err) throw err;
 
