@@ -361,14 +361,14 @@ export function DetailPanel({
   // SS version helpers
   const fetchOldVersionStepsDP = async (ssId: string, version: number) => {
     const key = `${ssId}:${version}`;
-    if (oldVersionSteps[key]) return;
+    if (oldVersionSteps[key] !== undefined) return;
     const { data } = await supabase
       .from('shared_step_versions')
       .select('steps')
       .eq('shared_step_id', ssId)
       .eq('version', version)
       .maybeSingle();
-    if (data?.steps) setOldVersionSteps(prev => ({ ...prev, [key]: data.steps }));
+    setOldVersionSteps(prev => ({ ...prev, [key]: data?.steps ?? [] }));
   };
 
   // Build map from groupHeader → SharedStepRef (for version badge lookup in steps)
@@ -745,8 +745,10 @@ export function DetailPanel({
                           <div className="grid grid-cols-2 divide-x divide-gray-200">
                             <div className="p-1.5 bg-red-50">
                               <div className="text-[0.5rem] font-bold text-red-400 uppercase tracking-wider mb-1">Current v{ref.shared_step_version}</div>
-                              {oldKey && oldVersionSteps[oldKey]
-                                ? oldVersionSteps[oldKey].map((st, si) => <div key={si} className="text-[0.5625rem] text-red-700 mb-0.5 leading-relaxed"><span className="font-semibold text-red-400 mr-0.5">{si+1}.</span>{st.step}</div>)
+                              {oldKey && oldVersionSteps[oldKey] !== undefined
+                                ? oldVersionSteps[oldKey].length > 0
+                                  ? oldVersionSteps[oldKey].map((st, si) => <div key={si} className="text-[0.5625rem] text-red-700 mb-0.5 leading-relaxed"><span className="font-semibold text-red-400 mr-0.5">{si+1}.</span>{st.step}</div>)
+                                  : <div className="text-[0.5625rem] text-gray-400 italic">Version history unavailable</div>
                                 : <div className="text-[0.5625rem] text-gray-400">Loading...</div>
                               }
                             </div>
