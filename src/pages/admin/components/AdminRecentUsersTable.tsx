@@ -21,9 +21,13 @@ interface AdminRecentUsersTableProps {
 }
 
 const TIER_BADGE: Record<number, { label: string; style: string }> = {
-  1: { label: 'Free', style: 'bg-slate-100 text-slate-600' },
-  2: { label: 'Starter', style: 'bg-yellow-100 text-yellow-700' },
-  3: { label: 'Pro', style: 'bg-indigo-100 text-indigo-700' },
+  1: { label: 'Free',         style: 'bg-slate-100 text-slate-600' },
+  2: { label: 'Hobby',        style: 'bg-emerald-100 text-emerald-700' },
+  3: { label: 'Starter',      style: 'bg-yellow-100 text-yellow-700' },
+  4: { label: 'Professional', style: 'bg-indigo-100 text-indigo-700' },
+  5: { label: 'Enterprise S', style: 'bg-amber-100 text-amber-700' },
+  6: { label: 'Enterprise M', style: 'bg-orange-100 text-orange-700' },
+  7: { label: 'Enterprise L', style: 'bg-rose-100 text-rose-700' },
 };
 
 const formatDate = (dateStr: string) =>
