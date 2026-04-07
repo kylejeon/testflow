@@ -148,6 +148,12 @@ export default function RunDetail() {
   const [stepsSnapshot, setStepsSnapshot] = useState<Record<string, FlatStep[]>>({});
   // tcVersionsSnapshot: TC version at run creation time, keyed by tc_id
   const [tcVersionsSnapshot, setTcVersionsSnapshot] = useState<Record<string, { major: number; minor: number; status: string }>>({});
+  const [tcDiffModal, setTcDiffModal] = useState<{
+    tcId: string; tcTitle: string;
+    snapMajor: number; snapMinor: number;
+    liveMajor: number; liveMinor: number;
+    snapSteps: FlatStep[]; liveSteps: FlatStep[];
+  } | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [selectedResult, setSelectedResult] = useState<TestResult | null>(null);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
@@ -1637,6 +1643,29 @@ export default function RunDetail() {
     }
   };
 
+  const openTCDiffModal = (tc: TestCase) => {
+    const snapVer = tcVersionsSnapshot[tc.id];
+    if (!snapVer) return;
+    const liveMajor = (tc as any).version_major ?? 1;
+    const liveMinor = (tc as any).version_minor ?? 0;
+    const snapSteps: FlatStep[] = stepsSnapshot[tc.id] ?? [];
+    let liveSteps: FlatStep[] = [];
+    try {
+      const parsed: AnyStep[] = typeof tc.steps === 'string' ? JSON.parse(tc.steps) : (tc.steps ?? []);
+      liveSteps = expandFlatSteps(parsed, sharedStepsCache);
+    } catch { /* ignore parse error */ }
+    setTcDiffModal({
+      tcId: tc.id,
+      tcTitle: tc.title,
+      snapMajor: snapVer.major,
+      snapMinor: snapVer.minor,
+      liveMajor,
+      liveMinor,
+      snapSteps,
+      liveSteps,
+    });
+  };
+
   const filteredTestCases = testCases.filter(testCase => {
     const matchesSearch = testCase.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          testCase.description?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -2860,11 +2889,11 @@ export default function RunDetail() {
                                 </span>
                                 {hasNewVer && (
                                   <span
-                                    onClick={canUp ? (e) => { e.stopPropagation(); handleUpdateTCVersion(testCase.id); } : undefined}
-                                    className={`inline-flex items-center gap-0.5 px-1 py-0.5 rounded-full text-[0.5rem] font-bold ml-0.5 transition-all duration-200 ${
+                                    onClick={canUp ? (e) => { e.stopPropagation(); openTCDiffModal(testCase); } : undefined}
+                                    className={`self-start inline-flex items-center gap-0.5 px-1 py-px rounded-full text-[0.5rem] leading-none font-bold transition-all duration-200 ${
                                       canUp ? 'bg-amber-100 text-amber-700 hover:bg-amber-200 cursor-pointer' : 'bg-slate-100 text-slate-500 cursor-default'
                                     }`}
-                                    title={canUp ? `TC updated to v${liveMajor}.${liveMinor} — click to update` : 'Locked: test result recorded'}
+                                    title={canUp ? `TC updated to v${liveMajor}.${liveMinor} — click to review changes` : 'Locked: test result recorded'}
                                   >
                                     {canUp
                                       ? <><i className="ri-arrow-up-line" />v{liveMajor}.{liveMinor}</>
@@ -3918,6 +3947,101 @@ export default function RunDetail() {
               stepsSnapshot={selectedTestCase ? stepsSnapshot[selectedTestCase.id] : undefined}
               onClose={() => setSelectedResult(null)}
             />
+          )}
+
+          {/* TC Version Diff Modal */}
+          {tcDiffModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col">
+                {/* Header */}
+                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 flex-shrink-0">
+                  <div>
+                    <h2 className="text-base font-bold text-gray-900">{tcDiffModal.tcTitle}</h2>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Comparing <span className="font-semibold text-gray-700">v{tcDiffModal.snapMajor}.{tcDiffModal.snapMinor}</span>
+                      {' → '}
+                      <span className="font-semibold text-emerald-600">v{tcDiffModal.liveMajor}.{tcDiffModal.liveMinor}</span>
+                    </p>
+                  </div>
+                  <button onClick={() => setTcDiffModal(null)} className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600">
+                    <i className="ri-close-line text-lg" />
+                  </button>
+                </div>
+
+                {/* Step diff */}
+                <div className="flex-1 overflow-y-auto">
+                  <div className="grid grid-cols-2 divide-x divide-gray-200">
+                    {/* Old version */}
+                    <div>
+                      <div className="sticky top-0 bg-slate-50 px-4 py-2 border-b border-gray-200 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                        v{tcDiffModal.snapMajor}.{tcDiffModal.snapMinor} (current in run)
+                      </div>
+                      <div className="divide-y divide-gray-100">
+                        {tcDiffModal.snapSteps.length === 0
+                          ? <p className="px-4 py-6 text-xs text-gray-400 text-center">No steps recorded</p>
+                          : tcDiffModal.snapSteps.map((s, i) => {
+                              const liveMatch = tcDiffModal.liveSteps[i];
+                              const changed = !liveMatch || liveMatch.step !== s.step || liveMatch.expectedResult !== s.expectedResult;
+                              const removed = !liveMatch;
+                              return (
+                                <div key={i} className={`px-4 py-2.5 text-xs ${removed ? 'bg-red-50' : changed ? 'bg-amber-50' : ''}`}>
+                                  {s.groupHeader && (
+                                    <div className="text-[0.625rem] font-semibold text-indigo-500 mb-1">{s.groupHeader}</div>
+                                  )}
+                                  <p className={`font-medium ${removed ? 'text-red-700 line-through' : changed ? 'text-amber-700' : 'text-gray-700'}`}>{s.step || '—'}</p>
+                                  {s.expectedResult && <p className={`mt-0.5 ${removed ? 'text-red-400 line-through' : changed ? 'text-amber-500' : 'text-gray-400'}`}>→ {s.expectedResult}</p>}
+                                </div>
+                              );
+                            })
+                        }
+                      </div>
+                    </div>
+                    {/* New version */}
+                    <div>
+                      <div className="sticky top-0 bg-emerald-50 px-4 py-2 border-b border-gray-200 text-xs font-semibold text-emerald-600 uppercase tracking-wide">
+                        v{tcDiffModal.liveMajor}.{tcDiffModal.liveMinor} (updated)
+                      </div>
+                      <div className="divide-y divide-gray-100">
+                        {tcDiffModal.liveSteps.length === 0
+                          ? <p className="px-4 py-6 text-xs text-gray-400 text-center">No steps</p>
+                          : tcDiffModal.liveSteps.map((s, i) => {
+                              const snapMatch = tcDiffModal.snapSteps[i];
+                              const changed = !snapMatch || snapMatch.step !== s.step || snapMatch.expectedResult !== s.expectedResult;
+                              const added = !snapMatch;
+                              return (
+                                <div key={i} className={`px-4 py-2.5 text-xs ${added ? 'bg-green-50' : changed ? 'bg-amber-50' : ''}`}>
+                                  {s.groupHeader && (
+                                    <div className="text-[0.625rem] font-semibold text-indigo-500 mb-1">{s.groupHeader}</div>
+                                  )}
+                                  <p className={`font-medium ${added ? 'text-green-700' : changed ? 'text-amber-700' : 'text-gray-700'}`}>{s.step || '—'}</p>
+                                  {s.expectedResult && <p className={`mt-0.5 ${added ? 'text-green-500' : changed ? 'text-amber-500' : 'text-gray-400'}`}>→ {s.expectedResult}</p>}
+                                </div>
+                              );
+                            })
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-gray-200 flex-shrink-0">
+                  <button
+                    onClick={() => setTcDiffModal(null)}
+                    className="px-4 py-2 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => { handleUpdateTCVersion(tcDiffModal.tcId); setTcDiffModal(null); }}
+                    className="px-4 py-2 text-sm bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <i className="ri-arrow-up-line" />
+                    Update to v{tcDiffModal.liveMajor}.{tcDiffModal.liveMinor}
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Image Preview Modal */}
