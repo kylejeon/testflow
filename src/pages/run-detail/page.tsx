@@ -4054,11 +4054,10 @@ export default function RunDetail() {
 
                     {/* Metadata rows — each field aligned side by side */}
                     {([
-                      { label: 'Title',           snap: tcDiffModal.snapTitle,          live: tcDiffModal.liveTitle },
-                      { label: 'Tags',            snap: tcDiffModal.snapTags,           live: tcDiffModal.liveTags },
-                      { label: 'Expected Result', snap: tcDiffModal.snapExpectedResult, live: tcDiffModal.liveExpectedResult },
-                      { label: 'Precondition',    snap: tcDiffModal.snapPrecondition,   live: tcDiffModal.livePrecondition },
-                      { label: 'Description',     snap: tcDiffModal.snapDescription,    live: tcDiffModal.liveDescription },
+                      { label: 'Title',        snap: tcDiffModal.snapTitle,       live: tcDiffModal.liveTitle },
+                      { label: 'Tags',         snap: tcDiffModal.snapTags,        live: tcDiffModal.liveTags },
+                      { label: 'Precondition', snap: tcDiffModal.snapPrecondition, live: tcDiffModal.livePrecondition },
+                      { label: 'Description',  snap: tcDiffModal.snapDescription,  live: tcDiffModal.liveDescription },
                     ] as { label: string; snap?: string; live?: string }[]).map(({ label, snap, live }) => {
                       const changed = snap !== undefined && snap !== live;
                       return (
@@ -4111,6 +4110,29 @@ export default function RunDetail() {
                         );
                       })
                     )}
+
+                    {/* Expected Result separator */}
+                    <div className="grid grid-cols-2 divide-x divide-gray-200 border-b border-gray-200 bg-gray-50 border-t border-t-gray-200">
+                      <div className="px-4 py-1.5 text-[0.625rem] font-semibold text-gray-400 uppercase tracking-wide">Expected Result</div>
+                      <div className="px-4 py-1.5 text-[0.625rem] font-semibold text-gray-400 uppercase tracking-wide">Expected Result</div>
+                    </div>
+
+                    {/* Expected Result content */}
+                    {(() => {
+                      const snap = tcDiffModal.snapExpectedResult;
+                      const live = tcDiffModal.liveExpectedResult;
+                      const changed = snap !== undefined && snap !== live;
+                      return (
+                        <div className={`grid grid-cols-2 divide-x divide-gray-200 border-b border-gray-100 ${changed ? 'bg-amber-50/40' : ''}`}>
+                          <div className="px-4 py-2.5 text-xs">
+                            <span className={changed ? 'text-amber-700' : 'text-gray-600'}>{snap || <span className="text-gray-300 italic">—</span>}</span>
+                          </div>
+                          <div className="px-4 py-2.5 text-xs">
+                            <span className={changed ? 'text-emerald-700 font-medium' : 'text-gray-600'}>{live || <span className="text-gray-300 italic">—</span>}</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </>)}
                 </div>
 
