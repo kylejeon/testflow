@@ -491,7 +491,7 @@ export default function ProjectsContent() {
       setEditingProject(null);
     } catch (error) {
       console.error('Error updating project:', error);
-      alert('Failed to update project.');
+      showToast('Failed to update project.', 'error');
     }
   };
 

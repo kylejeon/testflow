@@ -347,6 +347,7 @@ export default function SessionDetail() {
       await fetchSessionData();
     } catch (error) {
       console.error('Error saving session:', error);
+      showToast('Failed to save session.', 'error');
     }
   };
 
@@ -405,6 +406,7 @@ export default function SessionDetail() {
       fetchSessionData();
     } catch (error) {
       console.error('Error adding log:', error);
+      showToast('Failed to add log entry.', 'error');
     }
   };
 
@@ -760,6 +762,7 @@ export default function SessionDetail() {
       navigate(`/projects/${projectId}/discovery-logs`);
     } catch (error) {
       console.error('세션 종료 오류:', error);
+      showToast('Failed to close session.', 'error');
     }
   };
 

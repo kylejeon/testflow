@@ -227,6 +227,7 @@ export default function ProjectTestCases() {
       lcToastTimerRef.current = setTimeout(() => setLcToast(t => ({ ...t, show: false })), 5000);
     } catch (error) {
       console.error('테스트 케이스 추가 오류:', error);
+      showToast('Failed to add test case. Please try again.', 'error');
     }
   };
 
@@ -268,6 +269,7 @@ export default function ProjectTestCases() {
       );
     } catch (error) {
       console.error('테스트 케이스 수정 오류:', error);
+      showToast('Failed to save changes.', 'error');
     }
   };
 
@@ -284,6 +286,7 @@ export default function ProjectTestCases() {
       );
     } catch (error) {
       console.error('테스트 케이스 삭제 오류:', error);
+      showToast('Failed to delete test case.', 'error');
     }
   };
 
