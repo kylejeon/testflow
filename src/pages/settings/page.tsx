@@ -1810,7 +1810,7 @@ def pytest_sessionfinish(session, exitstatus):
           {/* ── 2-Row Unified Header ── */}
           <header className="bg-white border-b border-slate-200 flex-shrink-0">
             {/* Row 1: top bar */}
-            <div className="flex items-center justify-between px-6" style={{ height: '3.25rem' }}>
+            <div className="flex items-center justify-between px-4 md:px-6" style={{ height: '3.25rem' }}>
               <div className="flex items-center gap-2">
                 <Link to="/projects" className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
                   <LogoMark />
@@ -1890,7 +1890,7 @@ def pytest_sessionfinish(session, exitstatus):
           </header>
 
           <main className="flex-1 overflow-y-auto bg-slate-50">
-            <div className="max-w-[800px] mx-auto px-8 pt-6 pb-12">
+            <div className="max-w-[800px] mx-auto px-4 md:px-8 pt-6 pb-12">
                 <div>
                   {activeTab === 'profile' && userProfile && (
                     <>
