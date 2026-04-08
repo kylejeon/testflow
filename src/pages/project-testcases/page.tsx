@@ -7,10 +7,13 @@ import TestCaseList from './components/TestCaseList';
 import AIGenerateModal from './components/AIGenerateModal';
 import { markOnboardingStep } from '../../lib/onboardingMarker';
 import ProjectHeader from '../../components/ProjectHeader';
+import { useToast } from '../../components/Toast';
+import { ListSkeleton } from '../../components/Skeleton';
 
 export default function ProjectTestCases() {
   const { id } = useParams();
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   const { data: project } = useQuery({
     queryKey: ['project', id],
@@ -295,7 +298,7 @@ export default function ProjectTestCases() {
 
       const prefix = projectData?.prefix;
       if (!prefix) {
-        alert('프로젝트에 Prefix가 설정되어 있지 않습니다. 프로젝트 설정에서 Prefix를 먼저 설정해주세요.');
+        showToast('No prefix set for this project. Go to project settings to add one.', 'warning');
         return;
       }
 
@@ -308,7 +311,7 @@ export default function ProjectTestCases() {
         .order('created_at', { ascending: true });
 
       if (!casesWithoutId || casesWithoutId.length === 0) {
-        alert('모든 테스트 케이스에 이미 ID가 부여되어 있습니다.');
+        showToast('All test cases already have IDs assigned.', 'info');
         return;
       }
 
@@ -342,10 +345,10 @@ export default function ProjectTestCases() {
       }
 
       await queryClient.invalidateQueries({ queryKey: ['testCases', id] });
-      alert(`${casesWithoutId.length}개의 테스트 케이스에 ID가 부여되었습니다.`);
+      showToast(`IDs assigned to ${casesWithoutId.length} test case${casesWithoutId.length === 1 ? '' : 's'}.`, 'success');
     } catch (error) {
       console.error('ID 일괄 부여 오류:', error);
-      alert('Failed to assign ID.');
+      showToast('Failed to assign IDs. Please try again.', 'error');
     }
   };
 
@@ -518,19 +521,7 @@ export default function ProjectTestCases() {
           {/* ── Content: TestCaseList (handles sidebar + list + detail panel) ── */}
           <div className="flex-1 min-h-0 overflow-hidden">
             {loading ? (
-              <div className="animate-pulse space-y-0">
-                {[...Array(8)].map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
-                    <div className="w-4 h-4 rounded bg-gray-200 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="h-4 bg-gray-200 rounded w-2/3 mb-1" />
-                      <div className="h-3 bg-gray-100 rounded w-1/3" />
-                    </div>
-                    <div className="h-5 bg-gray-200 rounded-full w-16 shrink-0" />
-                    <div className="h-5 bg-gray-200 rounded w-20 shrink-0" />
-                  </div>
-                ))}
-              </div>
+              <ListSkeleton rows={8} />
             ) : (
               <TestCaseList
                 testCases={filteredTestCases}

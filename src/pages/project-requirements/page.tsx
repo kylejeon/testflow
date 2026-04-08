@@ -10,6 +10,7 @@ import GitHubImportModal from './components/GitHubImportModal';
 import type { Requirement, RequirementCoverage } from '../../types/rtm';
 import EmptyState from '../../components/EmptyState';
 import RequirementsIllustration from '../../components/illustrations/RequirementsIllustration';
+import { ListSkeleton } from '../../components/Skeleton';
 
 // ── Style tokens ─────────────────────────────────────────────────────────────
 const btnPrimary = `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors cursor-pointer border-0`;
@@ -365,10 +366,7 @@ export default function ProjectRequirements() {
         {/* Table */}
         <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.75rem', overflow: 'hidden' }}>
           {isLoading ? (
-            <div className="flex items-center justify-center py-16 text-slate-400 text-sm gap-2">
-              <i className="ri-loader-4-line animate-spin text-lg" />
-              Loading requirements...
-            </div>
+            <ListSkeleton rows={6} />
           ) : filtered.length === 0 ? (
             <EmptyState
               icon={requirements.length === 0 ? <RequirementsIllustration /> : undefined}

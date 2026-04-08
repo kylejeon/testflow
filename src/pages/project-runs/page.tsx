@@ -14,6 +14,7 @@ import { type AnyStep, isSharedStepRef } from '../../types/shared-steps';
 import { type SharedStepCache, expandFlatSteps } from '../../lib/expandSharedSteps';
 import EmptyState from '../../components/EmptyState';
 import TestRunsIllustration from '../../components/illustrations/TestRunsIllustration';
+import { CardSkeleton } from '../../components/Skeleton';
 
 interface TestRun {
   id: string;
@@ -1810,21 +1811,8 @@ export default function ProjectRunsPage() {
           <div className="flex-1 overflow-y-auto bg-[#F8FAFC]">
           <div className="p-5">
             {loading ? (
-              <div className="animate-pulse space-y-3">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="bg-white border border-gray-200 rounded-xl p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="h-4 bg-gray-200 rounded w-1/2" />
-                      <div className="h-5 bg-gray-200 rounded-full w-20" />
-                    </div>
-                    <div className="h-2 bg-gray-200 rounded-full w-full mb-2" />
-                    <div className="flex items-center gap-4 mt-2">
-                      <div className="h-3 bg-gray-100 rounded w-16" />
-                      <div className="h-3 bg-gray-100 rounded w-20" />
-                      <div className="h-3 bg-gray-100 rounded w-14" />
-                    </div>
-                  </div>
-                ))}
+              <div role="status" aria-label="Loading runs" className="space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)}
               </div>
             ) : (() => {
               const filteredRuns = getSortedRuns(getFilteredRuns());

@@ -7,6 +7,7 @@ import SharedStepModal from './components/SharedStepModal';
 import type { SharedTestStep, SharedStepUsage } from '../../types/shared-steps';
 import EmptyState from '../../components/EmptyState';
 import SharedStepsIllustration from '../../components/illustrations/SharedStepsIllustration';
+import { ListSkeleton } from '../../components/Skeleton';
 
 // ── Bulk-update dialog (standalone, opened from the library list) ─────────────
 interface BulkUsageTC { test_case_id: string; custom_id: string; title: string; linked_version: number; }
@@ -745,9 +746,7 @@ export default function ProjectSharedSteps() {
         {/* Table */}
         <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.75rem', overflow: 'hidden' }}>
           {isLoading ? (
-            <div className="flex items-center justify-center py-16 text-slate-400 text-sm gap-2">
-              <i className="ri-loader-4-line animate-spin text-xl" /> Loading…
-            </div>
+            <ListSkeleton rows={6} />
           ) : filtered.length === 0 ? (
             <EmptyState
               icon={!search && categoryFilter === 'all' ? <SharedStepsIllustration /> : undefined}

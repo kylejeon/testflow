@@ -7,6 +7,7 @@ import ProjectHeader from '../../components/ProjectHeader';
 import type { Requirement } from '../../types/rtm';
 import EmptyState from '../../components/EmptyState';
 import TraceabilityIllustration from '../../components/illustrations/TraceabilityIllustration';
+import { ListSkeleton } from '../../components/Skeleton';
 
 // ── Style tokens ─────────────────────────────────────────────────────────────
 const btnSecondary = `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer`;
@@ -563,9 +564,8 @@ export default function ProjectTraceability() {
 
         {/* Matrix */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-16 text-slate-400 text-sm gap-2">
-            <i className="ri-loader-4-line animate-spin text-lg" />
-            Loading matrix...
+          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <ListSkeleton rows={6} />
           </div>
         ) : requirements.length === 0 ? (
           <div className="bg-white border border-slate-200 rounded-xl">
