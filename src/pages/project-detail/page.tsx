@@ -797,7 +797,7 @@ export default function ProjectDetail() {
                 <div className="flex-1 overflow-y-auto p-6 space-y-5 min-w-0" style={{ scrollbarWidth: 'thin' }}>
 
                   {/* WIDGET 1: RELEASE READINESS */}
-                  <div className="bg-white border border-gray-200 rounded-xl p-5">
+                  <div className="bg-white border border-gray-200 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-4">
                       <i className="ri-shield-check-line text-lg" style={{ color: releaseSignal === 'go' ? '#16A34A' : releaseSignal === 'conditional' ? '#D97706' : '#DC2626' }} />
                       <span className="text-sm font-bold text-gray-900">Release Readiness</span>
@@ -873,7 +873,7 @@ export default function ProjectDetail() {
                   </div>
 
                   {/* WIDGET 2: MY RUNS */}
-                  <div className="bg-white border border-gray-200 rounded-xl p-5">
+                  <div className="bg-white border border-gray-200 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-4 flex-wrap">
                       <i className="ri-play-circle-line text-lg text-indigo-500" />
                       <span className="text-sm font-bold text-gray-900">My Runs</span>
@@ -974,7 +974,7 @@ export default function ProjectDetail() {
                   </div>
 
                   {/* WIDGET 3: TEST EXECUTION TREND */}
-                  <div className="bg-white border border-gray-200 rounded-xl p-5">
+                  <div className="bg-white border border-gray-200 rounded-xl p-4">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2 text-sm font-bold text-gray-900">
                         <i className="ri-line-chart-line text-lg text-indigo-500" />
@@ -1069,7 +1069,7 @@ export default function ProjectDetail() {
                       });
                     }
                     return (
-                      <div className="bg-white border border-gray-200 rounded-xl p-5" style={{ borderLeft: '3px solid #EF4444' }}>
+                      <div className="bg-white border border-gray-200 rounded-xl p-4" style={{ borderLeft: '3px solid #EF4444' }}>
                         <div className="flex items-center gap-2 mb-4">
                           <i className="ri-error-warning-fill text-[18px] text-red-500" />
                           <span className="text-sm font-bold text-gray-900">Attention Needed</span>
@@ -1100,7 +1100,7 @@ export default function ProjectDetail() {
                   })()}
 
                   {/* WIDGET 5: RECENT ACTIVITY */}
-                  <div className="bg-white border border-gray-200 rounded-xl p-5">
+                  <div className="bg-white border border-gray-200 rounded-xl p-4">
                     {/* Header with filter */}
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2 text-sm font-bold text-gray-900">

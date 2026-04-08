@@ -69,7 +69,7 @@ export default function AdminMetricCard({
       : 'ri-subtract-line';
 
   return (
-    <div className={`bg-white rounded-xl border border-gray-200 border-l-4 ${c.border} p-5 flex flex-col gap-3`}>
+    <div className={`bg-white rounded-xl border border-gray-200 border-l-4 ${c.border} p-4 flex flex-col gap-3`}>
       <div className="flex items-center justify-between">
         <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${c.iconBg}`}>
           <i className={`${icon} text-xl ${c.iconColor}`}></i>

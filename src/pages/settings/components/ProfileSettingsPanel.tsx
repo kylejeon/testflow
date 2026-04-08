@@ -209,7 +209,7 @@ export default function ProfileSettingsPanel({
       {authProvider === 'google' ? (
         <div className="bg-slate-50 border border-slate-200 rounded-[0.625rem] p-6 mb-5">
           <h3 className="text-[0.9375rem] font-bold text-slate-900 mb-5">Password</h3>
-          <div className="flex items-center gap-4 p-5 border border-slate-200 rounded-lg bg-white">
+          <div className="flex items-center gap-4 p-4 border border-slate-200 rounded-lg bg-white">
             <div className="w-10 h-10 rounded-lg border border-slate-200 flex items-center justify-center flex-shrink-0 bg-white">
               <svg width="20" height="20" viewBox="0 0 48 48">
                 <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
