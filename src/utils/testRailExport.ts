@@ -222,7 +222,7 @@ export const exportToTestRail = (
     switch (col) {
       case 'ID':                  return tc.custom_id || '';
       case 'Title':               return tc.title || '';
-      case 'Section':             return tc.folder || safeName;
+      case 'Section':             return tc.folder || '';
       case 'Section Description': return stripHtml(tc.description || '');
       case 'Preconditions':       return stripHtml(tc.precondition || '');
       case 'Steps':               return steps;
