@@ -132,7 +132,7 @@ function UpgradePrompt({ tier }: { tier: number }) {
             : 'Read-only matrix view. Upgrade to Professional for full interactive features and export.'}
         </p>
       </div>
-      <Link to="/settings?tab=billing" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors">
+      <Link to="/settings?tab=billing" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all">
         <i className="ri-vip-crown-line" />
         {tier === 1 ? 'Upgrade to Hobby' : 'Upgrade to Professional'}
       </Link>

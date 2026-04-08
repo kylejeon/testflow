@@ -1684,7 +1684,7 @@ export default function ProjectRunsPage() {
                 setSelectedTestCases([]);
                 setShowAddRunModal(true);
               }}
-              className="flex items-center gap-[0.3125rem] px-[0.875rem] py-[0.375rem] bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white rounded-[0.375rem] hover:opacity-90 transition-opacity font-semibold text-[0.8125rem] cursor-pointer whitespace-nowrap"
+              className="flex items-center gap-[0.3125rem] px-[0.875rem] py-[0.375rem] bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white rounded-[0.375rem] hover:opacity-90 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all font-semibold text-[0.8125rem] cursor-pointer whitespace-nowrap"
               style={{ boxShadow: '0 1px 3px rgba(99,102,241,0.3)' }}
             >
               <i className="ri-play-circle-line text-sm" />

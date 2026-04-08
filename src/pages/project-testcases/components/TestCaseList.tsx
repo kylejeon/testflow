@@ -12,6 +12,7 @@ import EmptyState from '../../../components/EmptyState';
 import TestCasesIllustration from '../../../components/illustrations/TestCasesIllustration';
 import { LifecycleBadge, type LifecycleStatus } from '../../../components/LifecycleBadge';
 import { Avatar } from '../../../components/Avatar';
+import { useToast } from '../../../components/Toast';
 
 interface TestCase {
   id: string;
@@ -267,10 +268,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
   
   const detailPanelRef = useRef<HTMLDivElement>(null);
 
-  // Toast 상태 추가
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-  const [toastType, setToastType] = useState<'success' | 'error'>('success');
+  const { showToast } = useToast();
 
   // 폴더 삭제 확인 모달 상태 추가
   const [showDeleteFolderModal, setShowDeleteFolderModal] = useState(false);
@@ -568,10 +566,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
     await onRefresh();
 
-    setToastMessage(`${importedCases.length}개의 테스트 케이스를 성공적으로 가져왔습니다.`);
-    setToastType('success');
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 3000);
+    showToast(`Imported ${importedCases.length} test case${importedCases.length === 1 ? '' : 's'} successfully.`, 'success');
   };
 
   const FOLDER_COLOR_MAP: Record<string, { bg: string; fg: string }> = {
@@ -689,19 +684,10 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
         setNewFolder({ name: '', icon: 'ri-folder-line', color: getNextFolderColor(updatedFolders) });
         setShowNewFolderModal(false);
 
-        // 토스트 메시지 표시
-        setToastMessage(`Folder "${folder.name}" has been created.`);
-        setToastType('success');
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 3000);
+        showToast(`Folder "${folder.name}" has been created.`, 'success');
       } catch (error) {
         console.error('폴더 생성 오류:', error);
-        setToastMessage('Failed to create folder.');
-        setToastType('error');
-        setShowToast(true);
-        setTimeout(() => {
-          setShowToast(false);
-        }, 3000);
+        showToast('Failed to create folder.', 'error');
       }
     }
   };
@@ -755,19 +741,10 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       // 전체 데이터 새로고침
       await onRefresh();
 
-      // 토스트 메시지 표시
-      setToastMessage(`Folder "${folderToDelete.name}" has been deleted. ${testCasesInFolder.length} test case(s) moved to unassigned.`);
-      setToastType('success');
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
+      showToast(`Folder "${folderToDelete.name}" deleted. ${testCasesInFolder.length} test case(s) moved to unassigned.`, 'success');
     } catch (error) {
       console.error('폴더 삭제 오류:', error);
-      setToastMessage('Failed to delete folder.');
-      setToastType('error');
-      setShowToast(true);
-      setTimeout(() => {
-        setShowToast(false);
-      }, 3000);
+      showToast('Failed to delete folder.', 'error');
     } finally {
       setDeletingFolder(false);
       setShowDeleteFolderModal(false);
@@ -781,8 +758,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        alert('로그인이 필요합니다.');
-        return;
+        showToast('Please sign in to continue.', 'warning'); return;
       }
 
       const { data, error } = await supabase
@@ -818,7 +794,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       setCommentText('');
     } catch (error: any) {
       console.error('Failed to add comment:', error);
-      alert('Failed to add comment.');
+      showToast('Failed to add comment.', 'error');
     }
   };
 
@@ -828,8 +804,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        alert('로그인이 필요합니다.');
-        return;
+        showToast('Please sign in to continue.', 'warning'); return;
       }
 
       const { data, error } = await supabase
@@ -865,7 +840,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       setNewComment('');
     } catch (error: any) {
       console.error('Failed to add comment:', error);
-      alert('Failed to add comment.');
+      showToast('Failed to add comment.', 'error');
     }
   };
 
@@ -878,8 +853,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
       const comment = comments.find(c => c.id === commentId);
       if (comment && comment.user_id !== user.id) {
-        alert('본인의 코멘트만 삭제할 수 있습니다.');
-        return;
+        showToast('You can only delete your own comments.', 'warning'); return;
       }
 
       const { error } = await supabase
@@ -892,7 +866,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       setComments(comments.filter(c => c.id !== commentId));
     } catch (error) {
       console.error('Failed to delete comment:', error);
-      alert('Failed to delete comment.');
+      showToast('Failed to delete comment.', 'error');
     }
   };
 
@@ -1087,7 +1061,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       setConvertingStep(null);
       setConvertName('');
     } catch (err: any) {
-      alert(err.message || 'Failed to convert step.');
+      showToast(err.message || 'Failed to convert step.', 'error');
     } finally {
       setConvertSaving(false);
     }
@@ -1122,7 +1096,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
   const handleSubmit = async () => {
     if (!newTestCase.title.trim()) {
-      alert('테스트 케이스 제목을 입력해주세요.');
+      showToast('Please enter a test case title.', 'warning');
       return;
     }
 
@@ -1131,7 +1105,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       const TC_LIMITS: Record<number, number> = { 1: 100, 2: 200 };
       const tcLimit = TC_LIMITS[userTier];
       if (tcLimit !== undefined && testCases.length >= tcLimit) {
-        alert(`현재 플랜에서는 프로젝트당 최대 ${tcLimit}개의 테스트 케이스를 생성할 수 있습니다. 더 많은 TC를 생성하려면 플랜을 업그레이드하세요.`);
+        showToast(`Your plan allows up to ${tcLimit} test cases per project. Upgrade to add more.`, 'warning');
         return;
       }
     }
@@ -1564,7 +1538,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       }
     } catch (error: any) {
       console.error('파일 업로드 오류:', error);
-      alert(`Failed to upload file: ${error.message || 'Unknown error'}`);
+      showToast(`Failed to upload file: ${error.message || 'Unknown error'}`, 'error');
     } finally {
       setUploadingFile(false);
       e.target.value = '';
@@ -1867,17 +1841,11 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       setSelectedTestCase(data);
       setShowPublishModal(false);
       fetchHistory(data.id);
-      setToastMessage(`v${newMajor}.0 published successfully`);
-      setToastType('success');
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
+      showToast(`v${newMajor}.0 published successfully.`, 'success');
     } catch (error) {
       console.error('Publish error:', error);
       setShowPublishModal(false);
-      setToastMessage('Failed to publish version. Please try again.');
-      setToastType('error');
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
+      showToast('Failed to publish version. Please try again.', 'error');
     } finally {
       setPublishingVersion(false);
     }
@@ -2348,23 +2316,10 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       // 전체 데이터 새로고침
       await onRefresh();
       
-      // 토스트 메시지 표시
-      setToastMessage(`${addedCount}개의 테스트 케이스가 "${folderName}" 폴더로 이동되었습니다.`);
-      setToastType('success');
-      setShowToast(true);
-      
-      // 3초 후 토스트 자동 숨김
-      setTimeout(() => {
-        setShowToast(false);
-      }, 3000);
+      showToast(`${addedCount} test case${addedCount === 1 ? '' : 's'} moved to "${folderName}".`, 'success');
     } catch (error) {
       console.error('폴더 일괄 추가 오류:', error);
-      setToastMessage('Failed to assign folder.');
-      setToastType('error');
-      setShowToast(true);
-      setTimeout(() => {
-        setShowToast(false);
-      }, 3000);
+      showToast('Failed to assign folder.', 'error');
     }
   };
 
@@ -2390,23 +2345,10 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       // 전체 데이터 새로고침
       await onRefresh();
       
-      // 토스트 메시지 표시
-      setToastMessage(`${removedCount}개의 테스트 케이스가 폴더에서 제거되었습니다.`);
-      setToastType('success');
-      setShowToast(true);
-      
-      // 3초 후 토스트 자동 숨김
-      setTimeout(() => {
-        setShowToast(false);
-      }, 3000);
+      showToast(`${removedCount} test case${removedCount === 1 ? '' : 's'} removed from folder.`, 'success');
     } catch (error) {
       console.error('폴더 제거 오류:', error);
-      setToastMessage('Failed to remove folder.');
-      setToastType('error');
-      setShowToast(true);
-      setTimeout(() => {
-        setShowToast(false);
-      }, 3000);
+      showToast('Failed to remove folder.', 'error');
     }
   };
 
@@ -2439,18 +2381,10 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
       await onRefresh();
 
-      setToastMessage(`${deletedCount} test case(s) have been deleted.`);
-      setToastType('success');
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
+      showToast(`${deletedCount} test case${deletedCount === 1 ? '' : 's'} deleted.`, 'success');
     } catch (error) {
       console.error('일괄 삭제 오류:', error);
-      setToastMessage('Failed to delete test cases.');
-      setToastType('error');
-      setShowToast(true);
-      setTimeout(() => {
-        setShowToast(false);
-      }, 3000);
+      showToast('Failed to delete test cases.', 'error');
     } finally {
       setBulkDeleting(false);
     }
@@ -2577,21 +2511,13 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       setShowCopyToProjectModal(false);
 
       const folderMsg = foldersToCreate.length > 0
-        ? ` (${foldersToCreate.length}개 폴더 자동 생성됨)`
+        ? ` (${foldersToCreate.length} folder${foldersToCreate.length === 1 ? '' : 's'} created)`
         : '';
 
-      setToastMessage(`${selectedIds.length}개의 테스트 케이스가 "${targetProject?.name}" 프로젝트로 복사되었습니다.${folderMsg}`);
-      setToastType('success');
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 4000);
+      showToast(`${selectedIds.length} test case${selectedIds.length === 1 ? '' : 's'} copied to "${targetProject?.name}".${folderMsg}`, 'success');
     } catch (error) {
       console.error('복사 오류:', error);
-      setToastMessage('Failed to copy test cases.');
-      setToastType('error');
-      setShowToast(true);
-      setTimeout(() => {
-        setShowToast(false);
-      }, 3000);
+      showToast('Failed to copy test cases.', 'error');
     } finally {
       setCopyingToProject(false);
       setCopyTargetProjectId(null);
@@ -2706,7 +2632,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
               setTestSteps([{ id: '1', step: '', expectedResult: '' }]);
               setShowNewCaseModal(true);
             }}
-            className="px-[0.875rem] py-[0.4375rem] bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold text-[0.8125rem] flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+            className="px-[0.875rem] py-[0.4375rem] bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all font-semibold text-[0.8125rem] flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
           >
             <i className="ri-add-line text-base"></i>
             New Test Case
@@ -4796,31 +4722,6 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
         </div>
       )}
 
-      {/* 토스트 메시지 */}
-      {showToast && (
-        <div className="fixed bottom-6 right-6 z-50 animate-fade-in">
-          <div className={`flex items-center gap-3 px-5 py-4 rounded-lg shadow-lg ${
-            toastType === 'success' 
-              ? 'bg-indigo-500 text-white' 
-              : 'bg-red-500 text-white'
-          }`}>
-            <div className="w-6 h-6 flex items-center justify-center">
-              <i className={`text-xl ${
-                toastType === 'success' 
-                  ? 'ri-checkbox-circle-fill' 
-                  : 'ri-error-warning-fill'
-              }`}></i>
-            </div>
-            <span className="font-medium">{toastMessage}</span>
-            <button
-              onClick={() => setShowToast(false)}
-              className="ml-2 w-6 h-6 flex items-center justify-center hover:bg-white/20 rounded transition-all cursor-pointer"
-            >
-              <i className="ri-close-line"></i>
-            </button>
-          </div>
-        </div>
-      )}
     </div>
 
     {/* ─── Right-click Context Menu ─── */}

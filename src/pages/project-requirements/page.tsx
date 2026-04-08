@@ -13,7 +13,7 @@ import RequirementsIllustration from '../../components/illustrations/Requirement
 import { ListSkeleton } from '../../components/Skeleton';
 
 // ── Style tokens ─────────────────────────────────────────────────────────────
-const btnPrimary = `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors cursor-pointer border-0`;
+const btnPrimary = `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all cursor-pointer border-0`;
 const btnSecondary = `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer`;
 const fieldCls = `border border-slate-200 rounded-lg text-xs text-slate-700 px-2.5 py-1.5 bg-white focus:outline-none focus:border-indigo-400 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] transition-colors`;
 
