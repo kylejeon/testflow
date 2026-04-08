@@ -794,7 +794,7 @@ export default function ProjectDetail() {
               <div className="flex flex-1 overflow-hidden">
 
                 {/* ── MAIN CONTENT ── */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-5 min-w-0" style={{ scrollbarWidth: 'thin' }}>
+                <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 min-w-0" style={{ scrollbarWidth: 'thin' }}>
 
                   {/* WIDGET 1: RELEASE READINESS */}
                   <div className="bg-white border border-gray-200 rounded-xl p-4">
@@ -1196,7 +1196,7 @@ export default function ProjectDetail() {
                 </div>
 
                 {/* ── RIGHT SIDEBAR ── */}
-                <div className="w-[320px] border-l border-gray-200 bg-white overflow-y-auto p-5 space-y-5 flex-shrink-0" style={{ scrollbarWidth: 'thin' }}>
+                <div className="hidden md:block w-[320px] border-l border-gray-200 bg-white overflow-y-auto p-5 space-y-5 flex-shrink-0" style={{ scrollbarWidth: 'thin' }}>
 
                   {/* Sidebar: Summary */}
                   <div className="bg-white border border-gray-200 rounded-xl p-4">
