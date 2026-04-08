@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { queryClient } from '../lib/queryClient';
@@ -48,6 +48,7 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const projectDropRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLElement>(null);
 
   // Sync prop → cache → state
   useEffect(() => {
@@ -84,6 +85,14 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Scroll active tab into view on mobile
+  useEffect(() => {
+    if (navRef.current) {
+      const activeLink = navRef.current.querySelector('[data-active="true"]');
+      activeLink?.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'center' });
+    }
+  }, [location.pathname]);
 
   const fetchUserProfile = async () => {
     try {
@@ -237,7 +246,7 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
           }}
           className="hover:bg-slate-100 transition-colors"
         >
-          <span style={{ maxWidth: '20rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span className="max-w-[7rem] md:max-w-[20rem]" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {resolvedName}
           </span>
           <i className="ri-arrow-down-s-line text-base text-slate-400"></i>
@@ -295,11 +304,16 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
       </div>
 
       {/* Nav tabs — border-bottom active indicator, full header height */}
-      <nav style={{ display: 'flex', alignItems: 'stretch', height: '100%', flex: 1, minWidth: 0 }}>
+      <nav
+        ref={navRef}
+        className="overflow-x-auto"
+        style={{ display: 'flex', alignItems: 'stretch', height: '100%', flex: 1, minWidth: 0, scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
+      >
         {navItems.map((item) => (
           <Link
             key={item.label}
             to={item.to}
+            data-active={item.active}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -327,7 +341,7 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
         <button
           onClick={() => window.dispatchEvent(new CustomEvent('open-shortcuts'))}
           title="Keyboard Shortcuts (?)"
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+          className="hidden md:flex w-8 h-8 items-center justify-center rounded-lg text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
         >
           <i className="ri-keyboard-line text-base" />
         </button>
