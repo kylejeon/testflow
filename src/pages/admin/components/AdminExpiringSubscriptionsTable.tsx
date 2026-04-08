@@ -122,7 +122,7 @@ export default function AdminExpiringSubscriptionsTable({ users, loading }: Admi
 
       {loading ? (
         <div className="py-16 flex flex-col items-center justify-center gap-3">
-          <div className="w-8 h-8 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin"></div>
+          <i className="ri-loader-4-line animate-spin text-2xl text-indigo-500" />
           <p className="text-sm text-gray-400">Loading...</p>
         </div>
       ) : expiringUsers.length === 0 ? (

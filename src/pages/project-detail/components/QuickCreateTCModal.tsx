@@ -383,7 +383,7 @@ export default function QuickCreateTCModal({ isOpen, onClose, projectId }: Props
               >
                 {submitting ? (
                   <>
-                    <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                    <i className="ri-loader-4-line animate-spin text-sm" />
                     Creating...
                   </>
                 ) : (

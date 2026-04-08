@@ -157,7 +157,7 @@ export default function AcceptInvitationPage() {
       <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
         {status === 'loading' && (
           <div className="text-center">
-            <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+            <i className="ri-loader-4-line animate-spin text-5xl text-indigo-500 mb-6 block" />
             <h2 className="text-2xl font-bold text-gray-900 mb-2">초대 확인 중</h2>
             <p className="text-gray-600">{message}</p>
           </div>
@@ -214,7 +214,7 @@ export default function AcceptInvitationPage() {
 
         {status === 'accepting' && (
           <div className="text-center">
-            <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+            <i className="ri-loader-4-line animate-spin text-5xl text-indigo-500 mb-6 block" />
             <h2 className="text-2xl font-bold text-gray-900 mb-2">처리 중</h2>
             <p className="text-gray-600">{message}</p>
           </div>

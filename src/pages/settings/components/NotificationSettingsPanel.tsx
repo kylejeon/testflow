@@ -184,7 +184,7 @@ export default function NotificationSettingsPanel() {
   if (loading) {
     return (
       <div className="bg-white border border-slate-200 rounded-[0.625rem] p-6 flex justify-center items-center py-20">
-        <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-indigo-500"></div>
+        <i className="ri-loader-4-line animate-spin text-2xl text-indigo-500" />
       </div>
     );
   }

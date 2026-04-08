@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useToast } from '../../../components/Toast';
 import { ModalShell } from '../../../components/ModalShell';
+import PageLoader from '../../../components/PageLoader';
 
 interface CreateProjectModalProps {
   onClose: () => void;
@@ -210,9 +211,7 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
         </div>
 
         {loading ? (
-          <div className="p-12 flex justify-center flex-1">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
-          </div>
+          <PageLoader />
         ) : !canCreate ? (
           <div className="p-6 flex-1 overflow-y-auto" style={{ overscrollBehavior: 'contain' }}>
             <div className="p-6 bg-amber-50 border border-amber-200 rounded-xl text-center">

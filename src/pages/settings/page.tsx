@@ -2051,7 +2051,7 @@ def pytest_sessionfinish(session, exitstatus):
                                   className="inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold px-3.5 py-[0.375rem] rounded-[0.375rem] bg-indigo-600 text-white hover:bg-indigo-700 transition-colors cursor-pointer disabled:opacity-60"
                                 >
                                   {startingStarterTrial ? (
-                                    <><span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span> Starting…</>
+                                    <><i className="ri-loader-4-line animate-spin text-sm" /> Starting…</>
                                   ) : (
                                     <><i className="ri-play-circle-line"></i> Start 14-day Starter Trial</>
                                   )}
@@ -2163,7 +2163,7 @@ def pytest_sessionfinish(session, exitstatus):
 
                         {loading ? (
                           <div className="flex justify-center py-8">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+                            <i className="ri-loader-4-line animate-spin text-2xl text-indigo-500" />
                           </div>
                         ) : (
                           <div className={`${!isHobbyOrHigher ? 'opacity-50 pointer-events-none' : ''}`}>
@@ -2551,7 +2551,7 @@ def pytest_sessionfinish(session, exitstatus):
 
                         {loading ? (
                           <div className="flex justify-center py-8">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+                            <i className="ri-loader-4-line animate-spin text-2xl text-indigo-500" />
                           </div>
                         ) : (
                           <div className={`${!isHobbyOrHigher ? 'opacity-50 pointer-events-none' : ''}`}>
@@ -2805,7 +2805,7 @@ def pytest_sessionfinish(session, exitstatus):
 
                             {loadingWebhooks ? (
                               <div className="flex justify-center py-8">
-                                <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-indigo-500"></div>
+                                <i className="ri-loader-4-line animate-spin text-2xl text-indigo-500" />
                               </div>
                             ) : webhooks.length === 0 ? (
                               <div className="bg-slate-50 rounded-[0.75rem] border border-dashed border-slate-200 p-10 text-center">
@@ -3155,7 +3155,7 @@ def pytest_sessionfinish(session, exitstatus):
                           <div className={!isProfessionalOrHigher ? 'opacity-50 pointer-events-none' : ''}>
                             {loadingTokens ? (
                               <div className="flex justify-center py-8">
-                                <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-indigo-500"></div>
+                                <i className="ri-loader-4-line animate-spin text-2xl text-indigo-500" />
                               </div>
                             ) : ciTokens.length === 0 ? (
                               <div className="text-center py-12 bg-slate-50 rounded-[0.75rem] border-2 border-dashed border-slate-200">
@@ -3471,7 +3471,7 @@ describe('Login', () => {
                           className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-indigo-500 text-white text-[0.8125rem] font-semibold hover:bg-indigo-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {connTestLoading
-                            ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Testing...</>
+                            ? <><i className="ri-loader-4-line animate-spin text-sm" /> Testing...</>
                             : <><i className="ri-plug-line"></i> Test Connection</>}
                         </button>
 
@@ -3515,7 +3515,7 @@ describe('Login', () => {
 
                         {loadingUploadLogs ? (
                           <div className="flex justify-center py-8">
-                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500"></div>
+                            <i className="ri-loader-4-line animate-spin text-xl text-indigo-500" />
                           </div>
                         ) : uploadLogs.length === 0 ? (
                           <div className="text-center py-8 text-slate-400 text-[0.8125rem]">

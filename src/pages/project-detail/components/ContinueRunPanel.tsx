@@ -209,7 +209,7 @@ export default function ContinueRunPanel({ isOpen, onClose, projectId }: Props) 
         <div className="flex-1 overflow-y-auto px-4 py-3">
           {loading ? (
             <div className="flex items-center justify-center h-32">
-              <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+              <i className="ri-loader-4-line animate-spin text-xl text-indigo-500" />
             </div>
           ) : runs.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-48 text-center px-4">

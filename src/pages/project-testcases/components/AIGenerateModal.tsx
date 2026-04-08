@@ -604,7 +604,7 @@ export default function AIGenerateModal({
                       >
                         {jiraFetching ? (
                           <>
-                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            <i className="ri-loader-4-line animate-spin text-sm" />
                             Fetching...
                           </>
                         ) : (
@@ -732,7 +732,7 @@ export default function AIGenerateModal({
 
                   {loadingSessions ? (
                     <div className="flex items-center gap-2 py-4 text-sm text-gray-500">
-                      <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                      <i className="ri-loader-4-line animate-spin text-sm text-indigo-500" />
                       Loading sessions...
                     </div>
                   ) : filteredSessions.length === 0 ? (
@@ -978,7 +978,7 @@ export default function AIGenerateModal({
           {/* ── STEP: saving ── */}
           {currentStep === 'saving' && (
             <div className="flex flex-col items-center justify-center py-12 gap-4">
-              <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+              <i className="ri-loader-4-line animate-spin text-4xl text-indigo-500" />
               <p className="text-sm text-gray-600">Saving test cases...</p>
             </div>
           )}
@@ -1006,7 +1006,7 @@ export default function AIGenerateModal({
               >
                 {loading ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <i className="ri-loader-4-line animate-spin text-sm" />
                     Generating...
                   </>
                 ) : (
@@ -1027,7 +1027,7 @@ export default function AIGenerateModal({
               >
                 {loading ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <i className="ri-loader-4-line animate-spin text-sm" />
                     Generating...
                   </>
                 ) : (

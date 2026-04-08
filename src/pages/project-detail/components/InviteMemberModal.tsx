@@ -280,7 +280,7 @@ export default function InviteMemberModal({
         {/* Content */}
         {checkingLimit ? (
           <div className="p-12 flex justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+            <i className="ri-loader-4-line animate-spin text-2xl text-indigo-500" />
           </div>
         ) : !canInvite ? (
           <div className="p-6">

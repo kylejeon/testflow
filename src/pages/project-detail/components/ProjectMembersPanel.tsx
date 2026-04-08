@@ -206,9 +206,9 @@ export default function ProjectMembersPanel({
   // ── LOADING ─────────────────────────────────────────────────────
   if (loading) {
     if (compact) {
-      return <div className="flex justify-center py-4"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-500"></div></div>;
+      return <div className="flex justify-center py-4"><i className="ri-loader-4-line animate-spin text-xl text-indigo-500" /></div>;
     }
-    return <div className="flex justify-center py-8"><div className="animate-spin rounded-full h-7 w-7 border-b-2 border-indigo-500"></div></div>;
+    return <div className="flex justify-center py-8"><i className="ri-loader-4-line animate-spin text-xl text-indigo-500" /></div>;
   }
 
   // ── COMPACT MODE ────────────────────────────────────────────────

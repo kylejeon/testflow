@@ -405,7 +405,7 @@ export default function AIAssistModal({ isOpen, onClose, projectId, onOpenGenera
                 {/* Generating spinner */}
                 {generating && (
                   <div className="flex flex-col items-center justify-center py-10 gap-3">
-                    <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+                    <i className="ri-loader-4-line animate-spin text-2xl text-violet-500" />
                     <p className="text-sm text-slate-400 animate-pulse">Analyzing for edge cases...</p>
                   </div>
                 )}
@@ -502,7 +502,7 @@ export default function AIAssistModal({ isOpen, onClose, projectId, onOpenGenera
                 >
                   {generating ? (
                     <>
-                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                      <i className="ri-loader-4-line animate-spin text-sm" />
                       Analyzing...
                     </>
                   ) : (
@@ -531,7 +531,7 @@ export default function AIAssistModal({ isOpen, onClose, projectId, onOpenGenera
                     >
                       {adding ? (
                         <>
-                          <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                          <i className="ri-loader-4-line animate-spin text-sm" />
                           Adding...
                         </>
                       ) : (
