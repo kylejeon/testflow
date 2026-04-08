@@ -434,7 +434,7 @@ export default function AuthPage() {
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           {/* Logo */}
-          <div className="text-center mb-10">
+          <div className="text-center mb-6 md:mb-10">
             <div className="flex flex-col items-center gap-3 mb-3">
               {/* Squircle icon — brand squircle shape (22% radius) */}
               <div
@@ -492,7 +492,7 @@ export default function AuthPage() {
           )}
 
           {/* Auth Card */}
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 md:p-8">
 
             {/* Reset Password */}
             {mode === 'reset' && (
