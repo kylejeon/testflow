@@ -8,6 +8,8 @@ import { StepEditor, SharedStepRefRow, type Step } from '../../../components/Ste
 import InsertSharedStepModal from '../../project-shared-steps/components/InsertSharedStepModal';
 import type { AnyStep, SharedTestStep } from '../../../types/shared-steps';
 import { isSharedStepRef } from '../../../types/shared-steps';
+import EmptyState from '../../../components/EmptyState';
+import TestCasesIllustration from '../../../components/illustrations/TestCasesIllustration';
 import { LifecycleBadge, type LifecycleStatus } from '../../../components/LifecycleBadge';
 import { Avatar } from '../../../components/Avatar';
 
@@ -2727,17 +2729,15 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
         <div className="flex-1 min-h-0 overflow-hidden">
           {filteredTestCases.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i className="ri-file-list-3-line text-3xl text-gray-400"></i>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No test cases</h3>
-              <p className="text-gray-600 mb-6">Create your first test case</p>
-              <button
-                onClick={() => {
+            <EmptyState
+              icon={<TestCasesIllustration />}
+              title="No test cases yet"
+              description="Capture what your product should do. Test cases keep your team aligned on expected behavior."
+              action={{
+                label: 'Create test case',
+                onClick: () => {
                   setEditingTestCase(null);
-                  // 현재 선택된 폴더가 있으면 해당 폴더로 설정
-                  const currentFolder = selectedFolder !== 'all' 
+                  const currentFolder = selectedFolder !== 'all'
                     ? folders.find(f => f.id === selectedFolder)?.name || ''
                     : '';
                   setNewTestCase({
@@ -2755,12 +2755,9 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                   });
                   setTestSteps([{ id: '1', step: '', expectedResult: '' }]);
                   setShowNewCaseModal(true);
-                }}
-                className="px-6 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
-              >
-                Create Test Case
-              </button>
-            </div>
+                },
+              }}
+            />
           ) : (
             <div
               ref={tableContainerRef}
