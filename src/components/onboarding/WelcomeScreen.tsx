@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Rocket, Package, Loader2, X } from 'lucide-react';
 import { LogoMark } from '../Logo';
 
 interface WelcomeScreenProps {
@@ -53,7 +52,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, onSkip }) => 
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
           aria-label="Skip onboarding"
         >
-          <X className="w-5 h-5" />
+          <i className="ri-close-line text-xl" />
         </button>
 
         {/* Logo */}
@@ -123,9 +122,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, onSkip }) => 
                   : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               }`}
             >
-              <Rocket
-                className={`w-8 h-8 ${workspace === 'fresh' ? 'text-indigo-600' : 'text-gray-400'}`}
-              />
+              <i className={`ri-rocket-line text-3xl ${workspace === 'fresh' ? 'text-indigo-600' : 'text-gray-400'}`} />
               <span className={`text-sm font-semibold ${workspace === 'fresh' ? 'text-indigo-700' : 'text-gray-700'}`}>
                 {t('welcome.startFresh.label')}
               </span>
@@ -142,9 +139,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, onSkip }) => 
                   : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               }`}
             >
-              <Package
-                className={`w-8 h-8 ${workspace === 'sample' ? 'text-indigo-600' : 'text-gray-400'}`}
-              />
+              <i className={`ri-box-line text-3xl ${workspace === 'sample' ? 'text-indigo-600' : 'text-gray-400'}`} />
               <span className={`text-sm font-semibold ${workspace === 'sample' ? 'text-indigo-700' : 'text-gray-700'}`}>
                 {t('welcome.trySample.label')}
               </span>
@@ -172,7 +167,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, onSkip }) => 
         >
           {loading ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <i className="ri-loader-4-line animate-spin text-base" />
               {t('welcome.loading')}
             </>
           ) : (

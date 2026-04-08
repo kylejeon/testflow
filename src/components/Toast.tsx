@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
-import { X, CheckCircle2, XCircle, AlertTriangle, Info } from 'lucide-react';
 
 export type ToastType = 'error' | 'success' | 'warning' | 'info';
 
@@ -29,8 +28,7 @@ type Variant = {
   border: string;
   text: string;
   icon: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  Icon: any;
+  iconClass: string;
   role: string;
   live: 'assertive' | 'polite';
 };
@@ -41,7 +39,7 @@ const VARIANTS: Record<ToastType, Variant> = {
     border: 'border-emerald-200',
     text: 'text-emerald-900',
     icon: 'text-emerald-600',
-    Icon: CheckCircle2,
+    iconClass: 'ri-checkbox-circle-line',
     role: 'status',
     live: 'polite',
   },
@@ -50,7 +48,7 @@ const VARIANTS: Record<ToastType, Variant> = {
     border: 'border-rose-200',
     text: 'text-rose-900',
     icon: 'text-rose-600',
-    Icon: XCircle,
+    iconClass: 'ri-close-circle-line',
     role: 'alert',
     live: 'assertive',
   },
@@ -59,7 +57,7 @@ const VARIANTS: Record<ToastType, Variant> = {
     border: 'border-amber-200',
     text: 'text-amber-900',
     icon: 'text-amber-600',
-    Icon: AlertTriangle,
+    iconClass: 'ri-alert-line',
     role: 'status',
     live: 'polite',
   },
@@ -68,7 +66,7 @@ const VARIANTS: Record<ToastType, Variant> = {
     border: 'border-sky-200',
     text: 'text-sky-900',
     icon: 'text-sky-600',
-    Icon: Info,
+    iconClass: 'ri-information-line',
     role: 'status',
     live: 'polite',
   },
@@ -84,7 +82,6 @@ function ToastList({ toasts = [], dismiss }: { toasts?: ToastItem[]; dismiss: (i
     <div className="fixed bottom-4 right-4 z-[9999] flex flex-col gap-2 max-w-sm w-full pointer-events-none">
       {toasts.map(toast => {
         const v = VARIANTS[toast.type];
-        const { Icon } = v;
         return (
           <div
             key={toast.id}
@@ -92,14 +89,14 @@ function ToastList({ toasts = [], dismiss }: { toasts?: ToastItem[]; dismiss: (i
             aria-live={v.live}
             className={`flex items-start gap-3 rounded-lg border px-4 py-3 shadow-md animate-fade-in pointer-events-auto ${v.bg} ${v.border}`}
           >
-            <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${v.icon}`} aria-hidden="true" />
+            <i className={`mt-0.5 text-lg shrink-0 ${v.iconClass} ${v.icon}`} aria-hidden="true" />
             <span className={`flex-1 text-sm font-medium ${v.text}`}>{toast.message}</span>
             <button
               onClick={() => dismiss(toast.id)}
               aria-label="Dismiss"
               className={`flex-shrink-0 ml-1 cursor-pointer hover:opacity-70 ${v.icon}`}
             >
-              <X className="h-4 w-4" />
+              <i className="ri-close-line text-base" />
             </button>
           </div>
         );

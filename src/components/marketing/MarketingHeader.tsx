@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
 import Logo from '../Logo';
 import { supabase } from '../../lib/supabase';
 
@@ -88,7 +87,7 @@ export default function MarketingHeader() {
           onClick={() => setMobileOpen((v) => !v)}
           aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
         >
-          {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          {mobileOpen ? <i className="ri-close-line text-xl" /> : <i className="ri-menu-line text-xl" />}
         </button>
       </div>
 

@@ -1,11 +1,10 @@
 import React from 'react';
-import { LucideIcon, CheckCircle2, Circle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface ChecklistItemProps {
   label: string;
   completed: boolean;
-  icon: LucideIcon;
+  icon: string;
   linkTo: string;
   optional?: boolean;
 }
@@ -13,7 +12,7 @@ interface ChecklistItemProps {
 const ChecklistItem: React.FC<ChecklistItemProps> = ({
   label,
   completed,
-  icon: Icon,
+  icon,
   linkTo,
   optional = false,
 }) => {
@@ -36,12 +35,12 @@ const ChecklistItem: React.FC<ChecklistItemProps> = ({
       }`}
     >
       {completed ? (
-        <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
+        <i className="ri-checkbox-circle-fill text-xl text-green-500 shrink-0" />
       ) : (
-        <Circle className="w-5 h-5 text-gray-300 shrink-0" />
+        <i className="ri-circle-line text-xl text-gray-300 shrink-0" />
       )}
-      <Icon
-        className={`w-4 h-4 shrink-0 ${completed ? 'text-gray-400' : 'text-[#4338CA]'}`}
+      <i
+        className={`${icon} text-base shrink-0 ${completed ? 'text-gray-400' : 'text-[#4338CA]'}`}
       />
       <span
         className={`text-sm flex-1 ${
