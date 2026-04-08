@@ -130,9 +130,9 @@ export default function ProfileSettingsPanel({
   return (
     <>
       {/* ── Profile Information ── */}
-      <div className="bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6 mb-5">
-        <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-0.5">Profile Information</h3>
-        <p className="text-[0.8125rem] text-[#64748B] mb-5">Update your personal information and avatar.</p>
+      <div className="bg-white border border-slate-200 rounded-[0.625rem] p-6 mb-5">
+        <h3 className="text-[0.9375rem] font-bold text-slate-900 mb-0.5">Profile Information</h3>
+        <p className="text-[0.8125rem] text-slate-500 mb-5">Update your personal information and avatar.</p>
 
         {/* Avatar row */}
         <div className="flex items-center gap-4 mb-5">
@@ -140,19 +140,19 @@ export default function ProfileSettingsPanel({
             <div className="w-14 h-14 rounded-full overflow-hidden">
               <Avatar userId={userId || undefined} name={name || fullName} email={email} photoUrl={photoUrl || undefined} size="xl" />
             </div>
-            <div className="absolute bottom-[-2px] right-[-2px] w-5 h-5 rounded-full bg-white border border-[#E2E8F0] flex items-center justify-center">
+            <div className="absolute bottom-[-2px] right-[-2px] w-5 h-5 rounded-full bg-white border border-slate-200 flex items-center justify-center">
               {uploadingPhoto
-                ? <i className="ri-loader-4-line text-[#64748B] animate-spin" style={{ fontSize: '0.625rem' }}></i>
-                : <i className="ri-camera-line text-[#64748B]" style={{ fontSize: '0.625rem' }}></i>
+                ? <i className="ri-loader-4-line text-slate-500 animate-spin" style={{ fontSize: '0.625rem' }}></i>
+                : <i className="ri-camera-line text-slate-500" style={{ fontSize: '0.625rem' }}></i>
               }
             </div>
             <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handlePhotoUpload} />
           </div>
           <div>
-            <div className="text-[0.8125rem] font-semibold text-[#0F172A]">{name || fullName}</div>
-            <div className="text-[0.6875rem] text-[#94A3B8] mt-0.5">Click to upload profile photo</div>
+            <div className="text-[0.8125rem] font-semibold text-slate-900">{name || fullName}</div>
+            <div className="text-[0.6875rem] text-slate-400 mt-0.5">Click to upload profile photo</div>
             {photoUrl && (
-              <button onClick={handleRemovePhoto} className="mt-1.5 text-[0.6875rem] text-[#DC2626] cursor-pointer border-none bg-transparent p-0 hover:underline">
+              <button onClick={handleRemovePhoto} className="mt-1.5 text-[0.6875rem] text-rose-600 cursor-pointer border-none bg-transparent p-0 hover:underline">
                 Remove
               </button>
             )}
@@ -162,22 +162,22 @@ export default function ProfileSettingsPanel({
         {/* Full Name + Email 2-col row */}
         <div className="grid grid-cols-2 gap-4 mb-5">
           <div className="flex flex-col gap-1.5">
-            <label className="text-[0.8125rem] font-semibold text-[#334155]">Full Name</label>
+            <label className="text-[0.8125rem] font-semibold text-slate-700">Full Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => { setName(e.target.value); setProfileError(''); }}
               placeholder="Enter your name"
-              className="w-full px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem] text-[#1E293B]"
+              className="w-full px-3 py-2 border border-slate-200 rounded-md bg-slate-50 focus:outline-none focus:border-indigo-200 text-[0.8125rem] text-slate-800"
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-[0.8125rem] font-semibold text-[#334155]">Email</label>
+            <label className="text-[0.8125rem] font-semibold text-slate-700">Email</label>
             <input
               type="email"
               value={email}
               disabled
-              className="w-full px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] text-[0.8125rem] text-[#1E293B] opacity-60 cursor-not-allowed"
+              className="w-full px-3 py-2 border border-slate-200 rounded-md bg-slate-50 text-[0.8125rem] text-slate-800 opacity-60 cursor-not-allowed"
             />
           </div>
         </div>
@@ -192,13 +192,13 @@ export default function ProfileSettingsPanel({
           <button
             onClick={handleSaveProfile}
             disabled={savingProfile || !profileChanged}
-            className="inline-flex items-center gap-[0.3125rem] text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md bg-[#6366F1] text-white hover:bg-[#4F46E5] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-[0.3125rem] text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md bg-indigo-500 text-white hover:bg-indigo-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ boxShadow: '0 1px 3px rgba(99,102,241,0.3)' }}
           >
             {savingProfile ? <><i className="ri-loader-4-line animate-spin"></i>Saving...</> : <><i className="ri-save-line"></i>Save Changes</>}
           </button>
           {profileSaved && (
-            <span className="text-[0.8125rem] text-[#6366F1] font-medium flex items-center gap-1">
+            <span className="text-[0.8125rem] text-indigo-500 font-medium flex items-center gap-1">
               <i className="ri-checkbox-circle-fill"></i>Saved!
             </span>
           )}
@@ -207,10 +207,10 @@ export default function ProfileSettingsPanel({
 
       {/* ── Password ── */}
       {authProvider === 'google' ? (
-        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-[0.625rem] p-6 mb-5">
-          <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-5">Password</h3>
-          <div className="flex items-center gap-4 p-5 border border-[#E2E8F0] rounded-lg bg-white">
-            <div className="w-10 h-10 rounded-lg border border-[#E2E8F0] flex items-center justify-center flex-shrink-0 bg-white">
+        <div className="bg-slate-50 border border-slate-200 rounded-[0.625rem] p-6 mb-5">
+          <h3 className="text-[0.9375rem] font-bold text-slate-900 mb-5">Password</h3>
+          <div className="flex items-center gap-4 p-5 border border-slate-200 rounded-lg bg-white">
+            <div className="w-10 h-10 rounded-lg border border-slate-200 flex items-center justify-center flex-shrink-0 bg-white">
               <svg width="20" height="20" viewBox="0 0 48 48">
                 <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
                 <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
@@ -219,36 +219,36 @@ export default function ProfileSettingsPanel({
               </svg>
             </div>
             <div className="flex-1">
-              <div className="text-[0.8125rem] font-semibold text-[#0F172A]">Signed in with Google</div>
-              <div className="text-[0.75rem] text-[#64748B]">Password management is handled by your Google account.</div>
+              <div className="text-[0.8125rem] font-semibold text-slate-900">Signed in with Google</div>
+              <div className="text-[0.75rem] text-slate-500">Password management is handled by your Google account.</div>
             </div>
             <a
               href="https://myaccount.google.com/security"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[0.75rem] font-semibold text-[#6366F1] no-underline whitespace-nowrap flex items-center gap-1 hover:underline"
+              className="text-[0.75rem] font-semibold text-indigo-500 no-underline whitespace-nowrap flex items-center gap-1 hover:underline"
             >
               <i className="ri-external-link-line"></i> Google Account Settings
             </a>
           </div>
         </div>
       ) : (
-        <div className="bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6 mb-5">
-          <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-0.5">Password</h3>
-          <p className="text-[0.8125rem] text-[#64748B] mb-5">Change your account password. Not available for Google SSO accounts.</p>
+        <div className="bg-white border border-slate-200 rounded-[0.625rem] p-6 mb-5">
+          <h3 className="text-[0.9375rem] font-bold text-slate-900 mb-0.5">Password</h3>
+          <p className="text-[0.8125rem] text-slate-500 mb-5">Change your account password. Not available for Google SSO accounts.</p>
 
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[0.8125rem] font-semibold text-[#334155]">New Password</label>
+              <label className="text-[0.8125rem] font-semibold text-slate-700">New Password</label>
               <div className="relative">
                 <input
                   type={showNewPw ? 'text' : 'password'}
                   value={newPassword}
                   onChange={(e) => { setNewPassword(e.target.value); setPasswordError(''); }}
                   placeholder="Enter new password"
-                  className="w-full px-3 py-2 pr-9 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem] text-[#1E293B]"
+                  className="w-full px-3 py-2 pr-9 border border-slate-200 rounded-md bg-slate-50 focus:outline-none focus:border-indigo-200 text-[0.8125rem] text-slate-800"
                 />
-                <button type="button" onClick={() => setShowNewPw(!showNewPw)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#64748B] cursor-pointer">
+                <button type="button" onClick={() => setShowNewPw(!showNewPw)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-500 cursor-pointer">
                   <i className={`${showNewPw ? 'ri-eye-off-line' : 'ri-eye-line'} text-base`}></i>
                 </button>
               </div>
@@ -264,16 +264,16 @@ export default function ProfileSettingsPanel({
               )}
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[0.8125rem] font-semibold text-[#334155]">Confirm Password</label>
+              <label className="text-[0.8125rem] font-semibold text-slate-700">Confirm Password</label>
               <div className="relative">
                 <input
                   type={showConfirmPw ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => { setConfirmPassword(e.target.value); setPasswordError(''); }}
                   placeholder="Confirm new password"
-                  className="w-full px-3 py-2 pr-9 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem] text-[#1E293B]"
+                  className="w-full px-3 py-2 pr-9 border border-slate-200 rounded-md bg-slate-50 focus:outline-none focus:border-indigo-200 text-[0.8125rem] text-slate-800"
                 />
-                <button type="button" onClick={() => setShowConfirmPw(!showConfirmPw)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#64748B] cursor-pointer">
+                <button type="button" onClick={() => setShowConfirmPw(!showConfirmPw)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-500 cursor-pointer">
                   <i className={`${showConfirmPw ? 'ri-eye-off-line' : 'ri-eye-line'} text-base`}></i>
                 </button>
               </div>
@@ -281,7 +281,7 @@ export default function ProfileSettingsPanel({
                 <p className="text-[0.6875rem] text-red-500 flex items-center gap-1"><i className="ri-close-circle-line"></i>Passwords do not match</p>
               )}
               {confirmPassword && newPassword === confirmPassword && (
-                <p className="text-[0.6875rem] text-[#6366F1] flex items-center gap-1"><i className="ri-checkbox-circle-line"></i>Passwords match</p>
+                <p className="text-[0.6875rem] text-indigo-500 flex items-center gap-1"><i className="ri-checkbox-circle-line"></i>Passwords match</p>
               )}
             </div>
           </div>
@@ -296,13 +296,13 @@ export default function ProfileSettingsPanel({
             <button
               onClick={handleSavePassword}
               disabled={savingPassword || !newPassword || !confirmPassword}
-              className="inline-flex items-center gap-[0.3125rem] text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md bg-[#6366F1] text-white hover:bg-[#4F46E5] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-[0.3125rem] text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md bg-indigo-500 text-white hover:bg-indigo-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ boxShadow: '0 1px 3px rgba(99,102,241,0.3)' }}
             >
               {savingPassword ? <><i className="ri-loader-4-line animate-spin"></i>Updating...</> : <><i className="ri-lock-line"></i>Change Password</>}
             </button>
             {passwordSaved && (
-              <span className="text-[0.8125rem] text-[#6366F1] font-medium flex items-center gap-1">
+              <span className="text-[0.8125rem] text-indigo-500 font-medium flex items-center gap-1">
                 <i className="ri-checkbox-circle-fill"></i>Password updated!
               </span>
             )}
