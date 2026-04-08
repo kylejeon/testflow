@@ -597,8 +597,8 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
       {/* ① Progress bar — 4px, indigo fill */}
       <div className="h-1 bg-gray-100 shrink-0">
         <div
-          className="h-full transition-all duration-500"
-          style={{ width: `${progress}%`, background: '#6366F1' }}
+          className="h-full transition-all duration-500 bg-indigo-500"
+          style={{ width: `${progress}%` }}
         />
       </div>
 
@@ -620,21 +620,21 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
           {STATUS_BUTTONS.map((s) => (
             <span key={s.status} className="flex items-center gap-0.5">
               <kbd style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '1.25rem', height: '1.25rem', padding: '0 0.25rem', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: '0.25rem', fontSize: '0.625rem', fontWeight: 700, fontFamily: 'monospace' }}>{s.key}</kbd>
-              <span style={{ color: '#94A3B8', marginRight: '0.25rem' }}>{s.label}</span>
+              <span className="text-slate-400 mr-1">{s.label}</span>
             </span>
           ))}
           <span style={{ width: 1, height: 16, background: '#E2E8F0', margin: '0 0.375rem', display: 'inline-block' }} />
           {[{ key: 'C', label: 'Comments' }, { key: 'H', label: 'History' }, { key: 'N', label: 'Note' }].map((h) => (
             <span key={h.key} className="flex items-center gap-0.5">
               <kbd style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '1.25rem', height: '1.25rem', padding: '0 0.25rem', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: '0.25rem', fontSize: '0.625rem', fontWeight: 700, fontFamily: 'monospace' }}>{h.key}</kbd>
-              <span style={{ color: '#94A3B8', marginRight: '0.25rem' }}>{h.label}</span>
+              <span className="text-slate-400 mr-1">{h.label}</span>
             </span>
           ))}
           <span style={{ width: 1, height: 16, background: '#E2E8F0', margin: '0 0.375rem', display: 'inline-block' }} />
           {[{ key: '[', label: 'Sidebar' }, { key: '/', label: 'Search' }].map((h) => (
             <span key={h.key} className="flex items-center gap-0.5">
               <kbd style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '1.25rem', height: '1.25rem', padding: '0 0.25rem', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: '0.25rem', fontSize: '0.625rem', fontWeight: 700, fontFamily: 'monospace' }}>{h.key}</kbd>
-              <span style={{ color: '#94A3B8', marginRight: '0.25rem' }}>{h.label}</span>
+              <span className="text-slate-400 mr-1">{h.label}</span>
             </span>
           ))}
         </div>
@@ -727,8 +727,8 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                 <span style={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#94A3B8' }}>Progress</span>
                 <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>
-                  <span style={{ color: '#6366F1' }}>{completedCount}</span>
-                  <span style={{ color: '#94A3B8', fontWeight: 500 }}> / {tests.length} completed</span>
+                  <span className="text-indigo-500">{completedCount}</span>
+                  <span className="text-slate-400 font-medium"> / {tests.length} completed</span>
                 </span>
               </div>
               {/* 5-color segment bar */}
@@ -880,7 +880,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#fff'; (e.currentTarget as HTMLElement).style.width = '16px'; }}
             title="Open sidebar ([)"
           >
-            <i className="ri-arrow-right-s-line" style={{ fontSize: '0.875rem', color: '#6366F1' }} />
+            <i className="ri-arrow-right-s-line text-sm text-indigo-500" />
           </button>
         )}
 
