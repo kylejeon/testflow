@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { exportToTestRail } from '../../../utils/testRailExport';
+import { exportToTestRail, exportToXLSX } from '../../../utils/testRailExport';
 import { parseCSVImport, parseExcelImport, type ImportedTestCase } from '../../../utils/excelImport';
 import { supabase } from '../../../lib/supabase';
 import { expandFlatSteps, type SharedStepCache } from '../../../lib/expandSharedSteps';
@@ -125,6 +125,7 @@ export default function ExportImportModal({
 }: ExportImportModalProps) {
   const [activeTab, setActiveTab]       = useState<ModalTab>('export');
   const [exportScope, setExportScope]   = useState<ExportScope>('all');
+  const [exportFormat, setExportFormat] = useState<'csv' | 'xlsx'>('csv');
   const [userTier, setUserTier]         = useState<number>(2); // optimistic default
 
   // Fetch user tier to gate CSV export for Free plan (tier 1)
@@ -337,7 +338,11 @@ export default function ExportImportModal({
       (a.custom_id || '').localeCompare(b.custom_id || '', undefined, { numeric: true, sensitivity: 'base' })
     );
 
-    exportToTestRail(expandedCases, resolvedProjectName, selectedColumns);
+    if (exportFormat === 'xlsx') {
+      exportToXLSX(expandedCases, resolvedProjectName, selectedColumns);
+    } else {
+      exportToTestRail(expandedCases, resolvedProjectName, selectedColumns);
+    }
     onClose();
   };
 
@@ -649,6 +654,20 @@ export default function ExportImportModal({
               </div>
             )}
 
+            {/* Export Format */}
+            <div style={S.section}>
+              <span style={S.label}>Export Format</span>
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                {(['csv', 'xlsx'] as const).map(fmt => (
+                  <button key={fmt} onClick={() => setExportFormat(fmt)}
+                    style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: `1.5px solid ${exportFormat === fmt ? '#6366F1' : '#E2E8F0'}`, background: exportFormat === fmt ? '#EEF2FF' : 'white', color: exportFormat === fmt ? '#6366F1' : '#64748B', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all .15s' }}>
+                    <i className={fmt === 'csv' ? 'ri-file-text-line' : 'ri-file-excel-2-line'} style={{ fontSize: 15 }} />
+                    {fmt.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Columns to Export */}
             <div style={S.section}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -718,6 +737,15 @@ export default function ExportImportModal({
                   </div>
                 </div>
               ) : (<>
+                {/* Info banner */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 12px', background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 8, marginBottom: 14, fontSize: 12, color: '#1E40AF', lineHeight: 1.5 }}>
+                  <i className="ri-information-line" style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }} />
+                  <span>
+                    <strong>Note:</strong> Shared Steps in the imported file will be created as regular test cases.
+                    You can convert them back to Shared Steps later using the "Convert to Shared Step" option.
+                  </span>
+                </div>
+
                 {/* Title + formats */}
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', marginBottom: 4 }}>CSV / Excel File Import</div>
@@ -839,7 +867,7 @@ export default function ExportImportModal({
               style={{ fontSize: 14, color: noTcsSelected ? '#F59E0B' : exportReady ? '#10B981' : '#94A3B8' }} />
             {noTcsSelected
               ? 'No test cases selected — choose at least one TC to export'
-              : <span><strong style={{ color: exportReady ? '#065F46' : '#334155' }}>{exportTargetCases.length}</strong> test cases · <strong style={{ color: exportReady ? '#065F46' : '#334155' }}>{selectedColumns.size}</strong> columns will be saved as a CSV file</span>
+              : <span><strong style={{ color: exportReady ? '#065F46' : '#334155' }}>{exportTargetCases.length}</strong> test cases · <strong style={{ color: exportReady ? '#065F46' : '#334155' }}>{selectedColumns.size}</strong> columns will be saved as a {exportFormat.toUpperCase()} file</span>
             }
           </div>
         )}
@@ -856,7 +884,7 @@ export default function ExportImportModal({
                 disabled={!canExportCsv || selectedColumns.size === 0 || exportTargetCases.length === 0}
                 style={{ padding: '8px 16px', background: '#6366F1', color: 'white', border: '1px solid #6366F1', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: (!canExportCsv || exportTargetCases.length === 0) ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 6, opacity: (!canExportCsv || selectedColumns.size === 0 || exportTargetCases.length === 0) ? 0.5 : 1, transition: 'all .15s' }}>
                 <i className="ri-download-2-line" style={{ fontSize: 15 }} />
-                Download CSV ({exportTargetCases.length})
+                Download {exportFormat.toUpperCase()} ({exportTargetCases.length})
               </button>
             ) : (
               <button onClick={handleImportConfirm}

@@ -1,7 +1,8 @@
 /**
- * TestRail CSV Export/Import Utility
- * TestRail 호환 CSV 포맷으로 테스트 케이스를 내보내고 가져오는 유틸리티
+ * TestRail CSV/XLSX Export/Import Utility
+ * TestRail 호환 포맷으로 테스트 케이스를 내보내고 가져오는 유틸리티
  */
+import * as XLSX from 'xlsx';
 
 export interface TestRailRow {
   'ID': string;
@@ -176,6 +177,35 @@ export const parseCSV = (csvText: string): Record<string, string>[] => {
   return result;
 };
 
+const ALL_EXPORT_HEADERS: (keyof TestRailRow)[] = [
+  'ID', 'Title', 'Section', 'Section Description', 'Preconditions',
+  'Steps', 'Expected Result', 'Priority', 'Type', 'Automation Type',
+  'Tags', 'Estimate', 'Mission', 'Goals',
+];
+
+const resolveSafeName = (projectName: string): string => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const trimmed = (projectName || '').trim();
+  return (!trimmed || uuidRegex.test(trimmed)) ? 'project' : trimmed;
+};
+
+const getColValue = (tc: TestCase, col: keyof TestRailRow): string => {
+  switch (col) {
+    case 'ID':                  return tc.custom_id || '';
+    case 'Title':               return tc.title || '';
+    case 'Section':             return tc.folder || '';
+    case 'Section Description': return stripHtml(tc.description || '');
+    case 'Preconditions':       return stripHtml(tc.precondition || '');
+    case 'Steps':               return stepsToTestRail(tc.steps || '');
+    case 'Expected Result':     return stepsToTestRail(tc.expected_result || '');
+    case 'Priority':            return priorityToTestRail(tc.priority);
+    case 'Type':                return 'Functional';
+    case 'Automation Type':     return tc.is_automated ? 'Automated' : 'None';
+    case 'Tags':                return tc.tags || '';
+    default:                    return '';
+  }
+};
+
 /**
  * TestRail CSV Export
  */
@@ -184,59 +214,10 @@ export const exportToTestRail = (
   projectName: string = 'Project',
   selectedColumns?: Set<string>
 ): void => {
-  // 디버깅: 실제로 어떤 값이 들어오는지 확인
-  console.log('[Export] projectName received:', JSON.stringify(projectName));
-
-  // UUID 형태인 경우 'project'로 대체
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const trimmed = (projectName || '').trim();
-  const safeName = (!trimmed || uuidRegex.test(trimmed)) ? 'project' : trimmed;
-
-  console.log('[Export] safeName resolved:', JSON.stringify(safeName));
-
-  const allHeaders: (keyof TestRailRow)[] = [
-    'ID',
-    'Title',
-    'Section',
-    'Section Description',
-    'Preconditions',
-    'Steps',
-    'Expected Result',
-    'Priority',
-    'Type',
-    'Automation Type',
-    'Tags',
-    'Estimate',
-    'Mission',
-    'Goals',
-  ];
-
-  // selectedColumns가 있으면 해당 컬럼만, 없으면 전체
+  const safeName = resolveSafeName(projectName);
   const headers = selectedColumns
-    ? allHeaders.filter(h => selectedColumns.has(h))
-    : allHeaders;
-
-  const getColValue = (tc: TestCase, col: keyof TestRailRow): string => {
-    const steps = stepsToTestRail(tc.steps || '');
-    const expectedResult = stepsToTestRail(tc.expected_result || '');
-    switch (col) {
-      case 'ID':                  return tc.custom_id || '';
-      case 'Title':               return tc.title || '';
-      case 'Section':             return tc.folder || '';
-      case 'Section Description': return stripHtml(tc.description || '');
-      case 'Preconditions':       return stripHtml(tc.precondition || '');
-      case 'Steps':               return steps;
-      case 'Expected Result':     return expectedResult;
-      case 'Priority':            return priorityToTestRail(tc.priority);
-      case 'Type':                return 'Functional';
-      case 'Automation Type':     return tc.is_automated ? 'Automated' : 'None';
-      case 'Tags':                return tc.tags || '';
-      case 'Estimate':            return '';
-      case 'Mission':             return '';
-      case 'Goals':               return '';
-      default:                    return '';
-    }
-  };
+    ? ALL_EXPORT_HEADERS.filter(h => selectedColumns.has(h))
+    : ALL_EXPORT_HEADERS;
 
   const rows = testCases.map(tc =>
     headers.map(col => escapeCSV(getColValue(tc, col)))
@@ -253,19 +234,50 @@ export const exportToTestRail = (
   const link = document.createElement('a');
   link.href = url;
 
-  const safeProjectName = safeName
-    .replace(/[\\/:*?"<>|]/g, '')
-    .replace(/\s+/g, '_')
-    .trim() || 'project';
+  const safeProjectName = safeName.replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_').trim() || 'project';
   const dateStr = new Date().toISOString().slice(0, 10);
   link.download = `${safeProjectName}-${dateStr}.csv`;
-
-  console.log('[Export] final filename:', link.download);
 
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+};
+
+/**
+ * XLSX Export
+ */
+export const exportToXLSX = (
+  testCases: TestCase[],
+  projectName: string = 'Project',
+  selectedColumns?: Set<string>
+): void => {
+  const safeName = resolveSafeName(projectName);
+  const headers = selectedColumns
+    ? ALL_EXPORT_HEADERS.filter(h => selectedColumns.has(h))
+    : ALL_EXPORT_HEADERS;
+
+  const dataRows = testCases.map(tc => headers.map(col => getColValue(tc, col)));
+
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
+
+  // Column widths: fit to longest cell value (capped at 80 chars)
+  ws['!cols'] = headers.map((h, ci) => {
+    let max = h.length;
+    dataRows.forEach(row => {
+      const lines = (row[ci] || '').split('\n');
+      const longest = Math.max(...lines.map(l => l.length));
+      if (longest > max) max = longest;
+    });
+    return { wch: Math.min(Math.max(max + 2, 10), 80) };
+  });
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Test Cases');
+
+  const safeProjectName = safeName.replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_').trim() || 'project';
+  const dateStr = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(wb, `${safeProjectName}-${dateStr}.xlsx`);
 };
 
 /**
