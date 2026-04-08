@@ -1,4 +1,5 @@
-import { useState, useCallback, useRef } from 'react';
+import { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
+import { X, CheckCircle2, XCircle, AlertTriangle, Info } from 'lucide-react';
 
 export type ToastType = 'error' | 'success' | 'warning' | 'info';
 
@@ -8,9 +9,106 @@ interface ToastItem {
   message: string;
 }
 
+interface ToastContextValue {
+  showToast: (message: string, type?: ToastType) => void;
+}
+
 let toastIdCounter = 0;
 
-export function useToast() {
+const ToastContext = createContext<ToastContextValue | null>(null);
+
+const DURATIONS: Record<ToastType, number> = {
+  success: 4000,
+  error: 6000,
+  warning: 5000,
+  info: 4000,
+};
+
+type Variant = {
+  bg: string;
+  border: string;
+  text: string;
+  icon: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Icon: any;
+  role: string;
+  live: 'assertive' | 'polite';
+};
+
+const VARIANTS: Record<ToastType, Variant> = {
+  success: {
+    bg: 'bg-emerald-50',
+    border: 'border-emerald-200',
+    text: 'text-emerald-900',
+    icon: 'text-emerald-600',
+    Icon: CheckCircle2,
+    role: 'status',
+    live: 'polite',
+  },
+  error: {
+    bg: 'bg-rose-50',
+    border: 'border-rose-200',
+    text: 'text-rose-900',
+    icon: 'text-rose-600',
+    Icon: XCircle,
+    role: 'alert',
+    live: 'assertive',
+  },
+  warning: {
+    bg: 'bg-amber-50',
+    border: 'border-amber-200',
+    text: 'text-amber-900',
+    icon: 'text-amber-600',
+    Icon: AlertTriangle,
+    role: 'status',
+    live: 'polite',
+  },
+  info: {
+    bg: 'bg-sky-50',
+    border: 'border-sky-200',
+    text: 'text-sky-900',
+    icon: 'text-sky-600',
+    Icon: Info,
+    role: 'status',
+    live: 'polite',
+  },
+};
+
+export function ToastContainer({ toasts, dismiss }: { toasts: ToastItem[]; dismiss: (id: number) => void }) {
+  return <ToastList toasts={toasts} dismiss={dismiss} />;
+}
+
+function ToastList({ toasts, dismiss }: { toasts: ToastItem[]; dismiss: (id: number) => void }) {
+  if (toasts.length === 0) return null;
+  return (
+    <div className="fixed bottom-4 right-4 z-[9999] flex flex-col gap-2 max-w-sm w-full pointer-events-none">
+      {toasts.map(toast => {
+        const v = VARIANTS[toast.type];
+        const { Icon } = v;
+        return (
+          <div
+            key={toast.id}
+            role={v.role}
+            aria-live={v.live}
+            className={`flex items-start gap-3 rounded-lg border px-4 py-3 shadow-md animate-fade-in pointer-events-auto ${v.bg} ${v.border}`}
+          >
+            <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${v.icon}`} aria-hidden="true" />
+            <span className={`flex-1 text-sm font-medium ${v.text}`}>{toast.message}</span>
+            <button
+              onClick={() => dismiss(toast.id)}
+              aria-label="Dismiss"
+              className={`flex-shrink-0 ml-1 cursor-pointer hover:opacity-70 ${v.icon}`}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const timersRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
 
@@ -25,55 +123,22 @@ export function useToast() {
 
   const showToast = useCallback((message: string, type: ToastType = 'error') => {
     const id = ++toastIdCounter;
-    setToasts(prev => [...prev, { id, type, message }]);
-    const timer = setTimeout(() => dismiss(id), 3000);
+    // max 3 toasts visible at once
+    setToasts(prev => [...prev.slice(-2), { id, type, message }]);
+    const timer = setTimeout(() => dismiss(id), DURATIONS[type]);
     timersRef.current.set(id, timer);
   }, [dismiss]);
 
-  return { toasts, showToast, dismiss };
-}
-
-const icons: Record<ToastType, string> = {
-  error: 'ri-error-warning-line',
-  success: 'ri-checkbox-circle-line',
-  warning: 'ri-alert-line',
-  info: 'ri-information-line',
-};
-
-const styles: Record<ToastType, { bg: string; icon: string; text: string }> = {
-  error:   { bg: 'bg-red-50 border-red-200',     icon: 'text-red-500',    text: 'text-red-800' },
-  success: { bg: 'bg-green-50 border-green-200', icon: 'text-green-500',  text: 'text-green-800' },
-  warning: { bg: 'bg-amber-50 border-amber-200', icon: 'text-amber-500',  text: 'text-amber-800' },
-  info:    { bg: 'bg-blue-50 border-blue-200',   icon: 'text-blue-500',   text: 'text-blue-800' },
-};
-
-interface ToastContainerProps {
-  toasts: ToastItem[];
-  dismiss: (id: number) => void;
-}
-
-export function ToastContainer({ toasts, dismiss }: ToastContainerProps) {
-  if (toasts.length === 0) return null;
   return (
-    <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 max-w-sm w-full pointer-events-none">
-      {toasts.map(toast => {
-        const s = styles[toast.type];
-        return (
-          <div
-            key={toast.id}
-            className={`flex items-start gap-3 px-4 py-3 rounded-xl border shadow-lg animate-fade-in pointer-events-auto ${s.bg}`}
-          >
-            <i className={`${icons[toast.type]} text-lg flex-shrink-0 mt-0.5 ${s.icon}`} />
-            <span className={`flex-1 text-sm font-medium ${s.text}`}>{toast.message}</span>
-            <button
-              onClick={() => dismiss(toast.id)}
-              className={`flex-shrink-0 ml-1 cursor-pointer hover:opacity-70 ${s.icon}`}
-            >
-              <i className="ri-close-line text-base" />
-            </button>
-          </div>
-        );
-      })}
-    </div>
+    <ToastContext.Provider value={{ showToast }}>
+      {children}
+      <ToastList toasts={toasts} dismiss={dismiss} />
+    </ToastContext.Provider>
   );
+}
+
+export function useToast() {
+  const ctx = useContext(ToastContext);
+  if (!ctx) throw new Error('useToast must be used within ToastProvider');
+  return ctx;
 }
