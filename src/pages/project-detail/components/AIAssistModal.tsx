@@ -221,28 +221,22 @@ export default function AIAssistModal({ isOpen, onClose, projectId, onOpenGenera
     : currentAction?.title || 'AI Assist';
 
   return (
-    <>
-      {/* Backdrop */}
+    <ModalShell onClose={onClose}>
+      {/* Modal */}
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center"
-        style={{ backdropFilter: 'blur(4px)', background: 'rgba(0,0,0,0.5)' }}
-        onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        className="relative flex flex-col w-full"
+        style={{
+          maxWidth: 520,
+          maxHeight: '80vh',
+          background: 'rgba(15,23,42,0.97)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 12,
+          boxShadow: '0 24px 48px rgba(0,0,0,0.4)',
+          animation: 'quickModalIn 0.2s ease-out',
+          color: '#F1F5F9',
+        }}
+        onClick={e => e.stopPropagation()}
       >
-        {/* Modal */}
-        <div
-          className="relative flex flex-col w-full"
-          style={{
-            maxWidth: 520,
-            maxHeight: '80vh',
-            background: 'rgba(15,23,42,0.97)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 12,
-            boxShadow: '0 24px 48px rgba(0,0,0,0.4)',
-            animation: 'quickModalIn 0.2s ease-out',
-            color: '#F1F5F9',
-          }}
-          onClick={e => e.stopPropagation()}
-        >
           {/* Header */}
           <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-white/[0.06] flex-shrink-0">
             <div className="flex items-center gap-2.5">
