@@ -12,6 +12,7 @@ import ProfileSettingsPanel from './components/ProfileSettingsPanel';
 import ProjectMembersPanel from '../project-detail/components/ProjectMembersPanel';
 import InviteMemberModal from '../project-detail/components/InviteMemberModal';
 import { getPaymentProvider, openCheckout } from '../../lib/payment';
+import { Skeleton } from '../../components/Skeleton';
 import { registerPaddleErrorHandler, registerPaddleSuccessHandler } from '../../lib/paddle';
 import { useToast } from '../../components/Toast';
 
@@ -439,6 +440,7 @@ export default function SettingsPage() {
   const [allPlansBillingPeriod, setAllPlansBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
   const [invoices, setInvoices] = useState<{ id: string; date: string; description: string; amount: string; currency: string; status: string; invoice_pdf: string | null }[] | null>(null);
   const [loadingInvoices, setLoadingInvoices] = useState(false);
+  const [invoicesError, setInvoicesError] = useState(false);
 
   // Slack / Teams webhook management
   const [webhooks, setWebhooks] = useState<any[]>([]);
@@ -510,20 +512,22 @@ export default function SettingsPage() {
   // Fetch Paddle invoices once userProfile with provider_customer_id is available
   useEffect(() => {
     if (!userProfile?.provider_customer_id || userProfile.payment_provider !== 'paddle') return;
-    if (invoices !== null) return; // already loaded
+    if (invoices !== null || invoicesError) return; // already loaded or errored (retry resets these)
     (async () => {
       setLoadingInvoices(true);
+      setInvoicesError(false);
       try {
         const { data, error } = await supabase.functions.invoke('fetch-paddle-invoices');
         if (!error && data?.invoices) setInvoices(data.invoices);
-        else setInvoices([]);
+        else { setInvoices([]); if (error) setInvoicesError(true); }
       } catch {
         setInvoices([]);
+        setInvoicesError(true);
       } finally {
         setLoadingInvoices(false);
       }
     })();
-  }, [userProfile?.provider_customer_id, userProfile?.payment_provider, invoices]);
+  }, [userProfile?.provider_customer_id, userProfile?.payment_provider, invoices, invoicesError]);
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -2068,9 +2072,35 @@ def pytest_sessionfinish(session, exitstatus):
                         <p className="text-[0.8125rem] text-slate-500 mb-4">View and download your past invoices.</p>
 
                         {loadingInvoices ? (
-                          <div className="text-center py-10 text-[0.8125rem] text-slate-400">
-                            <i className="ri-loader-4-line animate-spin text-2xl block mb-2 text-slate-300"></i>
-                            Loading invoices...
+                          <div aria-label="Loading invoices">
+                            {/* Header */}
+                            <div className="flex gap-3 px-3 py-[0.625rem] border-b border-slate-200 bg-slate-50">
+                              <Skeleton className="h-3 w-16" />
+                              <Skeleton className="h-3 w-32 ml-4" />
+                              <Skeleton className="h-3 w-14 ml-auto" />
+                              <Skeleton className="h-3 w-12" />
+                              <Skeleton className="h-3 w-6" />
+                            </div>
+                            {[1, 2, 3].map((i) => (
+                              <div key={i} className="flex items-center gap-3 px-3 py-[0.6875rem] border-b border-slate-100">
+                                <Skeleton className="h-4 w-20" />
+                                <Skeleton className="h-4 w-40 ml-4" />
+                                <Skeleton className="h-4 w-14 ml-auto" />
+                                <Skeleton className="h-5 w-12 rounded-full" />
+                                <Skeleton className="h-7 w-7 rounded" />
+                              </div>
+                            ))}
+                          </div>
+                        ) : invoicesError ? (
+                          <div className="text-center py-10">
+                            <i className="ri-error-warning-line text-3xl block mb-2 text-slate-300"></i>
+                            <p className="text-[0.8125rem] text-slate-500 mb-3">Failed to load invoices.</p>
+                            <button
+                              onClick={() => { setInvoices(null); setInvoicesError(false); }}
+                              className="text-[0.8125rem] text-indigo-600 hover:text-indigo-700 font-medium"
+                            >
+                              Try again
+                            </button>
                           </div>
                         ) : invoices && invoices.length > 0 ? (
                           <table className="w-full border-collapse">
@@ -2088,31 +2118,40 @@ def pytest_sessionfinish(session, exitstatus):
                               </tr>
                             </thead>
                             <tbody>
-                              {invoices.map((inv) => (
-                                <tr key={inv.id} className="hover:bg-[#FAFAFF] transition-colors">
-                                  <td className="px-3 py-[0.625rem] text-[0.75rem] text-slate-400 border-b border-slate-100">{inv.date}</td>
-                                  <td className="px-3 py-[0.625rem] text-[0.8125rem] text-slate-700 border-b border-slate-100">{inv.description}</td>
-                                  <td className="px-3 py-[0.625rem] text-[0.8125rem] font-semibold text-slate-700 border-b border-slate-100">{inv.amount}</td>
-                                  <td className="px-3 py-[0.625rem] border-b border-slate-100">
-                                    <span className="text-[0.625rem] font-bold px-[0.4375rem] py-0.5 rounded-full bg-green-100 text-green-800">Paid</span>
-                                  </td>
-                                  <td className="px-3 py-[0.625rem] text-right border-b border-slate-100">
-                                    {inv.invoice_pdf ? (
-                                      <a
-                                        href={inv.invoice_pdf}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        title="Download PDF"
-                                        className="w-7 h-7 rounded flex items-center justify-center border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-600 transition-colors text-sm inline-flex ml-auto"
-                                      >
-                                        <i className="ri-download-2-line"></i>
-                                      </a>
-                                    ) : (
-                                      <span className="text-[0.75rem] text-slate-300">—</span>
-                                    )}
-                                  </td>
-                                </tr>
-                              ))}
+                              {invoices.map((inv) => {
+                                const statusDisplay: Record<string, { label: string; cls: string }> = {
+                                  billed:    { label: 'Paid',     cls: 'bg-green-100 text-green-800' },
+                                  completed: { label: 'Paid',     cls: 'bg-green-100 text-green-800' },
+                                  past_due:  { label: 'Past Due', cls: 'bg-yellow-100 text-yellow-800' },
+                                  cancelled: { label: 'Cancelled',cls: 'bg-red-100 text-red-700' },
+                                };
+                                const badge = statusDisplay[inv.status] ?? { label: inv.status, cls: 'bg-slate-100 text-slate-600' };
+                                return (
+                                  <tr key={inv.id} className="hover:bg-[#FAFAFF] transition-colors">
+                                    <td className="px-3 py-[0.625rem] text-[0.75rem] text-slate-400 border-b border-slate-100">{inv.date}</td>
+                                    <td className="px-3 py-[0.625rem] text-[0.8125rem] text-slate-700 border-b border-slate-100">{inv.description}</td>
+                                    <td className="px-3 py-[0.625rem] text-[0.8125rem] font-semibold text-slate-700 border-b border-slate-100">{inv.amount}</td>
+                                    <td className="px-3 py-[0.625rem] border-b border-slate-100">
+                                      <span className={`text-[0.625rem] font-bold px-[0.4375rem] py-0.5 rounded-full ${badge.cls}`}>{badge.label}</span>
+                                    </td>
+                                    <td className="px-3 py-[0.625rem] text-right border-b border-slate-100">
+                                      {inv.invoice_pdf ? (
+                                        <a
+                                          href={inv.invoice_pdf}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          title="Download PDF"
+                                          className="w-7 h-7 rounded flex items-center justify-center border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-600 transition-colors text-sm inline-flex ml-auto"
+                                        >
+                                          <i className="ri-download-2-line"></i>
+                                        </a>
+                                      ) : (
+                                        <span className="text-[0.75rem] text-slate-300">—</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
                             </tbody>
                           </table>
                         ) : (

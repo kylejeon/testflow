@@ -63,11 +63,11 @@ Deno.serve(async (req) => {
     : 'https://api.paddle.com';
 
   // Fetch transactions from Paddle API
+  // Include both 'billed' (subscription payments) and 'completed' (one-time payments).
+  // Sandbox subscription transactions typically have status 'billed'.
   const params = new URLSearchParams({
     customer_id: profile.provider_customer_id,
-    status: 'completed',
     per_page: '50',
-    order_by: 'billed_at[DESC]',
   });
 
   const resp = await fetch(`${paddleBase}/transactions?${params}`, {
@@ -84,7 +84,11 @@ Deno.serve(async (req) => {
   }
 
   const result = await resp.json();
-  const transactions: any[] = result.data ?? [];
+  const allTx: any[] = result.data ?? [];
+  // Only show transactions that represent actual charges (exclude draft/ready/cancelled)
+  const transactions = allTx.filter((tx: any) =>
+    ['billed', 'completed', 'past_due'].includes(tx.status),
+  );
 
   const invoices = transactions.map((tx: any) => {
     const billedAt = tx.billed_at ?? tx.created_at;
