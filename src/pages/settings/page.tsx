@@ -13,6 +13,7 @@ import ProjectMembersPanel from '../project-detail/components/ProjectMembersPane
 import InviteMemberModal from '../project-detail/components/InviteMemberModal';
 import { getPaymentProvider, openCheckout } from '../../lib/payment';
 import { Skeleton } from '../../components/Skeleton';
+import { sendLoopsEvent } from '../../lib/loops';
 import { registerPaddleErrorHandler, registerPaddleSuccessHandler } from '../../lib/paddle';
 import { useToast } from '../../components/Toast';
 
@@ -1760,6 +1761,18 @@ def pytest_sessionfinish(session, exitstatus):
         .eq('id', user.id);
 
       if (error) throw error;
+
+      // Emit trial_started event to Loops (fire-and-forget — non-blocking)
+      sendLoopsEvent(
+        user.email!,
+        'trial_started',
+        {
+          firstName: userProfile.full_name?.split(' ')[0] ?? '',
+          trialEndsAt: trialEndsAt.toISOString(),
+          trialDaysTotal: '14',
+          planName: 'Starter',
+        },
+      );
 
       setStarterTrialStarted(true);
       // Refresh profile
