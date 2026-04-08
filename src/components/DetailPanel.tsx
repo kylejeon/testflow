@@ -212,7 +212,7 @@ function StepRow({ step, expectedResult, index, result, showResultButtons, onSte
       <div className="flex-1 min-w-0">
         {isHtml ? (
           <div
-            className="text-[0.8rem] text-gray-700 leading-relaxed prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded [&_img]:my-1 [&_img]:cursor-pointer [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+            className="text-sm text-gray-700 leading-relaxed prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded [&_img]:my-1 [&_img]:cursor-pointer [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
             dangerouslySetInnerHTML={{ __html: step }}
             onClick={(e) => {
               const t = e.target as HTMLElement;
@@ -223,12 +223,12 @@ function StepRow({ step, expectedResult, index, result, showResultButtons, onSte
             }}
           />
         ) : (
-          <p className="text-[0.8rem] text-gray-700 leading-relaxed whitespace-pre-wrap">{step}</p>
+          <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{step}</p>
         )}
         {expectedResult && (
           <div className="mt-1 flex items-start gap-1">
-            <i className="ri-checkbox-circle-line text-green-500 text-[0.8rem] flex-shrink-0 mt-[0.05rem]" />
-            <p className="text-[0.8rem] text-green-600 leading-relaxed">
+            <i className="ri-checkbox-circle-line text-green-500 text-sm flex-shrink-0 mt-[0.05rem]" />
+            <p className="text-sm text-green-600 leading-relaxed">
               {expectedResult.replace(/<[^>]*>/g, '').trim()}
             </p>
           </div>
@@ -463,9 +463,9 @@ export function DetailPanel({
         <div className="flex items-start justify-between gap-2 mb-1">
           <div className="flex-1 min-w-0">
             {testCase.customId && (
-              <div className="font-mono text-[0.6875rem] text-gray-400 mb-1">{testCase.customId}</div>
+              <div className="font-mono text-xs text-gray-400 mb-1">{testCase.customId}</div>
             )}
-            <h3 className="text-[0.9375rem] font-bold text-gray-900 leading-[1.3]">{testCase.title}</h3>
+            <h3 className="text-base font-bold text-gray-900 leading-[1.3]">{testCase.title}</h3>
           </div>
           <button
             onClick={onClose}
@@ -522,7 +522,7 @@ export function DetailPanel({
             className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 bg-white text-slate-500 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             title="Previous"
           >
-            <i className="ri-arrow-up-s-line text-[0.875rem]" />
+            <i className="ri-arrow-up-s-line text-sm" />
           </button>
           <button
             onClick={onNext}
@@ -530,7 +530,7 @@ export function DetailPanel({
             className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 bg-white text-slate-500 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             title="Next"
           >
-            <i className="ri-arrow-down-s-line text-[0.875rem]" />
+            <i className="ri-arrow-down-s-line text-sm" />
           </button>
         </div>
       )}
@@ -540,20 +540,20 @@ export function DetailPanel({
         <div className="grid grid-cols-2 gap-2.5">
           {/* Priority */}
           <div>
-            <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">Priority</div>
+            <div className="text-xs font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">Priority</div>
             <span className="inline-flex items-center gap-1.5">
               <span
                 className="inline-block w-2 h-2 rounded-full flex-shrink-0"
                 style={{ background: PRIORITY_DOT_COLORS[testCase.priority] || '#94A3B8' }}
               />
-              <span className="text-[0.8125rem] text-slate-600 capitalize">{testCase.priority}</span>
+              <span className="text-sm text-slate-600 capitalize">{testCase.priority}</span>
             </span>
           </div>
 
           {/* Folder */}
           <div>
-            <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">Folder</div>
-            <div className="text-[0.8125rem] font-medium text-gray-800 flex items-center gap-1.5">
+            <div className="text-xs font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">Folder</div>
+            <div className="text-sm font-medium text-gray-800 flex items-center gap-1.5">
               {testCase.folder ? (() => {
                 const f = folders.find(fd => fd.name === testCase.folder);
                 const fs = FOLDER_COLOR_MAP[f?.color || 'indigo'] || { bg: '#EEF2FF', fg: '#6366F1' };
@@ -561,7 +561,7 @@ export function DetailPanel({
                 return (
                   <>
                     <span className="flex-shrink-0 flex items-center justify-center" style={{ width: 18, height: 18, borderRadius: 4, background: fs.bg }}>
-                      <i className={`${icon} text-[0.6875rem]`} style={{ color: fs.fg }}></i>
+                      <i className={`${icon} text-xs`} style={{ color: fs.fg }}></i>
                     </span>
                     {testCase.folder}
                   </>
@@ -574,26 +574,26 @@ export function DetailPanel({
 
           {/* Tags */}
           <div>
-            <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">Tags</div>
+            <div className="text-xs font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">Tags</div>
             {tagList.length > 0 ? (
               <div className="flex flex-wrap gap-1">
                 {tagList.map((tag) => (
-                  <span key={tag} className="text-[0.6875rem] font-medium px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700">
+                  <span key={tag} className="text-xs font-medium px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700">
                     {tag}
                   </span>
                 ))}
               </div>
             ) : (
-              <span className="text-[0.8125rem] text-gray-400">—</span>
+              <span className="text-sm text-gray-400">—</span>
             )}
           </div>
 
           {/* Assignee */}
           <div>
-            <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">Assignee</div>
+            <div className="text-xs font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">Assignee</div>
             {isRun ? (
               /* Run context: read-only */
-              <div className="flex items-center gap-1.5 text-[0.8125rem] font-medium text-gray-800">
+              <div className="flex items-center gap-1.5 text-sm font-medium text-gray-800">
                 {assigneeName ? (
                   <>
                     {(() => {
@@ -614,7 +614,7 @@ export function DetailPanel({
               </div>
             ) : projectMembers.length > 0 ? (
               <div className="relative">
-                <div className="flex items-center gap-1.5 px-2 py-1 border border-gray-200 rounded-lg bg-white text-[0.8125rem]">
+                <div className="flex items-center gap-1.5 px-2 py-1 border border-gray-200 rounded-lg bg-white text-sm">
                   {assigneeName ? (
                     <>
                       {(() => {
@@ -648,7 +648,7 @@ export function DetailPanel({
                 </div>
               </div>
             ) : (
-              <div className="text-[0.8125rem] font-medium text-gray-700">
+              <div className="text-sm font-medium text-gray-700">
                 {testCase.assignee || <span className="text-gray-400">—</span>}
               </div>
             )}
@@ -656,13 +656,13 @@ export function DetailPanel({
 
           {/* Created */}
           <div>
-            <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">Created</div>
-            <div className="text-[0.8125rem] font-medium text-gray-800">{formatDate(testCase.createdAt)}</div>
+            <div className="text-xs font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">Created</div>
+            <div className="text-sm font-medium text-gray-800">{formatDate(testCase.createdAt)}</div>
           </div>
 
           {/* Last Run */}
           <div>
-            <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">Last Run</div>
+            <div className="text-xs font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">Last Run</div>
             {testResults.length > 0 ? (() => {
               const lastResult = testResults[0];
               const timeAgo = lastResult.timestamp instanceof Date ? getTimeAgo(lastResult.timestamp) : '';
@@ -671,13 +671,13 @@ export function DetailPanel({
               };
               const label = lastResult.status.charAt(0).toUpperCase() + lastResult.status.slice(1);
               return (
-                <div className="text-[0.8125rem] font-medium" style={{ color: statusColor[lastResult.status] || '#64748B' }}>
+                <div className="text-sm font-medium" style={{ color: statusColor[lastResult.status] || '#64748B' }}>
                   {label}
-                  {timeAgo && <span className="text-slate-400 font-normal text-[0.75rem]"> · {timeAgo}</span>}
+                  {timeAgo && <span className="text-slate-400 font-normal text-xs"> · {timeAgo}</span>}
                 </div>
               );
             })() : (
-              <span className="text-[0.8125rem] text-gray-400">—</span>
+              <span className="text-sm text-gray-400">—</span>
             )}
           </div>
         </div>
@@ -690,21 +690,21 @@ export function DetailPanel({
       >
         <div className="flex items-center gap-[0.375rem]">
           <i
-            className={`ri-arrow-down-s-line text-indigo-500 text-[0.875rem] transition-transform duration-200 ${stepsCollapsed ? '-rotate-90' : ''}`}
+            className={`ri-arrow-down-s-line text-indigo-500 text-sm transition-transform duration-200 ${stepsCollapsed ? '-rotate-90' : ''}`}
           />
-          <span className="text-[0.6875rem] font-bold text-slate-600 uppercase tracking-[0.04em]">
+          <span className="text-xs font-bold text-slate-600 uppercase tracking-[0.04em]">
             {steps.length} step{steps.length !== 1 ? 's' : ''}
             {testCase.attachments && testCase.attachments.length > 0 ? ` · ${testCase.attachments.length} attachment${testCase.attachments.length !== 1 ? 's' : ''}` : ''}
           </span>
         </div>
         {isRun && steps.length > 0 ? (
-          <span className="text-[0.6875rem] font-semibold flex items-center gap-[0.25rem]">
+          <span className="text-xs font-semibold flex items-center gap-[0.25rem]">
             <span className={passedCount > 0 ? 'text-green-600' : 'text-slate-500'}>{passedCount}</span>
             <span className="text-slate-300">/</span>
             <span className="text-slate-500">{steps.length} steps passed</span>
           </span>
         ) : (
-          <span className="text-[0.6875rem] text-slate-400 font-medium">
+          <span className="text-xs text-slate-400 font-medium">
             {testCase.attachments && testCase.attachments.length > 0 ? `${testCase.attachments.length} attachment${testCase.attachments.length !== 1 ? 's' : ''}` : ''}
           </span>
         )}
@@ -845,7 +845,7 @@ export function DetailPanel({
             <div className="bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2.5">
               <div className="flex items-center gap-1.5 mb-1">
                 <i className="ri-checkbox-circle-line text-indigo-500 text-xs" />
-                <span className="text-[0.6875rem] font-bold text-indigo-700 uppercase tracking-wider">Expected Result</span>
+                <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider">Expected Result</span>
               </div>
               <p className="text-xs text-indigo-800 leading-relaxed">{testCase.expected_result}</p>
             </div>
@@ -983,7 +983,7 @@ export function DetailPanel({
                         size="xs"
                       />
                       <span className="text-xs font-semibold text-gray-800">{c.author}</span>
-                      <span className="text-[0.6875rem] text-gray-400">
+                      <span className="text-xs text-gray-400">
                         {c.timestamp.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
                       </span>
                       {c.user_id === currentUserId && (
@@ -1076,7 +1076,7 @@ export function DetailPanel({
                   >
                     {/* Status badge */}
                     <span
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[0.6875rem] font-semibold flex-shrink-0"
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0"
                       style={{ background: bg, color: fg }}
                     >
                       <span className="w-[5px] h-[5px] rounded-full flex-shrink-0" style={{ background: dot }} />
@@ -1086,7 +1086,7 @@ export function DetailPanel({
                     {/* Run info */}
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-semibold text-gray-900 truncate">{runName}</div>
-                      <div className="text-[0.6875rem] text-gray-400">
+                      <div className="text-xs text-gray-400">
                         {dateStr}{timeStr ? ` · ${timeStr}` : ''}{result.author ? ` · by ${result.author}` : ''}
                         {result.elapsed && result.elapsed !== '00:00' ? ` · ${result.elapsed}` : ''}
                       </div>
@@ -1156,7 +1156,7 @@ export function DetailPanel({
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-xs font-semibold text-gray-800 truncate">{issue.issueKey}</div>
-                        <div className="text-[0.6875rem] text-gray-400">
+                        <div className="text-xs text-gray-400">
                           {issue.issueKey}{statusLabel ? ` · ${statusLabel}` : ''}{dateStr ? ` · ${dateStr}` : ''}
                         </div>
                       </div>
@@ -1272,11 +1272,11 @@ export function DetailPanel({
                           <span className="font-semibold" style={{ color }}>{statusLabel}</span>
                           {result.run?.name ? ` in ${result.run.name}` : ''}
                         </div>
-                        <div className="text-[0.6875rem] text-gray-400 mt-0.5">
+                        <div className="text-xs text-gray-400 mt-0.5">
                           {dateStr}{timeStr ? ` · ${timeStr}` : ''}
                         </div>
                         {result.note && (
-                          <p className="text-[0.6875rem] text-gray-500 mt-0.5 italic line-clamp-2">"{result.note}"</p>
+                          <p className="text-xs text-gray-500 mt-0.5 italic line-clamp-2">"{result.note}"</p>
                         )}
                       </div>
                     </div>

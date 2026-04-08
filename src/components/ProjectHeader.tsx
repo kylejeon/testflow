@@ -258,11 +258,11 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
               overflow: 'hidden',
             }}
           >
-            <div style={{ padding: '0.5rem 0.875rem', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94A3B8', borderBottom: '1px solid #F1F5F9' }}>
+            <div style={{ padding: '0.5rem 0.875rem', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94A3B8', borderBottom: '1px solid #F1F5F9' }}>
               Switch project
             </div>
             {projects.length === 0 ? (
-              <div style={{ padding: '0.75rem 0.875rem', fontSize: '0.8125rem', color: '#94A3B8' }}>No projects found</div>
+              <div style={{ padding: '0.75rem 0.875rem', fontSize: '0.875rem', color: '#94A3B8' }}>No projects found</div>
             ) : (
               projects.map((p) => (
                 <Link
@@ -274,7 +274,7 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
                     alignItems: 'center',
                     gap: '0.5rem',
                     padding: '0.625rem 0.875rem',
-                    fontSize: '0.8125rem',
+                    fontSize: '0.875rem',
                     color: p.id === projectId ? '#6366F1' : '#1E293B',
                     fontWeight: p.id === projectId ? 600 : 400,
                     textDecoration: 'none',
@@ -304,7 +304,7 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
               display: 'flex',
               alignItems: 'center',
               padding: '0 0.875rem',
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               fontWeight: 500,
               whiteSpace: 'nowrap',
               color: item.active ? '#6366F1' : '#64748B',

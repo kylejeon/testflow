@@ -414,7 +414,7 @@ export function SharedStepRefRow({ step, showDelete, onDelete, onUpdateVersion, 
         <p className="text-xs text-slate-700 leading-relaxed">{s.step}</p>
         {s.expectedResult && (
           <div className="mt-1 pl-2 border-l-2 border-indigo-200">
-            <p className="text-[0.7rem] text-indigo-500 leading-relaxed">{s.expectedResult}</p>
+            <p className="text-xs text-indigo-500 leading-relaxed">{s.expectedResult}</p>
           </div>
         )}
       </div>
@@ -535,7 +535,7 @@ export function SharedStepRefRow({ step, showDelete, onDelete, onUpdateVersion, 
             <div className="flex-1 overflow-y-auto">
               <div className="grid grid-cols-2 divide-x divide-slate-200">
                 <div className="p-4">
-                  <div className="text-[0.6875rem] font-semibold uppercase text-slate-400 tracking-wider mb-3">
+                  <div className="text-xs font-semibold uppercase text-slate-400 tracking-wider mb-3">
                     v{step.shared_step_version} (Current)
                   </div>
                   <div className="space-y-2">
@@ -545,7 +545,7 @@ export function SharedStepRefRow({ step, showDelete, onDelete, onUpdateVersion, 
                   </div>
                 </div>
                 <div className="p-4 bg-emerald-50/40">
-                  <div className="text-[0.6875rem] font-semibold uppercase text-emerald-600 tracking-wider mb-3">
+                  <div className="text-xs font-semibold uppercase text-emerald-600 tracking-wider mb-3">
                     v{latestVersion} (Latest)
                   </div>
                   <div className="space-y-2">
