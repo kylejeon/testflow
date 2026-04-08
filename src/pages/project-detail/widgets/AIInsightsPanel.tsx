@@ -193,7 +193,7 @@ export default function AIInsightsPanel({ projectId, milestones = [] }: { projec
         {loading ? (
           <>
             {[1, 2, 3].map(i => (
-              <div key={i} className="h-[88px] bg-gray-50 rounded-xl animate-pulse" />
+              <div key={i} className="h-[88px] animate-pulse-bright rounded-xl" />
             ))}
           </>
         ) : (

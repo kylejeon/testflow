@@ -51,7 +51,7 @@ export default function AdminProjectsChart({ data, loading = false }: AdminProje
         <p className="text-sm text-gray-500 mt-0.5">최근 12개월 신규 프로젝트 수</p>
       </div>
       {loading ? (
-        <div className="h-48 bg-gray-50 rounded-lg animate-pulse"></div>
+        <div className="h-48 animate-pulse-bright rounded-lg"></div>
       ) : data.length === 0 ? (
         <div className="h-48 flex items-center justify-center text-gray-400">
           <div className="text-center">

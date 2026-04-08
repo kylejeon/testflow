@@ -6,6 +6,15 @@ export default {
     ],
     theme: {
       extend: {
+        keyframes: {
+          'pulse-bright': {
+            '0%, 100%': { backgroundColor: '#EEF0F4' },
+            '50%':       { backgroundColor: '#F8FAFC' },
+          },
+        },
+        animation: {
+          'pulse-bright': 'pulse-bright 1.5s ease-in-out infinite',
+        },
         colors: {
           // Brand colors: Indigo palette (replaces teal)
           brand: {

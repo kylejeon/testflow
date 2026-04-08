@@ -196,7 +196,7 @@ export default function TeamPerformance({ projectId, period }: { projectId: stri
         {loading ? (
           <div className="space-y-2 px-4 py-2">
             {[1, 2, 3, 4].map(i => (
-              <div key={i} className="h-10 bg-gray-50 rounded-lg animate-pulse" />
+              <div key={i} className="h-10 animate-pulse-bright rounded-lg" />
             ))}
           </div>
         ) : members.length === 0 ? (

@@ -180,7 +180,7 @@ export default function CoverageHeatmap({ projectId, subscriptionTier = 1, onFin
 
       <div className="px-5 py-4">
         {loading ? (
-          <div className="h-[210px] bg-gray-50 rounded-lg animate-pulse" />
+          <div className="h-[210px] animate-pulse-bright rounded-lg" />
         ) : folderData.length === 0 ? (
           <div className="h-[100px] flex items-center justify-center text-gray-400 text-sm">
             No test cases

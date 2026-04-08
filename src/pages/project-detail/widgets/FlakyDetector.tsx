@@ -514,7 +514,7 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
           {loading ? (
             <div className="space-y-2 px-4">
               {[1, 2, 3].map(i => (
-                <div key={i} className="h-10 bg-gray-50 rounded-lg animate-pulse" />
+                <div key={i} className="h-10 animate-pulse-bright rounded-lg" />
               ))}
             </div>
           ) : flaky.length === 0 ? (

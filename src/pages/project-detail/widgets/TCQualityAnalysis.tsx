@@ -220,7 +220,7 @@ export default function TCQualityAnalysis({ projectId }: { projectId: string }) 
           <i className="ri-test-tube-fill text-emerald-500" />
           TC Quality & Growth
         </div>
-        <div className="p-4 h-[300px] animate-pulse bg-gray-50 rounded-lg m-4" />
+        <div className="p-4 h-[300px] animate-pulse-bright rounded-lg m-4" />
       </div>
     );
   }

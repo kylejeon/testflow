@@ -294,7 +294,7 @@ export default function CloneFromProjectModal({
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Select Source Project</label>
                 {loadingProjects ? (
-                  <div className="h-10 bg-gray-50 rounded-lg animate-pulse" />
+                  <div className="h-10 animate-pulse-bright rounded-lg" />
                 ) : (
                   <select
                     value={selectedProjectId}
@@ -315,7 +315,7 @@ export default function CloneFromProjectModal({
                   {loadingCases ? (
                     <div className="space-y-2">
                       {[...Array(5)].map((_, i) => (
-                        <div key={i} className="h-10 bg-gray-50 rounded-lg animate-pulse" />
+                        <div key={i} className="h-10 animate-pulse-bright rounded-lg" />
                       ))}
                     </div>
                   ) : sourceCases.length === 0 ? (

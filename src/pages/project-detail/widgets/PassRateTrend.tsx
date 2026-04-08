@@ -206,7 +206,7 @@ export default function PassRateTrend({ projectId, period }: { projectId: string
             Pass Rate Trend
           </div>
         </div>
-        <div className="p-5 h-[340px] animate-pulse bg-gray-50 rounded-lg m-4" />
+        <div className="p-5 h-[340px] animate-pulse-bright rounded-lg m-4" />
       </div>
     );
   }

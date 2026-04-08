@@ -81,7 +81,7 @@ export default function AdminSubscriptionChart({
         <p className="text-sm text-gray-500 mt-0.5">플랜별 사용자 현황</p>
       </div>
       {loading ? (
-        <div className="h-48 bg-gray-50 rounded-lg animate-pulse mb-4"></div>
+        <div className="h-48 animate-pulse-bright rounded-lg mb-4"></div>
       ) : (
         <ResponsiveContainer width="100%" height={180}>
           <BarChart data={allTiers} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>

@@ -218,7 +218,7 @@ export default function MilestoneTracker({ projectId, milestones }: MilestoneTra
               </div>
             </div>
             {burndownLoading ? (
-              <div className="h-[180px] bg-gray-50 rounded-lg animate-pulse" />
+              <div className="h-[180px] animate-pulse-bright rounded-lg" />
             ) : burndownData.length > 0 ? (
               <ResponsiveContainer width="100%" height={180}>
                 <AreaChart data={burndownData} margin={{ top: 8, right: 12, bottom: 4, left: -10 }}>

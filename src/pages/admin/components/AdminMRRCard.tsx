@@ -108,8 +108,8 @@ export default function AdminMRRCard({ data, loading = false }: AdminMRRCardProp
 
       {loading ? (
         <div className="space-y-4">
-          <div className="h-24 bg-gray-50 rounded-xl animate-pulse"></div>
-          <div className="h-48 bg-gray-50 rounded-xl animate-pulse"></div>
+          <div className="h-24 animate-pulse-bright rounded-xl"></div>
+          <div className="h-48 animate-pulse-bright rounded-xl"></div>
         </div>
       ) : (
         <>

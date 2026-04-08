@@ -69,7 +69,7 @@ export default function AdminUserGrowthChart({ data, loading = false }: AdminUse
         </div>
       </div>
       {loading ? (
-        <div className="h-64 bg-gray-50 rounded-lg animate-pulse"></div>
+        <div className="h-64 animate-pulse-bright rounded-lg"></div>
       ) : data.length === 0 ? (
         <div className="h-64 flex items-center justify-center text-gray-400">
           <div className="text-center">
