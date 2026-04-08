@@ -8,6 +8,8 @@ import LinkTCModal from './components/LinkTCModal';
 import JiraImportModal from './components/JiraImportModal';
 import GitHubImportModal from './components/GitHubImportModal';
 import type { Requirement, RequirementCoverage } from '../../types/rtm';
+import EmptyState from '../../components/EmptyState';
+import RequirementsIllustration from '../../components/illustrations/RequirementsIllustration';
 
 // ── Style tokens ─────────────────────────────────────────────────────────────
 const btnPrimary = `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors cursor-pointer border-0`;
@@ -368,18 +370,12 @@ export default function ProjectRequirements() {
               Loading requirements...
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 gap-3">
-              <i className="ri-git-branch-line text-4xl text-slate-300" />
-              <p className="text-sm text-slate-500">
-                {requirements.length === 0 ? 'No requirements yet. Create your first one!' : 'No requirements match the current filters.'}
-              </p>
-              {requirements.length === 0 && (
-                <button className={btnPrimary} onClick={() => setShowCreateModal(true)}>
-                  <i className="ri-add-line" />
-                  New Requirement
-                </button>
-              )}
-            </div>
+            <EmptyState
+              icon={requirements.length === 0 ? <RequirementsIllustration /> : undefined}
+              title={requirements.length === 0 ? 'No requirements linked' : 'No requirements match the current filters'}
+              description={requirements.length === 0 ? 'Connect requirements to test cases so nothing ships untested.' : undefined}
+              action={requirements.length === 0 ? { label: 'Add requirement', onClick: () => setShowCreateModal(true) } : undefined}
+            />
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>

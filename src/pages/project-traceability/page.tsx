@@ -5,6 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import ProjectHeader from '../../components/ProjectHeader';
 import type { Requirement } from '../../types/rtm';
+import EmptyState from '../../components/EmptyState';
+import TraceabilityIllustration from '../../components/illustrations/TraceabilityIllustration';
 
 // ── Style tokens ─────────────────────────────────────────────────────────────
 const btnSecondary = `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer`;
@@ -139,6 +141,7 @@ function UpgradePrompt({ tier }: { tier: number }) {
 
 export default function ProjectTraceability() {
   const { id: projectId } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [gapOnly, setGapOnly] = useState(false);
@@ -565,13 +568,13 @@ export default function ProjectTraceability() {
             Loading matrix...
           </div>
         ) : requirements.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-3 bg-white border border-slate-200 rounded-xl">
-            <i className="ri-git-branch-line text-4xl text-slate-300" />
-            <p className="text-sm text-slate-500">No requirements yet.</p>
-            <Link to={`/projects/${projectId}/requirements`} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors">
-              <i className="ri-add-line" />
-              Add Requirements
-            </Link>
+          <div className="bg-white border border-slate-200 rounded-xl">
+            <EmptyState
+              icon={<TraceabilityIllustration />}
+              title="Nothing to trace yet"
+              description="Once you link requirements to test cases and runs, the matrix lights up here."
+              action={{ label: 'Link requirements', onClick: () => navigate(`/projects/${projectId}/requirements`) }}
+            />
           </div>
         ) : (
           <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.75rem', overflow: 'auto', maxHeight: '65vh' }}>

@@ -5,6 +5,8 @@ import { supabase } from '../../lib/supabase';
 import ProjectHeader from '../../components/ProjectHeader';
 import SharedStepModal from './components/SharedStepModal';
 import type { SharedTestStep, SharedStepUsage } from '../../types/shared-steps';
+import EmptyState from '../../components/EmptyState';
+import SharedStepsIllustration from '../../components/illustrations/SharedStepsIllustration';
 
 // ── Bulk-update dialog (standalone, opened from the library list) ─────────────
 interface BulkUsageTC { test_case_id: string; custom_id: string; title: string; linked_version: number; }
@@ -747,19 +749,14 @@ export default function ProjectSharedSteps() {
               <i className="ri-loader-4-line animate-spin text-xl" /> Loading…
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 gap-3">
-              <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center">
-                <i className="ri-links-line text-2xl text-slate-400" />
-              </div>
-              <p className="text-sm font-medium text-slate-600">
-                {search || categoryFilter !== 'all' ? 'No shared steps match your filters.' : 'No shared steps yet.'}
-              </p>
-              {!search && categoryFilter === 'all' && !isStarterLimitReached && (
-                <button onClick={() => setShowCreateModal(true)} className={btnPrimary}>
-                  <i className="ri-add-line" /> Create your first shared step
-                </button>
-              )}
-            </div>
+            <EmptyState
+              icon={!search && categoryFilter === 'all' ? <SharedStepsIllustration /> : undefined}
+              title={search || categoryFilter !== 'all' ? 'No shared steps match your filters' : 'No shared steps yet'}
+              description={!search && categoryFilter === 'all' ? 'Reuse common flows like login or checkout across many test cases.' : undefined}
+              action={!search && categoryFilter === 'all' && !isStarterLimitReached
+                ? { label: 'Create shared step', onClick: () => setShowCreateModal(true) }
+                : undefined}
+            />
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
