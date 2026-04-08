@@ -1645,7 +1645,7 @@ export default function ProjectRunsPage() {
         
         <main className="flex-1 overflow-hidden flex flex-col">
           {/* ── Subtab row: lifecycle tabs + action button ── */}
-          <div className="flex items-center border-b border-slate-200 bg-white flex-shrink-0 h-[2.625rem] px-5">
+          <div className="flex items-center border-b border-slate-200 bg-white flex-shrink-0 h-[2.625rem] px-4">
             {([
               { key: 'all' as const, label: 'All', icon: 'ri-list-check-3', iconColor: '#6366F1', count: testRuns.length },
               { key: 'active' as const, label: 'Active', icon: 'ri-play-circle-fill', iconColor: '#3B82F6', count: testRuns.filter(r => ['new','in_progress','paused','under_review'].includes(r.status)).length },
@@ -1696,7 +1696,7 @@ export default function ProjectRunsPage() {
           {(() => {
             const cs = getCalculateStats();
             return (
-              <div className="flex items-center bg-white border-b border-slate-200 flex-shrink-0 h-10 px-5 gap-6">
+              <div className="flex items-center bg-white border-b border-slate-200 flex-shrink-0 h-10 px-4 gap-6">
                 <div className="flex items-center gap-2 pr-6 border-r border-slate-200">
                   <i className="ri-play-circle-line text-base text-blue-500"></i>
                   <span className="text-[0.75rem] text-slate-400">Active Runs</span>
@@ -1718,7 +1718,7 @@ export default function ProjectRunsPage() {
           })()}
 
           {/* ── Toolbar ── */}
-          <div className="flex items-center bg-white border-b border-slate-200 flex-shrink-0 h-11 px-5 gap-3">
+          <div className="flex items-center bg-white border-b border-slate-200 flex-shrink-0 h-11 px-4 gap-3">
             <div className="flex-1 relative">
               <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
               <input

@@ -273,7 +273,7 @@ export default function PricingPage() {
                       : 'bg-white border-gray-200 hover:border-indigo-200 hover:shadow-md'
                   }`}
                 >
-                  <div className="mb-5">
+                  <div className="mb-4">
                     <div className={`w-10 h-10 flex items-center justify-center rounded-xl mb-3 ${plan.highlighted ? 'bg-white/20' : 'bg-indigo-50'}`}>
                       <i className={`${plan.icon} text-xl ${plan.highlighted ? 'text-white' : 'text-indigo-600'}`}></i>
                     </div>
@@ -287,7 +287,7 @@ export default function PricingPage() {
                     <p className={`text-xs leading-relaxed ${plan.highlighted ? 'text-white/70' : 'text-gray-500'}`}>{plan.description}</p>
                   </div>
 
-                  <div className={`mb-5 pb-5 border-b ${plan.highlighted ? 'border-white/20' : 'border-gray-100'}`}>
+                  <div className={`mb-4 pb-4 border-b ${plan.highlighted ? 'border-white/20' : 'border-gray-100'}`}>
                     <span className={`text-3xl font-black ${plan.highlighted ? 'text-white' : 'text-gray-900'}`}>{plan.price}</span>
                     <span className={`text-xs ml-1.5 ${plan.highlighted ? 'text-white/70' : 'text-gray-500'}`}>{plan.period}</span>
                   </div>
@@ -322,7 +322,7 @@ export default function PricingPage() {
 
             {/* Enterprise Tiers */}
             <div className="rounded-2xl border border-amber-200 bg-amber-50/40 p-6">
-              <div className="flex items-center gap-3 mb-5">
+              <div className="flex items-center gap-3 mb-4">
                 <div className="w-8 h-8 bg-amber-100 rounded-xl flex items-center justify-center">
                   <i className="ri-building-2-line text-amber-700 text-base"></i>
                 </div>
@@ -333,7 +333,7 @@ export default function PricingPage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {enterpriseTiers.map((tier) => (
-                  <div key={tier.name} className="bg-white rounded-xl border border-amber-200 p-5 flex flex-col hover:border-amber-400 hover:shadow-sm transition-all">
+                  <div key={tier.name} className="bg-white rounded-xl border border-amber-200 p-4 flex flex-col hover:border-amber-400 hover:shadow-sm transition-all">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
                         <i className={`${tier.icon} text-amber-700 text-sm`}></i>
@@ -349,7 +349,7 @@ export default function PricingPage() {
                       {tier.period && <span className="text-xs ml-1.5 text-gray-500">{tier.period}</span>}
                     </div>
 
-                    <ul className="space-y-2 mb-5 flex-1">
+                    <ul className="space-y-2 mb-4 flex-1">
                       {tier.basePlan && (
                         <li className="text-xs font-semibold text-amber-500 mb-1">
                           Everything in {tier.basePlan}, plus:
@@ -480,7 +480,7 @@ export default function PricingPage() {
               {faqs.map((faq, i) => (
                 <article key={i} className={`rounded-2xl border transition-all duration-200 overflow-hidden ${openFaq === i ? 'border-indigo-200 bg-indigo-50/40' : 'border-gray-100 bg-white hover:border-indigo-100'}`}>
                   <button
-                    className="w-full flex items-center justify-between px-6 py-5 text-left cursor-pointer group"
+                    className="w-full flex items-center justify-between px-6 py-4 text-left cursor-pointer group"
                     onClick={() => setOpenFaq(openFaq === i ? null : i)}
                   >
                     <span className={`text-sm font-semibold pr-4 transition-colors ${openFaq === i ? 'text-indigo-700' : 'text-gray-900 group-hover:text-indigo-700'}`}>{faq.q}</span>
@@ -489,7 +489,7 @@ export default function PricingPage() {
                     </div>
                   </button>
                   {openFaq === i && (
-                    <div className="px-6 pb-5">
+                    <div className="px-6 pb-4">
                       <div className="h-px bg-indigo-100 mb-4"></div>
                       <p className="text-gray-600 text-sm leading-relaxed">{faq.a}</p>
                     </div>

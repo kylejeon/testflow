@@ -675,7 +675,7 @@ export default function ProjectDetail() {
           <main className="flex-1 overflow-y-auto flex flex-col bg-slate-50">
 
             {/* Subtab row */}
-            <div className="flex items-center border-b border-slate-200 bg-white flex-shrink-0 h-[2.625rem] px-5">
+            <div className="flex items-center border-b border-slate-200 bg-white flex-shrink-0 h-[2.625rem] px-4">
               {[
                 { key: 'overview',  label: 'Overview',      icon: 'ri-eye-line',          iconColor: '#6366F1' },
                 { key: 'analytics', label: 'Analytics',     icon: 'ri-bar-chart-2-fill',  iconColor: '#8B5CF6' },

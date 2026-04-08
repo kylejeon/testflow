@@ -259,7 +259,7 @@ function DangerZoneSection({ email }: { email: string }) {
 
   return (
     <>
-      <div className="bg-rose-50 border border-rose-200 rounded-[0.625rem] p-6 mb-5">
+      <div className="bg-rose-50 border border-rose-200 rounded-[0.625rem] p-6 mb-4">
         <h3 className="text-[0.9375rem] font-bold text-rose-600 mb-1 flex items-center gap-2">
           <i className="ri-error-warning-fill"></i>
           Danger Zone
@@ -1899,7 +1899,7 @@ def pytest_sessionfinish(session, exitstatus):
                         }}
                       />
                       {/* ── Data Export ── */}
-                      <div className="bg-white border border-slate-200 rounded-[0.625rem] p-6 mb-5">
+                      <div className="bg-white border border-slate-200 rounded-[0.625rem] p-6 mb-4">
                         <h3 className="text-[0.9375rem] font-bold text-slate-900 mb-0.5 flex items-center gap-2">
                           <i className="ri-download-2-line text-blue-500"></i>
                           Data Export
@@ -1927,7 +1927,7 @@ def pytest_sessionfinish(session, exitstatus):
                   {activeTab === 'members' && (
                     <div>
                       <div className="bg-white border border-slate-200 rounded-[0.625rem] p-6">
-                        <div className="flex items-start justify-between mb-5">
+                        <div className="flex items-start justify-between mb-4">
                           <div>
                             <h3 className="text-[0.9375rem] font-bold text-slate-900 mb-0.5">Project Members</h3>
                             <p className="text-[0.8125rem] text-slate-500">Manage team members and their roles for each project.</p>
@@ -1979,11 +1979,11 @@ def pytest_sessionfinish(session, exitstatus):
                   )}
 
                   {activeTab === 'billing' && (
-                    <div className="space-y-5">
+                    <div className="space-y-4">
                       {/* ── Current Plan ── */}
                       <div className="bg-white border border-slate-200 rounded-[0.625rem] p-6">
                         <h3 className="text-[0.9375rem] font-bold text-slate-900 mb-1">Current Plan</h3>
-                        <p className="text-[0.8125rem] text-slate-500 mb-5">View and manage your subscription.</p>
+                        <p className="text-[0.8125rem] text-slate-500 mb-4">View and manage your subscription.</p>
 
                         {/* Plan card */}
                         <div className="flex items-center gap-4 px-5 py-4 border-2 border-indigo-200 rounded-[0.625rem] bg-indigo-50 mb-4">
@@ -2065,7 +2065,7 @@ def pytest_sessionfinish(session, exitstatus):
                       {/* ── Invoice History ── */}
                       <div className="bg-white border border-slate-200 rounded-[0.625rem] p-6">
                         <h3 className="text-[0.9375rem] font-bold text-slate-900 mb-1">Invoice History</h3>
-                        <p className="text-[0.8125rem] text-slate-500 mb-5">View and download your past invoices.</p>
+                        <p className="text-[0.8125rem] text-slate-500 mb-4">View and download your past invoices.</p>
 
                         {loadingInvoices ? (
                           <div className="text-center py-10 text-[0.8125rem] text-slate-400">
@@ -2127,7 +2127,7 @@ def pytest_sessionfinish(session, exitstatus):
 
 
                   {activeTab === 'integrations' && (
-                    <div className="space-y-5">
+                    <div className="space-y-4">
 
                       {/* ════════ Jira Integration ════════ */}
                       <div className="bg-white border border-slate-200 rounded-[0.625rem] p-6">
@@ -2144,7 +2144,7 @@ def pytest_sessionfinish(session, exitstatus):
                             </span>
                           )}
                         </div>
-                        <p className="text-[0.8125rem] text-slate-500 mb-5">Connect your Jira account to create issues directly from test results.</p>
+                        <p className="text-[0.8125rem] text-slate-500 mb-4">Connect your Jira account to create issues directly from test results.</p>
 
                         {!isHobbyOrHigher && (
                           <div className="mb-4 p-4 border border-yellow-200 rounded-[0.75rem] flex items-start gap-3" style={{ background: 'linear-gradient(to right,#FEF9C3,#FEF3C7)' }}>
@@ -2532,7 +2532,7 @@ def pytest_sessionfinish(session, exitstatus):
                             </span>
                           )}
                         </div>
-                        <p className="text-[0.8125rem] text-slate-500 mb-5">Connect GitHub to import issues as requirements and create issues from test failures.</p>
+                        <p className="text-[0.8125rem] text-slate-500 mb-4">Connect GitHub to import issues as requirements and create issues from test failures.</p>
 
                         {!isHobbyOrHigher && (
                           <div className="mb-4 p-4 border border-yellow-200 rounded-[0.75rem] flex items-start gap-3" style={{ background: 'linear-gradient(to right,#FEF9C3,#FEF3C7)' }}>
@@ -2773,7 +2773,7 @@ def pytest_sessionfinish(session, exitstatus):
                             </span>
                           )}
                         </div>
-                        <p className="text-[0.8125rem] text-slate-500 mb-5">Send real-time notifications to Slack or Microsoft Teams when events occur in your projects.</p>
+                        <p className="text-[0.8125rem] text-slate-500 mb-4">Send real-time notifications to Slack or Microsoft Teams when events occur in your projects.</p>
 
                         {!isHobbyOrHigher && (
                           <div className="mb-4 p-4 border border-yellow-200 rounded-[0.75rem] flex items-start gap-3" style={{ background: 'linear-gradient(to right,#FEF9C3,#FEF3C7)' }}>
@@ -2946,7 +2946,7 @@ def pytest_sessionfinish(session, exitstatus):
                             </span>
                           )}
                         </div>
-                        <p className="text-[0.8125rem] text-slate-500 mb-5">Connect your CI/CD pipeline to automatically report test results.</p>
+                        <p className="text-[0.8125rem] text-slate-500 mb-4">Connect your CI/CD pipeline to automatically report test results.</p>
 
                         {!isProfessionalOrHigher && (
                           <div className="mb-4 p-4 border border-indigo-200 rounded-[0.75rem] flex items-start gap-3" style={{ background: 'linear-gradient(to right,#EEF2FF,#F5F3FF)' }}>
@@ -3114,7 +3114,7 @@ def pytest_sessionfinish(session, exitstatus):
                   )}
 
                   {activeTab === 'api' && (
-                    <div className="space-y-5">
+                    <div className="space-y-4">
                       {/* Tier gate banner */}
                       {!isProfessionalOrHigher && (
                         <div className="p-4 bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-200 rounded-[0.75rem] flex items-start gap-3">
@@ -3131,7 +3131,7 @@ def pytest_sessionfinish(session, exitstatus):
                         </div>
                       )}
                       {/* API Tokens card */}
-                      <div className="bg-white border border-slate-200 rounded-[0.625rem] p-6 mb-5">
+                      <div className="bg-white border border-slate-200 rounded-[0.625rem] p-6 mb-4">
                           <div className="flex items-start justify-between mb-4">
                             <div>
                               <h3 className="text-[0.9375rem] font-bold text-slate-900 mb-0.5 flex items-center gap-2">
@@ -3233,7 +3233,7 @@ def pytest_sessionfinish(session, exitstatus):
                         <p className="text-[0.8125rem] text-slate-500 mb-4">Install a reporter package and upload test results automatically from your CI pipeline.</p>
 
                         {/* Framework tabs */}
-                        <div className="flex gap-2 mb-5 flex-wrap">
+                        <div className="flex gap-2 mb-4 flex-wrap">
                           {(['playwright', 'cypress', 'jest', 'curl'] as const).map((fw) => (
                             <button
                               key={fw}
@@ -3673,7 +3673,7 @@ describe('Login', () => {
                     <div>
                       <NotificationSettingsPanel />
                       {/* ── Coming Soon: Email Notifications ── */}
-                      <div className="relative mt-5">
+                      <div className="relative mt-4">
                         <div className="absolute top-3 right-3 px-2.5 py-0.5 bg-amber-500 text-white text-[0.625rem] font-bold rounded-full z-10">COMING SOON</div>
                         <div className="bg-white border border-slate-200 rounded-[0.625rem] p-6 opacity-60">
                           <h3 className="text-[0.9375rem] font-bold text-slate-900 mb-0.5 flex items-center gap-2">
@@ -3683,7 +3683,7 @@ describe('Login', () => {
                         </div>
                       </div>
                       {/* ── Coming Soon: Desktop Push Notifications ── */}
-                      <div className="relative mt-5">
+                      <div className="relative mt-4">
                         <div className="absolute top-3 right-3 px-2.5 py-0.5 bg-amber-500 text-white text-[0.625rem] font-bold rounded-full z-10">COMING SOON</div>
                         <div className="bg-white border border-slate-200 rounded-[0.625rem] p-6 opacity-60">
                           <h3 className="text-[0.9375rem] font-bold text-slate-900 mb-0.5 flex items-center gap-2">
@@ -3941,7 +3941,7 @@ describe('Login', () => {
               </button>
             </div>
 
-            <div className="p-6 space-y-5">
+            <div className="p-6 space-y-4">
               {/* Project selector */}
               <div>
                 <label className="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Project <span className="text-red-500">*</span></label>

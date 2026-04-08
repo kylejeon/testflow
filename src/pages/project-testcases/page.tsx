@@ -455,7 +455,7 @@ export default function ProjectTestCases() {
               { key: 'deprecated', label: 'Deprecated', icon: 'ri-forbid-line',           iconColor: '#94A3B8' },
             ];
             return (
-              <div className="flex items-center border-b border-slate-200 bg-white flex-shrink-0 h-[2.625rem] px-5">
+              <div className="flex items-center border-b border-slate-200 bg-white flex-shrink-0 h-[2.625rem] px-4">
                 {tabs.map(tab => (
                   <button
                     key={tab.key}
@@ -498,7 +498,7 @@ export default function ProjectTestCases() {
           })()}
 
           {/* ── Search / filter toolbar ── */}
-          <div className="flex items-center gap-3 px-5 py-[0.625rem] border-b border-slate-200 bg-white flex-shrink-0">
+          <div className="flex items-center gap-3 px-4 py-[0.625rem] border-b border-slate-200 bg-white flex-shrink-0">
             <div className="flex-1 flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-md px-[0.625rem] py-[0.3125rem]">
               <i className="ri-search-line text-slate-400 text-sm flex-shrink-0"></i>
               <input
