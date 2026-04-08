@@ -83,8 +83,8 @@ export default function AdminMetricCard({
       </div>
       {loading ? (
         <div className="space-y-2">
-          <div className="h-8 bg-gray-100 rounded animate-pulse w-24"></div>
-          <div className="h-4 bg-gray-100 rounded animate-pulse w-32"></div>
+          <div className="h-8 bg-gray-50 rounded animate-pulse w-24"></div>
+          <div className="h-4 bg-gray-50 rounded animate-pulse w-32"></div>
         </div>
       ) : (
         <div>
