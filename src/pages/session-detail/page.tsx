@@ -985,44 +985,44 @@ export default function SessionDetail() {
   ];
 
   const statusInfo = !session.started_at
-    ? { label: 'Not Started', pill: 'bg-[#F1F5F9] text-[#64748B]', dot: 'bg-[#94A3B8]' }
+    ? { label: 'Not Started', pill: 'bg-slate-100 text-slate-500', dot: 'bg-slate-400' }
     : session.status === 'closed'
-    ? { label: 'Completed', pill: 'bg-[#DCFCE7] text-[#15803D]', dot: 'bg-[#22C55E]' }
+    ? { label: 'Completed', pill: 'bg-green-100 text-green-700', dot: 'bg-green-500' }
     : session.paused_at
-    ? { label: 'Paused', pill: 'bg-[#FEF3C7] text-[#92400E]', dot: 'bg-[#F59E0B]' }
-    : { label: 'In Progress', pill: 'bg-[#EFF6FF] text-[#1D4ED8]', dot: 'bg-[#3B82F6]' };
+    ? { label: 'Paused', pill: 'bg-amber-50 text-amber-800', dot: 'bg-amber-500' }
+    : { label: 'In Progress', pill: 'bg-blue-50 text-blue-700', dot: 'bg-blue-500' };
 
   return (
     <div className="flex h-screen bg-white">
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Breadcrumb Row */}
-        <div className="h-[2.625rem] bg-white border-b border-[#E2E8F0] flex items-center px-5 gap-3 flex-shrink-0 text-[0.8125rem]">
+        <div className="h-[2.625rem] bg-white border-b border-slate-200 flex items-center px-5 gap-3 flex-shrink-0 text-[0.8125rem]">
           <button
             onClick={() => navigate(`/projects/${projectId}/discovery-logs`)}
-            className="flex items-center gap-1 text-[#6366F1] font-semibold cursor-pointer hover:text-[#4F46E5] transition-colors"
+            className="flex items-center gap-1 text-indigo-500 font-semibold cursor-pointer hover:text-indigo-600 transition-colors"
           >
             <i className="ri-arrow-left-s-line" />
             Back
           </button>
-          <span className="text-[#CBD5E1]">/</span>
+          <span className="text-slate-300">/</span>
           <button
             onClick={() => navigate(`/projects/${projectId}/discovery-logs`)}
-            className="text-[#6366F1] font-medium cursor-pointer hover:underline"
+            className="text-indigo-500 font-medium cursor-pointer hover:underline"
           >
             Discovery Log
           </button>
           {milestone && (
             <>
-              <span className="text-[#CBD5E1]">/</span>
-              <span className="text-[#64748B]">{milestone.name}</span>
+              <span className="text-slate-300">/</span>
+              <span className="text-slate-500">{milestone.name}</span>
             </>
           )}
-          <span className="text-[#CBD5E1]">/</span>
-          <span className="text-[#0F172A] font-medium truncate max-w-[240px]">{session.name}</span>
+          <span className="text-slate-300">/</span>
+          <span className="text-slate-900 font-medium truncate max-w-[240px]">{session.name}</span>
           <div className="ml-auto flex items-center gap-2">
             <button
               onClick={() => setShowEditModal(true)}
-              className="flex items-center gap-1.5 px-3 py-[0.3125rem] border border-[#E2E8F0] rounded-[6px] text-[0.8125rem] text-[#64748B] hover:bg-[#F1F5F9] cursor-pointer transition-colors"
+              className="flex items-center gap-1.5 px-3 py-[0.3125rem] border border-slate-200 rounded-[6px] text-[0.8125rem] text-slate-500 hover:bg-slate-100 cursor-pointer transition-colors"
             >
               <i className="ri-edit-line text-[0.875rem]" />
               Edit
@@ -1032,12 +1032,12 @@ export default function SessionDetail() {
 
         <div className="flex flex-1 overflow-hidden">
           {/* Detail Main */}
-          <div className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]">
+          <div className="flex-1 flex flex-col overflow-hidden bg-slate-50">
             {/* Name + Mission */}
-            <div className="bg-white border-b border-[#E2E8F0] px-5 py-4 flex-shrink-0">
-              <div className="text-[1.5rem] font-extrabold text-[#0F172A] leading-tight">{session.name}</div>
+            <div className="bg-white border-b border-slate-200 px-5 py-4 flex-shrink-0">
+              <div className="text-[1.5rem] font-extrabold text-slate-900 leading-tight">{session.name}</div>
               {session.mission && (
-                <div className="mt-3 p-3 border border-[#E2E8F0] rounded-[6px] bg-[#F8FAFC] text-[0.8125rem] text-[#64748B] leading-[1.5]">
+                <div className="mt-3 p-3 border border-slate-200 rounded-[6px] bg-slate-50 text-[0.8125rem] text-slate-500 leading-[1.5]">
                   {session.mission}
                 </div>
               )}
@@ -1047,7 +1047,7 @@ export default function SessionDetail() {
             <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3">
               {logs.length === 0 && (
                 <div className="flex-1 flex items-center justify-center">
-                  <div className="text-center text-[#94A3B8] py-12">
+                  <div className="text-center text-slate-400 py-12">
                     <i className="ri-sticky-note-2-line text-4xl mb-3 block" />
                     <p className="text-[0.8125rem]">No entries yet. Add your first note, bug, or observation.</p>
                   </div>
@@ -1058,29 +1058,29 @@ export default function SessionDetail() {
                 return (
                   <div
                     key={log.id}
-                    className="bg-white rounded-[6px] border border-[#E2E8F0]"
+                    className="bg-white rounded-[6px] border border-slate-200"
                     style={{ borderLeft: `3px solid ${cfg.border}` }}
                   >
                     <div className="px-3 py-2.5">
                       <div className="flex items-center gap-2 mb-2">
                         <i className={`${cfg.icon} text-[0.875rem]`} style={{ color: cfg.color }} />
-                        <span className="text-[0.8125rem] font-semibold text-[#0F172A]">{cfg.label}</span>
-                        <span className="text-[0.75rem] text-[#94A3B8] ml-auto">{formatTime(log.created_at)}</span>
+                        <span className="text-[0.8125rem] font-semibold text-slate-900">{cfg.label}</span>
+                        <span className="text-[0.75rem] text-slate-400 ml-auto">{formatTime(log.created_at)}</span>
                         <div className="relative">
                           <button
                             onClick={() => setOpenLogMenuId(openLogMenuId === log.id ? null : log.id)}
-                            className="w-6 h-6 flex items-center justify-center text-[#94A3B8] hover:text-[#64748B] hover:bg-[#F1F5F9] rounded cursor-pointer"
+                            className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-slate-500 hover:bg-slate-100 rounded cursor-pointer"
                           >
                             <i className="ri-more-2-fill text-[0.8125rem]" />
                           </button>
                           {openLogMenuId === log.id && (
                             <>
                               <div className="fixed inset-0 z-10" onClick={() => setOpenLogMenuId(null)} />
-                              <div className="absolute right-0 mt-1 w-28 bg-white border border-[#E2E8F0] rounded-lg shadow-lg z-20">
-                                <button onClick={() => handleEditLog(log)} className="w-full px-3 py-2 text-[0.8125rem] text-left text-[#475569] hover:bg-[#F8FAFC] flex items-center gap-2 cursor-pointer rounded-t-lg">
+                              <div className="absolute right-0 mt-1 w-28 bg-white border border-slate-200 rounded-lg shadow-lg z-20">
+                                <button onClick={() => handleEditLog(log)} className="w-full px-3 py-2 text-[0.8125rem] text-left text-slate-600 hover:bg-slate-50 flex items-center gap-2 cursor-pointer rounded-t-lg">
                                   <i className="ri-edit-line" />Edit
                                 </button>
-                                <button onClick={() => { setOpenLogMenuId(null); handleDeleteLog(log.id); }} className="w-full px-3 py-2 text-[0.8125rem] text-left text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer rounded-b-lg border-t border-[#F1F5F9]">
+                                <button onClick={() => { setOpenLogMenuId(null); handleDeleteLog(log.id); }} className="w-full px-3 py-2 text-[0.8125rem] text-left text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer rounded-b-lg border-t border-slate-100">
                                   <i className="ri-delete-bin-line" />Delete
                                 </button>
                               </div>
@@ -1088,7 +1088,7 @@ export default function SessionDetail() {
                           )}
                         </div>
                       </div>
-                      <div className="text-[0.8125rem] text-[#0F172A] leading-[1.5] prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: log.content }} />
+                      <div className="text-[0.8125rem] text-slate-900 leading-[1.5] prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: log.content }} />
                       {log.issues && log.issues.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           {parseIssues(log.issues).map((issueKey: string, idx: number) => (
@@ -1105,7 +1105,7 @@ export default function SessionDetail() {
                             const fileName = url.split('/').pop() || 'file';
                             const isImage = url.match(/\.(jpg|jpeg|png|gif|webp)$/i);
                             return (
-                              <div key={idx} className="inline-flex items-center gap-1.5 px-2 py-1 bg-[#F8FAFC] text-[#475569] rounded border border-[#E2E8F0] text-[0.6875rem] font-medium">
+                              <div key={idx} className="inline-flex items-center gap-1.5 px-2 py-1 bg-slate-50 text-slate-600 rounded border border-slate-200 text-[0.6875rem] font-medium">
                                 {isImage ? <img src={url} alt={fileName} className="w-6 h-6 object-cover rounded cursor-pointer" onClick={() => handleImagePreview(url)} /> : <i className="ri-file-line" />}
                                 <a href={url} target="_blank" rel="noopener noreferrer" className="max-w-[120px] truncate hover:underline">{fileName}</a>
                               </div>
@@ -1126,7 +1126,7 @@ export default function SessionDetail() {
 
               {/* Type-specific expanded form */}
               {activeForm && (
-                <div className="bg-white border-t border-[#E2E8F0] px-5 py-3">
+                <div className="bg-white border-t border-slate-200 px-5 py-3">
                   <div className="flex items-center justify-between mb-2">
                     <span
                       className="text-[0.6875rem] font-bold uppercase tracking-wide flex items-center gap-1.5"
@@ -1137,7 +1137,7 @@ export default function SessionDetail() {
                     </span>
                     <button
                       onClick={() => { setActiveForm(null); setNoteFormContent(''); }}
-                      className="w-6 h-6 bg-[#F1F5F9] hover:bg-[#E2E8F0] rounded-[4px] flex items-center justify-center text-[#64748B] cursor-pointer"
+                      className="w-6 h-6 bg-slate-100 hover:bg-slate-200 rounded-[4px] flex items-center justify-center text-slate-500 cursor-pointer"
                     >
                       <i className="ri-close-line text-sm" />
                     </button>
@@ -1151,7 +1151,7 @@ export default function SessionDetail() {
                       onKeyDown={(e) => { if (e.key === 'Enter' && noteFormContent.trim()) handleAddLog(); }}
                       placeholder={activeForm === 'note' ? 'Add a note...' : 'Add an observation...'}
                       autoFocus
-                      className="w-full px-2.5 py-2 border border-[#E2E8F0] rounded-[6px] bg-[#F8FAFC] text-[0.8125rem] text-[#0F172A] focus:outline-none focus:border-[#6366F1] focus:bg-white placeholder:text-[#94A3B8]"
+                      className="w-full px-2.5 py-2 border border-slate-200 rounded-[6px] bg-slate-50 text-[0.8125rem] text-slate-900 focus:outline-none focus:border-indigo-500 focus:bg-white placeholder:text-slate-400"
                     />
                   )}
 
@@ -1163,14 +1163,14 @@ export default function SessionDetail() {
                         onChange={(e) => setBugTitle(e.target.value)}
                         placeholder="Bug title..."
                         autoFocus
-                        className="w-full px-2.5 py-2 border border-[#FECACA] rounded-[6px] bg-[#FEF2F2] text-[0.8125rem] text-[#0F172A] font-semibold focus:outline-none focus:border-[#EF4444] focus:bg-white placeholder:text-[#F87171]"
+                        className="w-full px-2.5 py-2 border border-rose-200 rounded-[6px] bg-rose-50 text-[0.8125rem] text-slate-900 font-semibold focus:outline-none focus:border-rose-500 focus:bg-white placeholder:text-red-400"
                       />
                       <textarea
                         value={bugDesc}
                         onChange={(e) => setBugDesc(e.target.value)}
                         placeholder="Description (optional)"
                         rows={2}
-                        className="w-full px-2.5 py-2 border border-[#E2E8F0] rounded-[6px] bg-[#F8FAFC] text-[0.8125rem] text-[#0F172A] resize-none focus:outline-none focus:border-[#EF4444] focus:bg-white placeholder:text-[#94A3B8]"
+                        className="w-full px-2.5 py-2 border border-slate-200 rounded-[6px] bg-slate-50 text-[0.8125rem] text-slate-900 resize-none focus:outline-none focus:border-rose-500 focus:bg-white placeholder:text-slate-400"
                       />
                       <div className="flex items-center gap-2">
                         <div className="flex gap-1">
@@ -1180,11 +1180,11 @@ export default function SessionDetail() {
                               onClick={() => setBugSeverity(s)}
                               className={`px-2.5 py-[3px] text-[0.6875rem] font-semibold rounded-[4px] border transition-all cursor-pointer ${
                                 bugSeverity === s
-                                  ? s === 'critical' ? 'bg-[#DC2626] border-[#DC2626] text-white'
-                                  : s === 'major' ? 'bg-[#F59E0B] border-[#F59E0B] text-white'
-                                  : s === 'minor' ? 'bg-[#3B82F6] border-[#3B82F6] text-white'
-                                  : 'bg-[#94A3B8] border-[#94A3B8] text-white'
-                                  : 'bg-white border-[#E2E8F0] text-[#64748B] hover:border-[#94A3B8]'
+                                  ? s === 'critical' ? 'bg-rose-600 border-rose-600 text-white'
+                                  : s === 'major' ? 'bg-amber-500 border-amber-500 text-white'
+                                  : s === 'minor' ? 'bg-blue-500 border-blue-500 text-white'
+                                  : 'bg-slate-400 border-slate-400 text-white'
+                                  : 'bg-white border-slate-200 text-slate-500 hover:border-slate-400'
                               }`}
                             >
                               {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -1192,10 +1192,10 @@ export default function SessionDetail() {
                           ))}
                         </div>
                         <div className="flex gap-1 ml-auto">
-                          <button onClick={handleAttachClick} disabled={uploadingFiles} className="flex items-center gap-1 px-2 py-[3px] border border-[#E2E8F0] rounded-[4px] text-[0.75rem] text-[#64748B] hover:bg-[#F1F5F9] cursor-pointer disabled:opacity-50">
+                          <button onClick={handleAttachClick} disabled={uploadingFiles} className="flex items-center gap-1 px-2 py-[3px] border border-slate-200 rounded-[4px] text-[0.75rem] text-slate-500 hover:bg-slate-100 cursor-pointer disabled:opacity-50">
                             {uploadingFiles ? <><i className="ri-loader-4-line animate-spin text-xs" />Uploading</> : <><i className="ri-attachment-2 text-xs" />Attach</>}
                           </button>
-                          <button onClick={handleScreenshot} disabled={uploadingFiles} className="flex items-center gap-1 px-2 py-[3px] border border-[#E2E8F0] rounded-[4px] text-[0.75rem] text-[#64748B] hover:bg-[#F1F5F9] cursor-pointer disabled:opacity-50">
+                          <button onClick={handleScreenshot} disabled={uploadingFiles} className="flex items-center gap-1 px-2 py-[3px] border border-slate-200 rounded-[4px] text-[0.75rem] text-slate-500 hover:bg-slate-100 cursor-pointer disabled:opacity-50">
                             <i className="ri-screenshot-2-line text-xs" />Screenshot
                           </button>
                         </div>
@@ -1209,7 +1209,7 @@ export default function SessionDetail() {
                             </div>
                           ))}
                           {attachments.map((f, i) => (
-                            <div key={i} className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-[#F8FAFC] text-[#475569] rounded border border-[#E2E8F0] text-[0.6875rem] font-medium">
+                            <div key={i} className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-slate-50 text-slate-600 rounded border border-slate-200 text-[0.6875rem] font-medium">
                               {isImageFile(f.type) ? <img src={f.url} alt={f.name} className="w-5 h-5 object-cover rounded cursor-pointer" onClick={() => handleImagePreview(f.url)} /> : <i className="ri-file-line text-xs" />}
                               <span className="max-w-[100px] truncate">{f.name}</span>
                               <button onClick={() => handleRemoveAttachment(i)} className="cursor-pointer hover:text-gray-700"><i className="ri-close-line text-xs" /></button>
@@ -1224,16 +1224,16 @@ export default function SessionDetail() {
                   {activeForm === 'passed' && (
                     <div className="flex flex-col gap-2">
                       <div className="flex items-start gap-2">
-                        <span className="w-16 flex-shrink-0 text-[0.6875rem] font-bold text-[#7C3AED] uppercase tracking-wide pt-[9px]">Step</span>
-                        <input autoFocus value={stepAction} onChange={(e) => setStepAction(e.target.value)} placeholder="What was done..." className="flex-1 px-2.5 py-2 border border-[#E2E8F0] rounded-[6px] bg-[#F8FAFC] text-[0.8125rem] text-[#0F172A] focus:outline-none focus:border-[#7C3AED] focus:bg-white placeholder:text-[#94A3B8]" />
+                        <span className="w-16 flex-shrink-0 text-[0.6875rem] font-bold text-violet-600 uppercase tracking-wide pt-[9px]">Step</span>
+                        <input autoFocus value={stepAction} onChange={(e) => setStepAction(e.target.value)} placeholder="What was done..." className="flex-1 px-2.5 py-2 border border-slate-200 rounded-[6px] bg-slate-50 text-[0.8125rem] text-slate-900 focus:outline-none focus:border-violet-600 focus:bg-white placeholder:text-slate-400" />
                       </div>
                       <div className="flex items-start gap-2">
-                        <span className="w-16 flex-shrink-0 text-[0.6875rem] font-bold text-[#7C3AED] uppercase tracking-wide pt-[9px]">Expected</span>
-                        <input value={stepExpected} onChange={(e) => setStepExpected(e.target.value)} placeholder="Expected result..." className="flex-1 px-2.5 py-2 border border-[#E2E8F0] rounded-[6px] bg-[#F8FAFC] text-[0.8125rem] text-[#0F172A] focus:outline-none focus:border-[#7C3AED] focus:bg-white placeholder:text-[#94A3B8]" />
+                        <span className="w-16 flex-shrink-0 text-[0.6875rem] font-bold text-violet-600 uppercase tracking-wide pt-[9px]">Expected</span>
+                        <input value={stepExpected} onChange={(e) => setStepExpected(e.target.value)} placeholder="Expected result..." className="flex-1 px-2.5 py-2 border border-slate-200 rounded-[6px] bg-slate-50 text-[0.8125rem] text-slate-900 focus:outline-none focus:border-violet-600 focus:bg-white placeholder:text-slate-400" />
                       </div>
                       <div className="flex items-start gap-2">
-                        <span className="w-16 flex-shrink-0 text-[0.6875rem] font-bold text-[#7C3AED] uppercase tracking-wide pt-[9px]">Actual</span>
-                        <input value={stepActual} onChange={(e) => setStepActual(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && stepAction.trim()) handleAddLog(); }} placeholder="Actual result..." className="flex-1 px-2.5 py-2 border border-[#E2E8F0] rounded-[6px] bg-[#F8FAFC] text-[0.8125rem] text-[#0F172A] focus:outline-none focus:border-[#7C3AED] focus:bg-white placeholder:text-[#94A3B8]" />
+                        <span className="w-16 flex-shrink-0 text-[0.6875rem] font-bold text-violet-600 uppercase tracking-wide pt-[9px]">Actual</span>
+                        <input value={stepActual} onChange={(e) => setStepActual(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && stepAction.trim()) handleAddLog(); }} placeholder="Actual result..." className="flex-1 px-2.5 py-2 border border-slate-200 rounded-[6px] bg-slate-50 text-[0.8125rem] text-slate-900 focus:outline-none focus:border-violet-600 focus:bg-white placeholder:text-slate-400" />
                       </div>
                     </div>
                   )}
@@ -1241,14 +1241,14 @@ export default function SessionDetail() {
               )}
 
               {/* Main bar */}
-              <div className="bg-white border-t border-[#E2E8F0] px-5 py-3 flex items-center gap-2">
+              <div className="bg-white border-t border-slate-200 px-5 py-3 flex items-center gap-2">
                 {!activeForm && (
                   <input
                     value={noteFormContent}
                     onChange={(e) => setNoteFormContent(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter' && noteFormContent.trim()) handleAddLog(); }}
                     placeholder="Select a type or press N / B / O / T"
-                    className="flex-1 px-2.5 py-2 border border-[#E2E8F0] rounded-[6px] bg-[#F8FAFC] text-[0.8125rem] text-[#0F172A] focus:outline-none focus:border-[#6366F1] focus:bg-white placeholder:text-[#94A3B8]"
+                    className="flex-1 px-2.5 py-2 border border-slate-200 rounded-[6px] bg-slate-50 text-[0.8125rem] text-slate-900 focus:outline-none focus:border-indigo-500 focus:bg-white placeholder:text-slate-400"
                   />
                 )}
                 {activeForm && <div className="flex-1" />}
@@ -1259,11 +1259,11 @@ export default function SessionDetail() {
                       onClick={() => { setActiveForm(activeForm === type ? null : type); setNoteFormContent(''); }}
                       className={`flex items-center gap-1 px-2.5 py-[5px] border rounded-[6px] text-[0.75rem] font-semibold cursor-pointer transition-colors ${
                         activeForm === type
-                          ? type === 'note'    ? 'bg-[#EEF2FF] border-[#6366F1] text-[#4338CA]'
-                          : type === 'failed'  ? 'bg-[#FEF2F2] border-[#EF4444] text-[#DC2626]'
-                          : type === 'blocked' ? 'bg-[#FFFBEB] border-[#F59E0B] text-[#D97706]'
-                          :                      'bg-[#F5F3FF] border-[#7C3AED] text-[#7C3AED]'
-                          : 'bg-white border-[#E2E8F0] text-[#64748B] hover:bg-[#F8FAFC]'
+                          ? type === 'note'    ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
+                          : type === 'failed'  ? 'bg-rose-50 border-rose-500 text-rose-600'
+                          : type === 'blocked' ? 'bg-amber-50 border-amber-500 text-amber-600'
+                          :                      'bg-violet-50 border-violet-600 text-violet-600'
+                          : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
                       }`}
                     >
                       <i className={`${icon} text-[0.75rem]`} />{label}
@@ -1277,15 +1277,15 @@ export default function SessionDetail() {
                     activeForm === 'passed' ? !stepAction.trim() :
                     !noteFormContent.trim()
                   }
-                  className="px-4 py-[6px] bg-[#6366F1] text-white text-[0.8125rem] font-semibold rounded-[6px] hover:bg-[#4F46E5] disabled:bg-[#C7D2FE] disabled:cursor-not-allowed cursor-pointer whitespace-nowrap transition-colors"
+                  className="px-4 py-[6px] bg-indigo-500 text-white text-[0.8125rem] font-semibold rounded-[6px] hover:bg-indigo-600 disabled:bg-indigo-200 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap transition-colors"
                 >
                   Add
                 </button>
               </div>
             </div>
 ) : (
-            <div className="flex-shrink-0 border-t border-[#E2E8F0] px-5 py-4">
-              <div className="flex items-center justify-center gap-2 text-[#94A3B8] text-[0.8125rem]">
+            <div className="flex-shrink-0 border-t border-slate-200 px-5 py-4">
+              <div className="flex items-center justify-center gap-2 text-slate-400 text-[0.8125rem]">
                 <i className="ri-lock-line" />
                 <span>This session is completed. Reopen to add entries.</span>
               </div>
@@ -1294,47 +1294,47 @@ export default function SessionDetail() {
           </div>
 
           {/* Detail Sidebar */}
-          <div className="w-[300px] flex-shrink-0 border-l border-[#E2E8F0] bg-white overflow-y-auto">
+          <div className="w-[300px] flex-shrink-0 border-l border-slate-200 bg-white overflow-y-auto">
             {/* About Panel */}
-            <div className="p-4 border-b border-[#E2E8F0]">
-              <div className="text-[0.9375rem] font-semibold text-[#0F172A] mb-3">About</div>
+            <div className="p-4 border-b border-slate-200">
+              <div className="text-[0.9375rem] font-semibold text-slate-900 mb-3">About</div>
               <div className="space-y-3 text-[0.8125rem]">
                 <div className="flex items-center justify-between">
-                  <span className="text-[#94A3B8] font-medium">Status</span>
+                  <span className="text-slate-400 font-medium">Status</span>
                   <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] text-[0.75rem] font-semibold ${statusInfo.pill}`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dot}`} />{statusInfo.label}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[#94A3B8] font-medium">Created</span>
-                  <span className="text-[#0F172A]">{new Date(session.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                  <span className="text-slate-400 font-medium">Created</span>
+                  <span className="text-slate-900">{new Date(session.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                 </div>
                 {milestone && (
                   <div className="flex items-center justify-between">
-                    <span className="text-[#94A3B8] font-medium">Milestone</span>
+                    <span className="text-slate-400 font-medium">Milestone</span>
                     <span className="inline-flex items-center px-2 py-0.5 text-[0.75rem] font-medium bg-orange-100 text-orange-700 rounded">{milestone.name}</span>
                   </div>
                 )}
                 {session.tags && session.tags.length > 0 && (
                   <div>
-                    <div className="text-[#94A3B8] font-medium mb-1.5">Tags</div>
+                    <div className="text-slate-400 font-medium mb-1.5">Tags</div>
                     <div className="flex flex-wrap gap-1">
                       {session.tags.map((tag: string, i: number) => (
-                        <span key={i} className="px-1.5 py-0.5 bg-[#EEF2FF] text-[#4338CA] rounded-[3px] text-[0.6875rem] font-medium">{tag}</span>
+                        <span key={i} className="px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded-[3px] text-[0.6875rem] font-medium">{tag}</span>
                       ))}
                     </div>
                   </div>
                 )}
                 {assigneeProfiles.length > 0 && (
                   <div>
-                    <div className="text-[#94A3B8] font-medium mb-1.5">Assignees</div>
+                    <div className="text-slate-400 font-medium mb-1.5">Assignees</div>
                     <div className="space-y-1.5">
                       {assigneeProfiles.map((p) => (
                         <div key={p.id} className="flex items-center gap-2">
                           <div className={`w-5 h-5 rounded-full bg-gradient-to-br ${getAvatarColor(p.id)} flex items-center justify-center flex-shrink-0`}>
                             <span className="text-[0.5625rem] font-semibold text-white">{getProfileInitial(p)}</span>
                           </div>
-                          <span className="text-[#0F172A]">{getProfileDisplayName(p)}</span>
+                          <span className="text-slate-900">{getProfileDisplayName(p)}</span>
                         </div>
                       ))}
                     </div>
@@ -1342,8 +1342,8 @@ export default function SessionDetail() {
                 )}
                 {session.duration_minutes > 0 && (
                   <div className="flex items-center justify-between">
-                    <span className="text-[#94A3B8] font-medium">Time Box</span>
-                    <span className="text-[#0F172A]">{Math.floor(session.duration_minutes / 60) > 0 ? `${Math.floor(session.duration_minutes / 60)}h` : ''}{session.duration_minutes % 60 > 0 ? ` ${session.duration_minutes % 60}m` : ''} (goal)</span>
+                    <span className="text-slate-400 font-medium">Time Box</span>
+                    <span className="text-slate-900">{Math.floor(session.duration_minutes / 60) > 0 ? `${Math.floor(session.duration_minutes / 60)}h` : ''}{session.duration_minutes % 60 > 0 ? ` ${session.duration_minutes % 60}m` : ''} (goal)</span>
                   </div>
                 )}
               </div>
@@ -1351,15 +1351,15 @@ export default function SessionDetail() {
 
             {/* Activity Panel */}
             <div className="p-4">
-              <div className="text-[0.9375rem] font-semibold text-[#0F172A] mb-3">Activity</div>
+              <div className="text-[0.9375rem] font-semibold text-slate-900 mb-3">Activity</div>
 
               {/* Timer */}
-              <div className="mb-3 text-center py-3 bg-[#F8FAFC] rounded-[6px] border border-[#E2E8F0]">
-                <div className="text-[1.75rem] font-bold text-[#0F172A] font-mono tracking-tight">{elapsedTime}</div>
-                <div className="text-[0.6875rem] text-[#94A3B8] font-medium uppercase tracking-wide mt-1">Total Elapsed</div>
-                <div className="mt-2 mx-3 h-1.5 bg-[#E2E8F0] rounded-full overflow-hidden">
+              <div className="mb-3 text-center py-3 bg-slate-50 rounded-[6px] border border-slate-200">
+                <div className="text-[1.75rem] font-bold text-slate-900 font-mono tracking-tight">{elapsedTime}</div>
+                <div className="text-[0.6875rem] text-slate-400 font-medium uppercase tracking-wide mt-1">Total Elapsed</div>
+                <div className="mt-2 mx-3 h-1.5 bg-slate-200 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[#6366F1] rounded-full transition-all"
+                    className="h-full bg-indigo-500 rounded-full transition-all"
                     style={{ width: session.duration_minutes > 0 ? `${Math.min(100, (parseInt(elapsedTime.split(':')[0]) * 60 + parseInt(elapsedTime.split(':')[1])) / session.duration_minutes * 100)}%` : '0%' }}
                   />
                 </div>
@@ -1368,17 +1368,17 @@ export default function SessionDetail() {
 
               {/* Summary Cards */}
               <div className="grid grid-cols-1 gap-2 mb-4">
-                <div className="bg-[#F8FAFC] rounded-[6px] border border-[#E2E8F0] p-2.5">
-                  <div className="text-[0.6875rem] text-[#94A3B8] font-semibold uppercase">Entries</div>
-                  <div className="text-[0.875rem] font-bold text-[#0F172A] mt-0.5">{logs.length}</div>
-                  <div className="text-[0.6875rem] text-[#64748B] mt-0.5">
+                <div className="bg-slate-50 rounded-[6px] border border-slate-200 p-2.5">
+                  <div className="text-[0.6875rem] text-slate-400 font-semibold uppercase">Entries</div>
+                  <div className="text-[0.875rem] font-bold text-slate-900 mt-0.5">{logs.length}</div>
+                  <div className="text-[0.6875rem] text-slate-500 mt-0.5">
                     {logs.filter(l => l.type === 'note').length} Note · {logs.filter(l => l.type === 'failed').length} Bug · {logs.filter(l => l.type === 'blocked').length} Obs · {logs.filter(l => l.type === 'passed').length} Step
                   </div>
                 </div>
-                <div className="bg-[#F8FAFC] rounded-[6px] border border-[#E2E8F0] p-2.5">
-                  <div className="text-[0.6875rem] text-[#94A3B8] font-semibold uppercase">Bugs</div>
-                  <div className="text-[0.875rem] font-bold text-[#0F172A] mt-0.5">{logs.filter(l => l.type === 'failed').length}</div>
-                  <div className="text-[0.6875rem] text-[#64748B] mt-0.5">
+                <div className="bg-slate-50 rounded-[6px] border border-slate-200 p-2.5">
+                  <div className="text-[0.6875rem] text-slate-400 font-semibold uppercase">Bugs</div>
+                  <div className="text-[0.875rem] font-bold text-slate-900 mt-0.5">{logs.filter(l => l.type === 'failed').length}</div>
+                  <div className="text-[0.6875rem] text-slate-500 mt-0.5">
                     {(() => {
                       const bugLogs = logs.filter(l => l.type === 'failed');
                       const counts = { critical: 0, major: 0, minor: 0, trivial: 0 };
@@ -1404,7 +1404,7 @@ export default function SessionDetail() {
                     const duration = tsEnd - tsStart;
                     return (
                       <>
-                        <div className="h-9 bg-gradient-to-r from-[#F8FAFC] to-[#F1F5F9] rounded-[4px] border border-[#E2E8F0] relative overflow-hidden">
+                        <div className="h-9 bg-gradient-to-r from-slate-50 to-slate-100 rounded-[4px] border border-slate-200 relative overflow-hidden">
                           {logs.map((log) => {
                             const dotColor = log.type === 'note' ? '#6366F1' : log.type === 'failed' ? '#EF4444' : log.type === 'blocked' ? '#F59E0B' : '#7C3AED';
                             const logTs = new Date(log.created_at).getTime();
@@ -1420,7 +1420,7 @@ export default function SessionDetail() {
                             );
                           })}
                         </div>
-                        <div className="flex justify-between text-[0.625rem] text-[#94A3B8] mt-1 px-1">
+                        <div className="flex justify-between text-[0.625rem] text-slate-400 mt-1 px-1">
                           <span>{formatTime(new Date(tsStart).toISOString())}</span>
                           <span>{session.status === 'closed' && session.ended_at ? formatTime(session.ended_at) : 'Now'}</span>
                         </div>
@@ -1434,7 +1434,7 @@ export default function SessionDetail() {
                       { label: 'Observation', color: '#F59E0B' },
                       { label: 'Step', color: '#7C3AED' },
                     ].map(l => (
-                      <div key={l.label} className="flex items-center gap-1 text-[0.6875rem] text-[#64748B]">
+                      <div key={l.label} className="flex items-center gap-1 text-[0.6875rem] text-slate-500">
                         <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: l.color }} />
                         {l.label}
                       </div>
@@ -1446,31 +1446,31 @@ export default function SessionDetail() {
               {/* Controls */}
               <div className="flex gap-2 mt-2">
                 {!session.started_at ? (
-                  <button onClick={handleStartSession} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#22C55E] text-white text-[0.75rem] font-semibold rounded-[6px] hover:bg-[#16A34A] cursor-pointer transition-colors">
+                  <button onClick={handleStartSession} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-green-500 text-white text-[0.75rem] font-semibold rounded-[6px] hover:bg-green-600 cursor-pointer transition-colors">
                     <i className="ri-play-fill" />Start
                   </button>
                 ) : session.status === 'closed' ? (
                   <button
                     onClick={() => setShowReopenConfirmModal(true)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#6366F1] text-white text-[0.75rem] font-semibold rounded-[6px] hover:bg-[#4F46E5] cursor-pointer transition-colors"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-indigo-500 text-white text-[0.75rem] font-semibold rounded-[6px] hover:bg-indigo-600 cursor-pointer transition-colors"
                   >
                     <i className="ri-refresh-line" />Reopen Session
                   </button>
                 ) : session.paused_at ? (
                   <>
-                    <button onClick={handleResumeSession} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#3B82F6] text-white text-[0.75rem] font-semibold rounded-[6px] hover:bg-[#2563EB] cursor-pointer transition-colors">
+                    <button onClick={handleResumeSession} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-blue-500 text-white text-[0.75rem] font-semibold rounded-[6px] hover:bg-blue-600 cursor-pointer transition-colors">
                       <i className="ri-play-fill" />Resume
                     </button>
-                    <button onClick={() => setShowCloseConfirmModal(true)} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#EF4444] text-white text-[0.75rem] font-semibold rounded-[6px] hover:bg-[#DC2626] cursor-pointer transition-colors">
+                    <button onClick={() => setShowCloseConfirmModal(true)} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-rose-500 text-white text-[0.75rem] font-semibold rounded-[6px] hover:bg-rose-600 cursor-pointer transition-colors">
                       <i className="ri-stop-fill" />Close
                     </button>
                   </>
                 ) : (
                   <>
-                    <button onClick={handlePauseSession} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#F59E0B] text-white text-[0.75rem] font-semibold rounded-[6px] hover:bg-[#D97706] cursor-pointer transition-colors">
+                    <button onClick={handlePauseSession} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-amber-500 text-white text-[0.75rem] font-semibold rounded-[6px] hover:bg-amber-600 cursor-pointer transition-colors">
                       <i className="ri-pause-fill" />Pause
                     </button>
-                    <button onClick={() => setShowCloseConfirmModal(true)} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#EF4444] text-white text-[0.75rem] font-semibold rounded-[6px] hover:bg-[#DC2626] cursor-pointer transition-colors">
+                    <button onClick={() => setShowCloseConfirmModal(true)} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-rose-500 text-white text-[0.75rem] font-semibold rounded-[6px] hover:bg-rose-600 cursor-pointer transition-colors">
                       <i className="ri-stop-fill" />Close
                     </button>
                   </>
@@ -1483,7 +1483,7 @@ export default function SessionDetail() {
         {/* Timeline Tooltip */}
         {tooltipInfo && (
           <div
-            className="fixed z-50 px-2 py-1 bg-[#1E293B] text-white text-[0.75rem] font-medium rounded-[4px] pointer-events-none shadow-lg"
+            className="fixed z-50 px-2 py-1 bg-slate-800 text-white text-[0.75rem] font-medium rounded-[4px] pointer-events-none shadow-lg"
             style={{ left: Math.min(tooltipInfo.x + 10, window.innerWidth - 140), top: Math.max(tooltipInfo.y - 34, 8) }}
           >
             {tooltipInfo.label} · {tooltipInfo.time}
@@ -1863,27 +1863,27 @@ export default function SessionDetail() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
             <div className="bg-white rounded-xl shadow-xl p-6 w-[400px] max-w-[90vw]">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-[#EEF2FF] flex items-center justify-center">
-                  <i className="ri-refresh-line text-[#6366F1] text-lg" />
+                <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center">
+                  <i className="ri-refresh-line text-indigo-500 text-lg" />
                 </div>
                 <div>
-                  <h3 className="text-[0.9375rem] font-semibold text-[#0F172A]">Reopen Session</h3>
-                  <p className="text-[0.8125rem] text-[#64748B]">This will change the status back to In Progress.</p>
+                  <h3 className="text-[0.9375rem] font-semibold text-slate-900">Reopen Session</h3>
+                  <p className="text-[0.8125rem] text-slate-500">This will change the status back to In Progress.</p>
                 </div>
               </div>
-              <p className="text-[0.8125rem] text-[#475569] mb-5">
+              <p className="text-[0.8125rem] text-slate-600 mb-5">
                 The session timer will resume from where it left off. You can add new entries and close the session again when finished.
               </p>
               <div className="flex gap-2 justify-end">
                 <button
                   onClick={() => setShowReopenConfirmModal(false)}
-                  className="px-4 py-2 text-[0.8125rem] font-medium text-[#64748B] bg-[#F1F5F9] rounded-lg hover:bg-[#E2E8F0] cursor-pointer transition-colors"
+                  className="px-4 py-2 text-[0.8125rem] font-medium text-slate-500 bg-slate-100 rounded-lg hover:bg-slate-200 cursor-pointer transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleReopenSession}
-                  className="px-4 py-2 text-[0.8125rem] font-semibold text-white bg-[#6366F1] rounded-lg hover:bg-[#4F46E5] cursor-pointer transition-colors"
+                  className="px-4 py-2 text-[0.8125rem] font-semibold text-white bg-indigo-500 rounded-lg hover:bg-indigo-600 cursor-pointer transition-colors"
                 >
                   Reopen
                 </button>

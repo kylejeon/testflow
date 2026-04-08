@@ -54,9 +54,9 @@ const CSV_STEPS = [
 ] as const;
 
 // ── Shared style tokens ───────────────────────────────────────────────────────
-const fieldCls = `w-full border border-[#E2E8F0] rounded-[7px] text-[0.8125rem] text-[#1E293B] px-[0.6875rem] py-[0.4375rem] bg-white focus:outline-none focus:border-[#6366F1] focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] transition-colors`;
-const labelCls = `block text-[0.6875rem] font-semibold text-[#374151] mb-[0.25rem]`;
-const helpBoxCls = `flex items-start gap-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-[7px] p-[0.625rem] text-[0.6875rem] text-[#64748B]`;
+const fieldCls = `w-full border border-slate-200 rounded-[7px] text-[0.8125rem] text-slate-800 px-[0.6875rem] py-[0.4375rem] bg-white focus:outline-none focus:border-indigo-500 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] transition-colors`;
+const labelCls = `block text-[0.6875rem] font-semibold text-gray-700 mb-[0.25rem]`;
+const helpBoxCls = `flex items-start gap-2 bg-slate-50 border border-slate-200 rounded-[7px] p-[0.625rem] text-[0.6875rem] text-slate-500`;
 
 export default function TestRailImportModal({ onClose, onOpenCSV }: TestRailImportModalProps) {
   const navigate = useNavigate();
@@ -294,16 +294,16 @@ export default function TestRailImportModal({ onClose, onOpenCSV }: TestRailImpo
             <div className="flex items-center justify-center" style={{ width: '1.75rem', height: '1.75rem', borderRadius: '0.375rem', background: '#FEF3C7' }}>
               <i className="ri-upload-cloud-2-line text-sm text-amber-500"></i>
             </div>
-            <span className="text-[0.9375rem] font-semibold text-[#0F172A]">Import from TestRail</span>
+            <span className="text-[0.9375rem] font-semibold text-slate-900">Import from TestRail</span>
             {step === 5 && (
-              <span className="flex items-center gap-1 text-[0.6875rem] text-[#64748B] ml-2">
+              <span className="flex items-center gap-1 text-[0.6875rem] text-slate-500 ml-2">
                 <i className="ri-information-line text-xs"></i> Do not close this window
               </span>
             )}
           </div>
           <button
             onClick={onClose}
-            className="flex items-center justify-center text-[#64748B] hover:text-[#1E293B] cursor-pointer transition-colors"
+            className="flex items-center justify-center text-slate-500 hover:text-slate-800 cursor-pointer transition-colors"
             style={{ width: '1.625rem', height: '1.625rem', borderRadius: '0.375rem', background: '#F1F5F9' }}
           >
             <i className="ri-close-line text-base"></i>
@@ -375,7 +375,7 @@ function Step1({ method, setMethod, onNext, onClose }: {
 }) {
   return (
     <div>
-      <p className="text-[0.75rem] text-[#64748B] mb-3">Choose how you'd like to import your TestRail data into Testably.</p>
+      <p className="text-[0.75rem] text-slate-500 mb-3">Choose how you'd like to import your TestRail data into Testably.</p>
       <div className="flex flex-col gap-2 mb-4">
         {/* API option */}
         <div
@@ -385,10 +385,10 @@ function Step1({ method, setMethod, onNext, onClose }: {
         >
           <div className="flex items-center gap-2 mb-0.5">
             <i className="ri-cloud-line text-sm" style={{ color: method === 'api' ? '#6366F1' : '#64748B' }}></i>
-            <span className="text-[0.8125rem] font-bold text-[#0F172A]">Connect via API</span>
-            <span className="text-[0.5625rem] font-semibold px-[0.4375rem] py-[0.125rem] rounded-full bg-[#DBEAFE] text-[#1D4ED8]">Recommended</span>
+            <span className="text-[0.8125rem] font-bold text-slate-900">Connect via API</span>
+            <span className="text-[0.5625rem] font-semibold px-[0.4375rem] py-[0.125rem] rounded-full bg-blue-100 text-blue-700">Recommended</span>
           </div>
-          <p className="text-[0.6875rem] text-[#64748B]">Import projects, test cases, runs, and results directly from your TestRail instance.</p>
+          <p className="text-[0.6875rem] text-slate-500">Import projects, test cases, runs, and results directly from your TestRail instance.</p>
         </div>
         {/* CSV option */}
         <div
@@ -398,14 +398,14 @@ function Step1({ method, setMethod, onNext, onClose }: {
         >
           <div className="flex items-center gap-2 mb-0.5">
             <i className="ri-file-upload-line text-sm" style={{ color: method === 'csv' ? '#6366F1' : '#64748B' }}></i>
-            <span className="text-[0.8125rem] font-bold text-[#0F172A]">Upload CSV File</span>
+            <span className="text-[0.8125rem] font-bold text-slate-900">Upload CSV File</span>
           </div>
-          <p className="text-[0.6875rem] text-[#64748B]">Import test cases from a TestRail CSV export file.</p>
+          <p className="text-[0.6875rem] text-slate-500">Import test cases from a TestRail CSV export file.</p>
         </div>
       </div>
       <div className="flex justify-end gap-2">
-        <button onClick={onClose} className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-[#64748B] bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px]">Cancel</button>
-        <button onClick={onNext} className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-white bg-[#6366F1] hover:bg-[#4F46E5] cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px]">
+        <button onClick={onClose} className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px]">Cancel</button>
+        <button onClick={onNext} className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-white bg-indigo-500 hover:bg-indigo-600 cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px]">
           Continue <i className="ri-arrow-right-line text-sm"></i>
         </button>
       </div>
@@ -456,8 +456,8 @@ function Step2({ method, creds, setCreds, showKey, setShowKey, connecting, error
   if (method === 'csv') {
     return (
       <div>
-        <h4 className="text-[0.875rem] font-bold text-[#0F172A] mb-1">Upload TestRail CSV Export</h4>
-        <p className="text-[0.75rem] text-[#64748B] mb-3">Export your test cases from TestRail (CSV format) and upload the file here.</p>
+        <h4 className="text-[0.875rem] font-bold text-slate-900 mb-1">Upload TestRail CSV Export</h4>
+        <p className="text-[0.75rem] text-slate-500 mb-3">Export your test cases from TestRail (CSV format) and upload the file here.</p>
 
         {/* Hidden native file input */}
         <input
@@ -493,16 +493,16 @@ function Step2({ method, creds, setCreds, showKey, setShowKey, connecting, error
         >
           {csvFile ? (
             <>
-              <i className="ri-file-check-2-line text-2xl text-[#22C55E] mb-2"></i>
-              <p className="text-[0.8125rem] font-semibold text-[#0F172A] mb-0.5">{csvFile.name}</p>
-              <p className="text-[0.75rem] font-semibold text-[#22C55E]">{csvRows.length} test case{csvRows.length !== 1 ? 's' : ''} found</p>
-              <p className="text-[0.6875rem] text-[#94A3B8] mt-1">Click to choose a different file</p>
+              <i className="ri-file-check-2-line text-2xl text-green-500 mb-2"></i>
+              <p className="text-[0.8125rem] font-semibold text-slate-900 mb-0.5">{csvFile.name}</p>
+              <p className="text-[0.75rem] font-semibold text-green-500">{csvRows.length} test case{csvRows.length !== 1 ? 's' : ''} found</p>
+              <p className="text-[0.6875rem] text-slate-400 mt-1">Click to choose a different file</p>
             </>
           ) : (
             <>
-              <i className="ri-upload-2-line text-2xl text-[#94A3B8] mb-2"></i>
-              <p className="text-[0.8125rem] font-semibold text-[#374151] mb-0.5">Drop CSV file here or click to browse</p>
-              <p className="text-[0.6875rem] text-[#94A3B8]">Accepts TestRail CSV export format (.csv)</p>
+              <i className="ri-upload-2-line text-2xl text-slate-400 mb-2"></i>
+              <p className="text-[0.8125rem] font-semibold text-gray-700 mb-0.5">Drop CSV file here or click to browse</p>
+              <p className="text-[0.6875rem] text-slate-400">Accepts TestRail CSV export format (.csv)</p>
             </>
           )}
         </div>
@@ -528,17 +528,17 @@ function Step2({ method, creds, setCreds, showKey, setShowKey, connecting, error
 
         <div className={`${helpBoxCls} mb-4`}>
           <i className="ri-information-line flex-shrink-0 mt-px"></i>
-          <div>In TestRail: <strong className="text-[#374151]">Test Cases → Export → CSV</strong>. Ensure the file includes Title, Section, and Priority columns.</div>
+          <div>In TestRail: <strong className="text-gray-700">Test Cases → Export → CSV</strong>. Ensure the file includes Title, Section, and Priority columns.</div>
         </div>
 
         <div className="flex justify-end gap-2">
-          <button onClick={onBack} className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-[#64748B] bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px]">
+          <button onClick={onBack} className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px]">
             <i className="ri-arrow-left-line text-sm"></i> Back
           </button>
           <button
             onClick={onContinueCSV}
             disabled={!csvFile || csvRows.length === 0}
-            className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-white bg-[#6366F1] hover:bg-[#4F46E5] cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px] disabled:opacity-60 disabled:cursor-not-allowed"
+            className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-white bg-indigo-500 hover:bg-indigo-600 cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px] disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <i className="ri-download-2-line text-sm"></i> Start Import
           </button>
@@ -550,8 +550,8 @@ function Step2({ method, creds, setCreds, showKey, setShowKey, connecting, error
   // ── API auth UI ────────────────────────────────────────────────────────────
   return (
     <div>
-      <h4 className="text-[0.875rem] font-bold text-[#0F172A] mb-1">Connect to TestRail</h4>
-      <p className="text-[0.75rem] text-[#64748B] mb-4">Enter your TestRail credentials. Your API key is never stored permanently.</p>
+      <h4 className="text-[0.875rem] font-bold text-slate-900 mb-1">Connect to TestRail</h4>
+      <p className="text-[0.75rem] text-slate-500 mb-4">Enter your TestRail credentials. Your API key is never stored permanently.</p>
       <div className="space-y-3 mb-4">
         <div>
           <label className={labelCls}>TestRail Instance URL <span className="text-red-500">*</span></label>
@@ -565,7 +565,7 @@ function Step2({ method, creds, setCreds, showKey, setShowKey, connecting, error
           <label className={labelCls}>API Key <span className="text-red-500">*</span></label>
           <div className="relative">
             <input className={fieldCls} type={showKey ? 'text' : 'password'} placeholder="Enter your TestRail API key" value={creds.apiKey} onChange={e => setCreds({ ...creds, apiKey: e.target.value })} style={{ paddingRight: '2.25rem' }} />
-            <button onClick={() => setShowKey(!showKey)} className="absolute right-[0.4375rem] top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#64748B] cursor-pointer transition-colors bg-transparent border-0 p-0">
+            <button onClick={() => setShowKey(!showKey)} className="absolute right-[0.4375rem] top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-500 cursor-pointer transition-colors bg-transparent border-0 p-0">
               <i className={`${showKey ? 'ri-eye-line' : 'ri-eye-off-line'} text-[0.9375rem]`}></i>
             </button>
           </div>
@@ -573,7 +573,7 @@ function Step2({ method, creds, setCreds, showKey, setShowKey, connecting, error
       </div>
       <div className={`${helpBoxCls} mb-3`}>
         <i className="ri-key-2-line flex-shrink-0 mt-px"></i>
-        <div><strong className="text-[#374151]">Where to find your API key:</strong> TestRail → My Settings → API Keys → Add Key</div>
+        <div><strong className="text-gray-700">Where to find your API key:</strong> TestRail → My Settings → API Keys → Add Key</div>
       </div>
       {error && (
         <div className="flex items-start gap-2 mb-3 p-[0.5rem_0.75rem] rounded-[7px] bg-red-50 border border-red-200 text-[0.6875rem] text-red-700">
@@ -582,10 +582,10 @@ function Step2({ method, creds, setCreds, showKey, setShowKey, connecting, error
         </div>
       )}
       <div className="flex justify-end gap-2">
-        <button onClick={onBack} className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-[#64748B] bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px]">
+        <button onClick={onBack} className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px]">
           <i className="ri-arrow-left-line text-sm"></i> Back
         </button>
-        <button onClick={onConnect} disabled={connecting} className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-white bg-[#6366F1] hover:bg-[#4F46E5] cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px] disabled:opacity-60 disabled:cursor-not-allowed">
+        <button onClick={onConnect} disabled={connecting} className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-white bg-indigo-500 hover:bg-indigo-600 cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px] disabled:opacity-60 disabled:cursor-not-allowed">
           {connecting ? <i className="ri-loader-4-line animate-spin text-sm"></i> : <i className="ri-link text-sm"></i>}
           {connecting ? 'Connecting...' : 'Connect & Continue'}
         </button>
@@ -605,8 +605,8 @@ function Step3({ projects, toggle, includeRuns, setIncludeRuns, includeResults, 
   const selectedCount = projects.filter(p => p.selected).length;
   return (
     <div>
-      <h4 className="text-[0.875rem] font-bold text-[#0F172A] mb-1">Select Data to Import</h4>
-      <div className="flex items-center gap-1.5 mb-3 text-[0.6875rem] text-[#22C55E]">
+      <h4 className="text-[0.875rem] font-bold text-slate-900 mb-1">Select Data to Import</h4>
+      <div className="flex items-center gap-1.5 mb-3 text-[0.6875rem] text-green-500">
         <i className="ri-checkbox-circle-fill"></i>
         <span>Connected to TestRail</span>
       </div>
@@ -614,7 +614,7 @@ function Step3({ projects, toggle, includeRuns, setIncludeRuns, includeResults, 
       {/* Projects */}
       <div className="mb-3">
         <label className={labelCls}>Select Projects</label>
-        <div className="border border-[#E2E8F0] rounded-[7px] overflow-hidden">
+        <div className="border border-slate-200 rounded-[7px] overflow-hidden">
           {projects.map((p, i) => (
             <div
               key={p.id}
@@ -622,15 +622,15 @@ function Step3({ projects, toggle, includeRuns, setIncludeRuns, includeResults, 
               style={{ borderBottom: i < projects.length - 1 ? '1px solid #F1F5F9' : 'none', background: p.selected ? '#EEF2FF' : '' }}
               onClick={() => toggle(p.id)}
             >
-              <i className={`${p.selected ? 'ri-checkbox-fill text-[#6366F1]' : 'ri-checkbox-blank-line text-[#CBD5E1]'} text-base flex-shrink-0`}></i>
-              <span className="text-[0.8125rem] font-medium text-[#1E293B] flex-1">{p.name}</span>
+              <i className={`${p.selected ? 'ri-checkbox-fill text-indigo-500' : 'ri-checkbox-blank-line text-slate-300'} text-base flex-shrink-0`}></i>
+              <span className="text-[0.8125rem] font-medium text-slate-800 flex-1">{p.name}</span>
               {(p.caseCount > 0 || p.runCount > 0) && (
-                <span className="text-[0.625rem] text-[#94A3B8]">{p.caseCount} cases · {p.runCount} runs</span>
+                <span className="text-[0.625rem] text-slate-400">{p.caseCount} cases · {p.runCount} runs</span>
               )}
             </div>
           ))}
         </div>
-        <p className="text-[0.625rem] text-[#94A3B8] mt-1">{selectedCount} of {projects.length} project{projects.length !== 1 ? 's' : ''} selected</p>
+        <p className="text-[0.625rem] text-slate-400 mt-1">{selectedCount} of {projects.length} project{projects.length !== 1 ? 's' : ''} selected</p>
       </div>
 
       {/* Data types */}
@@ -654,19 +654,19 @@ function Step3({ projects, toggle, includeRuns, setIncludeRuns, includeResults, 
               }}
               onClick={() => !dt.locked && dt.set?.(!dt.value)}
             >
-              <i className={`${dt.locked || (!dt.locked && dt.value) ? 'ri-checkbox-fill text-[#6366F1]' : 'ri-checkbox-blank-line text-[#CBD5E1]'} text-base`}></i>
-              <span className="text-[0.8125rem] font-medium text-[#1E293B]">{dt.label}</span>
+              <i className={`${dt.locked || (!dt.locked && dt.value) ? 'ri-checkbox-fill text-indigo-500' : 'ri-checkbox-blank-line text-slate-300'} text-base`}></i>
+              <span className="text-[0.8125rem] font-medium text-slate-800">{dt.label}</span>
             </div>
           ))}
         </div>
-        <p className="text-[0.625rem] text-[#94A3B8] mt-1">Test Cases and Suites are always included.</p>
+        <p className="text-[0.625rem] text-slate-400 mt-1">Test Cases and Suites are always included.</p>
       </div>
 
       <div className="flex justify-end gap-2">
-        <button onClick={onBack} className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-[#64748B] bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px]">
+        <button onClick={onBack} className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px]">
           <i className="ri-arrow-left-line text-sm"></i> Back
         </button>
-        <button onClick={onNext} disabled={selectedCount === 0} className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-white bg-[#6366F1] hover:bg-[#4F46E5] cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px] disabled:opacity-60 disabled:cursor-not-allowed">
+        <button onClick={onNext} disabled={selectedCount === 0} className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-white bg-indigo-500 hover:bg-indigo-600 cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px] disabled:opacity-60 disabled:cursor-not-allowed">
           Continue to Mapping <i className="ri-arrow-right-line text-sm"></i>
         </button>
       </div>
@@ -694,33 +694,33 @@ const PRIORITY_MAP = [
 function Step4({ onBack, onImport }: { onBack: () => void; onImport: () => void }) {
   return (
     <div>
-      <h4 className="text-[0.875rem] font-bold text-[#0F172A] mb-1">Confirm Field Mapping</h4>
-      <p className="text-[0.75rem] text-[#64748B] mb-3">Review how TestRail fields map to Testably. Adjust if needed.</p>
+      <h4 className="text-[0.875rem] font-bold text-slate-900 mb-1">Confirm Field Mapping</h4>
+      <p className="text-[0.75rem] text-slate-500 mb-3">Review how TestRail fields map to Testably. Adjust if needed.</p>
 
       {/* Mapping table */}
-      <div className="overflow-hidden rounded-[7px] border border-[#E2E8F0] mb-4">
+      <div className="overflow-hidden rounded-[7px] border border-slate-200 mb-4">
         <table className="w-full" style={{ borderCollapse: 'collapse', fontSize: '0.6875rem' }}>
           <thead>
             <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
-              <th className="text-left px-3 py-2 font-semibold text-[#374151]">TestRail Field</th>
-              <th className="text-center px-1 py-2 font-semibold text-[#CBD5E1] w-6">→</th>
-              <th className="text-left px-3 py-2 font-semibold text-[#374151]">Testably Field</th>
-              <th className="text-left px-3 py-2 font-semibold text-[#374151]">Status</th>
+              <th className="text-left px-3 py-2 font-semibold text-gray-700">TestRail Field</th>
+              <th className="text-center px-1 py-2 font-semibold text-slate-300 w-6">→</th>
+              <th className="text-left px-3 py-2 font-semibold text-gray-700">Testably Field</th>
+              <th className="text-left px-3 py-2 font-semibold text-gray-700">Status</th>
             </tr>
           </thead>
           <tbody>
             {FIELD_MAP.map((row, i) => (
               <tr key={i} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                <td className="px-3 py-2 text-[#1E293B]">{row.from}</td>
-                <td className="px-1 py-2 text-center text-[#CBD5E1]">→</td>
+                <td className="px-3 py-2 text-slate-800">{row.from}</td>
+                <td className="px-1 py-2 text-center text-slate-300">→</td>
                 <td className="px-3 py-2">
                   {row.status === 'skip'
-                    ? <span className="text-[#94A3B8] italic">Skip (no match)</span>
-                    : <span className="text-[#1E293B]">{row.to}</span>}
+                    ? <span className="text-slate-400 italic">Skip (no match)</span>
+                    : <span className="text-slate-800">{row.to}</span>}
                 </td>
                 <td className="px-3 py-2">
-                  {row.status === 'auto' && <span className="flex items-center gap-1 font-semibold text-[#22C55E]"><i className="ri-checkbox-circle-fill"></i> Auto</span>}
-                  {row.status === 'skip' && <span className="flex items-center gap-1 font-semibold text-[#F59E0B]"><i className="ri-alert-line"></i> Unmapped</span>}
+                  {row.status === 'auto' && <span className="flex items-center gap-1 font-semibold text-green-500"><i className="ri-checkbox-circle-fill"></i> Auto</span>}
+                  {row.status === 'skip' && <span className="flex items-center gap-1 font-semibold text-amber-500"><i className="ri-alert-line"></i> Unmapped</span>}
                 </td>
               </tr>
             ))}
@@ -730,12 +730,12 @@ function Step4({ onBack, onImport }: { onBack: () => void; onImport: () => void 
 
       {/* Priority mapping */}
       <div className="mb-4">
-        <p className="text-[0.75rem] font-bold text-[#0F172A] mb-2">Priority Value Mapping</p>
+        <p className="text-[0.75rem] font-bold text-slate-900 mb-2">Priority Value Mapping</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '0.25rem', alignItems: 'center' }}>
           {PRIORITY_MAP.map(p => (
             <>
-              <div key={`${p.from}-from`} className="px-2 py-1 rounded bg-[#F8FAFC] text-[0.6875rem] font-semibold text-[#374151]">{p.from}</div>
-              <div key={`${p.from}-arr`} className="text-center text-[0.6875rem] text-[#CBD5E1]">→</div>
+              <div key={`${p.from}-from`} className="px-2 py-1 rounded bg-slate-50 text-[0.6875rem] font-semibold text-gray-700">{p.from}</div>
+              <div key={`${p.from}-arr`} className="text-center text-[0.6875rem] text-slate-300">→</div>
               <div key={`${p.from}-to`} className="px-2 py-1 rounded text-[0.6875rem] font-medium" style={{ background: p.bg, color: p.color }}>{p.from}</div>
             </>
           ))}
@@ -743,10 +743,10 @@ function Step4({ onBack, onImport }: { onBack: () => void; onImport: () => void 
       </div>
 
       <div className="flex justify-end gap-2">
-        <button onClick={onBack} className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-[#64748B] bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px]">
+        <button onClick={onBack} className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px]">
           <i className="ri-arrow-left-line text-sm"></i> Back
         </button>
-        <button onClick={onImport} className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-white bg-[#6366F1] hover:bg-[#4F46E5] cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px]">
+        <button onClick={onImport} className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-white bg-indigo-500 hover:bg-indigo-600 cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px]">
           <i className="ri-download-2-line text-sm"></i> Start Import
         </button>
       </div>
@@ -766,22 +766,22 @@ function Step5({ progress }: { progress: number }) {
 
   return (
     <div>
-      <h4 className="text-[0.875rem] font-bold text-[#0F172A] mb-1">Importing from TestRail...</h4>
-      <p className="text-[0.75rem] text-[#64748B] mb-4">This may take a few minutes. Please keep this window open.</p>
+      <h4 className="text-[0.875rem] font-bold text-slate-900 mb-1">Importing from TestRail...</h4>
+      <p className="text-[0.75rem] text-slate-500 mb-4">This may take a few minutes. Please keep this window open.</p>
 
       {/* Progress bar */}
       <div className="mb-4">
         <div className="flex justify-between text-[0.6875rem] mb-1">
-          <span className="font-semibold text-[#374151]">Overall Progress</span>
-          <span className="font-bold text-[#6366F1]">{progress}%</span>
+          <span className="font-semibold text-gray-700">Overall Progress</span>
+          <span className="font-bold text-indigo-500">{progress}%</span>
         </div>
-        <div className="h-[0.4375rem] rounded-full bg-[#E2E8F0] overflow-hidden">
-          <div className="h-full rounded-full bg-[#6366F1] transition-all duration-500" style={{ width: `${progress}%` }}></div>
+        <div className="h-[0.4375rem] rounded-full bg-slate-200 overflow-hidden">
+          <div className="h-full rounded-full bg-indigo-500 transition-all duration-500" style={{ width: `${progress}%` }}></div>
         </div>
       </div>
 
       {/* Status list */}
-      <div className="rounded-[7px] border border-[#E2E8F0] bg-[#F8FAFC] p-3 mb-3">
+      <div className="rounded-[7px] border border-slate-200 bg-slate-50 p-3 mb-3">
         {stages.map((s, i) => (
           <div key={s.label} className="flex justify-between items-center py-[0.4375rem]" style={{ borderBottom: i < stages.length - 1 ? '1px solid #F1F5F9' : 'none' }}>
             <span className="flex items-center gap-1.5 text-[0.6875rem]"
@@ -808,14 +808,14 @@ function Step5({ progress }: { progress: number }) {
 function Step6({ summary, onDashboard, onProject }: { summary: ImportSummary; onDashboard: () => void; onProject: () => void }) {
   return (
     <div className="flex flex-col items-center text-center py-4">
-      <div className="w-14 h-14 rounded-full bg-[#F0FDF4] flex items-center justify-center mb-4" style={{ fontSize: '1.75rem', color: '#22C55E' }}>
+      <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center mb-4" style={{ fontSize: '1.75rem', color: '#22C55E' }}>
         <i className="ri-check-line"></i>
       </div>
-      <h4 className="text-[0.9375rem] font-bold text-[#0F172A] mb-1">Successfully imported from TestRail</h4>
-      <p className="text-[0.75rem] text-[#64748B] mb-4">Your project is ready to explore.</p>
+      <h4 className="text-[0.9375rem] font-bold text-slate-900 mb-1">Successfully imported from TestRail</h4>
+      <p className="text-[0.75rem] text-slate-500 mb-4">Your project is ready to explore.</p>
 
       {/* Stats */}
-      <div className="w-full max-w-[280px] rounded-[7px] bg-[#F8FAFC] p-3 mb-3"
+      <div className="w-full max-w-[280px] rounded-[7px] bg-slate-50 p-3 mb-3"
         style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem', textAlign: 'center' }}>
         {[
           { v: summary.cases, l: 'Test Cases' },
@@ -824,17 +824,17 @@ function Step6({ summary, onDashboard, onProject }: { summary: ImportSummary; on
           { v: summary.results, l: 'Results' },
         ].map(s => (
           <div key={s.l}>
-            <div className="text-[1rem] font-extrabold text-[#0F172A]">{s.v.toLocaleString()}</div>
-            <div className="text-[0.625rem] text-[#94A3B8]">{s.l}</div>
+            <div className="text-[1rem] font-extrabold text-slate-900">{s.v.toLocaleString()}</div>
+            <div className="text-[0.625rem] text-slate-400">{s.l}</div>
           </div>
         ))}
       </div>
 
       <div className="flex gap-2 mt-2">
-        <button onClick={onDashboard} className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-[#64748B] bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px]">
+        <button onClick={onDashboard} className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px]">
           Back to Dashboard
         </button>
-        <button onClick={onProject} className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-white bg-[#22C55E] hover:bg-[#16A34A] cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px]">
+        <button onClick={onProject} className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-white bg-green-500 hover:bg-green-600 cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px]">
           <i className="ri-arrow-right-line text-sm"></i> Go to Project
         </button>
       </div>

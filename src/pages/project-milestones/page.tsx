@@ -58,13 +58,13 @@ const TIER_INFO = {
 const getStatusInfo = (status: string) => {
   switch (status) {
     case 'completed':
-      return { label: 'Completed', badgeCls: 'bg-[#F0FDF4] text-[#16A34A]', iconBg: '#F0FDF4', iconColor: '#16A34A', icon: 'ri-checkbox-circle-fill' };
+      return { label: 'Completed', badgeCls: 'bg-green-50 text-green-600', iconBg: '#F0FDF4', iconColor: '#16A34A', icon: 'ri-checkbox-circle-fill' };
     case 'past_due':
-      return { label: 'Overdue', badgeCls: 'bg-[#FEF2F2] text-[#DC2626]', iconBg: '#FEF2F2', iconColor: '#EF4444', icon: 'ri-flag-fill' };
+      return { label: 'Overdue', badgeCls: 'bg-rose-50 text-rose-600', iconBg: '#FEF2F2', iconColor: '#EF4444', icon: 'ri-flag-fill' };
     case 'started':
-      return { label: 'In Progress', badgeCls: 'bg-[#DBEAFE] text-[#2563EB]', iconBg: '#EEF2FF', iconColor: '#6366F1', icon: 'ri-flag-fill' };
+      return { label: 'In Progress', badgeCls: 'bg-blue-100 text-blue-600', iconBg: '#EEF2FF', iconColor: '#6366F1', icon: 'ri-flag-fill' };
     default:
-      return { label: 'Upcoming', badgeCls: 'bg-[#DBEAFE] text-[#2563EB]', iconBg: '#EEF2FF', iconColor: '#6366F1', icon: 'ri-flag-fill' };
+      return { label: 'Upcoming', badgeCls: 'bg-blue-100 text-blue-600', iconBg: '#EEF2FF', iconColor: '#6366F1', icon: 'ri-flag-fill' };
   }
 };
 
@@ -551,8 +551,8 @@ export default function ProjectMilestones() {
         className="relative mb-1.5 last:mb-0"
       >
         {/* horizontal branch */}
-        <div className="absolute left-[-0.625rem] top-1/2 w-[0.625rem] h-[1.5px] bg-[#E2E8F0]" />
-        <div className="bg-[#FAFAFF] border border-[#EEF2FF] rounded-md px-[0.8125rem] py-[0.6875rem] hover:border-[#C7D2FE] hover:bg-[#F5F3FF] transition-all cursor-pointer">
+        <div className="absolute left-[-0.625rem] top-1/2 w-[0.625rem] h-[1.5px] bg-slate-200" />
+        <div className="bg-violet-50 border border-indigo-50 rounded-md px-[0.8125rem] py-[0.6875rem] hover:border-indigo-200 hover:bg-violet-50 transition-all cursor-pointer">
           {/* sub top row */}
           <div className="flex items-center gap-2 mb-[0.375rem]">
             <div className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0" style={{ background: info.iconBg }}>
@@ -562,11 +562,11 @@ export default function ProjectMilestones() {
               <Link
                 to={`/projects/${id}/milestones/${sub.id}`}
                 onClick={e => e.stopPropagation()}
-                className="block text-[0.8125rem] font-semibold text-[#0F172A] truncate hover:text-indigo-600 transition-colors"
+                className="block text-[0.8125rem] font-semibold text-slate-900 truncate hover:text-indigo-600 transition-colors"
               >
                 {sub.name}
               </Link>
-              <div className="text-[0.6875rem] text-[#94A3B8] mt-[0.0625rem] flex items-center gap-1">
+              <div className="text-[0.6875rem] text-slate-400 mt-[0.0625rem] flex items-center gap-1">
                 <i className="ri-calendar-line" style={{ fontSize: '0.5625rem', verticalAlign: '-1px' }} />
                 {formatDateRange(sub.start_date, sub.end_date)}
               </div>
@@ -581,7 +581,7 @@ export default function ProjectMilestones() {
                   setEditFormData({ name: sub.name, start_date: sub.start_date ? sub.start_date.split('T')[0] : '', end_date: sub.end_date ? sub.end_date.split('T')[0] : '', status: sub.status });
                   setEditingMilestone(sub);
                 }}
-                className="flex items-center gap-[0.1875rem] text-[0.625rem] font-medium px-[0.375rem] py-[0.1875rem] rounded border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F1F5F9] transition-all whitespace-nowrap cursor-pointer"
+                className="flex items-center gap-[0.1875rem] text-[0.625rem] font-medium px-[0.375rem] py-[0.1875rem] rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-all whitespace-nowrap cursor-pointer"
               >
                 <i className="ri-edit-line text-[0.75rem]" />Edit
               </button>
@@ -589,14 +589,14 @@ export default function ProjectMilestones() {
           </div>
           {/* sub progress */}
           <div className="flex items-center gap-2">
-            <div className="flex-1 h-[4.5px] bg-[#F1F5F9] rounded-full overflow-hidden flex">
-              <div className="h-full bg-[#10B981] transition-all" style={{ width: `${passedPct}%` }} />
-              <div className="h-full bg-[#EF4444] transition-all" style={{ width: `${failedPct}%` }} />
+            <div className="flex-1 h-[4.5px] bg-slate-100 rounded-full overflow-hidden flex">
+              <div className="h-full bg-emerald-500 transition-all" style={{ width: `${passedPct}%` }} />
+              <div className="h-full bg-rose-500 transition-all" style={{ width: `${failedPct}%` }} />
             </div>
-            <div className="flex items-center gap-2 text-[0.6875rem] text-[#64748B] whitespace-nowrap flex-shrink-0">
-              <span className="font-semibold text-[#475569]">{sub.actualProgress}%</span>
-              <span className="text-[#10B981] font-semibold">{sub.passedTests} passed</span>
-              <span className="text-[#EF4444] font-semibold">{sub.failedTests} failed</span>
+            <div className="flex items-center gap-2 text-[0.6875rem] text-slate-500 whitespace-nowrap flex-shrink-0">
+              <span className="font-semibold text-slate-600">{sub.actualProgress}%</span>
+              <span className="text-emerald-500 font-semibold">{sub.passedTests} passed</span>
+              <span className="text-rose-500 font-semibold">{sub.failedTests} failed</span>
               {sub.totalTests > 0 && <span>{remaining} remaining</span>}
             </div>
           </div>
@@ -620,10 +620,10 @@ export default function ProjectMilestones() {
         <div
           className={`bg-white border rounded-lg px-[1.125rem] py-[0.9375rem] transition-all cursor-pointer ${
             isDone
-              ? 'border-[#E2E8F0] opacity-70 hover:opacity-85'
+              ? 'border-slate-200 opacity-70 hover:opacity-85'
               : isExpanded
-              ? 'border-[#C7D2FE] shadow-[0_1px_6px_rgba(99,102,241,0.1)]'
-              : 'border-[#E2E8F0] hover:shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:border-[#C7D2FE]'
+              ? 'border-indigo-200 shadow-[0_1px_6px_rgba(99,102,241,0.1)]'
+              : 'border-slate-200 hover:shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:border-indigo-200'
           }`}
           onClick={() => {
             if (hasSubMilestones) toggleExpanded(milestone.id);
@@ -636,7 +636,7 @@ export default function ProjectMilestones() {
             {hasSubMilestones ? (
               <button
                 onClick={e => { e.stopPropagation(); toggleExpanded(milestone.id); }}
-                className={`w-[1.75rem] h-[1.75rem] rounded flex items-center justify-center flex-shrink-0 text-lg transition-all hover:bg-[#F1F5F9] ${isExpanded ? 'text-[#6366F1] rotate-90 bg-[#EEF2FF]' : 'text-[#94A3B8]'}`}
+                className={`w-[1.75rem] h-[1.75rem] rounded flex items-center justify-center flex-shrink-0 text-lg transition-all hover:bg-slate-100 ${isExpanded ? 'text-indigo-500 rotate-90 bg-indigo-50' : 'text-slate-400'}`}
               >
                 <i className="ri-arrow-right-s-line" />
               </button>
@@ -652,11 +652,11 @@ export default function ProjectMilestones() {
               <Link
                 to={`/projects/${id}/milestones/${milestone.id}`}
                 onClick={e => e.stopPropagation()}
-                className={`block text-[0.875rem] font-semibold truncate hover:text-indigo-600 transition-colors ${isDone ? 'text-[#64748B]' : 'text-[#0F172A]'}`}
+                className={`block text-[0.875rem] font-semibold truncate hover:text-indigo-600 transition-colors ${isDone ? 'text-slate-500' : 'text-slate-900'}`}
               >
                 {milestone.name}
               </Link>
-              <div className="text-[0.75rem] text-[#94A3B8] mt-[0.0625rem] flex items-center gap-1">
+              <div className="text-[0.75rem] text-slate-400 mt-[0.0625rem] flex items-center gap-1">
                 <i className="ri-calendar-line" style={{ fontSize: '0.625rem', verticalAlign: '-1px' }} />
                 {formatDateRange(milestone.start_date, milestone.end_date)}
                 {milestone.isAggregated && (
@@ -674,7 +674,7 @@ export default function ProjectMilestones() {
 
             {/* sub count */}
             {hasSubMilestones && (
-              <span className="text-[0.6875rem] font-semibold text-[#6366F1] flex items-center gap-[0.1875rem] flex-shrink-0">
+              <span className="text-[0.6875rem] font-semibold text-indigo-500 flex items-center gap-[0.1875rem] flex-shrink-0">
                 <i className="ri-git-branch-line text-[0.8125rem]" />
                 {milestone.subMilestones!.length} subs
               </span>
@@ -700,20 +700,20 @@ export default function ProjectMilestones() {
             <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
               <button
                 onClick={() => { setParentMilestoneId(milestone.id); setShowCreateModal(true); }}
-                className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-medium px-[0.4375rem] py-1 rounded border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F1F5F9] transition-all whitespace-nowrap cursor-pointer"
+                className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-medium px-[0.4375rem] py-1 rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-all whitespace-nowrap cursor-pointer"
               >
                 <i className="ri-git-branch-line text-[0.8125rem]" />+Sub
               </button>
               <button
                 onClick={() => { setEditFormData({ name: milestone.name, start_date: milestone.start_date ? milestone.start_date.split('T')[0] : '', end_date: milestone.end_date ? milestone.end_date.split('T')[0] : '', status: milestone.status }); setEditingMilestone(milestone); }}
-                className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-medium px-[0.4375rem] py-1 rounded border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F1F5F9] transition-all whitespace-nowrap cursor-pointer"
+                className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-medium px-[0.4375rem] py-1 rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-all whitespace-nowrap cursor-pointer"
               >
                 <i className="ri-edit-line text-[0.8125rem]" />Edit
               </button>
               {!milestone.isAggregated && milestone.status === 'upcoming' && (
                 <button
                   onClick={() => handleStartMilestone(milestone.id)}
-                  className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-medium px-[0.4375rem] py-1 rounded border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F1F5F9] transition-all whitespace-nowrap cursor-pointer"
+                  className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-medium px-[0.4375rem] py-1 rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-all whitespace-nowrap cursor-pointer"
                 >
                   Start
                 </button>
@@ -721,7 +721,7 @@ export default function ProjectMilestones() {
               {!milestone.isAggregated && (milestone.status === 'started' || milestone.status === 'past_due') && (
                 <button
                   onClick={() => handleMarkAsComplete(milestone.id)}
-                  className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-medium px-[0.4375rem] py-1 rounded border border-[#86EFAC] bg-white text-[#16A34A] hover:bg-[#F0FDF4] transition-all whitespace-nowrap cursor-pointer"
+                  className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-medium px-[0.4375rem] py-1 rounded border border-green-300 bg-white text-green-600 hover:bg-green-50 transition-all whitespace-nowrap cursor-pointer"
                 >
                   <i className="ri-check-line text-[0.8125rem]" />Complete
                 </button>
@@ -730,7 +730,7 @@ export default function ProjectMilestones() {
                 <Link
                   to={`/projects/${id}/milestones/${milestone.id}`}
                   onClick={e => e.stopPropagation()}
-                  className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-medium px-[0.4375rem] py-1 rounded border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F1F5F9] transition-all whitespace-nowrap cursor-pointer"
+                  className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-medium px-[0.4375rem] py-1 rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-all whitespace-nowrap cursor-pointer"
                 >
                   <i className="ri-eye-line text-[0.8125rem]" />View
                 </Link>
@@ -740,33 +740,33 @@ export default function ProjectMilestones() {
 
           {/* Progress bar */}
           <div className="mb-[0.4375rem]">
-            <div className="h-[6px] bg-[#F1F5F9] rounded-full overflow-hidden flex mb-[0.3125rem]">
-              <div className="h-full bg-[#10B981] transition-all" style={{ width: `${passedPct}%` }} />
-              <div className="h-full bg-[#EF4444] transition-all" style={{ width: `${failedPct}%` }} />
+            <div className="h-[6px] bg-slate-100 rounded-full overflow-hidden flex mb-[0.3125rem]">
+              <div className="h-full bg-emerald-500 transition-all" style={{ width: `${passedPct}%` }} />
+              <div className="h-full bg-rose-500 transition-all" style={{ width: `${failedPct}%` }} />
             </div>
             <div className="flex justify-between text-[0.75rem]">
-              <span className="font-semibold text-[#0F172A]">{milestone.actualProgress}% complete</span>
-              <span className="text-[#94A3B8]">{milestone.completedTests} / {milestone.totalTests} cases</span>
+              <span className="font-semibold text-slate-900">{milestone.actualProgress}% complete</span>
+              <span className="text-slate-400">{milestone.completedTests} / {milestone.totalTests} cases</span>
             </div>
           </div>
 
           {/* Bottom: counts */}
           <div className="flex items-center gap-3 text-[0.75rem]">
             <span className="flex items-center gap-[0.1875rem]">
-              <span className="w-[6px] h-[6px] rounded-full bg-[#10B981] flex-shrink-0" />
-              <span className="text-[#64748B]">{milestone.passedTests} passed</span>
+              <span className="w-[6px] h-[6px] rounded-full bg-emerald-500 flex-shrink-0" />
+              <span className="text-slate-500">{milestone.passedTests} passed</span>
             </span>
             <span className="flex items-center gap-[0.1875rem]">
-              <span className="w-[6px] h-[6px] rounded-full bg-[#EF4444] flex-shrink-0" />
-              <span className="text-[#64748B]">{milestone.failedTests} failed</span>
+              <span className="w-[6px] h-[6px] rounded-full bg-rose-500 flex-shrink-0" />
+              <span className="text-slate-500">{milestone.failedTests} failed</span>
             </span>
             <span className="flex items-center gap-[0.1875rem]">
-              <span className="w-[6px] h-[6px] rounded-full bg-[#94A3B8] flex-shrink-0" />
-              <span className="text-[#64748B]">{remaining} remaining</span>
+              <span className="w-[6px] h-[6px] rounded-full bg-slate-400 flex-shrink-0" />
+              <span className="text-slate-500">{remaining} remaining</span>
             </span>
             {milestone.isAggregated && milestone.rollupPassRate !== undefined && milestone.rollupPassRate > 0 && (
-              <span className="flex items-center gap-[0.1875rem] ml-2 pl-2 border-l border-[#E2E8F0]">
-                <span className="text-[#6366F1] font-semibold">{milestone.rollupPassRate}% pass rate</span>
+              <span className="flex items-center gap-[0.1875rem] ml-2 pl-2 border-l border-slate-200">
+                <span className="text-indigo-500 font-semibold">{milestone.rollupPassRate}% pass rate</span>
               </span>
             )}
           </div>
@@ -776,7 +776,7 @@ export default function ProjectMilestones() {
         {hasSubMilestones && isExpanded && (
           <div className="mt-1.5 pl-[1.125rem] relative">
             {/* vertical connector line */}
-            <div className="absolute left-2 top-0 bottom-3 w-[1.5px] bg-[#E2E8F0] rounded" />
+            <div className="absolute left-2 top-0 bottom-3 w-[1.5px] bg-slate-200 rounded" />
             {milestone.subMilestones!.map(sub => renderSubMilestone(sub))}
           </div>
         )}
@@ -792,7 +792,7 @@ export default function ProjectMilestones() {
         <ProjectHeader projectId={id || ''} projectName={project?.name || ''} />
 
         {/* Edge-to-edge subtab row */}
-        <div className="flex items-center border-b border-[#E2E8F0] bg-white flex-shrink-0 h-[2.625rem] px-5">
+        <div className="flex items-center border-b border-slate-200 bg-white flex-shrink-0 h-[2.625rem] px-5">
           {[
             { key: 'all',         label: 'All',         icon: 'ri-list-check-3',         iconColor: '#6366F1', count: milestones.length },
             { key: 'in-progress', label: 'In Progress', icon: 'ri-loader-4-fill',        iconColor: '#3B82F6', count: milestones.filter(m => m.status !== 'completed' && m.status !== 'past_due').length },
@@ -804,21 +804,21 @@ export default function ProjectMilestones() {
               onClick={() => setActiveTab(tab.key as typeof activeTab)}
               className={`flex items-center gap-[0.3125rem] h-full px-[0.875rem] text-[0.8125rem] font-medium relative border-b-[2.5px] transition-colors cursor-pointer whitespace-nowrap ${
                 activeTab === tab.key
-                  ? 'text-[#6366F1] border-[#6366F1]'
-                  : 'text-[#64748B] border-transparent hover:text-[#1E293B]'
+                  ? 'text-indigo-500 border-indigo-500'
+                  : 'text-slate-500 border-transparent hover:text-slate-800'
               }`}
             >
               <i className={`${tab.icon} text-[0.875rem]`} style={{ color: tab.iconColor }} />
               {tab.label}
               <span className={`px-1.5 py-0.5 rounded text-[0.6875rem] font-semibold ${
-                activeTab === tab.key ? 'bg-[#EEF2FF] text-[#6366F1]' : 'bg-[#F1F5F9] text-[#64748B]'
+                activeTab === tab.key ? 'bg-indigo-50 text-indigo-500' : 'bg-slate-100 text-slate-500'
               }`}>{tab.count}</span>
             </button>
           ))}
           <div className="flex-1" />
           <button
             onClick={() => { setParentMilestoneId(null); setShowCreateModal(true); }}
-            className="flex items-center gap-1 px-[0.75rem] py-[0.3125rem] bg-[#6366F1] text-white rounded-[0.375rem] text-[0.75rem] font-semibold hover:bg-[#4F46E5] transition-colors cursor-pointer whitespace-nowrap shadow-[0_1px_3px_rgba(99,102,241,0.3)]"
+            className="flex items-center gap-1 px-[0.75rem] py-[0.3125rem] bg-indigo-500 text-white rounded-[0.375rem] text-[0.75rem] font-semibold hover:bg-indigo-600 transition-colors cursor-pointer whitespace-nowrap shadow-[0_1px_3px_rgba(99,102,241,0.3)]"
           >
             <i className="ri-add-line text-sm" />
             New Milestone
@@ -826,32 +826,32 @@ export default function ProjectMilestones() {
         </div>
 
         {/* Search + Filter + Sort toolbar */}
-        <div className="flex items-center gap-2 px-6 py-[0.625rem] bg-white border-b border-[#E2E8F0] flex-shrink-0">
-          <div className="flex-1 flex items-center gap-[0.375rem] bg-[#F8FAFC] border border-[#E2E8F0] rounded-md px-[0.625rem] py-[0.375rem] focus-within:border-[#C7D2FE] focus-within:bg-white transition-colors">
-            <i className="ri-search-line text-[0.875rem] text-[#94A3B8] flex-shrink-0" />
+        <div className="flex items-center gap-2 px-6 py-[0.625rem] bg-white border-b border-slate-200 flex-shrink-0">
+          <div className="flex-1 flex items-center gap-[0.375rem] bg-slate-50 border border-slate-200 rounded-md px-[0.625rem] py-[0.375rem] focus-within:border-indigo-200 focus-within:bg-white transition-colors">
+            <i className="ri-search-line text-[0.875rem] text-slate-400 flex-shrink-0" />
             <input
               type="text"
               placeholder="Search milestones..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="border-none bg-transparent outline-none text-[0.8125rem] text-[#1E293B] placeholder-[#94A3B8] flex-1 min-w-0 font-[inherit]"
+              className="border-none bg-transparent outline-none text-[0.8125rem] text-slate-800 placeholder-slate-400 flex-1 min-w-0 font-[inherit]"
             />
           </div>
-          <button className="flex items-center gap-1 text-[0.75rem] font-medium px-[0.625rem] py-[0.375rem] rounded-md border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC] hover:border-[#CBD5E1] transition-all cursor-pointer whitespace-nowrap">
-            <i className="ri-filter-3-line text-[0.875rem] text-[#94A3B8]" />Filters
+          <button className="flex items-center gap-1 text-[0.75rem] font-medium px-[0.625rem] py-[0.375rem] rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer whitespace-nowrap">
+            <i className="ri-filter-3-line text-[0.875rem] text-slate-400" />Filters
           </button>
-          <button className="flex items-center gap-1 text-[0.75rem] font-medium px-[0.625rem] py-[0.375rem] rounded-md border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC] hover:border-[#CBD5E1] transition-all cursor-pointer whitespace-nowrap">
-            <i className="ri-sort-desc text-[0.875rem] text-[#94A3B8]" />Sort
+          <button className="flex items-center gap-1 text-[0.75rem] font-medium px-[0.625rem] py-[0.375rem] rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer whitespace-nowrap">
+            <i className="ri-sort-desc text-[0.875rem] text-slate-400" />Sort
           </button>
         </div>
 
-        <main className="flex-1 overflow-y-auto bg-[#F8FAFC]">
+        <main className="flex-1 overflow-y-auto bg-slate-50">
           <div className="p-5">
             {filteredMilestones.length === 0 ? (
               <div className="text-center py-12">
-                <i className="ri-flag-line text-5xl text-[#CBD5E1] block mb-3"></i>
-                <p className="text-[0.875rem] font-semibold text-[#64748B] mb-1">No {activeTab === 'all' ? '' : activeTab + ' '}milestones</p>
-                <p className="text-[0.75rem] text-[#94A3B8]">
+                <i className="ri-flag-line text-5xl text-slate-300 block mb-3"></i>
+                <p className="text-[0.875rem] font-semibold text-slate-500 mb-1">No {activeTab === 'all' ? '' : activeTab + ' '}milestones</p>
+                <p className="text-[0.75rem] text-slate-400">
                   {searchQuery ? 'No milestones match your search' : 'Create your first milestone to get started'}
                 </p>
               </div>

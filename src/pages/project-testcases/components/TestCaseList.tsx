@@ -2550,13 +2550,13 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
         <div className="w-[220px] flex flex-col h-full">
           <div className="px-[0.875rem] py-[0.75rem] border-b border-gray-200 flex-shrink-0">
             <div className="flex items-center justify-between">
-              <span className="text-[0.8125rem] font-bold text-[#0F172A]">Folders</span>
+              <span className="text-[0.8125rem] font-bold text-slate-900">Folders</span>
               <button
                 onClick={() => {
                   setNewFolder({ name: '', icon: 'ri-folder-line', color: getNextFolderColor(folders) });
                   setShowNewFolderModal(true);
                 }}
-                className="flex items-center gap-[0.25rem] text-[0.6875rem] font-semibold text-[#6366F1] cursor-pointer px-2 py-1 rounded-md border-none bg-transparent hover:bg-[#EEF2FF] transition-colors"
+                className="flex items-center gap-[0.25rem] text-[0.6875rem] font-semibold text-indigo-500 cursor-pointer px-2 py-1 rounded-md border-none bg-transparent hover:bg-indigo-50 transition-colors"
               >
                 <i className="ri-add-line text-sm"></i>
                 New
@@ -2570,8 +2570,8 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                   onClick={() => setSelectedFolder(folder.id)}
                   className={`w-full flex items-center gap-[0.375rem] px-[0.875rem] py-[0.4375rem] text-[0.8125rem] cursor-pointer transition-all whitespace-nowrap ${
                     selectedFolder === folder.id
-                      ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold'
-                      : 'text-[#475569] hover:bg-[#F8FAFC]'
+                      ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                      : 'text-slate-600 hover:bg-slate-50'
                   }`}
                 >
                   {(() => {
@@ -2586,7 +2586,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     );
                   })()}
                   <span className="flex-1 text-left truncate">{folder.name}</span>
-                  <span className={`text-[0.75rem] font-medium ${selectedFolder === folder.id ? 'text-[#6366F1]' : 'text-[#94A3B8]'}`}>{folder.count}</span>
+                  <span className={`text-[0.75rem] font-medium ${selectedFolder === folder.id ? 'text-indigo-500' : 'text-slate-400'}`}>{folder.count}</span>
                   {folder.id !== 'all' && (
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDeleteFolder(folder.id); }}
@@ -2600,7 +2600,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             ))}
           </div>
           <div className="px-[0.875rem] py-3 border-t border-gray-200">
-            <button onClick={() => setIsFolderPanelOpen(false)} className="flex items-center gap-1 text-[0.75rem] text-[#94A3B8] hover:text-[#475569] cursor-pointer bg-transparent border-none transition-colors">
+            <button onClick={() => setIsFolderPanelOpen(false)} className="flex items-center gap-1 text-[0.75rem] text-slate-400 hover:text-slate-600 cursor-pointer bg-transparent border-none transition-colors">
               <i className="ri-arrow-left-s-line text-sm"></i>
               Collapse
             </button>
@@ -2690,7 +2690,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
               className="overflow-x-auto overflow-y-auto h-full"
             >
               <table className="w-full">
-                <thead className="bg-[#F8FAFC] border-b border-gray-200 sticky top-0 z-10">
+                <thead className="bg-slate-50 border-b border-gray-200 sticky top-0 z-10">
                   <tr>
                     <th className="px-4 py-[0.6875rem] text-left w-9">
                       <input
@@ -2721,7 +2721,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     <tr
                       key={testCase.id}
                       className={`transition-colors cursor-pointer ${
-                        selectedTestCase?.id === testCase.id ? 'bg-indigo-50' : 'hover:bg-[#FAFAFF]'
+                        selectedTestCase?.id === testCase.id ? 'bg-indigo-50' : 'hover:bg-violet-50'
                       }`}
                       style={lcStatus === 'deprecated' ? { opacity: 0.5 } : undefined}
                       onClick={() => { setSelectedTestCase(testCase); setStepsHeightPx(null); window.scrollTo(0, 0); }}
@@ -2748,7 +2748,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       </td>
                       {/* Title */}
                       <td className="px-4 py-[0.6875rem]">
-                        <span className="text-[0.8125rem] font-semibold text-[#0F172A] block max-w-[360px] whitespace-nowrap overflow-hidden text-ellipsis">
+                        <span className="text-[0.8125rem] font-semibold text-slate-900 block max-w-[360px] whitespace-nowrap overflow-hidden text-ellipsis">
                           {testCase.is_automated && <i className="ri-robot-line text-purple-500 mr-1 text-xs"></i>}
                           {testCase.title}
                         </span>
@@ -2760,7 +2760,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                             className="inline-block w-2 h-2 rounded-full flex-shrink-0"
                             style={{ background: PRIORITY_DOT_COLORS[testCase.priority] || '#94A3B8' }}
                           />
-                          <span className="text-[0.8125rem] text-[#475569] capitalize">{testCase.priority}</span>
+                          <span className="text-[0.8125rem] text-slate-600 capitalize">{testCase.priority}</span>
                         </span>
                       </td>
                       {/* Status (lifecycle) */}
@@ -2779,7 +2779,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                           const fs = getFolderStyle(f?.color || 'indigo');
                           const icon = f?.icon || 'ri-folder-line';
                           return (
-                            <span className="flex items-center gap-1.5 text-[0.8125rem] text-[#475569]">
+                            <span className="flex items-center gap-1.5 text-[0.8125rem] text-slate-600">
                               <span className="flex-shrink-0 flex items-center justify-center" style={{ width: 18, height: 18, borderRadius: 4, background: fs.bg }}>
                                 <i className={`${icon} text-[0.6875rem]`} style={{ color: fs.fg }}></i>
                               </span>
@@ -2787,7 +2787,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                             </span>
                           );
                         })() : (
-                          <span className="text-[0.8125rem] text-[#94A3B8]">-</span>
+                          <span className="text-[0.8125rem] text-slate-400">-</span>
                         )}
                       </td>
                       {/* Assignee */}
@@ -2800,12 +2800,12 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                             title={testCase.assignee}
                           />
                         ) : (
-                          <span className="text-[0.8125rem] text-[#94A3B8]">-</span>
+                          <span className="text-[0.8125rem] text-slate-400">-</span>
                         )}
                       </td>
                       {/* Updated */}
                       <td className="px-4 py-[0.6875rem]">
-                        <span className="text-[0.8125rem] text-[#94A3B8]">
+                        <span className="text-[0.8125rem] text-slate-400">
                           {tcTimeAgo(testCase.updated_at)}
                         </span>
                       </td>
@@ -2824,16 +2824,16 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
       {/* 우측 상세 패널 */}
       {selectedTestCase && (
-        <div ref={detailPanelRef} className="w-[500px] min-w-[500px] flex-shrink-0 bg-white border-l border-[#E2E8F0] flex flex-col overflow-hidden">
+        <div ref={detailPanelRef} className="w-[500px] min-w-[500px] flex-shrink-0 bg-white border-l border-slate-200 flex flex-col overflow-hidden">
 
 
           {/* §1 — Header */}
-          <div className="px-5 pt-4 pb-[0.875rem] border-b border-[#E2E8F0] flex-shrink-0">
+          <div className="px-5 pt-4 pb-[0.875rem] border-b border-slate-200 flex-shrink-0">
             <div className="flex items-start justify-between gap-2 mb-[0.5rem]">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-[0.25rem] flex-wrap">
                   {selectedTestCase.custom_id && (
-                    <span className="text-[0.6875rem] font-mono text-[#94A3B8]">
+                    <span className="text-[0.6875rem] font-mono text-slate-400">
                       {selectedTestCase.custom_id}
                     </span>
                   )}
@@ -2855,88 +2855,88 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     );
                   })()}
                 </div>
-                <h2 className="text-[0.9375rem] font-bold text-[#0F172A] leading-[1.3]">
+                <h2 className="text-[0.9375rem] font-bold text-slate-900 leading-[1.3]">
                   {selectedTestCase.title}
                 </h2>
               </div>
               <button
                 onClick={() => setSelectedTestCase(null)}
-                className="w-7 h-7 flex items-center justify-center text-[#94A3B8] hover:text-[#475569] hover:bg-[#F1F5F9] rounded-md transition-all cursor-pointer flex-shrink-0 border-none bg-transparent"
+                className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-all cursor-pointer flex-shrink-0 border-none bg-transparent"
               >
                 <i className="ri-close-line text-[1.125rem]"></i>
               </button>
             </div>
             {selectedTestCase.description && (
-              <p className="text-[0.75rem] text-[#64748B] leading-[1.5] mt-[0.375rem]">{selectedTestCase.description}</p>
+              <p className="text-[0.75rem] text-slate-500 leading-[1.5] mt-[0.375rem]">{selectedTestCase.description}</p>
             )}
           </div>
 
           {/* §2 — Meta Grid (always visible, 2-col) */}
-          <div className="px-5 py-[0.875rem] border-b border-[#F1F5F9] flex-shrink-0">
+          <div className="px-5 py-[0.875rem] border-b border-slate-100 flex-shrink-0">
             <div className="grid grid-cols-2 gap-x-4 gap-y-[0.625rem]">
               {/* Priority */}
               <div>
-                <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.1875rem]">Priority</div>
+                <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-slate-400 mb-[0.1875rem]">Priority</div>
                 <span className="inline-flex items-center gap-1.5">
                   <span
                     className="inline-block w-2 h-2 rounded-full flex-shrink-0"
                     style={{ background: PRIORITY_DOT_COLORS[selectedTestCase.priority] || '#94A3B8' }}
                   />
-                  <span className="text-[0.8125rem] text-[#475569] capitalize">{selectedTestCase.priority}</span>
+                  <span className="text-[0.8125rem] text-slate-600 capitalize">{selectedTestCase.priority}</span>
                 </span>
               </div>
 
               {/* Folder */}
               <div>
-                <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.1875rem]">Folder</div>
+                <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-slate-400 mb-[0.1875rem]">Folder</div>
                 {selectedTestCase.folder ? (() => {
                   const f = folders.find(fd => fd.name === selectedTestCase.folder);
                   const fs = getFolderStyle(f?.color || 'indigo');
                   const icon = f?.icon || 'ri-folder-line';
                   return (
-                    <p className="text-[0.8125rem] font-medium text-[#0F172A] flex items-center gap-1.5">
+                    <p className="text-[0.8125rem] font-medium text-slate-900 flex items-center gap-1.5">
                       <span className="flex-shrink-0 flex items-center justify-center" style={{ width: 18, height: 18, borderRadius: 4, background: fs.bg }}>
                         <i className={`${icon} text-[0.6875rem]`} style={{ color: fs.fg }}></i>
                       </span>
                       {selectedTestCase.folder}
                     </p>
                   );
-                })() : <p className="text-[0.8125rem] text-[#CBD5E1]">—</p>}
+                })() : <p className="text-[0.8125rem] text-slate-300">—</p>}
               </div>
 
               {/* Tags */}
               <div>
-                <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.1875rem]">Tags</div>
+                <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-slate-400 mb-[0.1875rem]">Tags</div>
                 {selectedTestCase.tags ? (
                   <div className="flex flex-wrap gap-1">
                     {selectedTestCase.tags.split(',').map((tag, index) => (
-                      <span key={index} className="inline-flex items-center px-[0.4375rem] py-0.5 bg-[#EEF2FF] text-[#4338CA] rounded text-[0.6875rem] font-medium">
+                      <span key={index} className="inline-flex items-center px-[0.4375rem] py-0.5 bg-indigo-50 text-indigo-700 rounded text-[0.6875rem] font-medium">
                         {tag.trim()}
                       </span>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-[0.8125rem] text-[#CBD5E1]">—</p>
+                  <p className="text-[0.8125rem] text-slate-300">—</p>
                 )}
               </div>
 
               {/* Assignee */}
               <div>
-                <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.1875rem]">Assignee</div>
+                <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-slate-400 mb-[0.1875rem]">Assignee</div>
                 {selectedTestCase.assignee ? (
                   <div className="flex items-center gap-[0.375rem]">
                     <Avatar userId={selectedTestCase.assignee} name={selectedTestCase.assignee} size="xs" />
-                    <span className="text-[0.8125rem] font-medium text-[#0F172A] truncate">{selectedTestCase.assignee}</span>
+                    <span className="text-[0.8125rem] font-medium text-slate-900 truncate">{selectedTestCase.assignee}</span>
                   </div>
                 ) : (
-                  <p className="text-[0.8125rem] text-[#CBD5E1]">—</p>
+                  <p className="text-[0.8125rem] text-slate-300">—</p>
                 )}
               </div>
 
               {/* Created */}
               <div>
-                <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.1875rem]">Created</div>
-                <p className="text-[0.8125rem] font-medium text-[#0F172A]">
+                <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-slate-400 mb-[0.1875rem]">Created</div>
+                <p className="text-[0.8125rem] font-medium text-slate-900">
                   {new Date(selectedTestCase.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                 </p>
               </div>
@@ -2949,16 +2949,16 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
           {/* Steps Toggle Bar */}
           <button
             onClick={() => setStepsCollapsed(!stepsCollapsed)}
-            className="flex items-center justify-between w-full px-5 py-2 bg-[#F8FAFC] hover:bg-[#F1F5F9] transition-colors border-b border-[#E2E8F0] flex-shrink-0 cursor-pointer border-l-0 border-r-0 border-t-0"
+            className="flex items-center justify-between w-full px-5 py-2 bg-slate-50 hover:bg-slate-100 transition-colors border-b border-slate-200 flex-shrink-0 cursor-pointer border-l-0 border-r-0 border-t-0"
           >
             <div className="flex items-center gap-2">
               <i
                 className={`ri-arrow-down-s-line text-[0.875rem] transition-transform duration-200 ${stepsCollapsed ? '-rotate-90' : ''}`}
                 style={{ color: '#6366F1' }}
               />
-              <span className="text-[0.6875rem] font-bold text-[#475569] uppercase tracking-[0.04em]">Test Steps</span>
+              <span className="text-[0.6875rem] font-bold text-slate-600 uppercase tracking-[0.04em]">Test Steps</span>
             </div>
-            <span className="text-[0.6875rem] text-[#94A3B8] font-medium">
+            <span className="text-[0.6875rem] text-slate-400 font-medium">
               {(() => {
                 const stepsList = parseStepsList(selectedTestCase.steps, selectedTestCase.expected_result);
                 const attachCount = selectedTestCase.attachments?.length || 0;
@@ -2974,19 +2974,19 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
           {!stepsCollapsed && (
             <div
               ref={stepsAreaRef}
-              className="overflow-y-auto px-5 py-[0.875rem] border-b border-[#E2E8F0] flex-shrink-0 space-y-3"
+              className="overflow-y-auto px-5 py-[0.875rem] border-b border-slate-200 flex-shrink-0 space-y-3"
               style={{ height: stepsHeightPx !== null ? `${stepsHeightPx}px` : undefined, maxHeight: stepsHeightPx !== null ? undefined : '40vh' }}
             >
 
               {/* Precondition */}
               {selectedTestCase.precondition && (
                 <div>
-                  <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.375rem] flex items-center gap-1">
+                  <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-slate-400 mb-[0.375rem] flex items-center gap-1">
                     <i className="ri-alert-line text-[0.75rem]"></i>
                     Precondition
                   </div>
-                  <div className="bg-[#FFFBEB] border border-[#FDE68A] rounded-md px-[0.75rem] py-[0.5rem]">
-                    <p className="text-[0.75rem] text-[#92400E] leading-[1.5]">{htmlToText(selectedTestCase.precondition)}</p>
+                  <div className="bg-amber-50 border border-yellow-200 rounded-md px-[0.75rem] py-[0.5rem]">
+                    <p className="text-[0.75rem] text-amber-800 leading-[1.5]">{htmlToText(selectedTestCase.precondition)}</p>
                   </div>
                 </div>
               )}
@@ -3019,20 +3019,20 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                         }
                         // Normal step
                         return (
-                        <div key={index} className="flex gap-2 bg-[#F8FAFC] rounded-lg px-[0.75rem] py-[0.5rem] items-start">
-                          <div className="w-5 h-5 rounded-full flex items-center justify-center font-bold flex-shrink-0 mt-[0.0625rem] bg-[#EEF2FF] text-[#4338CA]" style={{ fontSize: '0.625rem' }}>
+                        <div key={index} className="flex gap-2 bg-slate-50 rounded-lg px-[0.75rem] py-[0.5rem] items-start">
+                          <div className="w-5 h-5 rounded-full flex items-center justify-center font-bold flex-shrink-0 mt-[0.0625rem] bg-indigo-50 text-indigo-700" style={{ fontSize: '0.625rem' }}>
                             {index + 1}
                           </div>
                           <div className="flex-1">
                             {/<[^>]+>/.test(s.step) ? (
-                              <div className="text-[0.8rem] text-[#334155] leading-[1.5] prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: s.step }} />
+                              <div className="text-[0.8rem] text-slate-700 leading-[1.5] prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: s.step }} />
                             ) : (
-                              <p className="text-[0.8rem] text-[#334155] whitespace-pre-wrap leading-[1.5]">{s.step}</p>
+                              <p className="text-[0.8rem] text-slate-700 whitespace-pre-wrap leading-[1.5]">{s.step}</p>
                             )}
                             {s.expectedResult && (
                               <div className="mt-[0.25rem] flex items-start gap-1 leading-[1.4]">
-                                <span className="text-[0.8rem] text-[#16A34A] flex-shrink-0 font-medium">✓</span>
-                                <span className="text-[0.8rem] text-[#16A34A]">{htmlToText(s.expectedResult)}</span>
+                                <span className="text-[0.8rem] text-green-600 flex-shrink-0 font-medium">✓</span>
+                                <span className="text-[0.8rem] text-green-600">{htmlToText(s.expectedResult)}</span>
                               </div>
                             )}
                           </div>
@@ -3043,22 +3043,22 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                   );
                 } else if (selectedTestCase.expected_result) {
                   return (
-                    <div className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-lg px-3 py-2.5">
+                    <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2.5">
                       <div className="flex items-center gap-1.5 mb-1">
-                        <i className="ri-checkbox-circle-line text-[#16A34A] text-xs"></i>
-                        <span className="text-[0.6875rem] font-bold text-[#16A34A] uppercase tracking-wider">Expected Result</span>
+                        <i className="ri-checkbox-circle-line text-green-600 text-xs"></i>
+                        <span className="text-[0.6875rem] font-bold text-green-600 uppercase tracking-wider">Expected Result</span>
                       </div>
-                      <p className="text-xs text-[#166534] leading-relaxed">{selectedTestCase.expected_result}</p>
+                      <p className="text-xs text-green-800 leading-relaxed">{selectedTestCase.expected_result}</p>
                     </div>
                   );
                 }
-                return <p className="text-[0.75rem] text-[#94A3B8] text-center py-2">No steps defined</p>;
+                return <p className="text-[0.75rem] text-slate-400 text-center py-2">No steps defined</p>;
               })()}
 
               {/* Attachments */}
               {selectedTestCase.attachments && selectedTestCase.attachments.length > 0 && (
                 <div>
-                  <div className="text-[0.625rem] font-bold text-[#94A3B8] uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                  <div className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                     <i className="ri-attachment-2 text-[0.75rem]"></i>
                     Attachments ({selectedTestCase.attachments.length})
                   </div>
@@ -3067,15 +3067,15 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       <div
                         key={index}
                         onClick={() => setImagePreview(file.url)}
-                        className="h-12 rounded-md overflow-hidden bg-[#F1F5F9] cursor-pointer hover:border-[#C7D2FE] transition-all border border-[#E2E8F0] flex items-center justify-center gap-1"
+                        className="h-12 rounded-md overflow-hidden bg-slate-100 cursor-pointer hover:border-indigo-200 transition-all border border-slate-200 flex items-center justify-center gap-1"
                         title={file.name}
                       >
                         {/\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(file.name) ? (
                           <img src={file.url} alt={file.name} className="w-full h-full object-cover" />
                         ) : (
                           <>
-                            <i className="ri-file-text-line text-[#94A3B8] text-sm"></i>
-                            <span className="text-[0.625rem] text-[#94A3B8] truncate px-1">{file.name}</span>
+                            <i className="ri-file-text-line text-slate-400 text-sm"></i>
+                            <span className="text-[0.625rem] text-slate-400 truncate px-1">{file.name}</span>
                           </>
                         )}
                       </div>
@@ -3112,14 +3112,14 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 document.addEventListener('mousemove', onMove);
                 document.addEventListener('mouseup', onUp);
               }}
-              className="h-[6px] flex-shrink-0 cursor-row-resize bg-[#F8FAFC] border-b border-[#E2E8F0] flex items-center justify-center hover:bg-[#EEF2FF] transition-colors group"
+              className="h-[6px] flex-shrink-0 cursor-row-resize bg-slate-50 border-b border-slate-200 flex items-center justify-center hover:bg-indigo-50 transition-colors group"
             >
-              <div className="w-8 h-[3px] bg-[#CBD5E1] rounded-full group-hover:bg-[#6366F1] transition-colors" />
+              <div className="w-8 h-[3px] bg-slate-300 rounded-full group-hover:bg-indigo-500 transition-colors" />
             </div>
           )}
 
           {/* §3 — Tabs (no Details tab) */}
-          <div className="flex border-b border-[#E2E8F0] flex-shrink-0">
+          <div className="flex border-b border-slate-200 flex-shrink-0">
             {(['comments', 'results', 'issues', 'history'] as const).map((tab) => {
               const labels: Record<string, string> = { comments: 'Comments', results: 'Results', issues: 'Issues', history: 'History' };
               const counts: Record<string, number | undefined> = {
@@ -3135,14 +3135,14 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                   onClick={() => setActiveTab(tab)}
                   className={`flex-1 flex items-center justify-center gap-1 py-2 text-[0.75rem] font-semibold transition-all cursor-pointer whitespace-nowrap bg-transparent border-t-0 border-l-0 border-r-0 ${
                     activeTab === tab
-                      ? 'text-[#6366F1] border-b-2 border-[#6366F1]'
-                      : 'text-[#94A3B8] border-b-2 border-transparent hover:text-[#475569]'
+                      ? 'text-indigo-500 border-b-2 border-indigo-500'
+                      : 'text-slate-400 border-b-2 border-transparent hover:text-slate-600'
                   }`}
                 >
                   {labels[tab]}
                   {count !== undefined && count > 0 && (
                     <span className={`text-[0.5625rem] font-bold px-1.5 py-0.5 rounded-full ${
-                      activeTab === tab ? 'bg-[#EEF2FF] text-[#6366F1]' : 'bg-[#F1F5F9] text-[#64748B]'
+                      activeTab === tab ? 'bg-indigo-50 text-indigo-500' : 'bg-slate-100 text-slate-500'
                     }`}>
                       {count}
                     </span>
@@ -3160,30 +3160,30 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
               <div className="space-y-3">
                 {loadingComments ? (
                   <div className="text-center py-6">
-                    <i className="ri-loader-4-line animate-spin text-xl text-[#94A3B8]"></i>
+                    <i className="ri-loader-4-line animate-spin text-xl text-slate-400"></i>
                   </div>
                 ) : comments.length === 0 ? (
                   <div className="text-center py-4">
-                    <i className="ri-chat-3-line text-2xl text-[#CBD5E1] block mb-1"></i>
-                    <p className="text-[0.75rem] text-[#94A3B8]">No comments yet</p>
+                    <i className="ri-chat-3-line text-2xl text-slate-300 block mb-1"></i>
+                    <p className="text-[0.75rem] text-slate-400">No comments yet</p>
                   </div>
                 ) : (
                   comments.map((comment) => (
                     <div key={comment.id} className="group">
                       <div className="flex items-center gap-[0.375rem] mb-[0.25rem]">
                         <Avatar userId={comment.user_id} name={comment.author} size="xs" />
-                        <span className="text-[0.75rem] font-semibold text-[#0F172A]">{comment.author}</span>
-                        <span className="text-[0.6875rem] text-[#94A3B8]">
+                        <span className="text-[0.75rem] font-semibold text-slate-900">{comment.author}</span>
+                        <span className="text-[0.6875rem] text-slate-400">
                           {comment.timestamp.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
                         </span>
                         <button
                           onClick={() => handleDeleteComment(comment.id)}
-                          className="ml-auto w-5 h-5 flex items-center justify-center text-[#CBD5E1] hover:text-[#EF4444] hover:bg-[#FEF2F2] rounded transition-all cursor-pointer opacity-0 group-hover:opacity-100 border-none bg-transparent"
+                          className="ml-auto w-5 h-5 flex items-center justify-center text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded transition-all cursor-pointer opacity-0 group-hover:opacity-100 border-none bg-transparent"
                         >
                           <i className="ri-delete-bin-line text-xs"></i>
                         </button>
                       </div>
-                      <div className="text-[0.75rem] text-[#475569] leading-[1.5] bg-[#F8FAFC] px-[0.75rem] py-[0.5rem] rounded-md border border-[#F1F5F9] ml-[1.625rem] whitespace-pre-wrap break-words">
+                      <div className="text-[0.75rem] text-slate-600 leading-[1.5] bg-slate-50 px-[0.75rem] py-[0.5rem] rounded-md border border-slate-100 ml-[1.625rem] whitespace-pre-wrap break-words">
                         {comment.text}
                       </div>
                     </div>
@@ -3202,14 +3202,14 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       onChange={(e) => setCommentText(e.target.value)}
                       placeholder="Add a comment..."
                       rows={1}
-                      className="flex-1 text-[0.75rem] px-[0.75rem] py-[0.5rem] border border-[#E2E8F0] rounded-md focus:outline-none focus:border-[#6366F1] resize-none font-[inherit]"
+                      className="flex-1 text-[0.75rem] px-[0.75rem] py-[0.5rem] border border-slate-200 rounded-md focus:outline-none focus:border-indigo-500 resize-none font-[inherit]"
                       style={{ height: '2.5rem' }}
                       onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (commentText.trim()) handlePostComment(); } }}
                     />
                     <button
                       onClick={handlePostComment}
                       disabled={!commentText.trim()}
-                      className="text-[0.75rem] font-semibold px-[0.75rem] py-[0.375rem] rounded-md bg-[#6366F1] text-white border-none cursor-pointer font-[inherit] whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#4F46E5] transition-colors flex-shrink-0"
+                      className="text-[0.75rem] font-semibold px-[0.75rem] py-[0.375rem] rounded-md bg-indigo-500 text-white border-none cursor-pointer font-[inherit] whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed hover:bg-indigo-600 transition-colors flex-shrink-0"
                     >
                       Post
                     </button>
@@ -3223,13 +3223,13 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
               <div>
                 {loadingResults ? (
                   <div className="text-center py-8">
-                    <i className="ri-loader-4-line animate-spin text-2xl text-[#94A3B8] block mb-2"></i>
-                    <p className="text-[0.75rem] text-[#94A3B8]">Loading results...</p>
+                    <i className="ri-loader-4-line animate-spin text-2xl text-slate-400 block mb-2"></i>
+                    <p className="text-[0.75rem] text-slate-400">Loading results...</p>
                   </div>
                 ) : testResults.length === 0 ? (
                   <div className="text-center py-8">
-                    <i className="ri-file-list-line text-2xl text-[#CBD5E1] block mb-1"></i>
-                    <p className="text-[0.75rem] text-[#94A3B8]">No test results yet</p>
+                    <i className="ri-file-list-line text-2xl text-slate-300 block mb-1"></i>
+                    <p className="text-[0.75rem] text-slate-400">No test results yet</p>
                   </div>
                 ) : (
                   testResults.map((result) => {
@@ -3246,17 +3246,17 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       : '';
                     const timeAgo = result.created_at ? tcTimeAgo(result.created_at) : '';
                     return (
-                      <div key={result.id} className="flex items-start gap-2 py-2 border-b border-[#F1F5F9]">
+                      <div key={result.id} className="flex items-start gap-2 py-2 border-b border-slate-100">
                         <span className="inline-flex items-center gap-1 text-[0.6875rem] font-semibold px-2 py-[0.125rem] rounded-full flex-shrink-0 mt-0.5" style={{ background: st.bg, color: st.color }}>
                           <span className="w-[5px] h-[5px] rounded-full flex-shrink-0" style={{ background: st.dot }}></span>
                           {result.status.charAt(0).toUpperCase() + result.status.slice(1)}
                         </span>
                         <div className="flex-1 min-w-0">
-                          <div className="text-[0.75rem] font-semibold text-[#0F172A] truncate">{result.run?.name || 'Unknown Run'}</div>
-                          <div className="text-[0.6875rem] text-[#94A3B8] flex items-center gap-1 flex-wrap">
+                          <div className="text-[0.75rem] font-semibold text-slate-900 truncate">{result.run?.name || 'Unknown Run'}</div>
+                          <div className="text-[0.6875rem] text-slate-400 flex items-center gap-1 flex-wrap">
                             {dateStr && <span>{dateStr}</span>}
                             {timeAgo && <><span>·</span><span>{timeAgo}</span></>}
-                            {result.author && <><span>·</span><span className="text-[#64748B]">{result.author}</span></>}
+                            {result.author && <><span>·</span><span className="text-slate-500">{result.author}</span></>}
                           </div>
                         </div>
                       </div>
@@ -3272,12 +3272,12 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 <div className="flex-1">
                   {loadingIssues ? (
                     <div className="text-center py-8">
-                      <i className="ri-loader-4-line animate-spin text-2xl text-[#94A3B8]"></i>
+                      <i className="ri-loader-4-line animate-spin text-2xl text-slate-400"></i>
                     </div>
                   ) : testIssues.length === 0 ? (
                     <div className="text-center py-8">
-                      <i className="ri-bug-line text-2xl text-[#CBD5E1] block mb-1"></i>
-                      <p className="text-[0.75rem] text-[#94A3B8]">No issues linked</p>
+                      <i className="ri-bug-line text-2xl text-slate-300 block mb-1"></i>
+                      <p className="text-[0.75rem] text-slate-400">No issues linked</p>
                     </div>
                   ) : (
                     testIssues.map((issue) => {
@@ -3285,15 +3285,15 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                         ? new Date(issue.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                         : '';
                       return (
-                        <div key={issue.id} className="flex items-start gap-2 py-2 border-b border-[#F1F5F9]">
-                          <div className="w-6 h-6 rounded bg-[#FEF2F2] text-[#EF4444] flex items-center justify-center text-xs flex-shrink-0 mt-0.5">
+                        <div key={issue.id} className="flex items-start gap-2 py-2 border-b border-slate-100">
+                          <div className="w-6 h-6 rounded bg-rose-50 text-rose-500 flex items-center justify-center text-xs flex-shrink-0 mt-0.5">
                             <i className="ri-bug-line"></i>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-[0.75rem] font-semibold text-[#0F172A] truncate">{issue.issue_key}</div>
-                            <div className="text-[0.6875rem] text-[#94A3B8] flex items-center gap-1 flex-wrap">
+                            <div className="text-[0.75rem] font-semibold text-slate-900 truncate">{issue.issue_key}</div>
+                            <div className="text-[0.6875rem] text-slate-400 flex items-center gap-1 flex-wrap">
                               <span>{issue.run_name}</span>
-                              {issue.status && <><span>·</span><span className={issue.status.toLowerCase() === 'resolved' ? 'text-[#16A34A]' : 'text-[#94A3B8]'}>{issue.status}</span></>}
+                              {issue.status && <><span>·</span><span className={issue.status.toLowerCase() === 'resolved' ? 'text-green-600' : 'text-slate-400'}>{issue.status}</span></>}
                               {issueDate && <><span>·</span><span>{issueDate}</span></>}
                             </div>
                           </div>
@@ -3303,8 +3303,8 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                   )}
                 </div>
                 {/* Link an issue button */}
-                <div className="pt-3 mt-1 border-t border-[#F1F5F9] flex-shrink-0">
-                  <button className="flex items-center gap-1.5 text-[0.75rem] font-semibold text-[#6366F1] hover:text-[#4F46E5] hover:bg-[#EEF2FF] px-2 py-1 rounded-md transition-colors cursor-pointer bg-transparent border-none">
+                <div className="pt-3 mt-1 border-t border-slate-100 flex-shrink-0">
+                  <button className="flex items-center gap-1.5 text-[0.75rem] font-semibold text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded-md transition-colors cursor-pointer bg-transparent border-none">
                     <i className="ri-add-circle-line text-sm"></i>
                     Link an issue
                   </button>
@@ -3316,11 +3316,11 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             {activeTab === 'history' && (
               <div>
                 {loadingHistory ? (
-                  <div className="text-center py-8 text-[#94A3B8] text-[0.75rem]">Loading...</div>
+                  <div className="text-center py-8 text-slate-400 text-[0.75rem]">Loading...</div>
                 ) : historyData.length === 0 ? (
                   <div className="text-center py-8">
-                    <i className="ri-time-line text-2xl text-[#CBD5E1] block mb-1"></i>
-                    <p className="text-[0.75rem] text-[#94A3B8]">No history yet</p>
+                    <i className="ri-time-line text-2xl text-slate-300 block mb-1"></i>
+                    <p className="text-[0.75rem] text-slate-400">No history yet</p>
                   </div>
                 ) : (() => {
                   // Group history items by version_major
@@ -3370,16 +3370,16 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                         {/* Timeline dot */}
                         <div className={`absolute left-0 top-[0.35rem] w-[0.625rem] h-[0.625rem] rounded-full border-2 ${
                           h.action_type === 'created'
-                            ? 'bg-[#6366F1] border-[#6366F1]'
+                            ? 'bg-indigo-500 border-indigo-500'
                             : h.action_type === 'published'
                             ? 'bg-emerald-500 border-emerald-500'
-                            : 'bg-white border-[#CBD5E1]'
+                            : 'bg-white border-slate-300'
                         }`}></div>
 
                         <div className="flex items-start justify-between gap-1 flex-wrap">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             {h.version_major !== undefined && (
-                              <span className="text-[0.75rem] font-bold text-[#0F172A]">
+                              <span className="text-[0.75rem] font-bold text-slate-900">
                                 v{h.version_major}.{h.version_minor ?? 0}
                               </span>
                             )}
@@ -3391,21 +3391,21 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                               {isDraft ? 'Draft' : 'Published'}
                             </span>
                             {h.action_type === 'created' && (
-                              <span className="text-[0.5625rem] font-semibold px-1.5 py-0.5 rounded bg-[#EEF2FF] text-[#6366F1]">Initial</span>
+                              <span className="text-[0.5625rem] font-semibold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-500">Initial</span>
                             )}
                           </div>
-                          <span className="text-[0.625rem] text-[#94A3B8]">{dateStr}</span>
+                          <span className="text-[0.625rem] text-slate-400">{dateStr}</span>
                         </div>
 
-                        <div className="text-[0.75rem] text-[#475569] mt-0.5 leading-[1.4]">
-                          <strong className="font-semibold text-[#0F172A]">{userName}</strong>{' '}
+                        <div className="text-[0.75rem] text-slate-600 mt-0.5 leading-[1.4]">
+                          <strong className="font-semibold text-slate-900">{userName}</strong>{' '}
                           {actionMsg}
                         </div>
 
                         {chips.length > 0 && (
                           <div className="flex gap-1 flex-wrap mt-1">
                             {chips.map(c => (
-                              <span key={c} className="px-1.5 py-0.5 bg-[#F1F5F9] rounded text-[0.5625rem] font-medium text-[#64748B]">
+                              <span key={c} className="px-1.5 py-0.5 bg-slate-100 rounded text-[0.5625rem] font-medium text-slate-500">
                                 {getFieldLabel(c)}
                               </span>
                             ))}
@@ -3416,7 +3416,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                           {hasDiff && (
                             <button
                               onClick={() => handleHistoryClick(h)}
-                              className="text-[0.6875rem] text-[#6366F1] hover:text-[#4F46E5] flex items-center gap-1 cursor-pointer bg-transparent border-none px-0 font-semibold"
+                              className="text-[0.6875rem] text-indigo-500 hover:text-indigo-600 flex items-center gap-1 cursor-pointer bg-transparent border-none px-0 font-semibold"
                             >
                               <i className="ri-git-commit-line text-xs"></i> View diff
                             </button>
@@ -3424,7 +3424,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                           {(h.action_type === 'created' || h.action_type === 'published' || hasDiff) && h.old_value && (
                             <button
                               onClick={() => { setRollbackTarget(h); setShowRollbackModal(true); }}
-                              className="text-[0.6875rem] text-[#94A3B8] hover:text-[#475569] flex items-center gap-1 cursor-pointer bg-transparent border-none px-0 font-semibold"
+                              className="text-[0.6875rem] text-slate-400 hover:text-slate-600 flex items-center gap-1 cursor-pointer bg-transparent border-none px-0 font-semibold"
                             >
                               <i className="ri-arrow-go-back-line text-xs"></i> Restore
                             </button>
@@ -3437,7 +3437,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                   return (
                     <div className="relative">
                       {/* Vertical line */}
-                      <div className="absolute left-[0.28125rem] top-2 bottom-2 w-[2px] bg-[#E2E8F0] rounded-full"></div>
+                      <div className="absolute left-[0.28125rem] top-2 bottom-2 w-[2px] bg-slate-200 rounded-full"></div>
 
                       {sortedGroups.map(([major, group]) => (
                         <div key={major}>
@@ -3447,21 +3447,21 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                           {/* Draft entries — collapsed by default */}
                           {group.drafts.length > 0 && (
                             <div className="relative pl-5 pb-2">
-                              <div className="absolute left-0 top-[0.35rem] w-[0.625rem] h-[0.625rem] rounded-full border-2 bg-white border-[#CBD5E1]"></div>
+                              <div className="absolute left-0 top-[0.35rem] w-[0.625rem] h-[0.625rem] rounded-full border-2 bg-white border-slate-300"></div>
                               <button
                                 onClick={() => setExpandedMajors(prev => {
                                   const next = new Set(prev);
                                   if (next.has(major)) next.delete(major); else next.add(major);
                                   return next;
                                 })}
-                                className="text-[0.6875rem] text-[#94A3B8] hover:text-[#6366F1] flex items-center gap-1 cursor-pointer bg-transparent border-none px-0"
+                                className="text-[0.6875rem] text-slate-400 hover:text-indigo-500 flex items-center gap-1 cursor-pointer bg-transparent border-none px-0"
                               >
                                 <i className={`text-xs ${expandedMajors.has(major) ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'}`}></i>
                                 {group.drafts.length} draft version{group.drafts.length > 1 ? 's' : ''}
                                 {' '}(v{major}.0–v{major}.{group.drafts.reduce((acc, d) => Math.max(acc, d.version_minor ?? 0), 0)})
                               </button>
                               {expandedMajors.has(major) && (
-                                <div className="mt-1 border-l-2 border-[#EEF2FF] ml-1 pl-3 space-y-0">
+                                <div className="mt-1 border-l-2 border-indigo-50 ml-1 pl-3 space-y-0">
                                   {group.drafts.map(d => renderHistoryItem(d, true))}
                                 </div>
                               )}
@@ -3482,7 +3482,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
           </div>
 
           {/* §5 — Footer */}
-          <div className="px-5 py-[0.75rem] border-t border-[#E2E8F0] flex gap-2 flex-shrink-0">
+          <div className="px-5 py-[0.75rem] border-t border-slate-200 flex gap-2 flex-shrink-0">
             {/* Publish button — only shown when version_status is 'draft' */}
             {(selectedTestCase.version_status === 'draft') && (
               <button
@@ -3495,7 +3495,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             )}
             <button
               onClick={() => handleEdit(selectedTestCase)}
-              className="flex-1 px-[0.75rem] py-[0.4375rem] bg-[#6366F1] text-white rounded-lg hover:bg-[#4F46E5] transition-all font-semibold text-[0.8125rem] cursor-pointer whitespace-nowrap flex items-center justify-center gap-1 border-none"
+              className="flex-1 px-[0.75rem] py-[0.4375rem] bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold text-[0.8125rem] cursor-pointer whitespace-nowrap flex items-center justify-center gap-1 border-none"
             >
               <i className="ri-edit-line text-sm"></i> Edit
             </button>
@@ -3506,7 +3506,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                   setSelectedTestCase(null);
                 }
               }}
-              className="px-[0.75rem] py-[0.4375rem] bg-white text-[#EF4444] border border-[#FCA5A5] rounded-lg hover:bg-[#FEF2F2] transition-all font-semibold text-[0.8125rem] cursor-pointer whitespace-nowrap flex items-center justify-center gap-1"
+              className="px-[0.75rem] py-[0.4375rem] bg-white text-rose-500 border border-rose-300 rounded-lg hover:bg-rose-50 transition-all font-semibold text-[0.8125rem] cursor-pointer whitespace-nowrap flex items-center justify-center gap-1"
             >
               <i className="ri-delete-bin-line text-sm"></i>
             </button>
@@ -4107,15 +4107,15 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white rounded-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
               {/* Header */}
-              <div className="px-5 py-3.5 border-b border-[#E2E8F0] flex items-center justify-between">
+              <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <i className="ri-git-commit-line text-[#6366F1] text-lg"></i>
-                  <h2 className="text-[0.9375rem] font-bold text-[#0F172A]">Version Diff</h2>
-                  <span className="text-[0.75rem] text-[#94A3B8]">{fromVer} → {toVer}</span>
+                  <i className="ri-git-commit-line text-indigo-500 text-lg"></i>
+                  <h2 className="text-[0.9375rem] font-bold text-slate-900">Version Diff</h2>
+                  <span className="text-[0.75rem] text-slate-400">{fromVer} → {toVer}</span>
                 </div>
                 <button
                   onClick={() => { setShowHistoryModal(false); setSelectedHistory(null); }}
-                  className="w-7 h-7 flex items-center justify-center text-[#94A3B8] hover:text-[#475569] hover:bg-[#F1F5F9] rounded-md cursor-pointer border-none bg-transparent"
+                  className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md cursor-pointer border-none bg-transparent"
                 >
                   <i className="ri-close-line"></i>
                 </button>
@@ -4140,8 +4140,8 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                   const lineDiff = isMultiline ? computeLineDiff(oldVal, newVal) : null;
 
                   return (
-                    <div key={f.key} className="border border-[#E2E8F0] rounded-lg overflow-hidden">
-                      <div className="px-3 py-2 bg-[#F8FAFC] border-b border-[#E2E8F0] flex items-center justify-between">
+                    <div key={f.key} className="border border-slate-200 rounded-lg overflow-hidden">
+                      <div className="px-3 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
                         <span className="text-[0.75rem] font-semibold text-amber-700 flex items-center gap-1.5">
                           <i className="ri-edit-line text-xs"></i>
                           {f.label}
@@ -4159,22 +4159,22 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                             Restore field
                           </button>
                         ) : (
-                          <span className="flex items-center gap-1 px-2 py-0.5 text-[0.625rem] font-semibold text-[#94A3B8] border border-[#E2E8F0] rounded bg-[#F8FAFC] cursor-not-allowed">
+                          <span className="flex items-center gap-1 px-2 py-0.5 text-[0.625rem] font-semibold text-slate-400 border border-slate-200 rounded bg-slate-50 cursor-not-allowed">
                             <i className="ri-arrow-go-back-line text-[0.625rem]"></i>
                             Restore field
                             <span className="ml-0.5 px-1 py-px text-[0.5rem] font-bold bg-violet-500 text-white rounded">PRO</span>
                           </span>
                         )}
                       </div>
-                      <div className="grid grid-cols-2 gap-0 divide-x divide-[#E2E8F0]">
+                      <div className="grid grid-cols-2 gap-0 divide-x divide-slate-200">
                         <div className="px-3 py-2">
-                          <div className="text-[0.5625rem] font-semibold uppercase text-[#94A3B8] tracking-wider mb-1.5">{fromVer} (Before)</div>
+                          <div className="text-[0.5625rem] font-semibold uppercase text-slate-400 tracking-wider mb-1.5">{fromVer} (Before)</div>
                           {lineDiff ? (
                             <div className="font-mono text-[0.75rem] space-y-0.5 leading-[1.5]">
                               {lineDiff.map((line, i) => (
                                 <div key={i} className={`px-1 rounded ${
                                   line.type === 'removed' ? 'bg-red-100 text-red-800 line-through' :
-                                  line.type === 'unchanged' ? 'text-[#64748B]' : 'text-[#94A3B8] opacity-30'
+                                  line.type === 'unchanged' ? 'text-slate-500' : 'text-slate-400 opacity-30'
                                 }`}>{line.type === 'removed' || line.type === 'unchanged' ? line.text : ''}</div>
                               ))}
                             </div>
@@ -4183,13 +4183,13 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                           )}
                         </div>
                         <div className="px-3 py-2">
-                          <div className="text-[0.5625rem] font-semibold uppercase text-[#94A3B8] tracking-wider mb-1.5">{toVer} (After)</div>
+                          <div className="text-[0.5625rem] font-semibold uppercase text-slate-400 tracking-wider mb-1.5">{toVer} (After)</div>
                           {lineDiff ? (
                             <div className="font-mono text-[0.75rem] space-y-0.5 leading-[1.5]">
                               {lineDiff.map((line, i) => (
                                 <div key={i} className={`px-1 rounded ${
                                   line.type === 'added' ? 'bg-emerald-100 text-emerald-800' :
-                                  line.type === 'unchanged' ? 'text-[#64748B]' : 'text-[#94A3B8] opacity-30'
+                                  line.type === 'unchanged' ? 'text-slate-500' : 'text-slate-400 opacity-30'
                                 }`}>{line.type === 'added' || line.type === 'unchanged' ? line.text : ''}</div>
                               ))}
                             </div>
@@ -4204,7 +4204,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
                 {/* Unchanged fields — collapsed */}
                 {unchangedCount > 0 && (
-                  <div className="px-3 py-2 text-center text-[0.75rem] text-[#94A3B8] border border-dashed border-[#E2E8F0] rounded-lg cursor-default">
+                  <div className="px-3 py-2 text-center text-[0.75rem] text-slate-400 border border-dashed border-slate-200 rounded-lg cursor-default">
                     <i className="ri-eye-off-line text-xs mr-1"></i>
                     {unchangedCount} unchanged field{unchangedCount !== 1 ? 's' : ''} hidden
                   </div>
@@ -4212,7 +4212,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
               </div>
 
               {/* Footer */}
-              <div className="px-5 py-3 border-t border-[#E2E8F0] bg-[#F8FAFC] flex items-center justify-between">
+              <div className="px-5 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
                 <button
                   onClick={() => {
                     // The old_value in selectedHistory IS the state we restore to (fromVer content).
@@ -4224,14 +4224,14 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     });
                     setShowRollbackModal(true);
                   }}
-                  className="px-3 py-1.5 border border-[#E2E8F0] text-[0.8125rem] font-semibold text-[#475569] rounded-lg hover:bg-white cursor-pointer flex items-center gap-1.5 bg-white"
+                  className="px-3 py-1.5 border border-slate-200 text-[0.8125rem] font-semibold text-slate-600 rounded-lg hover:bg-white cursor-pointer flex items-center gap-1.5 bg-white"
                 >
                   <i className="ri-arrow-go-back-line text-sm"></i>
                   Restore entire {fromVer}
                 </button>
                 <button
                   onClick={() => { setShowHistoryModal(false); setSelectedHistory(null); }}
-                  className="px-4 py-1.5 border border-[#E2E8F0] text-[0.8125rem] font-semibold text-[#475569] rounded-lg hover:bg-white cursor-pointer bg-white"
+                  className="px-4 py-1.5 border border-slate-200 text-[0.8125rem] font-semibold text-slate-600 rounded-lg hover:bg-white cursor-pointer bg-white"
                 >
                   Close
                 </button>
@@ -4245,22 +4245,22 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       {showPublishModal && selectedTestCase && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl w-full max-w-sm shadow-2xl overflow-hidden">
-            <div className="px-5 py-4 border-b border-[#E2E8F0] flex items-center justify-between">
-              <h3 className="text-[0.9375rem] font-bold text-[#0F172A] flex items-center gap-2">
+            <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-[0.9375rem] font-bold text-slate-900 flex items-center gap-2">
                 <i className="ri-upload-2-line text-emerald-500"></i>
                 Publish Version
               </h3>
-              <button onClick={() => setShowPublishModal(false)} className="w-7 h-7 flex items-center justify-center text-[#94A3B8] hover:text-[#475569] hover:bg-[#F1F5F9] rounded-md cursor-pointer border-none bg-transparent">
+              <button onClick={() => setShowPublishModal(false)} className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md cursor-pointer border-none bg-transparent">
                 <i className="ri-close-line"></i>
               </button>
             </div>
             <div className="px-5 py-4">
               <div className="flex items-center justify-center gap-4 mb-4">
-                <div className="text-center px-4 py-3 border border-[#E2E8F0] rounded-lg">
-                  <div className="text-[1rem] font-bold text-[#0F172A]">v{selectedTestCase.version_major ?? 1}.{selectedTestCase.version_minor ?? 0}</div>
-                  <div className="text-[0.625rem] text-[#94A3B8] mt-0.5">Current Draft</div>
+                <div className="text-center px-4 py-3 border border-slate-200 rounded-lg">
+                  <div className="text-[1rem] font-bold text-slate-900">v{selectedTestCase.version_major ?? 1}.{selectedTestCase.version_minor ?? 0}</div>
+                  <div className="text-[0.625rem] text-slate-400 mt-0.5">Current Draft</div>
                 </div>
-                <i className="ri-arrow-right-line text-[#94A3B8] text-lg"></i>
+                <i className="ri-arrow-right-line text-slate-400 text-lg"></i>
                 <div className="text-center px-4 py-3 border border-emerald-200 bg-emerald-50 rounded-lg">
                   <div className="text-[1rem] font-bold text-emerald-700">v{(selectedTestCase.version_major ?? 1) + 1}.0</div>
                   <div className="text-[0.625rem] text-emerald-600 mt-0.5">Published</div>
@@ -4272,8 +4272,8 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 This version will be used in future test runs. Current draft history is preserved.
               </div>
             </div>
-            <div className="px-5 py-3 border-t border-[#E2E8F0] flex gap-2 justify-end">
-              <button onClick={() => setShowPublishModal(false)} className="px-4 py-2 text-[0.8125rem] font-semibold text-[#64748B] border border-[#E2E8F0] rounded-lg hover:bg-[#F8FAFC] cursor-pointer">
+            <div className="px-5 py-3 border-t border-slate-200 flex gap-2 justify-end">
+              <button onClick={() => setShowPublishModal(false)} className="px-4 py-2 text-[0.8125rem] font-semibold text-slate-500 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
                 Cancel
               </button>
               <button
@@ -4292,22 +4292,22 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       {showRollbackModal && rollbackTarget && selectedTestCase && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl w-full max-w-sm shadow-2xl overflow-hidden">
-            <div className="px-5 py-4 border-b border-[#E2E8F0] flex items-center justify-between">
-              <h3 className="text-[0.9375rem] font-bold text-[#0F172A] flex items-center gap-2">
+            <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-[0.9375rem] font-bold text-slate-900 flex items-center gap-2">
                 <i className="ri-arrow-go-back-line text-amber-500"></i>
                 Restore Version
               </h3>
-              <button onClick={() => { setShowRollbackModal(false); setRollbackTarget(null); }} className="w-7 h-7 flex items-center justify-center text-[#94A3B8] hover:text-[#475569] hover:bg-[#F1F5F9] rounded-md cursor-pointer border-none bg-transparent">
+              <button onClick={() => { setShowRollbackModal(false); setRollbackTarget(null); }} className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md cursor-pointer border-none bg-transparent">
                 <i className="ri-close-line"></i>
               </button>
             </div>
             <div className="px-5 py-4">
               <div className="flex items-center justify-center gap-4 mb-4">
-                <div className="text-center px-4 py-3 border border-[#E2E8F0] rounded-lg">
-                  <div className="text-[1rem] font-bold text-[#0F172A]">v{selectedTestCase.version_major ?? 1}.{selectedTestCase.version_minor ?? 0}</div>
-                  <div className="text-[0.625rem] text-[#94A3B8] mt-0.5">Current</div>
+                <div className="text-center px-4 py-3 border border-slate-200 rounded-lg">
+                  <div className="text-[1rem] font-bold text-slate-900">v{selectedTestCase.version_major ?? 1}.{selectedTestCase.version_minor ?? 0}</div>
+                  <div className="text-[0.625rem] text-slate-400 mt-0.5">Current</div>
                 </div>
-                <i className="ri-arrow-right-line text-[#94A3B8] text-lg"></i>
+                <i className="ri-arrow-right-line text-slate-400 text-lg"></i>
                 <div className="text-center px-4 py-3 border border-amber-200 bg-amber-50 rounded-lg">
                   <div className="text-[1rem] font-bold text-amber-700">v{rollbackTarget.version_major ?? 1}.{rollbackTarget.version_minor ?? 0}</div>
                   <div className="text-[0.625rem] text-amber-600 mt-0.5">Restore to</div>
@@ -4319,8 +4319,8 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 A new draft <strong>v{selectedTestCase.version_major ?? 1}.{(selectedTestCase.version_minor ?? 0) + 1}</strong> will be created with that content. Current version stays in history.
               </div>
             </div>
-            <div className="px-5 py-3 border-t border-[#E2E8F0] flex gap-2 justify-end">
-              <button onClick={() => { setShowRollbackModal(false); setRollbackTarget(null); }} className="px-4 py-2 text-[0.8125rem] font-semibold text-[#64748B] border border-[#E2E8F0] rounded-lg hover:bg-[#F8FAFC] cursor-pointer">
+            <div className="px-5 py-3 border-t border-slate-200 flex gap-2 justify-end">
+              <button onClick={() => { setShowRollbackModal(false); setRollbackTarget(null); }} className="px-4 py-2 text-[0.8125rem] font-semibold text-slate-500 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
                 Cancel
               </button>
               <button
@@ -4339,18 +4339,18 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       {showCherryPickModal && cherryPickSource && selectedTestCase && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl w-full max-w-md shadow-2xl overflow-hidden">
-            <div className="px-5 py-4 border-b border-[#E2E8F0] flex items-center justify-between">
-              <h3 className="text-[0.9375rem] font-bold text-[#0F172A] flex items-center gap-2">
+            <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-[0.9375rem] font-bold text-slate-900 flex items-center gap-2">
                 <i className="ri-git-branch-line text-violet-500"></i>
                 Partial Restore from v{cherryPickSource.version_major ?? 1}.{cherryPickSource.version_minor ?? 0}
                 <span className="text-[0.5rem] font-bold bg-violet-500 text-white px-1.5 py-0.5 rounded">PRO</span>
               </h3>
-              <button onClick={() => { setShowCherryPickModal(false); setCherryPickSource(null); setCherryPickFields({}); }} className="w-7 h-7 flex items-center justify-center text-[#94A3B8] hover:text-[#475569] hover:bg-[#F1F5F9] rounded-md cursor-pointer border-none bg-transparent">
+              <button onClick={() => { setShowCherryPickModal(false); setCherryPickSource(null); setCherryPickFields({}); }} className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md cursor-pointer border-none bg-transparent">
                 <i className="ri-close-line"></i>
               </button>
             </div>
             <div className="px-5 py-4">
-              <p className="text-[0.75rem] text-[#64748B] mb-3 leading-[1.5]">
+              <p className="text-[0.75rem] text-slate-500 mb-3 leading-[1.5]">
                 Select fields to restore from <strong>v{cherryPickSource.version_major ?? 1}.{cherryPickSource.version_minor ?? 0}</strong>. A new draft <strong>v{selectedTestCase.version_major ?? 1}.{(selectedTestCase.version_minor ?? 0) + 1}</strong> will be created.
               </p>
               <div className="border-2 border-violet-200 rounded-lg overflow-hidden">
@@ -4388,16 +4388,16 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                           key={f.key}
                           onClick={() => setCherryPickFields(prev => ({ ...prev, [f.key]: !prev[f.key] }))}
                           className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer border transition-all ${
-                            checked ? 'border-violet-300 bg-violet-50' : 'border-[#E2E8F0] hover:bg-[#F8FAFC]'
+                            checked ? 'border-violet-300 bg-violet-50' : 'border-slate-200 hover:bg-slate-50'
                           }`}
                         >
                           <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${
-                            checked ? 'bg-violet-500 border-violet-500' : 'border-[#CBD5E1]'
+                            checked ? 'bg-violet-500 border-violet-500' : 'border-slate-300'
                           }`}>
                             {checked && <i className="ri-check-line text-white text-[0.5rem]"></i>}
                           </div>
-                          <span className="text-[0.75rem] font-semibold text-[#334155] min-w-[80px]">{f.label}</span>
-                          <span className="text-[0.6875rem] text-[#94A3B8] flex-1 truncate">
+                          <span className="text-[0.75rem] font-semibold text-slate-700 min-w-[80px]">{f.label}</span>
+                          <span className="text-[0.6875rem] text-slate-400 flex-1 truncate">
                             {newVal.slice(0, 30)} → <strong className="text-emerald-700">{oldVal.slice(0, 30)}</strong>
                           </span>
                         </div>
@@ -4407,12 +4407,12 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 </div>
               </div>
             </div>
-            <div className="px-5 py-3 border-t border-[#E2E8F0] flex items-center justify-between">
-              <span className="text-[0.6875rem] text-[#94A3B8]">
-                <strong className="text-[#475569]">{Object.values(cherryPickFields).filter(Boolean).length}</strong> field{Object.values(cherryPickFields).filter(Boolean).length !== 1 ? 's' : ''} selected
+            <div className="px-5 py-3 border-t border-slate-200 flex items-center justify-between">
+              <span className="text-[0.6875rem] text-slate-400">
+                <strong className="text-slate-600">{Object.values(cherryPickFields).filter(Boolean).length}</strong> field{Object.values(cherryPickFields).filter(Boolean).length !== 1 ? 's' : ''} selected
               </span>
               <div className="flex gap-2">
-                <button onClick={() => { setShowCherryPickModal(false); setCherryPickSource(null); setCherryPickFields({}); }} className="px-3 py-1.5 text-[0.8125rem] font-semibold text-[#64748B] border border-[#E2E8F0] rounded-lg hover:bg-[#F8FAFC] cursor-pointer">
+                <button onClick={() => { setShowCherryPickModal(false); setCherryPickSource(null); setCherryPickFields({}); }} className="px-3 py-1.5 text-[0.8125rem] font-semibold text-slate-500 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
                   Cancel
                 </button>
                 <button

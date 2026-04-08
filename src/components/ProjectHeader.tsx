@@ -240,7 +240,7 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
           <span style={{ maxWidth: '20rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {resolvedName}
           </span>
-          <i className="ri-arrow-down-s-line" style={{ fontSize: '1rem', color: '#94A3B8' }}></i>
+          <i className="ri-arrow-down-s-line text-base text-slate-400"></i>
         </button>
 
         {showProjectDropdown && (
@@ -282,7 +282,7 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
                   className="hover:bg-slate-50 transition-colors"
                 >
                   {p.id === projectId ? (
-                    <i className="ri-check-line" style={{ fontSize: '0.875rem', color: '#6366F1', flexShrink: 0 }}></i>
+                    <i className="ri-check-line text-sm text-indigo-500 shrink-0"></i>
                   ) : (
                     <span style={{ width: '0.875rem', flexShrink: 0 }}></span>
                   )}
@@ -360,8 +360,8 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
                 }}
               >
                 <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #F1F5F9' }}>
-                  <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0F172A' }}>{userProfile?.full_name || userProfile?.email || 'User'}</p>
-                  <p style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{userProfile?.email}</p>
+                  <p className="text-sm font-semibold text-slate-900">{userProfile?.full_name || userProfile?.email || 'User'}</p>
+                  <p className="text-xs text-slate-400">{userProfile?.email}</p>
                   <div
                     className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded border ${tierInfo.color}`}
                     style={{ marginTop: '0.375rem' }}

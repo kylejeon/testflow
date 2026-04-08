@@ -40,7 +40,7 @@ const ChecklistItem: React.FC<ChecklistItemProps> = ({
         <i className="ri-circle-line text-xl text-gray-300 shrink-0" />
       )}
       <i
-        className={`${icon} text-base shrink-0 ${completed ? 'text-gray-400' : 'text-[#4338CA]'}`}
+        className={`${icon} text-base shrink-0 ${completed ? 'text-gray-400' : 'text-indigo-700'}`}
       />
       <span
         className={`text-sm flex-1 ${

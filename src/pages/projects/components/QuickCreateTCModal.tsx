@@ -17,18 +17,18 @@ const PRIORITIES = ['critical', 'high', 'medium', 'low'] as const;
 
 /** Shared input/select styling per design */
 const fieldCls = `
-  w-full bg-white border border-[#E2E8F0] rounded-[7px] text-[0.8125rem] text-[#1E293B]
+  w-full bg-white border border-slate-200 rounded-[7px] text-[0.8125rem] text-slate-800
   px-[0.6875rem] py-[0.4375rem]
-  focus:outline-none focus:border-[#6366F1] focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]
+  focus:outline-none focus:border-indigo-500 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]
   transition-colors
 `.replace(/\s+/g, ' ').trim();
 
 const fieldClsRO = `
-  w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-[7px] text-[0.8125rem] text-[#64748B]
+  w-full bg-slate-50 border border-slate-200 rounded-[7px] text-[0.8125rem] text-slate-500
   px-[0.6875rem] py-[0.4375rem] cursor-default select-none
 `.replace(/\s+/g, ' ').trim();
 
-const labelCls = 'block text-[0.6875rem] font-semibold text-[#374151] mb-[0.25rem]';
+const labelCls = 'block text-[0.6875rem] font-semibold text-gray-700 mb-[0.25rem]';
 
 export default function QuickCreateTCModal({
   projectId,
@@ -168,11 +168,11 @@ export default function QuickCreateTCModal({
             >
               <i className="ri-file-add-line text-sm text-indigo-500"></i>
             </div>
-            <span className="text-[0.9375rem] font-semibold text-[#0F172A]">Create Test Case</span>
+            <span className="text-[0.9375rem] font-semibold text-slate-900">Create Test Case</span>
           </div>
           <button
             onClick={handleClose}
-            className="flex items-center justify-center text-[#64748B] hover:text-[#1E293B] transition-colors cursor-pointer"
+            className="flex items-center justify-center text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
             style={{ width: '1.625rem', height: '1.625rem', borderRadius: '0.375rem', background: '#F1F5F9' }}
           >
             <i className="ri-close-line text-base"></i>
@@ -194,8 +194,8 @@ export default function QuickCreateTCModal({
             >
               <i className="ri-error-warning-line text-[1.125rem] text-amber-400 flex-shrink-0 mt-px"></i>
               <div>
-                <p className="text-[0.8125rem] font-semibold text-[#92400E] mb-0.5">No project available</p>
-                <p className="text-[0.6875rem] text-[#A16207] leading-snug">
+                <p className="text-[0.8125rem] font-semibold text-amber-800 mb-0.5">No project available</p>
+                <p className="text-[0.6875rem] text-yellow-700 leading-snug">
                   You need a project before creating a test case. Create your first project to get started.
                 </p>
               </div>
@@ -230,7 +230,7 @@ export default function QuickCreateTCModal({
               {/* Folder */}
               <div>
                 <label className={labelCls}>
-                  Folder <span className="text-[0.625rem] font-normal text-[#94A3B8]">(optional)</span>
+                  Folder <span className="text-[0.625rem] font-normal text-slate-400">(optional)</span>
                 </label>
                 <select
                   value={folder}
@@ -281,7 +281,7 @@ export default function QuickCreateTCModal({
         >
           <button
             onClick={handleClose}
-            className="flex items-center gap-1.5 font-semibold text-[#64748B] hover:text-[#1E293B] bg-white hover:bg-[#F8FAFC] border border-[#E2E8F0] cursor-pointer transition-colors"
+            className="flex items-center gap-1.5 font-semibold text-slate-500 hover:text-slate-800 bg-white hover:bg-slate-50 border border-slate-200 cursor-pointer transition-colors"
             style={{ padding: '0.4375rem 0.875rem', borderRadius: '0.4375rem', fontSize: '0.8125rem' }}
           >
             Cancel
@@ -289,7 +289,7 @@ export default function QuickCreateTCModal({
           {!hasProject ? (
             <button
               onClick={() => { onClose(); onCreateProject?.(); }}
-              className="flex items-center gap-1.5 font-semibold text-white bg-[#6366F1] hover:bg-[#4F46E5] cursor-pointer transition-colors"
+              className="flex items-center gap-1.5 font-semibold text-white bg-indigo-500 hover:bg-indigo-600 cursor-pointer transition-colors"
               style={{ padding: '0.4375rem 0.875rem', borderRadius: '0.4375rem', fontSize: '0.8125rem' }}
             >
               <i className="ri-folder-add-line text-sm"></i>
@@ -299,7 +299,7 @@ export default function QuickCreateTCModal({
             <button
               onClick={handleSubmit}
               disabled={submitting}
-              className="flex items-center gap-1.5 font-semibold text-white bg-[#6366F1] hover:bg-[#4F46E5] cursor-pointer transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 font-semibold text-white bg-indigo-500 hover:bg-indigo-600 cursor-pointer transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               style={{ padding: '0.4375rem 0.875rem', borderRadius: '0.4375rem', fontSize: '0.8125rem' }}
             >
               {submitting

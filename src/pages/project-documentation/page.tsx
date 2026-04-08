@@ -398,7 +398,7 @@ export default function ProjectDocumentation() {
         <ProjectHeader projectId={id || ''} projectName={project?.name || ''} />
 
         {/* ── Subtab Row ── */}
-        <div className="flex items-center border-b border-[#E2E8F0] bg-white flex-shrink-0 h-[2.625rem] px-5">
+        <div className="flex items-center border-b border-slate-200 bg-white flex-shrink-0 h-[2.625rem] px-5">
           {[
             { key: 'all',          label: 'All',          icon: 'ri-file-list-fill', iconColor: '#6366F1' },
             { key: 'requirements', label: 'Requirements', icon: 'ri-alert-fill',     iconColor: '#F59E0B' },
@@ -409,30 +409,30 @@ export default function ProjectDocumentation() {
               key={tab.key}
               onClick={() => { setActiveTab(tab.key); setSelectedFolder(tab.key); }}
               className={`flex items-center gap-[0.3125rem] h-full px-[0.875rem] text-[0.8125rem] font-medium relative border-b-[2.5px] transition-colors cursor-pointer whitespace-nowrap ${
-                activeTab === tab.key ? 'text-[#6366F1] border-[#6366F1]' : 'text-[#64748B] border-transparent hover:text-[#1E293B]'
+                activeTab === tab.key ? 'text-indigo-500 border-indigo-500' : 'text-slate-500 border-transparent hover:text-slate-800'
               }`}
             >
               <i className={`${tab.icon} text-[0.875rem]`} style={{ color: tab.iconColor }} />
               {tab.label}
               <span className={`px-1.5 py-0.5 rounded text-[0.6875rem] font-semibold ${
-                activeTab === tab.key ? 'bg-[#EEF2FF] text-[#6366F1]' : 'bg-[#F1F5F9] text-[#64748B]'
+                activeTab === tab.key ? 'bg-indigo-50 text-indigo-500' : 'bg-slate-100 text-slate-500'
               }`}>{getTabCount(tab.key)}</span>
             </button>
           ))}
           <div className="flex-1" />
           <div className="flex items-center gap-2">
-            <span className="text-[0.6875rem] font-semibold text-[#94A3B8] px-[0.625rem] py-[0.1875rem] border border-[#E2E8F0] rounded-full bg-[#F8FAFC] whitespace-nowrap">
+            <span className="text-[0.6875rem] font-semibold text-slate-400 px-[0.625rem] py-[0.1875rem] border border-slate-200 rounded-full bg-slate-50 whitespace-nowrap">
               {filteredDocs.length} documents
             </span>
             <button
               onClick={() => setShowAddLinkModal(true)}
-              className="flex items-center gap-[0.3125rem] px-[0.875rem] py-[0.375rem] bg-white border border-[#E2E8F0] text-[#475569] rounded-[0.375rem] text-[0.8125rem] font-semibold hover:bg-[#F8FAFC] transition-all cursor-pointer whitespace-nowrap shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+              className="flex items-center gap-[0.3125rem] px-[0.875rem] py-[0.375rem] bg-white border border-slate-200 text-slate-600 rounded-[0.375rem] text-[0.8125rem] font-semibold hover:bg-slate-50 transition-all cursor-pointer whitespace-nowrap shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
             >
               <i className="ri-link text-[0.875rem]" />Add Link
             </button>
             <button
               onClick={() => setShowUploadModal(true)}
-              className="flex items-center gap-[0.3125rem] px-[0.875rem] py-[0.375rem] bg-[#6366F1] text-white rounded-[0.375rem] text-[0.8125rem] font-semibold hover:bg-[#4F46E5] transition-colors cursor-pointer whitespace-nowrap shadow-[0_1px_3px_rgba(99,102,241,0.3)]"
+              className="flex items-center gap-[0.3125rem] px-[0.875rem] py-[0.375rem] bg-indigo-500 text-white rounded-[0.375rem] text-[0.8125rem] font-semibold hover:bg-indigo-600 transition-colors cursor-pointer whitespace-nowrap shadow-[0_1px_3px_rgba(99,102,241,0.3)]"
             >
               <i className="ri-upload-2-line text-[0.875rem]" />Upload
             </button>
@@ -443,12 +443,12 @@ export default function ProjectDocumentation() {
         <div className="flex-1 flex overflow-hidden">
 
           {/* Folder Sidebar */}
-          <div className="w-[232px] min-w-[232px] bg-white border-r border-[#E2E8F0] flex flex-col overflow-hidden flex-shrink-0">
-            <div className="px-[0.875rem] py-3 border-b border-[#E2E8F0] flex items-center justify-between flex-shrink-0">
-              <span className="text-[0.6875rem] font-bold uppercase tracking-[0.04em] text-[#94A3B8]">Folders</span>
+          <div className="w-[232px] min-w-[232px] bg-white border-r border-slate-200 flex flex-col overflow-hidden flex-shrink-0">
+            <div className="px-[0.875rem] py-3 border-b border-slate-200 flex items-center justify-between flex-shrink-0">
+              <span className="text-[0.6875rem] font-bold uppercase tracking-[0.04em] text-slate-400">Folders</span>
               <button
                 onClick={() => setShowNewFolderModal(true)}
-                className="flex items-center gap-1 text-[0.6875rem] font-semibold text-[#6366F1] px-2 py-[0.1875rem] rounded hover:bg-[#EEF2FF] transition-colors cursor-pointer border-none bg-none"
+                className="flex items-center gap-1 text-[0.6875rem] font-semibold text-indigo-500 px-2 py-[0.1875rem] rounded hover:bg-indigo-50 transition-colors cursor-pointer border-none bg-none"
               >
                 <i className="ri-add-line text-[0.8125rem]" />New Folder
               </button>
@@ -463,19 +463,19 @@ export default function ProjectDocumentation() {
                       onClick={() => { setSelectedFolder(cat.id); setActiveTab(cat.id === 'link' ? 'all' : cat.id); }}
                       className={`w-full flex items-center gap-[0.375rem] px-[0.875rem] py-[0.4375rem] text-[0.8125rem] rounded-r-md mr-[0.375rem] transition-colors cursor-pointer text-left ${
                         selectedFolder === cat.id
-                          ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold'
-                          : 'text-[#475569] hover:bg-[#F8FAFC]'
+                          ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                          : 'text-slate-600 hover:bg-slate-50'
                       }`}
                     >
                       <i className={`${cat.icon} text-base flex-shrink-0`} style={{ color: selectedFolder === cat.id ? '#6366F1' : cat.color }} />
                       {subFolders.length > 0 && (
                         <i
-                          className={`ri-arrow-right-s-line text-[0.6875rem] text-[#94A3B8] transition-transform duration-150 flex-shrink-0 ${!isCollapsed ? 'rotate-90' : ''}`}
+                          className={`ri-arrow-right-s-line text-[0.6875rem] text-slate-400 transition-transform duration-150 flex-shrink-0 ${!isCollapsed ? 'rotate-90' : ''}`}
                           onClick={e => toggleCollapse(cat.id, e)}
                         />
                       )}
                       <span className="flex-1 min-w-0 truncate">{cat.label}</span>
-                      <span className={`text-[0.6875rem] font-medium ${selectedFolder === cat.id ? 'text-[#6366F1]' : 'text-[#94A3B8]'}`}>
+                      <span className={`text-[0.6875rem] font-medium ${selectedFolder === cat.id ? 'text-indigo-500' : 'text-slate-400'}`}>
                         {folderCounts[cat.id] ?? 0}
                       </span>
                     </button>
@@ -484,21 +484,21 @@ export default function ProjectDocumentation() {
                       return (
                         <div
                           key={sub.id}
-                          className={`group relative w-full flex items-center gap-[0.375rem] pl-[2rem] pr-[0.5rem] py-[0.375rem] text-[0.75rem] rounded-r-md mr-[0.375rem] transition-colors cursor-pointer text-left before:content-[''] before:absolute before:left-[1.25rem] before:top-0 before:bottom-0 before:w-px before:bg-[#E2E8F0] ${
+                          className={`group relative w-full flex items-center gap-[0.375rem] pl-[2rem] pr-[0.5rem] py-[0.375rem] text-[0.75rem] rounded-r-md mr-[0.375rem] transition-colors cursor-pointer text-left before:content-[''] before:absolute before:left-[1.25rem] before:top-0 before:bottom-0 before:w-px before:bg-slate-200 ${
                             selectedFolder === sub.id
-                              ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold'
-                              : 'text-[#475569] hover:bg-[#F8FAFC]'
+                              ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                              : 'text-slate-600 hover:bg-slate-50'
                           }`}
                           onClick={() => setSelectedFolder(sub.id)}
                         >
                           <i className="ri-file-list-3-line text-base flex-shrink-0" style={{ color: selectedFolder === sub.id ? '#6366F1' : '#94A3B8' }} />
                           <span className="flex-1 min-w-0 truncate">{sub.title}</span>
-                          <span className={`text-[0.6875rem] font-medium group-hover:hidden ${selectedFolder === sub.id ? 'text-[#6366F1]' : 'text-[#94A3B8]'}`}>
+                          <span className={`text-[0.6875rem] font-medium group-hover:hidden ${selectedFolder === sub.id ? 'text-indigo-500' : 'text-slate-400'}`}>
                             {subCount}
                           </span>
                           <button
                             onClick={e => { e.stopPropagation(); setDeleteFolderTarget(sub); }}
-                            className="hidden group-hover:flex w-5 h-5 items-center justify-center rounded text-[#94A3B8] hover:bg-red-50 hover:text-red-500 transition-all flex-shrink-0 cursor-pointer"
+                            className="hidden group-hover:flex w-5 h-5 items-center justify-center rounded text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all flex-shrink-0 cursor-pointer"
                             title="Delete folder"
                           >
                             <i className="ri-delete-bin-line text-[0.75rem]" />
@@ -516,48 +516,48 @@ export default function ProjectDocumentation() {
           <div className="flex-1 flex flex-col overflow-hidden min-w-0">
 
             {/* Toolbar */}
-            <div className="px-4 py-[0.625rem] border-b border-[#E2E8F0] flex items-center gap-1.5 bg-white flex-shrink-0">
-              <div className="flex-1 flex items-center gap-1.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-md px-[0.625rem] py-[0.3125rem]">
-                <i className="ri-search-line text-[0.875rem] text-[#94A3B8]" />
+            <div className="px-4 py-[0.625rem] border-b border-slate-200 flex items-center gap-1.5 bg-white flex-shrink-0">
+              <div className="flex-1 flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-md px-[0.625rem] py-[0.3125rem]">
+                <i className="ri-search-line text-[0.875rem] text-slate-400" />
                 <input
                   type="text"
                   placeholder="Search documents..."
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  className="border-none bg-transparent outline-none text-[0.8125rem] text-[#1E293B] placeholder-[#94A3B8] flex-1 min-w-0 font-[inherit]"
+                  className="border-none bg-transparent outline-none text-[0.8125rem] text-slate-800 placeholder-slate-400 flex-1 min-w-0 font-[inherit]"
                 />
               </div>
-              <button className="flex items-center gap-1 text-[0.75rem] font-medium px-[0.625rem] py-[0.3125rem] rounded-md border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC] cursor-pointer whitespace-nowrap">
-                <i className="ri-filter-3-line text-[0.8125rem] text-[#94A3B8]" />Filters
+              <button className="flex items-center gap-1 text-[0.75rem] font-medium px-[0.625rem] py-[0.3125rem] rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 cursor-pointer whitespace-nowrap">
+                <i className="ri-filter-3-line text-[0.8125rem] text-slate-400" />Filters
               </button>
               <button
                 onClick={() => setSortOrder(o => o === 'newest' ? 'oldest' : o === 'oldest' ? 'name' : 'newest')}
-                className="flex items-center gap-1 text-[0.75rem] font-medium px-[0.625rem] py-[0.3125rem] rounded-md border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC] cursor-pointer whitespace-nowrap"
+                className="flex items-center gap-1 text-[0.75rem] font-medium px-[0.625rem] py-[0.3125rem] rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 cursor-pointer whitespace-nowrap"
               >
-                <i className="ri-sort-desc text-[0.8125rem] text-[#94A3B8]" />
+                <i className="ri-sort-desc text-[0.8125rem] text-slate-400" />
                 Sort: {sortOrder === 'newest' ? 'Newest' : sortOrder === 'oldest' ? 'Oldest' : 'Name'}
               </button>
             </div>
 
             {/* Selection Action Bar */}
             {selectedDocs.size > 0 && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-[#EEF2FF] border-b border-[#C7D2FE] flex-shrink-0">
-                <span className="text-[0.75rem] font-semibold text-[#4338CA]">{selectedDocs.size} selected</span>
+              <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 border-b border-indigo-200 flex-shrink-0">
+                <span className="text-[0.75rem] font-semibold text-indigo-700">{selectedDocs.size} selected</span>
                 <button
                   onClick={() => setShowMoveModal(true)}
-                  className="flex items-center gap-1 text-[0.75rem] font-semibold px-[0.625rem] py-1 rounded-md border border-[#C7D2FE] bg-white text-[#4338CA] hover:bg-[#6366F1] hover:text-white hover:border-[#6366F1] transition-all cursor-pointer"
+                  className="flex items-center gap-1 text-[0.75rem] font-semibold px-[0.625rem] py-1 rounded-md border border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-500 hover:text-white hover:border-indigo-500 transition-all cursor-pointer"
                 >
                   <i className="ri-folder-transfer-line text-[0.8125rem]" />Move to...
                 </button>
                 <button
                   onClick={handleDeleteSelected}
-                  className="flex items-center gap-1 text-[0.75rem] font-semibold px-[0.625rem] py-1 rounded-md border border-[#FECACA] bg-white text-[#DC2626] hover:bg-[#EF4444] hover:text-white hover:border-[#EF4444] transition-all cursor-pointer"
+                  className="flex items-center gap-1 text-[0.75rem] font-semibold px-[0.625rem] py-1 rounded-md border border-rose-200 bg-white text-rose-600 hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all cursor-pointer"
                 >
                   <i className="ri-delete-bin-6-line text-[0.8125rem]" />Delete
                 </button>
                 <button
                   onClick={() => setSelectedDocs(new Set())}
-                  className="ml-auto text-[0.6875rem] font-semibold text-[#6366F1] hover:underline cursor-pointer border-none bg-none"
+                  className="ml-auto text-[0.6875rem] font-semibold text-indigo-500 hover:underline cursor-pointer border-none bg-none"
                 >
                   Clear selection
                 </button>
@@ -567,8 +567,8 @@ export default function ProjectDocumentation() {
             {/* Document Table */}
             <div className="flex-1 overflow-y-auto">
               {filteredDocs.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center gap-3 text-[#94A3B8] py-20">
-                  <i className="ri-file-search-line text-[2.5rem] text-[#CBD5E1]" />
+                <div className="flex-1 flex flex-col items-center justify-center gap-3 text-slate-400 py-20">
+                  <i className="ri-file-search-line text-[2.5rem] text-slate-300" />
                   <p className="text-[0.875rem] text-center">
                     {searchQuery ? 'No documents match your search.' : 'No documents in this folder.'}
                   </p>
@@ -577,19 +577,19 @@ export default function ProjectDocumentation() {
                 <table className="w-full border-collapse">
                   <thead className="sticky top-0 z-10">
                     <tr>
-                      <th className="bg-[#F8FAFC] text-center w-9 px-3 py-[0.4375rem] border-b border-[#E2E8F0]">
+                      <th className="bg-slate-50 text-center w-9 px-3 py-[0.4375rem] border-b border-slate-200">
                         <input
                           type="checkbox"
-                          className="w-[0.875rem] h-[0.875rem] cursor-pointer accent-[#6366F1]"
+                          className="w-[0.875rem] h-[0.875rem] cursor-pointer accent-indigo-500"
                           checked={filteredDocs.length > 0 && selectedDocs.size === filteredDocs.length}
                           onChange={toggleSelectAll}
                         />
                       </th>
-                      <th className="bg-[#F8FAFC] text-left px-3 py-[0.4375rem] text-[0.625rem] font-semibold uppercase tracking-[0.04em] text-[#94A3B8] border-b border-[#E2E8F0] whitespace-nowrap">Name</th>
-                      <th className="bg-[#F8FAFC] text-left px-3 py-[0.4375rem] text-[0.625rem] font-semibold uppercase tracking-[0.04em] text-[#94A3B8] border-b border-[#E2E8F0] whitespace-nowrap">Category</th>
-                      <th className="bg-[#F8FAFC] text-left px-3 py-[0.4375rem] text-[0.625rem] font-semibold uppercase tracking-[0.04em] text-[#94A3B8] border-b border-[#E2E8F0] whitespace-nowrap">Updated</th>
-                      <th className="bg-[#F8FAFC] text-left px-3 py-[0.4375rem] text-[0.625rem] font-semibold uppercase tracking-[0.04em] text-[#94A3B8] border-b border-[#E2E8F0] whitespace-nowrap">Author</th>
-                      <th className="bg-[#F8FAFC] w-16 border-b border-[#E2E8F0]"></th>
+                      <th className="bg-slate-50 text-left px-3 py-[0.4375rem] text-[0.625rem] font-semibold uppercase tracking-[0.04em] text-slate-400 border-b border-slate-200 whitespace-nowrap">Name</th>
+                      <th className="bg-slate-50 text-left px-3 py-[0.4375rem] text-[0.625rem] font-semibold uppercase tracking-[0.04em] text-slate-400 border-b border-slate-200 whitespace-nowrap">Category</th>
+                      <th className="bg-slate-50 text-left px-3 py-[0.4375rem] text-[0.625rem] font-semibold uppercase tracking-[0.04em] text-slate-400 border-b border-slate-200 whitespace-nowrap">Updated</th>
+                      <th className="bg-slate-50 text-left px-3 py-[0.4375rem] text-[0.625rem] font-semibold uppercase tracking-[0.04em] text-slate-400 border-b border-slate-200 whitespace-nowrap">Author</th>
+                      <th className="bg-slate-50 w-16 border-b border-slate-200"></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -600,31 +600,31 @@ export default function ProjectDocumentation() {
                       return (
                         <tr
                           key={doc.id}
-                          className={`group cursor-pointer transition-colors ${isSelected ? 'bg-[#EEF2FF]' : 'hover:bg-[#FAFAFF]'}`}
+                          className={`group cursor-pointer transition-colors ${isSelected ? 'bg-indigo-50' : 'hover:bg-violet-50'}`}
                           onClick={() => {
                             if (doc.type === 'link' && doc.url) window.open(doc.url, '_blank');
                             else if (doc.file_url) window.open(doc.file_url, '_blank');
                           }}
                         >
-                          <td className="text-center px-3 py-[0.4375rem] border-b border-[#F1F5F9]" onClick={e => e.stopPropagation()}>
+                          <td className="text-center px-3 py-[0.4375rem] border-b border-slate-100" onClick={e => e.stopPropagation()}>
                             <input
                               type="checkbox"
-                              className="w-[0.875rem] h-[0.875rem] cursor-pointer accent-[#6366F1]"
+                              className="w-[0.875rem] h-[0.875rem] cursor-pointer accent-indigo-500"
                               checked={isSelected}
                               onChange={() => toggleSelect(doc.id)}
                             />
                           </td>
-                          <td className="px-3 py-[0.4375rem] border-b border-[#F1F5F9]">
+                          <td className="px-3 py-[0.4375rem] border-b border-slate-100">
                             <div className="flex items-center gap-2">
                               <div className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 text-[0.875rem]"
                                 style={{ background: info.bg, color: info.color }}>
                                 <i className={info.icon} />
                               </div>
-                              <span className="text-[0.8125rem] font-medium text-[#1E293B]">{doc.title}</span>
-                              {ext && <span className="text-[0.6875rem] text-[#94A3B8]">{ext}</span>}
+                              <span className="text-[0.8125rem] font-medium text-slate-800">{doc.title}</span>
+                              {ext && <span className="text-[0.6875rem] text-slate-400">{ext}</span>}
                             </div>
                           </td>
-                          <td className="px-3 py-[0.4375rem] border-b border-[#F1F5F9]">
+                          <td className="px-3 py-[0.4375rem] border-b border-slate-100">
                             <span
                               className="text-[0.6875rem] font-semibold px-2 py-[0.125rem] rounded-full whitespace-nowrap"
                               style={{ background: info.badgeBg, color: info.badgeColor }}
@@ -632,32 +632,32 @@ export default function ProjectDocumentation() {
                               {info.label}
                             </span>
                           </td>
-                          <td className="px-3 py-[0.4375rem] border-b border-[#F1F5F9] text-[0.8125rem] text-[#64748B] whitespace-nowrap">
+                          <td className="px-3 py-[0.4375rem] border-b border-slate-100 text-[0.8125rem] text-slate-500 whitespace-nowrap">
                             {getRelativeDate(doc.updated_at || doc.created_at)}
                           </td>
-                          <td className="px-3 py-[0.4375rem] border-b border-[#F1F5F9]">
+                          <td className="px-3 py-[0.4375rem] border-b border-slate-100">
                             <div className="flex items-center gap-1.5">
                               <Avatar name={userProfile?.full_name} size="xs" />
-                              <span className="text-[0.75rem] text-[#64748B]">{userProfile?.full_name || 'User'}</span>
+                              <span className="text-[0.75rem] text-slate-500">{userProfile?.full_name || 'User'}</span>
                             </div>
                           </td>
-                          <td className="px-3 py-[0.4375rem] border-b border-[#F1F5F9]" onClick={e => e.stopPropagation()}>
+                          <td className="px-3 py-[0.4375rem] border-b border-slate-100" onClick={e => e.stopPropagation()}>
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                               {doc.type === 'link' && doc.url && (
                                 <a href={doc.url} target="_blank" rel="noopener noreferrer"
-                                  className="w-6 h-6 rounded flex items-center justify-center text-[0.8125rem] text-[#94A3B8] hover:bg-[#F1F5F9] hover:text-[#475569] transition-all">
+                                  className="w-6 h-6 rounded flex items-center justify-center text-[0.8125rem] text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all">
                                   <i className="ri-external-link-line" />
                                 </a>
                               )}
                               {doc.type === 'file' && doc.file_url && (
                                 <a href={doc.file_url} download={doc.file_name}
-                                  className="w-6 h-6 rounded flex items-center justify-center text-[0.8125rem] text-[#94A3B8] hover:bg-[#F1F5F9] hover:text-[#475569] transition-all">
+                                  className="w-6 h-6 rounded flex items-center justify-center text-[0.8125rem] text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all">
                                   <i className="ri-download-line" />
                                 </a>
                               )}
                               <button
                                 onClick={() => handleDeleteDoc(doc.id)}
-                                className="w-6 h-6 rounded flex items-center justify-center text-[0.8125rem] text-[#94A3B8] hover:bg-[#FEF2F2] hover:text-[#EF4444] transition-all cursor-pointer">
+                                className="w-6 h-6 rounded flex items-center justify-center text-[0.8125rem] text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-all cursor-pointer">
                                 <i className="ri-delete-bin-line" />
                               </button>
                             </div>
@@ -679,27 +679,27 @@ export default function ProjectDocumentation() {
       {showAddLinkModal && (
         <div className="fixed inset-0 bg-[rgba(15,23,42,0.4)] backdrop-blur-[2px] flex items-center justify-center z-50">
           <div className="bg-white rounded-xl w-96 max-w-[90vw] shadow-[0_20px_60px_rgba(0,0,0,0.15)] overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#E2E8F0]">
-              <span className="text-[0.9375rem] font-bold text-[#0F172A]">Add External Link</span>
-              <button onClick={() => setShowAddLinkModal(false)} className="w-7 h-7 rounded-md flex items-center justify-center text-[#94A3B8] hover:bg-[#F1F5F9] hover:text-[#475569] cursor-pointer">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+              <span className="text-[0.9375rem] font-bold text-slate-900">Add External Link</span>
+              <button onClick={() => setShowAddLinkModal(false)} className="w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer">
                 <i className="ri-close-line text-lg" />
               </button>
             </div>
             <div className="px-5 py-5 space-y-4">
               <div>
-                <label className="block text-[0.75rem] font-semibold text-[#475569] mb-1.5">URL</label>
+                <label className="block text-[0.75rem] font-semibold text-slate-600 mb-1.5">URL</label>
                 <input type="url" placeholder="https://..." value={linkUrl} onChange={e => setLinkUrl(e.target.value)}
-                  className="w-full text-[0.8125rem] px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] outline-none focus:border-[#6366F1] focus:bg-white focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] transition-all placeholder-[#94A3B8] font-[inherit]" />
+                  className="w-full text-[0.8125rem] px-3 py-2 border border-slate-200 rounded-md bg-slate-50 outline-none focus:border-indigo-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] transition-all placeholder-slate-400 font-[inherit]" />
               </div>
               <div>
-                <label className="block text-[0.75rem] font-semibold text-[#475569] mb-1.5">Title</label>
+                <label className="block text-[0.75rem] font-semibold text-slate-600 mb-1.5">Title</label>
                 <input type="text" placeholder="e.g., Confluence — API Design Doc" value={linkTitle} onChange={e => setLinkTitle(e.target.value)}
-                  className="w-full text-[0.8125rem] px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] outline-none focus:border-[#6366F1] focus:bg-white focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] transition-all placeholder-[#94A3B8] font-[inherit]" />
+                  className="w-full text-[0.8125rem] px-3 py-2 border border-slate-200 rounded-md bg-slate-50 outline-none focus:border-indigo-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] transition-all placeholder-slate-400 font-[inherit]" />
               </div>
               <div>
-                <label className="block text-[0.75rem] font-semibold text-[#475569] mb-1.5">Category</label>
+                <label className="block text-[0.75rem] font-semibold text-slate-600 mb-1.5">Category</label>
                 <select value={linkCategory} onChange={e => setLinkCategory(e.target.value)}
-                  className="w-full text-[0.8125rem] px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] outline-none focus:border-[#6366F1] cursor-pointer font-[inherit] text-[#1E293B]">
+                  className="w-full text-[0.8125rem] px-3 py-2 border border-slate-200 rounded-md bg-slate-50 outline-none focus:border-indigo-500 cursor-pointer font-[inherit] text-slate-800">
                   <option value="link">External Link</option>
                   <option value="requirements">Requirement</option>
                   <option value="test-plans">Test Plan</option>
@@ -708,9 +708,9 @@ export default function ProjectDocumentation() {
                 </select>
               </div>
             </div>
-            <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-[#E2E8F0] bg-[#FAFAFA]">
-              <button onClick={() => setShowAddLinkModal(false)} className="text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC] cursor-pointer">Cancel</button>
-              <button onClick={handleAddLink} disabled={linkSaving} className="text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md bg-[#6366F1] text-white hover:bg-[#4F46E5] shadow-[0_1px_3px_rgba(99,102,241,0.3)] cursor-pointer disabled:opacity-50">
+            <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-slate-200 bg-slate-50">
+              <button onClick={() => setShowAddLinkModal(false)} className="text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 cursor-pointer">Cancel</button>
+              <button onClick={handleAddLink} disabled={linkSaving} className="text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md bg-indigo-500 text-white hover:bg-indigo-600 shadow-[0_1px_3px_rgba(99,102,241,0.3)] cursor-pointer disabled:opacity-50">
                 <i className="ri-link mr-1" />{linkSaving ? 'Adding...' : 'Add Link'}
               </button>
             </div>
@@ -722,9 +722,9 @@ export default function ProjectDocumentation() {
       {showUploadModal && (
         <div className="fixed inset-0 bg-[rgba(15,23,42,0.4)] backdrop-blur-[2px] flex items-center justify-center z-50">
           <div className="bg-white rounded-xl w-96 max-w-[90vw] shadow-[0_20px_60px_rgba(0,0,0,0.15)] overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#E2E8F0]">
-              <span className="text-[0.9375rem] font-bold text-[#0F172A]">Upload Document</span>
-              <button onClick={() => { setShowUploadModal(false); setUploadFile(null); setUploadTitle(''); }} className="w-7 h-7 rounded-md flex items-center justify-center text-[#94A3B8] hover:bg-[#F1F5F9] hover:text-[#475569] cursor-pointer">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+              <span className="text-[0.9375rem] font-bold text-slate-900">Upload Document</span>
+              <button onClick={() => { setShowUploadModal(false); setUploadFile(null); setUploadTitle(''); }} className="w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer">
                 <i className="ri-close-line text-lg" />
               </button>
             </div>
@@ -734,34 +734,34 @@ export default function ProjectDocumentation() {
                 onClick={() => fileInputRef.current?.click()}
                 onDragOver={e => e.preventDefault()}
                 onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) { setUploadFile(f); if (!uploadTitle) setUploadTitle(f.name); } }}
-                className="border-2 border-dashed border-[#E2E8F0] rounded-lg p-8 text-center bg-[#FAFAFA] cursor-pointer hover:border-[#6366F1] hover:bg-[#F8F7FF] transition-all"
+                className="border-2 border-dashed border-slate-200 rounded-lg p-8 text-center bg-slate-50 cursor-pointer hover:border-indigo-500 hover:bg-violet-50 transition-all"
               >
                 <input ref={fileInputRef} type="file" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) { setUploadFile(f); if (!uploadTitle) setUploadTitle(f.name); } }} />
                 {uploadFile ? (
                   <>
-                    <i className="ri-file-line text-[2rem] text-[#6366F1] block mb-2" />
-                    <p className="text-[0.8125rem] font-medium text-[#1E293B]">{uploadFile.name}</p>
-                    <p className="text-[0.6875rem] text-[#94A3B8] mt-1">
+                    <i className="ri-file-line text-[2rem] text-indigo-500 block mb-2" />
+                    <p className="text-[0.8125rem] font-medium text-slate-800">{uploadFile.name}</p>
+                    <p className="text-[0.6875rem] text-slate-400 mt-1">
                       {uploadFile.size < 1024*1024 ? (uploadFile.size/1024).toFixed(1)+' KB' : (uploadFile.size/1024/1024).toFixed(1)+' MB'}
                     </p>
                   </>
                 ) : (
                   <>
-                    <i className="ri-upload-cloud-2-line text-[2rem] text-[#CBD5E1] block mb-2" />
-                    <p className="text-[0.8125rem] text-[#64748B] mb-1">Drop files here or <span className="text-[#6366F1] font-semibold">browse</span></p>
-                    <p className="text-[0.6875rem] text-[#94A3B8]">PDF, DOCX, MD, TXT — Max 25 MB</p>
+                    <i className="ri-upload-cloud-2-line text-[2rem] text-slate-300 block mb-2" />
+                    <p className="text-[0.8125rem] text-slate-500 mb-1">Drop files here or <span className="text-indigo-500 font-semibold">browse</span></p>
+                    <p className="text-[0.6875rem] text-slate-400">PDF, DOCX, MD, TXT — Max 25 MB</p>
                   </>
                 )}
               </div>
               <div>
-                <label className="block text-[0.75rem] font-semibold text-[#475569] mb-1.5">Title</label>
+                <label className="block text-[0.75rem] font-semibold text-slate-600 mb-1.5">Title</label>
                 <input type="text" placeholder="Document title" value={uploadTitle} onChange={e => setUploadTitle(e.target.value)}
-                  className="w-full text-[0.8125rem] px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] outline-none focus:border-[#6366F1] focus:bg-white focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] transition-all placeholder-[#94A3B8] font-[inherit]" />
+                  className="w-full text-[0.8125rem] px-3 py-2 border border-slate-200 rounded-md bg-slate-50 outline-none focus:border-indigo-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] transition-all placeholder-slate-400 font-[inherit]" />
               </div>
               <div>
-                <label className="block text-[0.75rem] font-semibold text-[#475569] mb-1.5">Upload to Folder</label>
+                <label className="block text-[0.75rem] font-semibold text-slate-600 mb-1.5">Upload to Folder</label>
                 <select value={uploadCategory} onChange={e => setUploadCategory(e.target.value)}
-                  className="w-full text-[0.8125rem] px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] outline-none focus:border-[#6366F1] cursor-pointer font-[inherit] text-[#1E293B]">
+                  className="w-full text-[0.8125rem] px-3 py-2 border border-slate-200 rounded-md bg-slate-50 outline-none focus:border-indigo-500 cursor-pointer font-[inherit] text-slate-800">
                   <option value="file">All Documents (root)</option>
                   <option value="requirements">Requirements</option>
                   <option value="test-plans">Test Plans</option>
@@ -772,18 +772,18 @@ export default function ProjectDocumentation() {
               {uploading && uploadProgress > 0 && (
                 <div>
                   <div className="flex justify-between text-[0.75rem] mb-1">
-                    <span className="text-[#64748B]">Uploading...</span>
-                    <span className="font-semibold text-[#6366F1]">{uploadProgress}%</span>
+                    <span className="text-slate-500">Uploading...</span>
+                    <span className="font-semibold text-indigo-500">{uploadProgress}%</span>
                   </div>
-                  <div className="w-full bg-[#E2E8F0] rounded-full h-1.5 overflow-hidden">
-                    <div className="h-full bg-[#6366F1] rounded-full transition-all" style={{ width: `${uploadProgress}%` }} />
+                  <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                    <div className="h-full bg-indigo-500 rounded-full transition-all" style={{ width: `${uploadProgress}%` }} />
                   </div>
                 </div>
               )}
             </div>
-            <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-[#E2E8F0] bg-[#FAFAFA]">
-              <button onClick={() => { setShowUploadModal(false); setUploadFile(null); setUploadTitle(''); }} className="text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC] cursor-pointer">Cancel</button>
-              <button onClick={handleUpload} disabled={uploading || !uploadFile} className="text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md bg-[#6366F1] text-white hover:bg-[#4F46E5] shadow-[0_1px_3px_rgba(99,102,241,0.3)] cursor-pointer disabled:opacity-50">
+            <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-slate-200 bg-slate-50">
+              <button onClick={() => { setShowUploadModal(false); setUploadFile(null); setUploadTitle(''); }} className="text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 cursor-pointer">Cancel</button>
+              <button onClick={handleUpload} disabled={uploading || !uploadFile} className="text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md bg-indigo-500 text-white hover:bg-indigo-600 shadow-[0_1px_3px_rgba(99,102,241,0.3)] cursor-pointer disabled:opacity-50">
                 {uploading ? 'Uploading...' : 'Upload'}
               </button>
             </div>
@@ -795,22 +795,22 @@ export default function ProjectDocumentation() {
       {showNewFolderModal && (
         <div className="fixed inset-0 bg-[rgba(15,23,42,0.4)] backdrop-blur-[2px] flex items-center justify-center z-50">
           <div className="bg-white rounded-xl w-96 max-w-[90vw] shadow-[0_20px_60px_rgba(0,0,0,0.15)] overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#E2E8F0]">
-              <span className="text-[0.9375rem] font-bold text-[#0F172A]">Create New Folder</span>
-              <button onClick={() => setShowNewFolderModal(false)} className="w-7 h-7 rounded-md flex items-center justify-center text-[#94A3B8] hover:bg-[#F1F5F9] hover:text-[#475569] cursor-pointer">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+              <span className="text-[0.9375rem] font-bold text-slate-900">Create New Folder</span>
+              <button onClick={() => setShowNewFolderModal(false)} className="w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer">
                 <i className="ri-close-line text-lg" />
               </button>
             </div>
             <div className="px-5 py-5 space-y-4">
               <div>
-                <label className="block text-[0.75rem] font-semibold text-[#475569] mb-1.5">Folder Name</label>
+                <label className="block text-[0.75rem] font-semibold text-slate-600 mb-1.5">Folder Name</label>
                 <input type="text" placeholder="e.g., Sprint 25 Docs" value={newFolderName} onChange={e => setNewFolderName(e.target.value)} autoFocus
-                  className="w-full text-[0.8125rem] px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] outline-none focus:border-[#6366F1] focus:bg-white focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] transition-all placeholder-[#94A3B8] font-[inherit]" />
+                  className="w-full text-[0.8125rem] px-3 py-2 border border-slate-200 rounded-md bg-slate-50 outline-none focus:border-indigo-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] transition-all placeholder-slate-400 font-[inherit]" />
               </div>
               <div>
-                <label className="block text-[0.75rem] font-semibold text-[#475569] mb-1.5">Parent Folder <span className="text-red-500">*</span></label>
+                <label className="block text-[0.75rem] font-semibold text-slate-600 mb-1.5">Parent Folder <span className="text-red-500">*</span></label>
                 <select value={newFolderParent} onChange={e => setNewFolderParent(e.target.value)}
-                  className="w-full text-[0.8125rem] px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] outline-none focus:border-[#6366F1] cursor-pointer font-[inherit] text-[#1E293B]">
+                  className="w-full text-[0.8125rem] px-3 py-2 border border-slate-200 rounded-md bg-slate-50 outline-none focus:border-indigo-500 cursor-pointer font-[inherit] text-slate-800">
                   <option value="requirements">Requirements</option>
                   <option value="test-plans">Test Plans</option>
                   <option value="reports">Reports</option>
@@ -819,9 +819,9 @@ export default function ProjectDocumentation() {
                 </select>
               </div>
             </div>
-            <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-[#E2E8F0] bg-[#FAFAFA]">
-              <button onClick={() => setShowNewFolderModal(false)} className="text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC] cursor-pointer">Cancel</button>
-              <button onClick={handleCreateFolder} disabled={folderSaving} className="text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md bg-[#6366F1] text-white hover:bg-[#4F46E5] shadow-[0_1px_3px_rgba(99,102,241,0.3)] cursor-pointer disabled:opacity-50">
+            <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-slate-200 bg-slate-50">
+              <button onClick={() => setShowNewFolderModal(false)} className="text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 cursor-pointer">Cancel</button>
+              <button onClick={handleCreateFolder} disabled={folderSaving} className="text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md bg-indigo-500 text-white hover:bg-indigo-600 shadow-[0_1px_3px_rgba(99,102,241,0.3)] cursor-pointer disabled:opacity-50">
                 {folderSaving ? 'Creating...' : 'Create Folder'}
               </button>
             </div>
@@ -833,15 +833,15 @@ export default function ProjectDocumentation() {
       {showMoveModal && (
         <div className="fixed inset-0 bg-[rgba(15,23,42,0.4)] backdrop-blur-[2px] flex items-center justify-center z-50">
           <div className="bg-white rounded-xl w-96 max-w-[90vw] shadow-[0_20px_60px_rgba(0,0,0,0.15)] overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#E2E8F0]">
-              <span className="text-[0.9375rem] font-bold text-[#0F172A]">Move Documents</span>
-              <button onClick={() => { setShowMoveModal(false); setMoveTarget(''); }} className="w-7 h-7 rounded-md flex items-center justify-center text-[#94A3B8] hover:bg-[#F1F5F9] hover:text-[#475569] cursor-pointer">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+              <span className="text-[0.9375rem] font-bold text-slate-900">Move Documents</span>
+              <button onClick={() => { setShowMoveModal(false); setMoveTarget(''); }} className="w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer">
                 <i className="ri-close-line text-lg" />
               </button>
             </div>
             <div className="px-5 py-5">
-              <p className="text-[0.75rem] text-[#64748B] mb-3">Select a destination folder:</p>
-              <div className="max-h-60 overflow-y-auto border border-[#E2E8F0] rounded-md">
+              <p className="text-[0.75rem] text-slate-500 mb-3">Select a destination folder:</p>
+              <div className="max-h-60 overflow-y-auto border border-slate-200 rounded-md">
                 {[
                   { id: 'requirements', label: 'Requirements', color: '#D97706' },
                   { id: 'test-plans',   label: 'Test Plans',   color: '#2563EB' },
@@ -852,8 +852,8 @@ export default function ProjectDocumentation() {
                   <div key={cat.id}>
                     <button
                       onClick={() => setMoveTarget(cat.id)}
-                      className={`w-full flex items-center gap-1.5 px-3 py-2 text-[0.8125rem] text-[#334155] cursor-pointer transition-colors text-left ${
-                        moveTarget === cat.id ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold' : 'hover:bg-[#F8FAFC]'
+                      className={`w-full flex items-center gap-1.5 px-3 py-2 text-[0.8125rem] text-slate-700 cursor-pointer transition-colors text-left ${
+                        moveTarget === cat.id ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'hover:bg-slate-50'
                       }`}
                     >
                       <i className="ri-folder-fill text-[0.9375rem]" style={{ color: moveTarget === cat.id ? '#6366F1' : cat.color }} />
@@ -866,10 +866,10 @@ export default function ProjectDocumentation() {
                           key={sub.id}
                           onClick={() => setMoveTarget(sub.id)}
                           className={`w-full flex items-center gap-1.5 pl-7 pr-3 py-[0.375rem] text-[0.75rem] cursor-pointer transition-colors text-left ${
-                            moveTarget === sub.id ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold' : 'text-[#475569] hover:bg-[#F8FAFC]'
+                            moveTarget === sub.id ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'
                           }`}
                         >
-                          <i className="ri-corner-down-right-line text-[0.75rem] text-[#CBD5E1]" />
+                          <i className="ri-corner-down-right-line text-[0.75rem] text-slate-300" />
                           <i className="ri-folder-line text-[0.875rem]" style={{ color: moveTarget === sub.id ? '#6366F1' : '#94A3B8' }} />
                           {sub.title}
                         </button>
@@ -878,9 +878,9 @@ export default function ProjectDocumentation() {
                 ))}
               </div>
             </div>
-            <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-[#E2E8F0] bg-[#FAFAFA]">
-              <button onClick={() => { setShowMoveModal(false); setMoveTarget(''); }} className="text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC] cursor-pointer">Cancel</button>
-              <button onClick={handleMoveSelected} disabled={!moveTarget} className="text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md bg-[#6366F1] text-white hover:bg-[#4F46E5] shadow-[0_1px_3px_rgba(99,102,241,0.3)] cursor-pointer disabled:opacity-50">
+            <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-slate-200 bg-slate-50">
+              <button onClick={() => { setShowMoveModal(false); setMoveTarget(''); }} className="text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 cursor-pointer">Cancel</button>
+              <button onClick={handleMoveSelected} disabled={!moveTarget} className="text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md bg-indigo-500 text-white hover:bg-indigo-600 shadow-[0_1px_3px_rgba(99,102,241,0.3)] cursor-pointer disabled:opacity-50">
                 Move Here
               </button>
             </div>
@@ -892,9 +892,9 @@ export default function ProjectDocumentation() {
       {deleteFolderTarget && (
         <div className="fixed inset-0 bg-[rgba(15,23,42,0.4)] backdrop-blur-[2px] flex items-center justify-center z-50">
           <div className="bg-white rounded-xl w-96 max-w-[90vw] shadow-[0_20px_60px_rgba(0,0,0,0.15)] overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#E2E8F0]">
-              <span className="text-[0.9375rem] font-bold text-[#0F172A]">Delete Folder</span>
-              <button onClick={() => setDeleteFolderTarget(null)} className="w-7 h-7 rounded-md flex items-center justify-center text-[#94A3B8] hover:bg-[#F1F5F9] hover:text-[#475569] cursor-pointer">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+              <span className="text-[0.9375rem] font-bold text-slate-900">Delete Folder</span>
+              <button onClick={() => setDeleteFolderTarget(null)} className="w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer">
                 <i className="ri-close-line text-lg" />
               </button>
             </div>
@@ -904,13 +904,13 @@ export default function ProjectDocumentation() {
                   <i className="ri-delete-bin-line text-red-500 text-lg" />
                 </div>
                 <div>
-                  <p className="text-[0.875rem] font-semibold text-[#0F172A] mb-1">Are you sure you want to delete "{deleteFolderTarget.title}"?</p>
-                  <p className="text-[0.8125rem] text-[#64748B]">Documents inside will be moved to the parent folder. This action cannot be undone.</p>
+                  <p className="text-[0.875rem] font-semibold text-slate-900 mb-1">Are you sure you want to delete "{deleteFolderTarget.title}"?</p>
+                  <p className="text-[0.8125rem] text-slate-500">Documents inside will be moved to the parent folder. This action cannot be undone.</p>
                 </div>
               </div>
             </div>
-            <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-[#E2E8F0] bg-[#FAFAFA]">
-              <button onClick={() => setDeleteFolderTarget(null)} className="text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC] cursor-pointer">Cancel</button>
+            <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-slate-200 bg-slate-50">
+              <button onClick={() => setDeleteFolderTarget(null)} className="text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 cursor-pointer">Cancel</button>
               <button onClick={handleDeleteFolder} className="text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md bg-red-500 text-white hover:bg-red-600 cursor-pointer">
                 Delete Folder
               </button>

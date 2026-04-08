@@ -659,8 +659,8 @@ export default function ProjectDetail() {
   return (
     <>
       {exportToast && (
-        <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-[300] flex items-center gap-2.5 px-4 py-2.5 rounded-[10px] text-[13px] font-medium shadow-[0_4px_12px_rgba(0,0,0,0.08)] whitespace-nowrap ${exportToast.type === 'success' ? 'bg-[#ECFDF5] border border-[#A7F3D0] text-[#065F46]' : 'bg-[#FEF2F2] border border-[#FECACA] text-[#991B1B]'}`}>
-          <i className={`text-base flex-shrink-0 ${exportToast.type === 'success' ? 'ri-check-line text-[#10B981]' : 'ri-error-warning-line text-[#EF4444]'}`} />
+        <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-[300] flex items-center gap-2.5 px-4 py-2.5 rounded-[10px] text-[13px] font-medium shadow-[0_4px_12px_rgba(0,0,0,0.08)] whitespace-nowrap ${exportToast.type === 'success' ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-rose-50 border border-rose-200 text-rose-800'}`}>
+          <i className={`text-base flex-shrink-0 ${exportToast.type === 'success' ? 'ri-check-line text-emerald-500' : 'ri-error-warning-line text-rose-500'}`} />
           <span>{exportToast.message}</span>
           <i className="ri-close-line text-sm opacity-50 cursor-pointer ml-2 flex-shrink-0" onClick={() => setExportToast(null)} />
         </div>
@@ -675,7 +675,7 @@ export default function ProjectDetail() {
           <main className="flex-1 overflow-y-auto flex flex-col bg-slate-50">
 
             {/* Subtab row */}
-            <div className="flex items-center border-b border-[#E2E8F0] bg-white flex-shrink-0 h-[2.625rem] px-5">
+            <div className="flex items-center border-b border-slate-200 bg-white flex-shrink-0 h-[2.625rem] px-5">
               {[
                 { key: 'overview',  label: 'Overview',      icon: 'ri-eye-line',          iconColor: '#6366F1' },
                 { key: 'analytics', label: 'Analytics',     icon: 'ri-bar-chart-2-fill',  iconColor: '#8B5CF6' },
@@ -686,8 +686,8 @@ export default function ProjectDetail() {
                   onClick={() => setDashboardTab(tab.key as typeof dashboardTab)}
                   className={`flex items-center gap-[0.3125rem] h-full px-[0.875rem] text-[0.8125rem] font-medium relative border-b-[2.5px] transition-colors cursor-pointer whitespace-nowrap ${
                     dashboardTab === tab.key
-                      ? 'text-[#6366F1] border-[#6366F1]'
-                      : 'text-[#64748B] border-transparent hover:text-[#1E293B]'
+                      ? 'text-indigo-500 border-indigo-500'
+                      : 'text-slate-500 border-transparent hover:text-slate-800'
                   }`}
                 >
                   <i className={`${tab.icon} text-[0.875rem]`} style={{ color: tab.iconColor }} />
@@ -724,7 +724,7 @@ export default function ProjectDetail() {
                   <button
                     onClick={() => { if (!isExporting) setShowExportMenu(prev => !prev); }}
                     disabled={isExporting}
-                    className={`flex items-center gap-1.5 px-[0.875rem] py-[0.375rem] text-white rounded-[0.375rem] text-[0.8125rem] font-medium transition-colors whitespace-nowrap ${isExporting ? 'bg-[#818CF8] opacity-80 cursor-not-allowed' : showExportMenu ? 'bg-[#4F46E5] cursor-pointer' : 'bg-[#6366F1] hover:bg-[#4F46E5] cursor-pointer'}`}
+                    className={`flex items-center gap-1.5 px-[0.875rem] py-[0.375rem] text-white rounded-[0.375rem] text-[0.8125rem] font-medium transition-colors whitespace-nowrap ${isExporting ? 'bg-indigo-400 opacity-80 cursor-not-allowed' : showExportMenu ? 'bg-indigo-600 cursor-pointer' : 'bg-indigo-500 hover:bg-indigo-600 cursor-pointer'}`}
                   >
                     {isExporting
                       ? <><i className="ri-loader-4-line text-sm animate-spin" />Exporting...</>
@@ -732,7 +732,7 @@ export default function ProjectDetail() {
                     }
                   </button>
                   {showExportMenu && !isExporting && (
-                    <div className="absolute top-[calc(100%+4px)] right-0 w-64 bg-white border border-[#E2E8F0] rounded-lg shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)] z-50 py-1" role="menu">
+                    <div className="absolute top-[calc(100%+4px)] right-0 w-64 bg-white border border-slate-200 rounded-lg shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)] z-50 py-1" role="menu">
                       {currentTier <= 1 ? (
                         <>
                           {[
@@ -740,45 +740,45 @@ export default function ProjectDetail() {
                             { icon: 'ri-file-excel-2-line', iconColor: '#10B981', main: 'Export Runs (CSV)', sub: 'All runs with results' },
                             { icon: 'ri-file-excel-2-line', iconColor: '#10B981', main: 'Export Test Cases (CSV)', sub: 'All test cases data' },
                           ].map(item => (
-                            <div key={item.main} role="menuitem" onClick={() => { setShowExportMenu(false); navigate('/settings?tab=billing'); }} className="flex items-start gap-2.5 px-3 py-3 cursor-pointer border-b border-[#F1F5F9] last:border-b-0">
+                            <div key={item.main} role="menuitem" onClick={() => { setShowExportMenu(false); navigate('/settings?tab=billing'); }} className="flex items-start gap-2.5 px-3 py-3 cursor-pointer border-b border-slate-100 last:border-b-0">
                               <i className={`${item.icon} text-lg flex-shrink-0 mt-0.5`} style={{ color: item.iconColor, opacity: 0.45 }} />
                               <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                                <span className="text-[13px] font-medium text-[#94A3B8]">{item.main}</span>
-                                <span className="text-[11px] text-[#CBD5E1]">{item.sub}</span>
+                                <span className="text-[13px] font-medium text-slate-400">{item.main}</span>
+                                <span className="text-[11px] text-slate-300">{item.sub}</span>
                               </div>
                               <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
-                                <i className="ri-lock-line text-[12px] text-[#94A3B8]" />
-                                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[#FEF3C7] text-[#D97706] whitespace-nowrap">Starter+</span>
+                                <i className="ri-lock-line text-[12px] text-slate-400" />
+                                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 whitespace-nowrap">Starter+</span>
                               </div>
                             </div>
                           ))}
-                          <div className="px-3 py-2.5 border-t border-[#E2E8F0] bg-[#F8FAFC] rounded-b-lg flex items-center gap-2">
-                            <i className="ri-vip-crown-2-fill text-base text-[#D97706]" />
-                            <span className="text-[12px] text-[#475569] font-medium">Upgrade to unlock all exports</span>
-                            <button onClick={(e) => { e.stopPropagation(); setShowExportMenu(false); navigate('/settings?tab=billing'); }} className="ml-auto px-3 py-1 bg-[#6366F1] text-white rounded-[6px] text-[11px] font-semibold cursor-pointer hover:bg-[#4F46E5] transition-colors">Upgrade</button>
+                          <div className="px-3 py-2.5 border-t border-slate-200 bg-slate-50 rounded-b-lg flex items-center gap-2">
+                            <i className="ri-vip-crown-2-fill text-base text-amber-600" />
+                            <span className="text-[12px] text-slate-600 font-medium">Upgrade to unlock all exports</span>
+                            <button onClick={(e) => { e.stopPropagation(); setShowExportMenu(false); navigate('/settings?tab=billing'); }} className="ml-auto px-3 py-1 bg-indigo-500 text-white rounded-[6px] text-[11px] font-semibold cursor-pointer hover:bg-indigo-600 transition-colors">Upgrade</button>
                           </div>
                         </>
                       ) : (
                         <>
-                          <div role="menuitem" onClick={() => { setShowExportMenu(false); handleExportPDF(); }} className="flex items-start gap-2.5 px-3 py-3 cursor-pointer border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors">
-                            <i className="ri-file-pdf-line text-lg flex-shrink-0 mt-0.5 text-[#EF4444]" />
+                          <div role="menuitem" onClick={() => { setShowExportMenu(false); handleExportPDF(); }} className="flex items-start gap-2.5 px-3 py-3 cursor-pointer border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                            <i className="ri-file-pdf-line text-lg flex-shrink-0 mt-0.5 text-rose-500" />
                             <div className="flex flex-col gap-0.5">
-                              <span className="text-[13px] font-medium text-[#334155]">Export as PDF</span>
-                              <span className="text-[11px] text-[#94A3B8]">Project summary report</span>
+                              <span className="text-[13px] font-medium text-slate-700">Export as PDF</span>
+                              <span className="text-[11px] text-slate-400">Project summary report</span>
                             </div>
                           </div>
-                          <div role="menuitem" onClick={() => { setShowExportMenu(false); handleExportRunsCSV(); }} className="flex items-start gap-2.5 px-3 py-3 cursor-pointer border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors">
-                            <i className="ri-file-excel-2-line text-lg flex-shrink-0 mt-0.5 text-[#10B981]" />
+                          <div role="menuitem" onClick={() => { setShowExportMenu(false); handleExportRunsCSV(); }} className="flex items-start gap-2.5 px-3 py-3 cursor-pointer border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                            <i className="ri-file-excel-2-line text-lg flex-shrink-0 mt-0.5 text-emerald-500" />
                             <div className="flex flex-col gap-0.5">
-                              <span className="text-[13px] font-medium text-[#334155]">Export Runs (CSV)</span>
-                              <span className="text-[11px] text-[#94A3B8]">All runs with results</span>
+                              <span className="text-[13px] font-medium text-slate-700">Export Runs (CSV)</span>
+                              <span className="text-[11px] text-slate-400">All runs with results</span>
                             </div>
                           </div>
-                          <div role="menuitem" onClick={() => { setShowExportMenu(false); handleExportTestCasesCSV(); }} className="flex items-start gap-2.5 px-3 py-3 cursor-pointer hover:bg-[#F8FAFC] transition-colors">
-                            <i className="ri-file-excel-2-line text-lg flex-shrink-0 mt-0.5 text-[#10B981]" />
+                          <div role="menuitem" onClick={() => { setShowExportMenu(false); handleExportTestCasesCSV(); }} className="flex items-start gap-2.5 px-3 py-3 cursor-pointer hover:bg-slate-50 transition-colors">
+                            <i className="ri-file-excel-2-line text-lg flex-shrink-0 mt-0.5 text-emerald-500" />
                             <div className="flex flex-col gap-0.5">
-                              <span className="text-[13px] font-medium text-[#334155]">Export Test Cases (CSV)</span>
-                              <span className="text-[11px] text-[#94A3B8]">All test cases data</span>
+                              <span className="text-[13px] font-medium text-slate-700">Export Test Cases (CSV)</span>
+                              <span className="text-[11px] text-slate-400">All test cases data</span>
                             </div>
                           </div>
                         </>
@@ -1085,10 +1085,10 @@ export default function ProjectDetail() {
                         ) : (
                           <div>
                             {attentionItems.map((item, i) => (
-                              <div key={i} className="flex gap-2.5 items-start py-2.5 border-b border-[#F1F5F9] last:border-0">
+                              <div key={i} className="flex gap-2.5 items-start py-2.5 border-b border-slate-100 last:border-0">
                                 <i className={`${item.icon} text-[18px] flex-shrink-0 mt-0.5`} style={{ color: item.iconColor }} />
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-[13px] text-[#334155] mb-1">{item.text}</p>
+                                  <p className="text-[13px] text-slate-700 mb-1">{item.text}</p>
                                   <Link to={item.link} className="text-xs font-semibold text-indigo-600 hover:underline">{item.linkText}</Link>
                                 </div>
                               </div>
@@ -1110,7 +1110,7 @@ export default function ProjectDetail() {
                       <select
                         value={activityFilter}
                         onChange={e => setActivityFilter(e.target.value)}
-                        className="bg-[#F1F5F9] border border-[#E2E8F0] text-[11px] text-[#64748B] px-2.5 py-1 rounded-md cursor-pointer focus:outline-none"
+                        className="bg-slate-100 border border-slate-200 text-[11px] text-slate-500 px-2.5 py-1 rounded-md cursor-pointer focus:outline-none"
                       >
                         <option value="all">All Types ▾</option>
                         <option value="run">Runs</option>
@@ -1154,26 +1154,26 @@ export default function ProjectDetail() {
                         <div>
                           {visibleGroups.map((group, gi) => (
                             <div key={gi}>
-                              <p className="text-[11px] font-bold uppercase text-[#94A3B8] tracking-[0.5px] mt-3 mb-2 first:mt-0">{group.label}</p>
+                              <p className="text-[11px] font-bold uppercase text-slate-400 tracking-[0.5px] mt-3 mb-2 first:mt-0">{group.label}</p>
                               {group.items.map((event, idx) => {
                                 if (!showAllActivity && shownCount >= MAX_ITEMS) return null;
                                 shownCount++;
                                 const key = `${event.type}-${event.action}`;
                                 const info = ICON_MAP[key] || { icon: 'ri-information-line', color: '#94A3B8', action: event.action };
                                 return (
-                                  <div key={idx} className="flex items-start gap-2.5 py-2 border-b border-[#F1F5F9] last:border-0">
+                                  <div key={idx} className="flex items-start gap-2.5 py-2 border-b border-slate-100 last:border-0">
                                     <i className={`${info.icon} text-[16px] flex-shrink-0 mt-0.5`} style={{ color: info.color }} />
                                     <div className="flex-1 min-w-0 text-[13px]">
-                                      <span className="font-semibold text-[#0F172A]">{info.action} </span>
-                                      <span className="font-medium text-[#0F172A]">{event.name}</span>
+                                      <span className="font-semibold text-slate-900">{info.action} </span>
+                                      <span className="font-medium text-slate-900">{event.name}</span>
                                       {event.type === 'test_activity' && (
-                                        <span className="text-[#64748B]">
+                                        <span className="text-slate-500">
                                           {(event.meta?.passed||0) > 0 && <span className="text-green-600 font-semibold ml-1">{event.meta.passed}✓</span>}
                                           {(event.meta?.failed||0) > 0 && <span className="text-red-600 font-semibold ml-1">{event.meta.failed}✗</span>}
                                         </span>
                                       )}
                                     </div>
-                                    <div className="text-[12px] text-[#94A3B8] whitespace-nowrap flex-shrink-0 ml-auto">{getRelativeTime(event.created_at)}</div>
+                                    <div className="text-[12px] text-slate-400 whitespace-nowrap flex-shrink-0 ml-auto">{getRelativeTime(event.created_at)}</div>
                                   </div>
                                 );
                               })}
@@ -1343,7 +1343,7 @@ export default function ProjectDetail() {
                       compact={true}
                       ownerId={project?.owner_id}
                     />
-                    <div className="mt-2 pt-2 border-t border-[#F1F5F9] text-center">
+                    <div className="mt-2 pt-2 border-t border-slate-100 text-center">
                       <Link to={`/settings?tab=members&projectId=${id}`} className="text-xs font-medium text-indigo-600 hover:underline">
                         Manage in Settings →
                       </Link>

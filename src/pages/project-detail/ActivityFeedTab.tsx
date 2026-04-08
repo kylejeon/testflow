@@ -100,7 +100,7 @@ function FeedItem({ item }: { item: ActivityFeedItem }) {
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className="text-[13px] text-[#334155] leading-[1.5]">
+        <p className="text-[13px] text-slate-700 leading-[1.5]">
           <strong className="text-gray-900 font-semibold">{item.actor_name}</strong>
           {' '}{formatEventMessage(item)}
         </p>
@@ -182,11 +182,11 @@ function AIDailySummary({ projectId }: { projectId: string }) {
         <div className="px-[22px] pb-[18px]">
           {summary ? (
             <>
-              <p className="text-[14px] text-[#334155] leading-[1.65]">{summary.text}</p>
+              <p className="text-[14px] text-slate-700 leading-[1.65]">{summary.text}</p>
               {summary.points.length > 0 && (
                 <ul className="mt-2 space-y-1">
                   {summary.points.map((p, i) => (
-                    <li key={i} className="text-[13px] text-[#334155] leading-[1.5]">{p}</li>
+                    <li key={i} className="text-[13px] text-slate-700 leading-[1.5]">{p}</li>
                   ))}
                 </ul>
               )}

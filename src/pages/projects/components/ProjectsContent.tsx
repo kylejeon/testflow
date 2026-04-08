@@ -590,7 +590,7 @@ export default function ProjectsContent() {
       {/* Search */}
       <div className="relative">
         <i
-          className="ri-search-line absolute top-1/2 -translate-y-1/2 text-[#94A3B8]"
+          className="ri-search-line absolute top-1/2 -translate-y-1/2 text-slate-400"
           style={{ left: '0.625rem', fontSize: '0.875rem' }}
         />
         <input

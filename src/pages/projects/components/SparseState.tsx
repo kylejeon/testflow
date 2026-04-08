@@ -470,8 +470,8 @@ export default function SparseState({
               marginBottom: '0.75rem',
             }}
           />
-          <p className="text-[0.875rem] font-semibold text-[#0F172A] mb-1">Creating sample project...</p>
-          <p className="text-[0.75rem] text-[#94A3B8] max-w-xs leading-snug">
+          <p className="text-[0.875rem] font-semibold text-slate-900 mb-1">Creating sample project...</p>
+          <p className="text-[0.75rem] text-slate-400 max-w-xs leading-snug">
             Setting up 'Sample E-commerce App' with test cases, milestones, and test runs.
           </p>
         </div>

@@ -193,11 +193,11 @@ export default function ProjectMembersPanel({
 
   const getRoleBadge = (role: string) => {
     switch (role) {
-      case 'owner': return { label: 'Owner', className: 'bg-[#F5F3FF] text-[#7C3AED]' };
-      case 'admin': return { label: 'Admin', className: 'bg-[#FFF7ED] text-[#C2410C]' };
-      case 'member': return { label: 'Member', className: 'bg-[#EEF2FF] text-[#4338CA]' };
-      case 'viewer': return { label: 'Viewer', className: 'bg-[#F1F5F9] text-[#64748B]' };
-      default: return { label: role, className: 'bg-[#F1F5F9] text-[#64748B]' };
+      case 'owner': return { label: 'Owner', className: 'bg-violet-50 text-violet-600' };
+      case 'admin': return { label: 'Admin', className: 'bg-orange-50 text-orange-700' };
+      case 'member': return { label: 'Member', className: 'bg-indigo-50 text-indigo-700' };
+      case 'viewer': return { label: 'Viewer', className: 'bg-slate-100 text-slate-500' };
+      default: return { label: role, className: 'bg-slate-100 text-slate-500' };
     }
   };
 
@@ -206,9 +206,9 @@ export default function ProjectMembersPanel({
   // ── LOADING ─────────────────────────────────────────────────────
   if (loading) {
     if (compact) {
-      return <div className="flex justify-center py-4"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#6366F1]"></div></div>;
+      return <div className="flex justify-center py-4"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-500"></div></div>;
     }
-    return <div className="flex justify-center py-8"><div className="animate-spin rounded-full h-7 w-7 border-b-2 border-[#6366F1]"></div></div>;
+    return <div className="flex justify-center py-8"><div className="animate-spin rounded-full h-7 w-7 border-b-2 border-indigo-500"></div></div>;
   }
 
   // ── COMPACT MODE ────────────────────────────────────────────────
@@ -216,8 +216,8 @@ export default function ProjectMembersPanel({
     if (members.length === 0) {
       return (
         <div className="text-center py-4">
-          <p className="text-[0.75rem] text-[#94A3B8] mb-2">No members yet</p>
-          <button onClick={onInviteClick} className="text-[0.75rem] font-semibold text-[#6366F1] hover:text-[#4F46E5] cursor-pointer">
+          <p className="text-[0.75rem] text-slate-400 mb-2">No members yet</p>
+          <button onClick={onInviteClick} className="text-[0.75rem] font-semibold text-indigo-500 hover:text-indigo-600 cursor-pointer">
             Invite first member →
           </button>
         </div>
@@ -228,7 +228,7 @@ export default function ProjectMembersPanel({
         {members.map((member, index) => {
           const badge = getRoleBadge(member.role);
           return (
-            <div key={member.id} className="flex items-center gap-2.5 py-2 border-b border-[#F1F5F9] last:border-0">
+            <div key={member.id} className="flex items-center gap-2.5 py-2 border-b border-slate-100 last:border-0">
               <div
                 className="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
                 style={{ background: AVATAR_COLORS[index % AVATAR_COLORS.length], fontSize: '0.5rem' }}
@@ -236,10 +236,10 @@ export default function ProjectMembersPanel({
                 {getInitials(member.profile.full_name, member.profile.email)}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[0.8125rem] font-semibold text-[#0F172A] truncate">
+                <div className="text-[0.8125rem] font-semibold text-slate-900 truncate">
                   {member.profile.full_name || member.profile.email}
                 </div>
-                <div className="text-[0.6875rem] text-[#94A3B8] truncate">{member.profile.email}</div>
+                <div className="text-[0.6875rem] text-slate-400 truncate">{member.profile.email}</div>
               </div>
               <span className={`text-[0.625rem] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap flex-shrink-0 ${badge.className}`}>
                 {badge.label}
@@ -258,30 +258,30 @@ export default function ProjectMembersPanel({
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(15,23,42,0.45)' }}>
           <div className="bg-white rounded-[0.75rem] shadow-xl w-full max-w-sm mx-4 p-6">
-            <div className="w-10 h-10 bg-[#FEF2F2] rounded-full flex items-center justify-center mx-auto mb-3">
-              <i className="ri-delete-bin-line text-[#EF4444]" style={{ fontSize: '1.25rem' }}></i>
+            <div className="w-10 h-10 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-3">
+              <i className="ri-delete-bin-line text-rose-500" style={{ fontSize: '1.25rem' }}></i>
             </div>
-            <h3 className="text-[0.9375rem] font-bold text-[#0F172A] text-center mb-1">
+            <h3 className="text-[0.9375rem] font-bold text-slate-900 text-center mb-1">
               {deleteTarget.isSelf ? 'Leave Project?' : 'Remove Member?'}
             </h3>
-            <p className="text-[0.8125rem] text-[#64748B] text-center mb-5">
+            <p className="text-[0.8125rem] text-slate-500 text-center mb-5">
               {deleteTarget.isSelf
                 ? 'Are you sure you want to leave this project?'
-                : <>Are you sure you want to remove <span className="font-semibold text-[#0F172A]">{deleteTarget.name}</span> from this project?</>
+                : <>Are you sure you want to remove <span className="font-semibold text-slate-900">{deleteTarget.name}</span> from this project?</>
               }
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => setDeleteTarget(null)}
                 disabled={deleting}
-                className="flex-1 px-4 py-[0.4375rem] border border-[#E2E8F0] bg-white text-[#475569] text-[0.8125rem] font-medium rounded-[0.375rem] hover:bg-[#F8FAFC] transition-colors cursor-pointer disabled:opacity-50"
+                className="flex-1 px-4 py-[0.4375rem] border border-slate-200 bg-white text-slate-600 text-[0.8125rem] font-medium rounded-[0.375rem] hover:bg-slate-50 transition-colors cursor-pointer disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleRemoveMember}
                 disabled={deleting}
-                className="flex-1 px-4 py-[0.4375rem] bg-[#EF4444] text-white text-[0.8125rem] font-semibold rounded-[0.375rem] hover:bg-[#DC2626] transition-colors cursor-pointer disabled:opacity-50"
+                className="flex-1 px-4 py-[0.4375rem] bg-rose-500 text-white text-[0.8125rem] font-semibold rounded-[0.375rem] hover:bg-rose-600 transition-colors cursor-pointer disabled:opacity-50"
               >
                 {deleting ? <><i className="ri-loader-4-line animate-spin mr-1"></i>Removing…</> : (deleteTarget.isSelf ? 'Leave' : 'Remove')}
               </button>
@@ -292,14 +292,14 @@ export default function ProjectMembersPanel({
 
       {members.length === 0 ? (
         <div className="text-center py-12">
-          <div className="w-12 h-12 bg-[#F1F5F9] rounded-full flex items-center justify-center mx-auto mb-3">
-            <i className="ri-team-line text-[#94A3B8]" style={{ fontSize: '1.5rem' }}></i>
+          <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <i className="ri-team-line text-slate-400" style={{ fontSize: '1.5rem' }}></i>
           </div>
-          <div className="text-[0.9375rem] font-semibold text-[#0F172A] mb-1">No members yet</div>
-          <p className="text-[0.8125rem] text-[#94A3B8] mb-4">Invite your first team member to get started.</p>
+          <div className="text-[0.9375rem] font-semibold text-slate-900 mb-1">No members yet</div>
+          <p className="text-[0.8125rem] text-slate-400 mb-4">Invite your first team member to get started.</p>
           <button
             onClick={onInviteClick}
-            className="inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-[0.375rem] bg-[#6366F1] text-white hover:bg-[#4F46E5] transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-[0.375rem] bg-indigo-500 text-white hover:bg-indigo-600 transition-colors cursor-pointer"
           >
             <i className="ri-user-add-line"></i> Invite Member
           </button>

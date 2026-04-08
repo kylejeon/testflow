@@ -1005,7 +1005,7 @@ export default function HomePage() {
         }}
       />
 
-      <div className="min-h-screen bg-[#0F172A]" style={{ fontFamily: '"Inter", "Noto Sans KR", sans-serif' }}>
+      <div className="min-h-screen bg-slate-900" style={{ fontFamily: '"Inter", "Noto Sans KR", sans-serif' }}>
         <style>{`
           @keyframes blobFloat { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(15px,-20px) scale(1.03)} 66%{transform:translate(-10px,15px) scale(0.97)} }
           @keyframes hf { 0%,100%{transform:translateY(0) perspective(1000px) rotateY(-4deg)} 50%{transform:translateY(-12px) perspective(1000px) rotateY(-4deg)} }
@@ -1014,7 +1014,7 @@ export default function HomePage() {
 
         {/* Navbar */}
         <nav
-          className={`fixed top-0 left-0 right-0 z-[100] flex items-center justify-between transition-all duration-300 ${scrolled ? 'bg-[#0F172A]/90 backdrop-blur-xl' : 'bg-transparent'}`}
+          className={`fixed top-0 left-0 right-0 z-[100] flex items-center justify-between transition-all duration-300 ${scrolled ? 'bg-slate-900/90 backdrop-blur-xl' : 'bg-transparent'}`}
           style={{ padding: '0.875rem 2rem' }}
         >
           {/* Logo */}
@@ -1092,7 +1092,7 @@ export default function HomePage() {
         </nav>
 
         {/* Hero Section */}
-        <header className="relative min-h-[100dvh] flex items-center overflow-hidden bg-[#0F172A]">
+        <header className="relative min-h-[100dvh] flex items-center overflow-hidden bg-slate-900">
 
           {/* Background: Mesh Gradient */}
           <div className="absolute inset-0 overflow-hidden">
@@ -1242,7 +1242,7 @@ export default function HomePage() {
         </section>
 
         {/* Features Section */}
-        <section id="features" className="py-28 bg-[#0F172A] relative overflow-hidden">
+        <section id="features" className="py-28 bg-slate-900 relative overflow-hidden">
           {/* Background blobs */}
           <div className="absolute top-1/4 -right-20 w-[500px] h-[500px] rounded-full bg-indigo-500/8 blur-[100px] pointer-events-none"></div>
           <div className="absolute bottom-1/4 -left-16 w-[400px] h-[400px] rounded-full bg-violet-500/6 blur-[80px] pointer-events-none"></div>
@@ -1285,7 +1285,7 @@ export default function HomePage() {
             {/* Divider */}
             <div className="relative text-center mb-10">
               <div className="absolute top-1/2 left-0 right-0 h-px bg-white/6"></div>
-              <span className="relative bg-[#0F172A] px-4 text-xs font-semibold uppercase tracking-widest text-slate-500">Plus everything else you need</span>
+              <span className="relative bg-slate-900 px-4 text-xs font-semibold uppercase tracking-widest text-slate-500">Plus everything else you need</span>
             </div>
 
             {/* 9 feature cards */}
@@ -1358,7 +1358,7 @@ export default function HomePage() {
         </section>
 
         {/* Workflow Section */}
-        <section id="workflow" className="py-24 bg-[#0F172A] relative overflow-hidden">
+        <section id="workflow" className="py-24 bg-slate-900 relative overflow-hidden">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-16">
               <div className="inline-flex items-center justify-center gap-2 mb-3" style={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#818CF8' }}>
@@ -1390,7 +1390,7 @@ export default function HomePage() {
         </section>
 
         {/* Integration Section */}
-        <section className="py-24 bg-[#0F172A]">
+        <section className="py-24 bg-slate-900">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-16">
               <div className="inline-flex items-center justify-center gap-2 mb-3" style={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#818CF8' }}>
@@ -1436,7 +1436,7 @@ export default function HomePage() {
         </section>
 
         {/* Why Teams Choose Testably */}
-        <section id="why-testably" className="py-24 bg-[#0F172A] relative overflow-hidden">
+        <section id="why-testably" className="py-24 bg-slate-900 relative overflow-hidden">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-16">
               <div className="inline-flex items-center justify-center gap-2 mb-3" style={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#818CF8' }}>
@@ -1464,7 +1464,7 @@ export default function HomePage() {
         </section>
 
         {/* Testimonials Section */}
-        <section className="py-24 bg-[#0F172A] relative overflow-hidden">
+        <section className="py-24 bg-slate-900 relative overflow-hidden">
           <div className="absolute top-1/3 -left-16 w-[400px] h-[400px] rounded-full bg-indigo-500/5 blur-[100px] pointer-events-none"></div>
           <div className="max-w-6xl mx-auto px-6 relative z-10">
             <div className="text-center mb-14">
@@ -1506,7 +1506,7 @@ export default function HomePage() {
         </section>
 
         {/* Pricing Section */}
-        <section id="pricing" className="py-28 bg-[#0F172A] relative overflow-hidden">
+        <section id="pricing" className="py-28 bg-slate-900 relative overflow-hidden">
           {/* Background blobs */}
           <div className="absolute top-1/4 -right-20 w-[500px] h-[500px] rounded-full bg-indigo-500/8 blur-[100px] pointer-events-none"></div>
           <div className="absolute bottom-1/4 -left-16 w-[400px] h-[400px] rounded-full bg-violet-500/6 blur-[80px] pointer-events-none"></div>
@@ -1713,7 +1713,7 @@ export default function HomePage() {
         </section>
 
         {/* FAQ Section */}
-        <section id="faq" className="py-24 bg-[#0F172A] relative overflow-hidden">
+        <section id="faq" className="py-24 bg-slate-900 relative overflow-hidden">
           <div className="absolute top-0 left-1/4 w-[400px] h-[400px] rounded-full bg-indigo-500/5 blur-[100px] pointer-events-none"></div>
           <div className="max-w-3xl mx-auto px-6 relative z-10">
             <div className="text-center mb-14">
@@ -1764,7 +1764,7 @@ export default function HomePage() {
         </section>
 
         {/* CTA Section */}
-        <section className="py-20 bg-[#0F172A] px-8">
+        <section className="py-20 bg-slate-900 px-8">
           <div
             className="max-w-6xl mx-auto text-center relative overflow-hidden"
             style={{
@@ -1808,7 +1808,7 @@ export default function HomePage() {
         </section>
 
         {/* Newsletter */}
-        <section className="py-16 bg-[#0F172A] border-t border-white/5">
+        <section className="py-16 bg-slate-900 border-t border-white/5">
           <div className="max-w-[30rem] mx-auto px-6 text-center">
             <h3 className="text-xl font-bold text-white mb-2">{t.newsletter.title}</h3>
             <p className="text-sm mb-5 whitespace-nowrap" style={{ color: '#94A3B8' }}>{t.newsletter.description}</p>
@@ -1840,7 +1840,7 @@ export default function HomePage() {
         </section>
 
         {/* Footer */}
-        <footer className="bg-[#0F172A] border-t border-white/5 py-14">
+        <footer className="bg-slate-900 border-t border-white/5 py-14">
           <div className="max-w-7xl mx-auto px-6">
             <div className="grid grid-cols-1 md:grid-cols-5 gap-8 mb-10">
               <div className="md:col-span-1">

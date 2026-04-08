@@ -7,8 +7,8 @@ interface OnboardingProgressProps {
 }
 
 function getBarColor(completed: number): string {
-  if (completed >= 5) return 'bg-[#27AE60]';
-  if (completed >= 3) return 'bg-[#4338CA]';
+  if (completed >= 5) return 'bg-emerald-600';
+  if (completed >= 3) return 'bg-indigo-700';
   return 'bg-gray-400';
 }
 

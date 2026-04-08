@@ -455,21 +455,21 @@ export default function ProjectTestCases() {
               { key: 'deprecated', label: 'Deprecated', icon: 'ri-forbid-line',           iconColor: '#94A3B8' },
             ];
             return (
-              <div className="flex items-center border-b border-[#E2E8F0] bg-white flex-shrink-0 h-[2.625rem] px-5">
+              <div className="flex items-center border-b border-slate-200 bg-white flex-shrink-0 h-[2.625rem] px-5">
                 {tabs.map(tab => (
                   <button
                     key={tab.key}
                     onClick={() => setLifecycleFilter(tab.key)}
                     className={`flex items-center gap-[0.3125rem] px-[0.875rem] h-full text-[0.8125rem] font-medium border-b-[2.5px] transition-colors cursor-pointer bg-transparent border-l-0 border-r-0 border-t-0 whitespace-nowrap ${
                       lifecycleFilter === tab.key
-                        ? 'text-[#6366F1] border-[#6366F1] font-semibold'
-                        : 'text-[#64748B] border-transparent hover:text-[#475569]'
+                        ? 'text-indigo-500 border-indigo-500 font-semibold'
+                        : 'text-slate-500 border-transparent hover:text-slate-600'
                     }`}
                   >
                     <i className={`${tab.icon} text-[0.875rem]`} style={{ color: tab.iconColor }} />
                     {tab.label}
                     <span className={`text-[0.625rem] px-[0.375rem] py-[0.0625rem] rounded-full font-bold min-w-[1.25rem] text-center ${
-                      lifecycleFilter === tab.key ? 'bg-[#EEF2FF] text-[#6366F1]' : 'bg-[#F1F5F9] text-[#64748B]'
+                      lifecycleFilter === tab.key ? 'bg-indigo-50 text-indigo-500' : 'bg-slate-100 text-slate-500'
                     }`}>{counts[tab.key]}</span>
                   </button>
                 ))}
@@ -498,21 +498,21 @@ export default function ProjectTestCases() {
           })()}
 
           {/* ── Search / filter toolbar ── */}
-          <div className="flex items-center gap-3 px-5 py-[0.625rem] border-b border-[#E2E8F0] bg-white flex-shrink-0">
-            <div className="flex-1 flex items-center gap-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-md px-[0.625rem] py-[0.3125rem]">
-              <i className="ri-search-line text-[#94A3B8] text-sm flex-shrink-0"></i>
+          <div className="flex items-center gap-3 px-5 py-[0.625rem] border-b border-slate-200 bg-white flex-shrink-0">
+            <div className="flex-1 flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-md px-[0.625rem] py-[0.3125rem]">
+              <i className="ri-search-line text-slate-400 text-sm flex-shrink-0"></i>
               <input
                 type="text"
                 placeholder="Search test cases..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 bg-transparent border-none outline-none text-[0.8125rem] text-[#1E293B] font-[inherit]"
+                className="flex-1 bg-transparent border-none outline-none text-[0.8125rem] text-slate-800 font-[inherit]"
               />
             </div>
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
-              className="text-[0.75rem] px-[0.625rem] py-[0.3125rem] rounded-md border border-[#E2E8F0] bg-white text-[#475569] cursor-pointer font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="text-[0.75rem] px-[0.625rem] py-[0.3125rem] rounded-md border border-slate-200 bg-white text-slate-600 cursor-pointer font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="all">All Priority</option>
               <option value="high">High</option>

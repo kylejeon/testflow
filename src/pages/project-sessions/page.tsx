@@ -609,7 +609,7 @@ export default function ProjectSessions() {
         <ProjectHeader projectId={projectId || ''} projectName={project?.name || ''} />
 
         {/* Subtab Row */}
-        <div className="flex items-center border-b border-[#E2E8F0] bg-white flex-shrink-0 h-[2.625rem] px-5">
+        <div className="flex items-center border-b border-slate-200 bg-white flex-shrink-0 h-[2.625rem] px-5">
           {[
             { key: 'all',    label: 'All',       icon: 'ri-list-check-3',         count: sessions.length },
             { key: 'active', label: 'Active',    icon: 'ri-radar-fill',           count: sessions.filter(s => s.status === 'active').length },
@@ -619,21 +619,21 @@ export default function ProjectSessions() {
               key={tab.key}
               onClick={() => setActiveTab(tab.key as typeof activeTab)}
               className={`flex items-center gap-[0.3125rem] h-full px-[0.875rem] text-[0.8125rem] font-medium relative border-b-[2.5px] transition-colors cursor-pointer whitespace-nowrap ${
-                activeTab === tab.key ? 'text-[#6366F1] border-[#6366F1]' : 'text-[#64748B] border-transparent hover:text-[#1E293B]'
+                activeTab === tab.key ? 'text-indigo-500 border-indigo-500' : 'text-slate-500 border-transparent hover:text-slate-800'
               }`}
             >
               <i className={`${tab.icon} text-[0.875rem]`} />
               {tab.label}
               <span className={`px-1.5 py-0.5 rounded text-[0.6875rem] font-semibold ${
-                activeTab === tab.key ? 'bg-[#EEF2FF] text-[#6366F1]' : 'bg-[#F1F5F9] text-[#64748B]'
+                activeTab === tab.key ? 'bg-indigo-50 text-indigo-500' : 'bg-slate-100 text-slate-500'
               }`}>{tab.count}</span>
             </button>
           ))}
           <div className="flex-1" />
-          <span className="text-[0.8125rem] text-[#64748B] px-3">{filteredSessions.length} entries</span>
+          <span className="text-[0.8125rem] text-slate-500 px-3">{filteredSessions.length} entries</span>
           <button
             onClick={() => { setEditingSessionId(null); setFormData({ name: '', milestone_id: '', charter: '', tags: '', assignees: [], estimated_hours: 1 }); setTagInput(''); setShowAddSessionModal(true); }}
-            className="flex items-center gap-1.5 px-[0.875rem] py-[0.375rem] bg-[#6366F1] text-white rounded-[0.375rem] text-[0.8125rem] font-medium hover:bg-[#4F46E5] transition-colors cursor-pointer whitespace-nowrap"
+            className="flex items-center gap-1.5 px-[0.875rem] py-[0.375rem] bg-indigo-500 text-white rounded-[0.375rem] text-[0.8125rem] font-medium hover:bg-indigo-600 transition-colors cursor-pointer whitespace-nowrap"
           >
             <i className="ri-add-line text-sm" />
             New Session
@@ -642,17 +642,17 @@ export default function ProjectSessions() {
 
         <div className="flex flex-1 overflow-hidden">
           {/* Left Sidebar */}
-          <div className="w-[220px] bg-white border-r border-[#E2E8F0] overflow-y-auto flex-shrink-0 py-3">
+          <div className="w-[220px] bg-white border-r border-slate-200 overflow-y-auto flex-shrink-0 py-3">
             <div className="px-3 mb-3">
               <div
                 onClick={() => { setSidebarMilestoneFilter(null); setSidebarTagFilter(null); }}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-[6px] cursor-pointer text-[0.8125rem] transition-colors ${
-                  !sidebarMilestoneFilter && !sidebarTagFilter ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold' : 'text-[#64748B] hover:bg-[#F1F5F9]'
+                  !sidebarMilestoneFilter && !sidebarTagFilter ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-500 hover:bg-slate-100'
                 }`}
               >
                 <i className="ri-folder-line text-sm" />
                 All Sessions
-                <span className={`ml-auto text-[0.75rem] font-semibold ${!sidebarMilestoneFilter && !sidebarTagFilter ? 'text-[#6366F1]' : 'text-[#94A3B8]'}`}>
+                <span className={`ml-auto text-[0.75rem] font-semibold ${!sidebarMilestoneFilter && !sidebarTagFilter ? 'text-indigo-500' : 'text-slate-400'}`}>
                   ({sessions.length})
                 </span>
               </div>
@@ -660,7 +660,7 @@ export default function ProjectSessions() {
 
             {milestones.length > 0 && (
               <div className="px-3 mb-3">
-                <div className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-wide px-3 py-2 mb-1">Milestones</div>
+                <div className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-wide px-3 py-2 mb-1">Milestones</div>
                 {milestones.map(m => {
                   const cnt = sessions.filter(s => s.milestone_id === m.id).length;
                   if (cnt === 0) return null;
@@ -669,12 +669,12 @@ export default function ProjectSessions() {
                       key={m.id}
                       onClick={() => { setSidebarMilestoneFilter(sidebarMilestoneFilter === m.id ? null : m.id); setSidebarTagFilter(null); }}
                       className={`flex items-center gap-1.5 px-3 py-2 rounded-[6px] cursor-pointer text-[0.8125rem] transition-colors overflow-hidden ${
-                        sidebarMilestoneFilter === m.id ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold' : 'text-[#64748B] hover:bg-[#F1F5F9]'
+                        sidebarMilestoneFilter === m.id ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-500 hover:bg-slate-100'
                       }`}
                     >
                       <i className="ri-flag-line text-sm flex-shrink-0" />
                       <span className="truncate">{m.name}</span>
-                      <span className={`ml-auto text-[0.75rem] font-semibold flex-shrink-0 ${sidebarMilestoneFilter === m.id ? 'text-[#6366F1]' : 'text-[#94A3B8]'}`}>({cnt})</span>
+                      <span className={`ml-auto text-[0.75rem] font-semibold flex-shrink-0 ${sidebarMilestoneFilter === m.id ? 'text-indigo-500' : 'text-slate-400'}`}>({cnt})</span>
                     </div>
                   );
                 })}
@@ -683,7 +683,7 @@ export default function ProjectSessions() {
 
             {allTags.length > 0 && (
               <div className="px-3">
-                <div className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-wide px-3 py-2 mb-1">Tags</div>
+                <div className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-wide px-3 py-2 mb-1">Tags</div>
                 {allTags.map(tag => {
                   const cnt = sessions.filter(s => s.tags && s.tags.includes(tag)).length;
                   return (
@@ -691,11 +691,11 @@ export default function ProjectSessions() {
                       key={tag}
                       onClick={() => { setSidebarTagFilter(sidebarTagFilter === tag ? null : tag); setSidebarMilestoneFilter(null); }}
                       className={`flex items-center gap-1.5 px-3 py-2 rounded-[6px] cursor-pointer text-[0.8125rem] transition-colors ${
-                        sidebarTagFilter === tag ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold' : 'text-[#64748B] hover:bg-[#F1F5F9]'
+                        sidebarTagFilter === tag ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-500 hover:bg-slate-100'
                       }`}
                     >
                       <span className="truncate">{tag}</span>
-                      <span className={`ml-auto text-[0.75rem] font-semibold ${sidebarTagFilter === tag ? 'text-[#6366F1]' : 'text-[#94A3B8]'}`}>({cnt})</span>
+                      <span className={`ml-auto text-[0.75rem] font-semibold ${sidebarTagFilter === tag ? 'text-indigo-500' : 'text-slate-400'}`}>({cnt})</span>
                     </div>
                   );
                 })}
@@ -704,51 +704,51 @@ export default function ProjectSessions() {
           </div>
 
           {/* Main Content */}
-          <div className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]">
+          <div className="flex-1 flex flex-col overflow-hidden bg-slate-50">
             {/* Stats Bar */}
-            <div className="flex items-center gap-4 px-5 py-3 bg-white border-b border-[#E2E8F0] flex-shrink-0">
-              <div className="flex items-center gap-3 px-4 py-2.5 bg-[#F1F5F9] border border-[#E2E8F0] rounded-[6px]">
-                <i className="ri-radar-fill text-[1.125rem] text-[#6366F1]" />
+            <div className="flex items-center gap-4 px-5 py-3 bg-white border-b border-slate-200 flex-shrink-0">
+              <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-[6px]">
+                <i className="ri-radar-fill text-[1.125rem] text-indigo-500" />
                 <div>
-                  <div className="text-[0.6875rem] text-[#94A3B8] font-medium uppercase tracking-wide">Active Discoveries</div>
-                  <div className="text-[0.875rem] font-bold text-[#0F172A]">{stats.activeSessions}</div>
+                  <div className="text-[0.6875rem] text-slate-400 font-medium uppercase tracking-wide">Active Discoveries</div>
+                  <div className="text-[0.875rem] font-bold text-slate-900">{stats.activeSessions}</div>
                 </div>
               </div>
-              <div className="flex items-center gap-3 px-4 py-2.5 bg-[#F1F5F9] border border-[#E2E8F0] rounded-[6px]">
-                <i className="ri-bug-line text-[1.125rem] text-[#EF4444]" />
+              <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-[6px]">
+                <i className="ri-bug-line text-[1.125rem] text-rose-500" />
                 <div>
-                  <div className="text-[0.6875rem] text-[#94A3B8] font-medium uppercase tracking-wide">Bugs Found</div>
-                  <div className="text-[0.875rem] font-bold text-[#0F172A]">
+                  <div className="text-[0.6875rem] text-slate-400 font-medium uppercase tracking-wide">Bugs Found</div>
+                  <div className="text-[0.875rem] font-bold text-slate-900">
                     {sessions.reduce((sum, s) => sum + ((s as any).session_logs?.filter((l: any) => l.type === 'failed').length || 0), 0)}
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-3 px-4 py-2.5 bg-[#F1F5F9] border border-[#E2E8F0] rounded-[6px]">
-                <i className="ri-time-line text-[1.125rem] text-[#8B5CF6]" />
+              <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-[6px]">
+                <i className="ri-time-line text-[1.125rem] text-violet-500" />
                 <div>
-                  <div className="text-[0.6875rem] text-[#94A3B8] font-medium uppercase tracking-wide">Contributors</div>
-                  <div className="text-[0.875rem] font-bold text-[#0F172A]">{stats.contributors}</div>
+                  <div className="text-[0.6875rem] text-slate-400 font-medium uppercase tracking-wide">Contributors</div>
+                  <div className="text-[0.875rem] font-bold text-slate-900">{stats.contributors}</div>
                 </div>
               </div>
             </div>
 
             {/* Toolbar */}
-            <div className="flex items-center gap-3 px-5 py-[0.625rem] bg-white border-b border-[#E2E8F0] flex-shrink-0">
+            <div className="flex items-center gap-3 px-5 py-[0.625rem] bg-white border-b border-slate-200 flex-shrink-0">
               <div className="relative flex-1">
-                <i className="ri-search-line absolute left-[0.625rem] top-1/2 -translate-y-1/2 text-[#94A3B8] text-[0.875rem]" />
+                <i className="ri-search-line absolute left-[0.625rem] top-1/2 -translate-y-1/2 text-slate-400 text-[0.875rem]" />
                 <input
                   type="text"
                   placeholder="Search discoveries..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-8 pr-3 py-[0.375rem] border border-[#E2E8F0] rounded-[6px] bg-[#F8FAFC] text-[0.8125rem] text-[#64748B] placeholder-[#94A3B8] focus:outline-none focus:border-[#6366F1]"
+                  className="w-full pl-8 pr-3 py-[0.375rem] border border-slate-200 rounded-[6px] bg-slate-50 text-[0.8125rem] text-slate-500 placeholder-slate-400 focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div className="relative" ref={filterDropdownRef}>
                 <button
                   onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-                  className="flex items-center gap-1.5 px-3 py-[0.375rem] border border-[#E2E8F0] rounded-[6px] bg-white text-[0.8125rem] font-semibold text-[#64748B] hover:bg-[#F1F5F9] cursor-pointer whitespace-nowrap transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-[0.375rem] border border-slate-200 rounded-[6px] bg-white text-[0.8125rem] font-semibold text-slate-500 hover:bg-slate-100 cursor-pointer whitespace-nowrap transition-colors"
                 >
                   <i className="ri-filter-3-line" />
                   Filters
@@ -757,17 +757,17 @@ export default function ProjectSessions() {
                   )}
                 </button>
                 {showFilterDropdown && (
-                  <div className="absolute right-0 mt-2 w-52 bg-white rounded-lg shadow-lg border border-[#E2E8F0] z-50">
+                  <div className="absolute right-0 mt-2 w-52 bg-white rounded-lg shadow-lg border border-slate-200 z-50">
                     <div className="p-3">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-[0.8125rem] font-semibold text-[#475569]">Status</span>
+                        <span className="text-[0.8125rem] font-semibold text-slate-600">Status</span>
                         {statusFilters.length > 0 && (
-                          <button onClick={() => setStatusFilters([])} className="text-[0.75rem] text-[#6366F1] cursor-pointer">Clear</button>
+                          <button onClick={() => setStatusFilters([])} className="text-[0.75rem] text-indigo-500 cursor-pointer">Clear</button>
                         )}
                       </div>
                       {(['new', 'in_progress', 'paused', 'completed'] as const).map(s => (
-                        <div key={s} onClick={() => handleStatusFilterToggle(s)} className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer text-[0.8125rem] transition-colors ${statusFilters.includes(s) ? 'bg-[#EEF2FF] text-[#4338CA]' : 'text-[#475569] hover:bg-[#F1F5F9]'}`}>
-                          <i className={`${statusFilters.includes(s) ? 'ri-checkbox-fill text-[#6366F1]' : 'ri-checkbox-blank-line text-[#CBD5E1]'}`} />
+                        <div key={s} onClick={() => handleStatusFilterToggle(s)} className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer text-[0.8125rem] transition-colors ${statusFilters.includes(s) ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'}`}>
+                          <i className={`${statusFilters.includes(s) ? 'ri-checkbox-fill text-indigo-500' : 'ri-checkbox-blank-line text-slate-300'}`} />
                           {s === 'new' ? 'Not Started' : s === 'in_progress' ? 'In Progress' : s.charAt(0).toUpperCase() + s.slice(1)}
                         </div>
                       ))}
@@ -783,9 +783,9 @@ export default function ProjectSessions() {
             ) : filteredSessions.length === 0 ? (
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center">
-                  <i className="ri-search-line text-5xl text-[#CBD5E1] mb-3" />
-                  <p className="text-[#64748B] font-medium">No discovery logs found</p>
-                  <p className="text-[0.8125rem] text-[#94A3B8] mt-1">
+                  <i className="ri-search-line text-5xl text-slate-300 mb-3" />
+                  <p className="text-slate-500 font-medium">No discovery logs found</p>
+                  <p className="text-[0.8125rem] text-slate-400 mt-1">
                     {searchQuery || activeFilterCount > 0 || sidebarMilestoneFilter || sidebarTagFilter
                       ? 'Try adjusting your search or filters'
                       : 'Create your first discovery log to get started'}
@@ -795,70 +795,70 @@ export default function ProjectSessions() {
             ) : (
               <div className="flex-1 overflow-y-auto bg-white">
                 <table className="w-full border-collapse">
-                  <thead className="sticky top-0 bg-[#F8FAFC] border-b border-[#E2E8F0] z-10">
+                  <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 z-10">
                     <tr>
-                      <th className="w-[42px] px-4 py-3 text-left border-r border-[#E2E8F0]">
-                        <input type="checkbox" className="w-[1.125rem] h-[1.125rem] cursor-pointer accent-[#6366F1]" />
+                      <th className="w-[42px] px-4 py-3 text-left border-r border-slate-200">
+                        <input type="checkbox" className="w-[1.125rem] h-[1.125rem] cursor-pointer accent-indigo-500" />
                       </th>
-                      <th className="w-[130px] px-4 py-3 text-left text-[0.6875rem] font-semibold text-[#64748B] uppercase tracking-wide border-r border-[#E2E8F0]">Status</th>
-                      <th className="w-[220px] px-4 py-3 text-left text-[0.6875rem] font-semibold text-[#64748B] uppercase tracking-wide border-r border-[#E2E8F0]">Discovery Name</th>
-                      <th className="px-4 py-3 text-left text-[0.6875rem] font-semibold text-[#64748B] uppercase tracking-wide border-r border-[#E2E8F0]">Description</th>
-                      <th className="w-[60px] px-4 py-3 text-left text-[0.6875rem] font-semibold text-[#64748B] uppercase tracking-wide border-r border-[#E2E8F0]">Bugs</th>
-                      <th className="w-[140px] px-4 py-3 text-left text-[0.6875rem] font-semibold text-[#64748B] uppercase tracking-wide border-r border-[#E2E8F0]">Tags</th>
-                      <th className="w-[80px] px-4 py-3 text-left text-[0.6875rem] font-semibold text-[#64748B] uppercase tracking-wide border-r border-[#E2E8F0]">Assignee</th>
-                      <th className="w-[80px] px-4 py-3 text-left text-[0.6875rem] font-semibold text-[#64748B] uppercase tracking-wide border-r border-[#E2E8F0]">Duration</th>
-                      <th className="w-[100px] px-4 py-3 text-left text-[0.6875rem] font-semibold text-[#64748B] uppercase tracking-wide">Updated</th>
+                      <th className="w-[130px] px-4 py-3 text-left text-[0.6875rem] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200">Status</th>
+                      <th className="w-[220px] px-4 py-3 text-left text-[0.6875rem] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200">Discovery Name</th>
+                      <th className="px-4 py-3 text-left text-[0.6875rem] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200">Description</th>
+                      <th className="w-[60px] px-4 py-3 text-left text-[0.6875rem] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200">Bugs</th>
+                      <th className="w-[140px] px-4 py-3 text-left text-[0.6875rem] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200">Tags</th>
+                      <th className="w-[80px] px-4 py-3 text-left text-[0.6875rem] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200">Assignee</th>
+                      <th className="w-[80px] px-4 py-3 text-left text-[0.6875rem] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200">Duration</th>
+                      <th className="w-[100px] px-4 py-3 text-left text-[0.6875rem] font-semibold text-slate-500 uppercase tracking-wide">Updated</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredSessions.map((session) => {
                       const bugCount = (session as any).session_logs?.filter((l: any) => l.type === 'failed').length || 0;
                       const statusMap: Record<string, { label: string; pill: string; dot: string }> = {
-                        new:         { label: 'Not Started', pill: 'bg-[#F1F5F9] text-[#64748B]',   dot: 'bg-[#94A3B8]' },
-                        in_progress: { label: 'In Progress', pill: 'bg-[#EFF6FF] text-[#1D4ED8]',   dot: 'bg-[#3B82F6]' },
-                        paused:      { label: 'Paused',      pill: 'bg-[#FEF3C7] text-[#92400E]',   dot: 'bg-[#F59E0B]' },
-                        completed:   { label: 'Completed',   pill: 'bg-[#DCFCE7] text-[#15803D]',   dot: 'bg-[#22C55E]' },
+                        new:         { label: 'Not Started', pill: 'bg-slate-100 text-slate-500',   dot: 'bg-slate-400' },
+                        in_progress: { label: 'In Progress', pill: 'bg-blue-50 text-blue-700',   dot: 'bg-blue-500' },
+                        paused:      { label: 'Paused',      pill: 'bg-amber-50 text-amber-800',   dot: 'bg-amber-500' },
+                        completed:   { label: 'Completed',   pill: 'bg-green-100 text-green-700',   dot: 'bg-green-500' },
                       };
                       const sc = statusMap[session.actualStatus || 'new'];
                       return (
                         <tr
                           key={session.id}
                           onClick={() => navigate(`/projects/${projectId}/discovery-logs/${session.id}`)}
-                          className="border-b border-[#E2E8F0] cursor-pointer hover:bg-[#F8FAFC] transition-colors"
+                          className="border-b border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors"
                         >
-                          <td className="px-4 py-3 border-r border-[#E2E8F0]" onClick={e => e.stopPropagation()}>
-                            <input type="checkbox" className="w-[1.125rem] h-[1.125rem] cursor-pointer accent-[#6366F1]" />
+                          <td className="px-4 py-3 border-r border-slate-200" onClick={e => e.stopPropagation()}>
+                            <input type="checkbox" className="w-[1.125rem] h-[1.125rem] cursor-pointer accent-indigo-500" />
                           </td>
-                          <td className="px-4 py-3 border-r border-[#E2E8F0]">
+                          <td className="px-4 py-3 border-r border-slate-200">
                             <span className={`inline-flex items-center gap-[5px] px-[10px] py-1 rounded-[4px] text-[0.75rem] font-semibold whitespace-nowrap ${sc.pill}`}>
                               <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${sc.dot}`} />
                               {sc.label}
                             </span>
                           </td>
-                          <td className="px-4 py-3 border-r border-[#E2E8F0]">
-                            <span className="text-[0.8125rem] font-semibold text-[#0F172A]">{session.name}</span>
+                          <td className="px-4 py-3 border-r border-slate-200">
+                            <span className="text-[0.8125rem] font-semibold text-slate-900">{session.name}</span>
                           </td>
-                          <td className="px-4 py-3 border-r border-[#E2E8F0]">
-                            <span className="text-[0.8125rem] text-[#64748B] block max-w-[280px] truncate">{session.charter || ''}</span>
+                          <td className="px-4 py-3 border-r border-slate-200">
+                            <span className="text-[0.8125rem] text-slate-500 block max-w-[280px] truncate">{session.charter || ''}</span>
                           </td>
-                          <td className="px-4 py-3 border-r border-[#E2E8F0]">
+                          <td className="px-4 py-3 border-r border-slate-200">
                             {bugCount > 0 ? (
-                              <span className="px-2 py-1 rounded-[4px] text-[0.75rem] font-semibold bg-[#FEF2F2] text-[#991B1B]">{bugCount}</span>
+                              <span className="px-2 py-1 rounded-[4px] text-[0.75rem] font-semibold bg-rose-50 text-rose-800">{bugCount}</span>
                             ) : (
-                              <span className="text-[#94A3B8] text-[0.8125rem]">-</span>
+                              <span className="text-slate-400 text-[0.8125rem]">-</span>
                             )}
                           </td>
-                          <td className="px-4 py-3 border-r border-[#E2E8F0]">
+                          <td className="px-4 py-3 border-r border-slate-200">
                             <div className="flex items-center gap-1 flex-wrap">
                               {session.tags?.slice(0, 2).map((tag, idx) => (
-                                <span key={idx} className="bg-[#EEF2FF] text-[#4338CA] px-1.5 py-0.5 rounded-[3px] text-[0.6875rem] font-medium">{tag}</span>
+                                <span key={idx} className="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded-[3px] text-[0.6875rem] font-medium">{tag}</span>
                               ))}
                               {(session.tags?.length || 0) > 2 && (
-                                <span className="text-[#94A3B8] text-[0.6875rem]">+{session.tags!.length - 2}</span>
+                                <span className="text-slate-400 text-[0.6875rem]">+{session.tags!.length - 2}</span>
                               )}
                             </div>
                           </td>
-                          <td className="px-4 py-3 border-r border-[#E2E8F0]">
+                          <td className="px-4 py-3 border-r border-slate-200">
                             {session.assignees && session.assignees.length > 0 ? (
                               <div className="flex -space-x-1.5">
                                 {session.assignees.slice(0, 3).map((userId) => {
@@ -868,20 +868,20 @@ export default function ProjectSessions() {
                                   );
                                 })}
                                 {session.assignees.length > 3 && (
-                                  <div className="w-5 h-5 bg-[#E2E8F0] rounded-full border-[1.5px] border-white flex items-center justify-center text-[#64748B] text-[0.625rem] font-semibold">
+                                  <div className="w-5 h-5 bg-slate-200 rounded-full border-[1.5px] border-white flex items-center justify-center text-slate-500 text-[0.625rem] font-semibold">
                                     +{session.assignees.length - 3}
                                   </div>
                                 )}
                               </div>
                             ) : (
-                              <span className="text-[#94A3B8] text-[0.8125rem]">-</span>
+                              <span className="text-slate-400 text-[0.8125rem]">-</span>
                             )}
                           </td>
-                          <td className="px-4 py-3 border-r border-[#E2E8F0]">
-                            <span className="text-[0.75rem] text-[#64748B] font-mono">{formatSessionDuration(session as any)}</span>
+                          <td className="px-4 py-3 border-r border-slate-200">
+                            <span className="text-[0.75rem] text-slate-500 font-mono">{formatSessionDuration(session as any)}</span>
                           </td>
                           <td className="px-4 py-3">
-                            <span className="text-[0.75rem] text-[#94A3B8]">{formatRelativeTime(session.updated_at)}</span>
+                            <span className="text-[0.75rem] text-slate-400">{formatRelativeTime(session.updated_at)}</span>
                           </td>
                         </tr>
                       );

@@ -2312,11 +2312,11 @@ export default function RunDetail() {
         <div
           className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 ${
             toast.type === 'success'
-              ? 'bg-[#ECFDF5] border border-[#A7F3D0] text-[#065F46]'
-              : 'bg-[#FEF2F2] border border-[#FECACA] text-[#991B1B]'
+              ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+              : 'bg-rose-50 border border-rose-200 text-rose-800'
           }`}
         >
-          <i className={toast.type === 'success' ? 'ri-check-line text-[#10B981]' : 'ri-error-warning-line text-[#EF4444]'} />
+          <i className={toast.type === 'success' ? 'ri-check-line text-emerald-500' : 'ri-error-warning-line text-rose-500'} />
           <span className="text-[0.8125rem] font-medium">{toast.message}</span>
           <button onClick={() => setToast(null)} className="ml-2 text-current opacity-50 hover:opacity-100 cursor-pointer">
             <i className="ri-close-line" />
@@ -2328,14 +2328,14 @@ export default function RunDetail() {
         
         <main className="flex-1 overflow-hidden bg-gray-50/30 flex">
           {/* 폴더 사이드바 */}
-          <div className={`flex-shrink-0 bg-white border-r border-[#E2E8F0] flex flex-col overflow-y-auto transition-all duration-200 ${isFolderSidebarOpen ? 'w-[200px]' : 'w-12'}`}>
-            <div className={`px-[0.875rem] py-[0.75rem] border-b border-[#E2E8F0] flex items-center ${isFolderSidebarOpen ? 'justify-between' : 'justify-center'}`}>
+          <div className={`flex-shrink-0 bg-white border-r border-slate-200 flex flex-col overflow-y-auto transition-all duration-200 ${isFolderSidebarOpen ? 'w-[200px]' : 'w-12'}`}>
+            <div className={`px-[0.875rem] py-[0.75rem] border-b border-slate-200 flex items-center ${isFolderSidebarOpen ? 'justify-between' : 'justify-center'}`}>
               {isFolderSidebarOpen && (
-                <span className="text-[0.6875rem] font-bold text-[#94A3B8] uppercase tracking-[0.04em]">Folders</span>
+                <span className="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-[0.04em]">Folders</span>
               )}
               <button
                 onClick={() => setIsFolderSidebarOpen(!isFolderSidebarOpen)}
-                className="w-5 h-5 flex items-center justify-center text-[#94A3B8] hover:text-[#475569] rounded transition-all cursor-pointer flex-shrink-0 border-0 bg-transparent"
+                className="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-slate-600 rounded transition-all cursor-pointer flex-shrink-0 border-0 bg-transparent"
                 title={isFolderSidebarOpen ? '접기' : '펼치기'}
               >
                 <i className={`ri-${isFolderSidebarOpen ? 'arrow-left-s' : 'arrow-right-s'}-line text-base`}></i>
@@ -2347,16 +2347,16 @@ export default function RunDetail() {
                 onClick={() => { setSelectedFolder(null); selectTestCase(null); }}
                 className={`w-full flex items-center gap-2 py-[0.4375rem] text-[0.8125rem] font-medium transition-all cursor-pointer text-left ${isFolderSidebarOpen ? 'px-[0.875rem]' : 'px-0 justify-center'} ${
                   selectedFolder === null
-                    ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold'
-                    : 'text-[#475569] hover:bg-[#F8FAFC]'
+                    ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                    : 'text-slate-600 hover:bg-slate-50'
                 }`}
                 title={!isFolderSidebarOpen ? 'All Cases' : undefined}
               >
-                <i className={`ri-folder-3-line text-[0.9375rem] flex-shrink-0 ${selectedFolder === null ? 'text-[#6366F1]' : 'text-[#94A3B8]'}`}></i>
+                <i className={`ri-folder-3-line text-[0.9375rem] flex-shrink-0 ${selectedFolder === null ? 'text-indigo-500' : 'text-slate-400'}`}></i>
                 {isFolderSidebarOpen && (
                   <>
                     <span className="truncate">All Cases</span>
-                    <span className={`ml-auto text-[0.75rem] flex-shrink-0 ${selectedFolder === null ? 'text-[#6366F1]' : 'text-[#94A3B8]'}`}>
+                    <span className={`ml-auto text-[0.75rem] flex-shrink-0 ${selectedFolder === null ? 'text-indigo-500' : 'text-slate-400'}`}>
                       {testCases.length}
                     </span>
                   </>
@@ -2375,8 +2375,8 @@ export default function RunDetail() {
                         onClick={() => { setSelectedFolder(folder.name); selectTestCase(null); }}
                         className={`w-full flex items-center gap-2 py-[0.4375rem] text-[0.8125rem] font-medium transition-all cursor-pointer text-left ${isFolderSidebarOpen ? 'px-[0.875rem]' : 'px-0 justify-center'} ${
                           isSelected
-                            ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold'
-                            : 'text-[#475569] hover:bg-[#F8FAFC]'
+                            ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                            : 'text-slate-600 hover:bg-slate-50'
                         }`}
                         title={!isFolderSidebarOpen ? folder.name : undefined}
                       >
@@ -2394,7 +2394,7 @@ export default function RunDetail() {
                         {isFolderSidebarOpen && (
                           <>
                             <span className="truncate">{folder.name}</span>
-                            <span className={`ml-auto text-[0.75rem] flex-shrink-0 ${isSelected ? 'text-[#6366F1]' : 'text-[#94A3B8]'}`}>
+                            <span className={`ml-auto text-[0.75rem] flex-shrink-0 ${isSelected ? 'text-indigo-500' : 'text-slate-400'}`}>
                               {count}
                             </span>
                           </>
@@ -2407,7 +2407,7 @@ export default function RunDetail() {
 
               {folders.length === 0 && !loading && isFolderSidebarOpen && (
                 <div className="px-[0.875rem] py-4 text-center">
-                  <p className="text-[0.75rem] text-[#94A3B8]">폴더 없음</p>
+                  <p className="text-[0.75rem] text-slate-400">폴더 없음</p>
                 </div>
               )}
             </div>
@@ -2427,7 +2427,7 @@ export default function RunDetail() {
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <h1 className="text-[1.375rem] font-bold text-[#0F172A]">{run?.name}</h1>
+                      <h1 className="text-[1.375rem] font-bold text-slate-900">{run?.name}</h1>
                       {(() => {
                         const statusLabel = run?.status === 'completed' ? 'Completed' :
                           run?.status === 'in_progress' ? 'In Progress' :
@@ -2435,20 +2435,20 @@ export default function RunDetail() {
                           run?.status === 'paused' ? 'Paused' : 'New';
                         const isInProgress = run?.status === 'in_progress';
                         return (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[0.6875rem] font-semibold bg-[#DBEAFE] text-[#1D4ED8]">
-                            {isInProgress && <span className="w-1.5 h-1.5 rounded-full bg-[#3B82F6] animate-pulse" />}
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[0.6875rem] font-semibold bg-blue-100 text-blue-700">
+                            {isInProgress && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />}
                             {statusLabel}
                           </span>
                         );
                       })()}
                       {run?.is_automated && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[0.6875rem] font-semibold bg-[#F0F9FF] text-[#0284C7]">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[0.6875rem] font-semibold bg-sky-50 text-sky-600">
                           <i className="ri-robot-line" style={{ fontSize: '0.75rem' }}></i>
                           Automated
                         </span>
                       )}
                     </div>
-                    <p className="text-[0.8125rem] text-[#94A3B8]">
+                    <p className="text-[0.8125rem] text-slate-400">
                       {run?.created_at && `Started ${new Date(run.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · `}
                       {testCases.length > 0 && `${Math.round((testCases.filter(tc => tc.runStatus !== 'untested').length / testCases.length) * 100)}% completed · `}
                       {testCases.length} test cases
@@ -2492,11 +2492,11 @@ export default function RunDetail() {
                               key={item.label}
                               role="menuitem"
                               onClick={item.onClick}
-                              className="group w-full flex items-center gap-2.5 px-3 py-2.5 text-[0.8125rem] font-medium transition-colors cursor-pointer hover:bg-[#F8FAFC]"
+                              className="group w-full flex items-center gap-2.5 px-3 py-2.5 text-[0.8125rem] font-medium transition-colors cursor-pointer hover:bg-slate-50"
                               style={{ color: '#334155', background: 'none', border: 'none', textAlign: 'left' }}
                             >
                               <i
-                                className={`${item.icon} text-base flex-shrink-0 group-hover:text-[#6366F1] transition-colors`}
+                                className={`${item.icon} text-base flex-shrink-0 group-hover:text-indigo-500 transition-colors`}
                                 style={{ color: '#64748B' }}
                               />
                               {item.label}
@@ -2509,7 +2509,7 @@ export default function RunDetail() {
                             <button
                               role="menuitem"
                               onClick={() => { setShowMoreMenu(false); setShowAISummary(true); setShowUpgradeNudge(false); }}
-                              className="group w-full flex items-center gap-2.5 px-3 py-2.5 text-[0.8125rem] font-medium transition-colors cursor-pointer hover:bg-[#F5F3FF]"
+                              className="group w-full flex items-center gap-2.5 px-3 py-2.5 text-[0.8125rem] font-medium transition-colors cursor-pointer hover:bg-violet-50"
                               style={{ color: '#4338CA', background: 'none', border: 'none', textAlign: 'left' }}
                             >
                               <i className="ri-sparkling-2-fill text-base flex-shrink-0" style={{ color: '#8B5CF6' }} />
@@ -2585,8 +2585,8 @@ export default function RunDetail() {
                       <i className={`${icon} text-base`} style={{ color: iconColor }}></i>
                     </div>
                     <div>
-                      <p className="text-[0.6875rem] text-[#94A3B8] font-medium">{label}</p>
-                      <p className="text-[1.75rem] font-extrabold text-[#0F172A] leading-[1.2]" style={valueColor ? { color: valueColor } : undefined}>{value}</p>
+                      <p className="text-[0.6875rem] text-slate-400 font-medium">{label}</p>
+                      <p className="text-[1.75rem] font-extrabold text-slate-900 leading-[1.2]" style={valueColor ? { color: valueColor } : undefined}>{value}</p>
                     </div>
                   </div>
                 ))}
@@ -2610,12 +2610,12 @@ export default function RunDetail() {
                 return (
                   <div className="bg-white rounded-[0.625rem] border border-gray-200 py-4 px-[1.125rem] mb-4">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[0.8125rem] font-semibold text-[#0F172A]">Execution Progress</span>
-                      <span className="text-[0.8125rem] font-bold text-[#0F172A]">
+                      <span className="text-[0.8125rem] font-semibold text-slate-900">Execution Progress</span>
+                      <span className="text-[0.8125rem] font-bold text-slate-900">
                         {total > 0 ? Math.round(((passed + failed + blocked + retest) / total) * 100) : 0}%
                       </span>
                     </div>
-                    <div className="flex h-2 rounded-full overflow-hidden bg-[#F1F5F9] gap-px mb-2">
+                    <div className="flex h-2 rounded-full overflow-hidden bg-slate-100 gap-px mb-2">
                       {passed > 0 && (
                         <div
                           className="bg-green-500 transition-all duration-500"
@@ -2660,7 +2660,7 @@ export default function RunDetail() {
                         { count: retest, color: '#FACC15', label: 'Retest' },
                         { count: untested, color: '#E2E8F0', label: 'Untested' },
                       ].map(({ count, color, label }) => (
-                        <span key={label} className="inline-flex items-center gap-[0.3125rem] text-[0.6875rem] text-[#64748B]">
+                        <span key={label} className="inline-flex items-center gap-[0.3125rem] text-[0.6875rem] text-slate-500">
                           <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: color }} />
                           <strong>{count}</strong> {label}
                         </span>
@@ -2762,19 +2762,19 @@ export default function RunDetail() {
               <div className="bg-white rounded-[0.625rem] border border-gray-200 overflow-hidden">
                 <div className="flex items-center gap-[0.625rem] py-[0.875rem] px-[1.125rem] border-b border-gray-200">
                   <div className="flex-1 relative">
-                    <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8] text-[0.9375rem]"></i>
+                    <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[0.9375rem]"></i>
                     <input
                       type="text"
                       placeholder="Search test cases..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full text-[0.8125rem] py-[0.4375rem] pl-[2.125rem] pr-[0.875rem] rounded-lg border border-gray-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 bg-white text-[#334155]"
+                      className="w-full text-[0.8125rem] py-[0.4375rem] pl-[2.125rem] pr-[0.875rem] rounded-lg border border-gray-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 bg-white text-slate-700"
                     />
                   </div>
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="text-[0.8125rem] py-[0.4375rem] px-[0.625rem] rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer font-medium text-[#334155] bg-white"
+                    className="text-[0.8125rem] py-[0.4375rem] px-[0.625rem] rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer font-medium text-slate-700 bg-white"
                   >
                     <option value="all">All Status</option>
                     <option value="passed">Passed</option>
@@ -2786,7 +2786,7 @@ export default function RunDetail() {
                   <select
                     value={priorityFilter}
                     onChange={(e) => setPriorityFilter(e.target.value)}
-                    className="text-[0.8125rem] py-[0.4375rem] px-[0.625rem] rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer font-medium text-[#334155] bg-white"
+                    className="text-[0.8125rem] py-[0.4375rem] px-[0.625rem] rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer font-medium text-slate-700 bg-white"
                   >
                     <option value="all">All Priority</option>
                     <option value="critical">Critical</option>
@@ -2878,7 +2878,7 @@ export default function RunDetail() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-12 gap-4 px-4 py-2 bg-[#F8FAFC] border-b border-gray-200">
+                  <div className="grid grid-cols-12 gap-4 px-4 py-2 bg-slate-50 border-b border-gray-200">
                     <div className="col-span-1 flex items-center" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
@@ -2888,22 +2888,22 @@ export default function RunDetail() {
                       />
                     </div>
                     <div className="col-span-1">
-                      <span className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-[0.04em]">ID / Ver</span>
+                      <span className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">ID / Ver</span>
                     </div>
                     <div className="col-span-3">
-                      <span className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-[0.04em]">Test Case</span>
+                      <span className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">Test Case</span>
                     </div>
                     <div className="col-span-1">
-                      <span className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-[0.04em]">Priority</span>
+                      <span className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">Priority</span>
                     </div>
                     <div className="col-span-2">
-                      <span className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-[0.04em]">Folder</span>
+                      <span className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">Folder</span>
                     </div>
                     <div className="col-span-1 flex items-center">
-                      <span className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-[0.04em]">Assignee</span>
+                      <span className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">Assignee</span>
                     </div>
                     <div className="col-span-3 flex items-center">
-                      <span className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-[0.04em]">Status</span>
+                      <span className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">Status</span>
                     </div>
                   </div>
 
@@ -2919,8 +2919,8 @@ export default function RunDetail() {
                     filteredTestCases.map((testCase) => (
                       <div
                         key={testCase.id}
-                        className={`grid grid-cols-12 gap-4 px-4 py-[0.625rem] border-b border-[#F1F5F9] hover:bg-[#FAFAFF] transition-colors cursor-pointer ${
-                          selectedTestCase?.id === testCase.id ? 'bg-[#EEF2FF]' : ''
+                        className={`grid grid-cols-12 gap-4 px-4 py-[0.625rem] border-b border-slate-100 hover:bg-violet-50 transition-colors cursor-pointer ${
+                          selectedTestCase?.id === testCase.id ? 'bg-indigo-50' : ''
                         }`}
                         style={(testCase as any).lifecycle_status === 'deprecated' ? { opacity: 0.6 } : undefined}
                         onClick={() => selectTestCase(testCase)}
@@ -2973,7 +2973,7 @@ export default function RunDetail() {
                           })()}
                         </div>
                         <div className="col-span-3 flex items-center gap-1.5 min-w-0">
-                          <span className="text-[0.8125rem] font-semibold text-[#0F172A] truncate hover:text-indigo-600 min-w-0">
+                          <span className="text-[0.8125rem] font-semibold text-slate-900 truncate hover:text-indigo-600 min-w-0">
                             {testCase.title}
                           </span>
                           {(() => {
@@ -2999,12 +2999,12 @@ export default function RunDetail() {
                           })()}
                         </div>
                         <div className="col-span-1 flex items-center">
-                          <span className="inline-flex items-center gap-1.5 text-[0.6875rem] text-[#475569]">
+                          <span className="inline-flex items-center gap-1.5 text-[0.6875rem] text-slate-600">
                             <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                              testCase.priority === 'critical' ? 'bg-[#EF4444]' :
-                              testCase.priority === 'high' ? 'bg-[#F59E0B]' :
-                              testCase.priority === 'medium' ? 'bg-[#6366F1]' :
-                              'bg-[#94A3B8]'
+                              testCase.priority === 'critical' ? 'bg-rose-500' :
+                              testCase.priority === 'high' ? 'bg-amber-500' :
+                              testCase.priority === 'medium' ? 'bg-indigo-500' :
+                              'bg-slate-400'
                             }`} />
                             {testCase.priority.charAt(0).toUpperCase() + testCase.priority.slice(1)}
                           </span>
@@ -3019,7 +3019,7 @@ export default function RunDetail() {
                                 <span className="flex-shrink-0 flex items-center justify-center" style={{ width: 18, height: 18, borderRadius: 4, background: fs.bg }}>
                                   <i className={`${folder?.icon || 'ri-folder-line'} text-[0.6875rem]`} style={{ color: fs.fg }}></i>
                                 </span>
-                                <span className="text-[0.75rem] text-[#475569] truncate">{testCase.folder}</span>
+                                <span className="text-[0.75rem] text-slate-600 truncate">{testCase.folder}</span>
                               </div>
                             );
                           })()}

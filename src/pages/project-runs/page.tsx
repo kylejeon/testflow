@@ -1483,12 +1483,12 @@ export default function ProjectRunsPage() {
     return (
       <div
         key={run.id}
-        className="bg-white border border-[#E2E8F0] rounded-xl p-4 cursor-pointer hover:shadow-[0_4px_16px_rgba(15,23,42,0.08)] hover:border-[#CBD5E1] transition-all"
+        className="bg-white border border-slate-200 rounded-xl p-4 cursor-pointer hover:shadow-[0_4px_16px_rgba(15,23,42,0.08)] hover:border-slate-300 transition-all"
         onClick={() => handleRunClick(run.id)}
       >
         {/* Row 1: Name + Status Badge + Priority Badge + ⋯ menu */}
         <div className="flex items-center gap-2 mb-1.5">
-          <span className="font-semibold text-[0.9375rem] text-[#0F172A] hover:text-indigo-600 transition-colors truncate min-w-0">{run.name}</span>
+          <span className="font-semibold text-[0.9375rem] text-slate-900 hover:text-indigo-600 transition-colors truncate min-w-0">{run.name}</span>
           <span className={`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 text-[0.6875rem] font-semibold rounded-full ${getStatusBadge(run.status).className}`}>
             {isInProgress && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse inline-block"></span>}
             {getStatusBadge(run.status).label}
@@ -1499,7 +1499,7 @@ export default function ProjectRunsPage() {
             {hasManualOverride && <i className="ri-pushpin-fill text-[0.5625rem] ml-0.5 opacity-60"></i>}
           </span>
           {run.is_automated && (
-            <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 bg-[#F0F9FF] text-[#0284C7] rounded-full text-[0.6875rem] font-semibold">
+            <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 bg-sky-50 text-sky-600 rounded-full text-[0.6875rem] font-semibold">
               <i className="ri-robot-line text-[0.6875rem]"></i>Auto
             </span>
           )}
@@ -1528,40 +1528,40 @@ export default function ProjectRunsPage() {
         </div>
         {/* Row 2: Milestone + Due date */}
         <div className="flex items-center gap-1.5 mb-2.5">
-          <i className="ri-flag-line text-[0.8125rem] text-[#94A3B8]"></i>
+          <i className="ri-flag-line text-[0.8125rem] text-slate-400"></i>
           {milestone ? (
             <>
-              <span className="text-[0.75rem] text-[#64748B]">{milestone.name}</span>
+              <span className="text-[0.75rem] text-slate-500">{milestone.name}</span>
               {milestone.end_date && (
-                <span className="text-[0.75rem] text-[#94A3B8]">· Due {new Date(milestone.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                <span className="text-[0.75rem] text-slate-400">· Due {new Date(milestone.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
               )}
             </>
           ) : (
-            <span className="text-[0.75rem] text-[#CBD5E1] italic">No Milestone</span>
+            <span className="text-[0.75rem] text-slate-300 italic">No Milestone</span>
           )}
         </div>
         {/* Row 3: Progress bar */}
         <div className="flex items-center gap-2 mb-2">
-          <div className="flex-1 h-[6px] bg-[#F1F5F9] rounded-full overflow-hidden flex gap-px">
-            {run.passed > 0 && <div className="h-full bg-[#22C55E] transition-all" style={{ width: `${passedPct}%` }}></div>}
-            {run.failed > 0 && <div className="h-full bg-[#EF4444] transition-all" style={{ width: `${failedPct}%` }}></div>}
-            {run.blocked > 0 && <div className="h-full bg-[#94A3B8] transition-all" style={{ width: `${blockedPct}%` }}></div>}
-            {run.retest > 0 && <div className="h-full bg-[#FACC15] transition-all" style={{ width: `${retestPct}%` }}></div>}
+          <div className="flex-1 h-[6px] bg-slate-100 rounded-full overflow-hidden flex gap-px">
+            {run.passed > 0 && <div className="h-full bg-green-500 transition-all" style={{ width: `${passedPct}%` }}></div>}
+            {run.failed > 0 && <div className="h-full bg-rose-500 transition-all" style={{ width: `${failedPct}%` }}></div>}
+            {run.blocked > 0 && <div className="h-full bg-slate-400 transition-all" style={{ width: `${blockedPct}%` }}></div>}
+            {run.retest > 0 && <div className="h-full bg-yellow-400 transition-all" style={{ width: `${retestPct}%` }}></div>}
           </div>
-          <span className="text-[0.8125rem] font-semibold text-[#0F172A] min-w-[2.5rem] text-right">{run.progress}%</span>
+          <span className="text-[0.8125rem] font-semibold text-slate-900 min-w-[2.5rem] text-right">{run.progress}%</span>
         </div>
         {/* Row 4: Stats */}
-        <div className="flex items-center gap-3.5 text-[0.75rem] text-[#64748B] mb-2.5">
-          <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] inline-block"></span>{run.passed} passed</span>
-          <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#EF4444] inline-block"></span>{run.failed} failed</span>
-          {run.blocked > 0 && <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#94A3B8] inline-block"></span>{run.blocked} blocked</span>}
-          {run.retest > 0 && <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#FACC15] inline-block"></span>{run.retest} retest</span>}
-          <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#E2E8F0] inline-block"></span>{run.untested} untested</span>
+        <div className="flex items-center gap-3.5 text-[0.75rem] text-slate-500 mb-2.5">
+          <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block"></span>{run.passed} passed</span>
+          <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block"></span>{run.failed} failed</span>
+          {run.blocked > 0 && <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-slate-400 inline-block"></span>{run.blocked} blocked</span>}
+          {run.retest > 0 && <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-yellow-400 inline-block"></span>{run.retest} retest</span>}
+          <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-slate-200 inline-block"></span>{run.untested} untested</span>
         </div>
         {/* Row 5: Assignees + Continue/Start button */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-[0.75rem] text-[#64748B]">
-            <span className="text-[#94A3B8]">Assigned to</span>
+          <div className="flex items-center gap-2 text-[0.75rem] text-slate-500">
+            <span className="text-slate-400">Assigned to</span>
             <div className="flex gap-1">
               {run.assignees && run.assignees.slice(0, 3).map((assignee) => {
                 const p = assigneeProfiles.get(assignee);
@@ -1580,7 +1580,7 @@ export default function ProjectRunsPage() {
             </div>
             {run.created_at && (
               <>
-                <span className="text-[#CBD5E1]">·</span>
+                <span className="text-slate-300">·</span>
                 <span>{new Date(run.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
               </>
             )}
@@ -1595,7 +1595,7 @@ export default function ProjectRunsPage() {
           ) : (
             <button
               onClick={(e) => { e.stopPropagation(); handleRunClick(run.id); }}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-[0.75rem] font-semibold text-white shadow-sm cursor-pointer transition-all hover:opacity-90 hover:-translate-y-px ${isInProgress ? 'bg-[#6366F1]' : 'bg-[#22C55E]'}`}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-[0.75rem] font-semibold text-white shadow-sm cursor-pointer transition-all hover:opacity-90 hover:-translate-y-px ${isInProgress ? 'bg-indigo-500' : 'bg-green-500'}`}
             >
               <i className="ri-play-line text-[0.75rem]"></i>
               {isInProgress ? 'Continue' : 'Start'}
@@ -1645,7 +1645,7 @@ export default function ProjectRunsPage() {
         
         <main className="flex-1 overflow-hidden flex flex-col">
           {/* ── Subtab row: lifecycle tabs + action button ── */}
-          <div className="flex items-center border-b border-[#E2E8F0] bg-white flex-shrink-0 h-[2.625rem] px-5">
+          <div className="flex items-center border-b border-slate-200 bg-white flex-shrink-0 h-[2.625rem] px-5">
             {([
               { key: 'all' as const, label: 'All', icon: 'ri-list-check-3', iconColor: '#6366F1', count: testRuns.length },
               { key: 'active' as const, label: 'Active', icon: 'ri-play-circle-fill', iconColor: '#3B82F6', count: testRuns.filter(r => ['new','in_progress','paused','under_review'].includes(r.status)).length },
@@ -1656,13 +1656,13 @@ export default function ProjectRunsPage() {
                 onClick={() => setActiveTab(tab.key)}
                 className={`flex items-center gap-[0.3125rem] px-[0.75rem] h-full text-[0.8125rem] font-medium border-b-[2.5px] transition-colors cursor-pointer bg-transparent border-l-0 border-r-0 border-t-0 whitespace-nowrap ${
                   activeTab === tab.key
-                    ? 'text-[#6366F1] border-[#6366F1] font-semibold'
-                    : 'text-[#64748B] border-transparent hover:text-[#475569]'
+                    ? 'text-indigo-500 border-indigo-500 font-semibold'
+                    : 'text-slate-500 border-transparent hover:text-slate-600'
                 }`}
               >
                 <i className={`${tab.icon} text-[0.875rem]`} style={{ color: tab.iconColor }}></i>
                 {tab.label}
-                <span className={`text-[0.625rem] px-[0.375rem] py-[0.0625rem] rounded-full font-bold min-w-[1.25rem] text-center ${activeTab === tab.key ? 'bg-[#EEF2FF] text-[#6366F1]' : 'bg-[#F1F5F9] text-[#64748B]'}`}>
+                <span className={`text-[0.625rem] px-[0.375rem] py-[0.0625rem] rounded-full font-bold min-w-[1.25rem] text-center ${activeTab === tab.key ? 'bg-indigo-50 text-indigo-500' : 'bg-slate-100 text-slate-500'}`}>
                   {tab.count}
                 </span>
               </button>
@@ -1684,7 +1684,7 @@ export default function ProjectRunsPage() {
                 setSelectedTestCases([]);
                 setShowAddRunModal(true);
               }}
-              className="flex items-center gap-[0.3125rem] px-[0.875rem] py-[0.375rem] bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white rounded-[0.375rem] hover:opacity-90 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all font-semibold text-[0.8125rem] cursor-pointer whitespace-nowrap"
+              className="flex items-center gap-[0.3125rem] px-[0.875rem] py-[0.375rem] bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-[0.375rem] hover:opacity-90 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all font-semibold text-[0.8125rem] cursor-pointer whitespace-nowrap"
               style={{ boxShadow: '0 1px 3px rgba(99,102,241,0.3)' }}
             >
               <i className="ri-play-circle-line text-sm" />
@@ -1696,57 +1696,57 @@ export default function ProjectRunsPage() {
           {(() => {
             const cs = getCalculateStats();
             return (
-              <div className="flex items-center bg-white border-b border-[#E2E8F0] flex-shrink-0 h-10 px-5 gap-6">
-                <div className="flex items-center gap-2 pr-6 border-r border-[#E2E8F0]">
-                  <i className="ri-play-circle-line text-base text-[#3B82F6]"></i>
-                  <span className="text-[0.75rem] text-[#94A3B8]">Active Runs</span>
-                  <span className="text-[0.8125rem] font-bold text-[#0F172A]">{cs.activeRuns}</span>
-                  <span className="text-[0.75rem] text-[#64748B]">of {cs.totalRuns}</span>
+              <div className="flex items-center bg-white border-b border-slate-200 flex-shrink-0 h-10 px-5 gap-6">
+                <div className="flex items-center gap-2 pr-6 border-r border-slate-200">
+                  <i className="ri-play-circle-line text-base text-blue-500"></i>
+                  <span className="text-[0.75rem] text-slate-400">Active Runs</span>
+                  <span className="text-[0.8125rem] font-bold text-slate-900">{cs.activeRuns}</span>
+                  <span className="text-[0.75rem] text-slate-500">of {cs.totalRuns}</span>
                 </div>
-                <div className="flex items-center gap-2 pr-6 border-r border-[#E2E8F0]">
-                  <i className="ri-checkbox-circle-line text-base text-[#22C55E]"></i>
-                  <span className="text-[0.75rem] text-[#94A3B8]">Pass Rate</span>
-                  <span className="text-[0.8125rem] font-bold text-[#0F172A]">{cs.passRate}%</span>
+                <div className="flex items-center gap-2 pr-6 border-r border-slate-200">
+                  <i className="ri-checkbox-circle-line text-base text-green-500"></i>
+                  <span className="text-[0.75rem] text-slate-400">Pass Rate</span>
+                  <span className="text-[0.8125rem] font-bold text-slate-900">{cs.passRate}%</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <i className="ri-time-line text-base text-[#8B5CF6]"></i>
-                  <span className="text-[0.75rem] text-[#94A3B8]">Avg Duration</span>
-                  <span className="text-[0.8125rem] font-bold text-[#0F172A]">{cs.avgDurationStr}</span>
+                  <i className="ri-time-line text-base text-violet-500"></i>
+                  <span className="text-[0.75rem] text-slate-400">Avg Duration</span>
+                  <span className="text-[0.8125rem] font-bold text-slate-900">{cs.avgDurationStr}</span>
                 </div>
               </div>
             );
           })()}
 
           {/* ── Toolbar ── */}
-          <div className="flex items-center bg-white border-b border-[#E2E8F0] flex-shrink-0 h-11 px-5 gap-3">
+          <div className="flex items-center bg-white border-b border-slate-200 flex-shrink-0 h-11 px-5 gap-3">
             <div className="flex-1 relative">
-              <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8] text-sm"></i>
+              <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
               <input
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search runs..."
-                className="w-full pl-9 pr-3 py-[0.3125rem] bg-[#F8FAFC] border border-[#E2E8F0] rounded-md text-[0.8125rem] focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
+                className="w-full pl-9 pr-3 py-[0.3125rem] bg-slate-50 border border-slate-200 rounded-md text-[0.8125rem] focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
               />
             </div>
             <div className="relative" ref={milestoneDropdownRef}>
               <button
                 onClick={() => setShowMilestoneDropdown(p => !p)}
-                className={`flex items-center gap-1.5 px-3 py-[0.3125rem] border rounded-md text-[0.8125rem] cursor-pointer whitespace-nowrap transition-colors ${milestoneFilter ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC]'}`}
+                className={`flex items-center gap-1.5 px-3 py-[0.3125rem] border rounded-md text-[0.8125rem] cursor-pointer whitespace-nowrap transition-colors ${milestoneFilter ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
               >
                 <i className="ri-flag-line text-sm"></i>
                 {milestoneFilter ? (milestones.find(m => m.id === milestoneFilter)?.name || 'Milestone') : 'Milestone'}
                 {milestoneFilter ? (
                   <button type="button" onClick={(e) => { e.stopPropagation(); setMilestoneFilter(''); }} className="ml-0.5 text-indigo-400 hover:text-indigo-700"><i className="ri-close-line text-xs"></i></button>
                 ) : (
-                  <i className="ri-arrow-down-s-line text-xs text-[#94A3B8]"></i>
+                  <i className="ri-arrow-down-s-line text-xs text-slate-400"></i>
                 )}
               </button>
               {showMilestoneDropdown && (
-                <div className="absolute top-full mt-1 left-0 bg-white rounded-lg border border-[#E2E8F0] shadow-lg z-30 py-1 min-w-[180px]">
-                  <button onClick={() => { setMilestoneFilter(''); setShowMilestoneDropdown(false); }} className="w-full text-left px-3 py-2 text-[0.8125rem] text-[#475569] hover:bg-[#F8FAFC]">All Milestones</button>
+                <div className="absolute top-full mt-1 left-0 bg-white rounded-lg border border-slate-200 shadow-lg z-30 py-1 min-w-[180px]">
+                  <button onClick={() => { setMilestoneFilter(''); setShowMilestoneDropdown(false); }} className="w-full text-left px-3 py-2 text-[0.8125rem] text-slate-600 hover:bg-slate-50">All Milestones</button>
                   {milestones.map(m => (
-                    <button key={m.id} onClick={() => { setMilestoneFilter(m.id); setShowMilestoneDropdown(false); }} className={`w-full text-left px-3 py-2 text-[0.8125rem] hover:bg-indigo-50 ${milestoneFilter === m.id ? 'text-indigo-600 font-medium' : 'text-[#475569]'}`}>{m.name}</button>
+                    <button key={m.id} onClick={() => { setMilestoneFilter(m.id); setShowMilestoneDropdown(false); }} className={`w-full text-left px-3 py-2 text-[0.8125rem] hover:bg-indigo-50 ${milestoneFilter === m.id ? 'text-indigo-600 font-medium' : 'text-slate-600'}`}>{m.name}</button>
                   ))}
                 </div>
               )}
@@ -1754,25 +1754,25 @@ export default function ProjectRunsPage() {
             <div className="relative" ref={resultFilterRef}>
               <button
                 onClick={() => setShowResultFilter(p => !p)}
-                className={`flex items-center gap-1.5 px-3 py-[0.3125rem] border rounded-md text-[0.8125rem] cursor-pointer whitespace-nowrap transition-colors ${resultFilter !== 'all' ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC]'}`}
+                className={`flex items-center gap-1.5 px-3 py-[0.3125rem] border rounded-md text-[0.8125rem] cursor-pointer whitespace-nowrap transition-colors ${resultFilter !== 'all' ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
               >
                 <i className="ri-filter-3-line text-sm"></i>
                 {resultFilter === 'all' ? 'Result Filter' : resultFilter === 'has_failures' ? 'Has Failures' : resultFilter === 'all_passed' ? 'All Passed' : 'Has Blocked'}
                 {resultFilter !== 'all' ? (
                   <button type="button" onClick={(e) => { e.stopPropagation(); setResultFilter('all'); }} className="ml-0.5 text-indigo-400 hover:text-indigo-700"><i className="ri-close-line text-xs"></i></button>
                 ) : (
-                  <i className="ri-arrow-down-s-line text-xs text-[#94A3B8]"></i>
+                  <i className="ri-arrow-down-s-line text-xs text-slate-400"></i>
                 )}
               </button>
               {showResultFilter && (
-                <div className="absolute top-full mt-1 left-0 bg-white rounded-lg border border-[#E2E8F0] shadow-lg z-30 py-1 min-w-[180px]">
+                <div className="absolute top-full mt-1 left-0 bg-white rounded-lg border border-slate-200 shadow-lg z-30 py-1 min-w-[180px]">
                   {([
                     { key: 'all' as const, label: 'All Results' },
                     { key: 'has_failures' as const, label: 'Has Failures' },
                     { key: 'all_passed' as const, label: 'All Passed' },
                     { key: 'has_blocked' as const, label: 'Has Blocked' },
                   ]).map(opt => (
-                    <button key={opt.key} onClick={() => { setResultFilter(opt.key); setShowResultFilter(false); }} className={`w-full text-left px-3 py-2 text-[0.8125rem] hover:bg-indigo-50 flex items-center justify-between ${resultFilter === opt.key ? 'text-indigo-600 font-medium' : 'text-[#475569]'}`}>
+                    <button key={opt.key} onClick={() => { setResultFilter(opt.key); setShowResultFilter(false); }} className={`w-full text-left px-3 py-2 text-[0.8125rem] hover:bg-indigo-50 flex items-center justify-between ${resultFilter === opt.key ? 'text-indigo-600 font-medium' : 'text-slate-600'}`}>
                       {opt.label}
                       {resultFilter === opt.key && <i className="ri-check-line text-indigo-500"></i>}
                     </button>
@@ -1783,21 +1783,21 @@ export default function ProjectRunsPage() {
             <div className="relative" ref={sortMenuRef}>
               <button
                 onClick={() => setShowSortMenu(p => !p)}
-                className="flex items-center gap-1.5 px-3 py-[0.3125rem] border border-[#E2E8F0] bg-white text-[#475569] rounded-md text-[0.8125rem] cursor-pointer whitespace-nowrap hover:bg-[#F8FAFC] transition-colors"
+                className="flex items-center gap-1.5 px-3 py-[0.3125rem] border border-slate-200 bg-white text-slate-600 rounded-md text-[0.8125rem] cursor-pointer whitespace-nowrap hover:bg-slate-50 transition-colors"
               >
                 <i className="ri-sort-desc text-sm"></i>
                 Sort
-                <i className="ri-arrow-down-s-line text-xs text-[#94A3B8]"></i>
+                <i className="ri-arrow-down-s-line text-xs text-slate-400"></i>
               </button>
               {showSortMenu && (
-                <div className="absolute top-full mt-1 right-0 bg-white rounded-lg border border-[#E2E8F0] shadow-lg z-30 py-1 min-w-[160px]">
+                <div className="absolute top-full mt-1 right-0 bg-white rounded-lg border border-slate-200 shadow-lg z-30 py-1 min-w-[160px]">
                   {([
                     { key: 'priority' as const, label: 'Priority' },
                     { key: 'created' as const, label: 'Created Date' },
                     { key: 'name' as const, label: 'Name' },
                     { key: 'progress' as const, label: 'Progress' },
                   ]).map(opt => (
-                    <button key={opt.key} onClick={() => { setSortBy(opt.key); setShowSortMenu(false); }} className={`w-full text-left px-3 py-2 text-[0.8125rem] hover:bg-indigo-50 flex items-center justify-between ${sortBy === opt.key ? 'text-indigo-600 font-medium' : 'text-[#475569]'}`}>
+                    <button key={opt.key} onClick={() => { setSortBy(opt.key); setShowSortMenu(false); }} className={`w-full text-left px-3 py-2 text-[0.8125rem] hover:bg-indigo-50 flex items-center justify-between ${sortBy === opt.key ? 'text-indigo-600 font-medium' : 'text-slate-600'}`}>
                       {opt.label}
                       {sortBy === opt.key && <i className="ri-check-line text-indigo-500"></i>}
                     </button>
@@ -1808,7 +1808,7 @@ export default function ProjectRunsPage() {
           </div>
 
           {/* ── Scrollable content ── */}
-          <div className="flex-1 overflow-y-auto bg-[#F8FAFC]">
+          <div className="flex-1 overflow-y-auto bg-slate-50">
           <div className="p-5">
             {loading ? (
               <div role="status" aria-label="Loading runs" className="space-y-3">
@@ -1841,10 +1841,10 @@ export default function ProjectRunsPage() {
                             className="flex items-center gap-2 w-full text-left mb-3"
                           >
                             <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: config.dotColor }}></span>
-                            <span className="text-[0.8125rem] font-semibold text-[#0F172A]">{config.label.toUpperCase()}</span>
-                            <span className="w-5 h-5 bg-[#F1F5F9] text-[#64748B] rounded-full text-[0.6875rem] font-semibold flex items-center justify-center">{groupRuns.length}</span>
-                            <span className="flex-1 h-px bg-[#E2E8F0] ml-1"></span>
-                            <i className={`ri-arrow-down-s-line text-[#94A3B8] transition-transform ${isCollapsed ? '-rotate-90' : ''}`}></i>
+                            <span className="text-[0.8125rem] font-semibold text-slate-900">{config.label.toUpperCase()}</span>
+                            <span className="w-5 h-5 bg-slate-100 text-slate-500 rounded-full text-[0.6875rem] font-semibold flex items-center justify-center">{groupRuns.length}</span>
+                            <span className="flex-1 h-px bg-slate-200 ml-1"></span>
+                            <i className={`ri-arrow-down-s-line text-slate-400 transition-transform ${isCollapsed ? '-rotate-90' : ''}`}></i>
                           </button>
                           {!isCollapsed && (
                             <div className="space-y-3">
@@ -1864,11 +1864,11 @@ export default function ProjectRunsPage() {
                 return (
                   <div className="space-y-4">
                     {grouped.map(({ milestone, runs: mRuns }) => (
-                      <div key={milestone.id} className="bg-white rounded-lg border border-[#E2E8F0]">
-                        <div className="flex items-center justify-between px-5 py-3 bg-gray-50 rounded-t-lg border-b border-[#E2E8F0]">
+                      <div key={milestone.id} className="bg-white rounded-lg border border-slate-200">
+                        <div className="flex items-center justify-between px-5 py-3 bg-gray-50 rounded-t-lg border-b border-slate-200">
                           <div className="flex items-center gap-2">
-                            <i className="ri-flag-line text-[#94A3B8] text-sm"></i>
-                            <span className="font-semibold text-[0.875rem] text-[#0F172A]">{milestone.name}</span>
+                            <i className="ri-flag-line text-slate-400 text-sm"></i>
+                            <span className="font-semibold text-[0.875rem] text-slate-900">{milestone.name}</span>
                             <span className="text-[0.6875rem] px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full font-medium">{mRuns.length} runs</span>
                           </div>
                           <button
