@@ -1768,9 +1768,13 @@ def pytest_sessionfinish(session, exitstatus):
         'trial_started',
         {
           firstName: userProfile.full_name?.split(' ')[0] ?? '',
-          trialEndsAt: trialEndsAt.toISOString(),
-          trialDaysTotal: '14',
+          planType: 'trial',
           planName: 'Starter',
+          trialStartDate: now.toISOString().split('T')[0],
+          trialEndDate: trialEndsAt.toISOString().split('T')[0],
+          trialEndsAt: trialEndsAt.toISOString(),
+          trialDaysLeft: '14',
+          trialDaysTotal: '14',
         },
       );
 

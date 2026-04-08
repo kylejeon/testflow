@@ -306,8 +306,15 @@ export default function AuthPage() {
         if (profileError && profileError.code !== '23505') console.error('Profile creation error:', profileError);
         sendLoopsEvent(email, 'user_signup', {
           firstName: fullName?.split(' ')[0] || 'there',
-          plan: 'free',
-          signupDate: new Date().toISOString().split('T')[0],
+          planType: 'trial',
+          signupDate: now.toISOString().split('T')[0],
+          trialStartDate: now.toISOString().split('T')[0],
+          trialEndDate: trialEnds.toISOString().split('T')[0],
+          trialEndsAt: trialEnds.toISOString(),
+          trialDaysLeft: '14',
+          testCaseCount: '0',
+          testRunCount: '0',
+          teamMemberCount: '1',
         });
         await new Promise(resolve => setTimeout(resolve, 1000));
         if (invitation?.token && data.session) {
