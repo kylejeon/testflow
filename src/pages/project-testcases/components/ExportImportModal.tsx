@@ -333,6 +333,10 @@ export default function ExportImportModal({
       return { ...tc, steps: stepsText, expected_result: expectedText };
     });
 
+    expandedCases.sort((a, b) =>
+      (a.custom_id || '').localeCompare(b.custom_id || '', undefined, { numeric: true, sensitivity: 'base' })
+    );
+
     exportToTestRail(expandedCases, resolvedProjectName, selectedColumns);
     onClose();
   };

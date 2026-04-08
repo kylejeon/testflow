@@ -90,12 +90,12 @@ const parseSteps = (stepsStr: string): string[] => {
   return stepsStr.split('\n').filter(s => s.trim()).map(s => s.replace(/^\d+\.\s*/, '').trim());
 };
 
-// Steps 배열 -> TestRail 포맷 (번호 없이 줄바꿈)
+// Steps 배열 -> TestRail 포맷 (번호 포함 줄바꿈)
 const stepsToTestRail = (stepsStr: string): string => {
   if (!stepsStr) return '';
   const cleaned = stripHtml(stepsStr);
   const lines = parseSteps(cleaned);
-  return lines.join('\n');
+  return lines.map((l, i) => `${i + 1}. ${l}`).join('\n');
 };
 
 // CSV 셀 이스케이프
