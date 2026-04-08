@@ -481,7 +481,7 @@ export function DetailPanel({
 
       {/* ② Quick Actions Bar — Run Only */}
       {isRun && (
-        <div className="flex items-center gap-1.5 px-5 py-[0.625rem] border-b border-[#F1F5F9] flex-shrink-0">
+        <div className="flex items-center gap-1.5 px-5 py-[0.625rem] border-b border-slate-100 flex-shrink-0">
           {/* Status select */}
           <select
             value={runStatus}
@@ -498,7 +498,7 @@ export function DetailPanel({
           {/* Add Result */}
           <button
             onClick={onAddResult}
-            className="flex items-center gap-1 px-2.5 py-[0.3125rem] rounded text-xs font-semibold bg-[#F1F5F9] text-[#475569] hover:bg-[#E2E8F0] transition-colors cursor-pointer border-0"
+            className="flex items-center gap-1 px-2.5 py-[0.3125rem] rounded text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors cursor-pointer border-0"
           >
             <i className="ri-add-line text-sm" />
             Add Result
@@ -509,7 +509,7 @@ export function DetailPanel({
           {/* Pass & Next */}
           <button
             onClick={onPassAndNext}
-            className="flex items-center gap-1 px-2.5 py-[0.3125rem] rounded text-xs font-semibold bg-[#22C55E] text-white hover:bg-[#16A34A] transition-colors cursor-pointer border-0"
+            className="flex items-center gap-1 px-2.5 py-[0.3125rem] rounded text-xs font-semibold bg-green-500 text-white hover:bg-green-600 transition-colors cursor-pointer border-0"
           >
             <i className="ri-check-line text-sm" />
             Pass &amp; Next
@@ -519,7 +519,7 @@ export function DetailPanel({
           <button
             onClick={onPrev}
             disabled={!canGoPrev}
-            className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 bg-white text-[#64748B] hover:bg-[#F8FAFC] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 bg-white text-slate-500 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             title="Previous"
           >
             <i className="ri-arrow-up-s-line text-[0.875rem]" />
@@ -527,7 +527,7 @@ export function DetailPanel({
           <button
             onClick={onNext}
             disabled={!canGoNext}
-            className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 bg-white text-[#64748B] hover:bg-[#F8FAFC] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 bg-white text-slate-500 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             title="Next"
           >
             <i className="ri-arrow-down-s-line text-[0.875rem]" />
@@ -546,7 +546,7 @@ export function DetailPanel({
                 className="inline-block w-2 h-2 rounded-full flex-shrink-0"
                 style={{ background: PRIORITY_DOT_COLORS[testCase.priority] || '#94A3B8' }}
               />
-              <span className="text-[0.8125rem] text-[#475569] capitalize">{testCase.priority}</span>
+              <span className="text-[0.8125rem] text-slate-600 capitalize">{testCase.priority}</span>
             </span>
           </div>
 
@@ -673,7 +673,7 @@ export function DetailPanel({
               return (
                 <div className="text-[0.8125rem] font-medium" style={{ color: statusColor[lastResult.status] || '#64748B' }}>
                   {label}
-                  {timeAgo && <span className="text-[#94A3B8] font-normal text-[0.75rem]"> · {timeAgo}</span>}
+                  {timeAgo && <span className="text-slate-400 font-normal text-[0.75rem]"> · {timeAgo}</span>}
                 </div>
               );
             })() : (
@@ -686,25 +686,25 @@ export function DetailPanel({
       {/* ④ Steps Toggle Bar */}
       <button
         onClick={() => setStepsCollapsed(!stepsCollapsed)}
-        className="flex items-center justify-between w-full px-5 py-2 bg-[#F8FAFC] hover:bg-[#F1F5F9] transition-colors border-b border-[#E2E8F0] flex-shrink-0 cursor-pointer border-l-0 border-r-0 border-t-0"
+        className="flex items-center justify-between w-full px-5 py-2 bg-slate-50 hover:bg-slate-100 transition-colors border-b border-slate-200 flex-shrink-0 cursor-pointer border-l-0 border-r-0 border-t-0"
       >
         <div className="flex items-center gap-[0.375rem]">
           <i
-            className={`ri-arrow-down-s-line text-[#6366F1] text-[0.875rem] transition-transform duration-200 ${stepsCollapsed ? '-rotate-90' : ''}`}
+            className={`ri-arrow-down-s-line text-indigo-500 text-[0.875rem] transition-transform duration-200 ${stepsCollapsed ? '-rotate-90' : ''}`}
           />
-          <span className="text-[0.6875rem] font-bold text-[#475569] uppercase tracking-[0.04em]">
+          <span className="text-[0.6875rem] font-bold text-slate-600 uppercase tracking-[0.04em]">
             {steps.length} step{steps.length !== 1 ? 's' : ''}
             {testCase.attachments && testCase.attachments.length > 0 ? ` · ${testCase.attachments.length} attachment${testCase.attachments.length !== 1 ? 's' : ''}` : ''}
           </span>
         </div>
         {isRun && steps.length > 0 ? (
           <span className="text-[0.6875rem] font-semibold flex items-center gap-[0.25rem]">
-            <span className={passedCount > 0 ? 'text-[#16A34A]' : 'text-[#64748B]'}>{passedCount}</span>
-            <span className="text-[#CBD5E1]">/</span>
-            <span className="text-[#64748B]">{steps.length} steps passed</span>
+            <span className={passedCount > 0 ? 'text-green-600' : 'text-slate-500'}>{passedCount}</span>
+            <span className="text-slate-300">/</span>
+            <span className="text-slate-500">{steps.length} steps passed</span>
           </span>
         ) : (
-          <span className="text-[0.6875rem] text-[#94A3B8] font-medium">
+          <span className="text-[0.6875rem] text-slate-400 font-medium">
             {testCase.attachments && testCase.attachments.length > 0 ? `${testCase.attachments.length} attachment${testCase.attachments.length !== 1 ? 's' : ''}` : ''}
           </span>
         )}
@@ -725,12 +725,12 @@ export function DetailPanel({
         >
           {/* Precondition */}
           {testCase.precondition && (
-            <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }} className="rounded-md px-3 py-2.5">
+            <div className="rounded-md px-3 py-2.5 bg-amber-50 border border-yellow-200">
               <div className="flex items-center gap-1.5 mb-1">
                 <i className="ri-alert-line text-amber-500 text-xs" />
-                <span className="text-[0.5625rem] font-bold uppercase tracking-wider" style={{ color: '#92400E' }}>⚠ Precondition</span>
+                <span className="text-[0.5625rem] font-bold uppercase tracking-wider text-amber-800">⚠ Precondition</span>
               </div>
-              <p className="text-xs leading-relaxed" style={{ color: '#92400E' }}>{testCase.precondition}</p>
+              <p className="text-xs leading-relaxed text-amber-800">{testCase.precondition}</p>
             </div>
           )}
 
@@ -916,9 +916,9 @@ export function DetailPanel({
             document.addEventListener('mousemove', onMove);
             document.addEventListener('mouseup', onUp);
           }}
-          className="h-[6px] flex-shrink-0 cursor-row-resize bg-[#F8FAFC] border-b border-[#E2E8F0] flex items-center justify-center hover:bg-[#EEF2FF] transition-colors group"
+          className="h-[6px] flex-shrink-0 cursor-row-resize bg-slate-50 border-b border-slate-200 flex items-center justify-center hover:bg-indigo-50 transition-colors group"
         >
-          <div className="w-8 h-[3px] bg-[#CBD5E1] rounded-full group-hover:bg-[#6366F1] transition-colors" />
+          <div className="w-8 h-[3px] bg-slate-300 rounded-full group-hover:bg-indigo-500 transition-colors" />
         </div>
       )}
 
@@ -996,7 +996,7 @@ export function DetailPanel({
                       )}
                     </div>
                     <div
-                      className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap break-words bg-[#F8FAFC] border border-[#F1F5F9] rounded px-3 py-2"
+                      className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap break-words bg-slate-50 border border-slate-100 rounded px-3 py-2"
                       style={{ marginLeft: '1.625rem' }}
                     >
                       {c.text}
@@ -1071,7 +1071,7 @@ export function DetailPanel({
                 return (
                   <div
                     key={result.id}
-                    className="flex items-center gap-2.5 py-2 border-b border-[#F1F5F9] cursor-pointer hover:bg-[#FAFAFF] rounded px-1 transition-colors"
+                    className="flex items-center gap-2.5 py-2 border-b border-slate-100 cursor-pointer hover:bg-indigo-50/60 rounded px-1 transition-colors"
                     onClick={() => onResultClick?.(result)}
                   >
                     {/* Status badge */}
@@ -1150,8 +1150,7 @@ export function DetailPanel({
                   const card = (
                     <div className="flex items-center gap-2.5">
                       <div
-                        className="w-6 h-6 flex items-center justify-center flex-shrink-0"
-                        style={{ background: '#FEF2F2', color: '#EF4444', borderRadius: '0.25rem' }}
+                        className="w-6 h-6 flex items-center justify-center flex-shrink-0 bg-rose-50 text-rose-500 rounded"
                       >
                         <i className="ri-bug-line text-sm" />
                       </div>
@@ -1264,7 +1263,7 @@ export function DetailPanel({
                     : '';
 
                   return (
-                    <div key={result.id} className="flex gap-2.5 py-2.5 border-b border-[#F1F5F9]">
+                    <div key={result.id} className="flex gap-2.5 py-2.5 border-b border-slate-100">
                       <div className="w-1.5 h-1.5 rounded-full bg-indigo-200 flex-shrink-0 mt-[0.4rem]" />
                       <div className="flex-1 min-w-0">
                         <div className="text-xs text-gray-700 leading-relaxed">
