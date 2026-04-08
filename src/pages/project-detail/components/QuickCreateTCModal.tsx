@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
+import { ModalShell } from '../../../components/ModalShell';
 
 interface Folder {
   id: string;
@@ -212,28 +213,23 @@ export default function QuickCreateTCModal({ isOpen, onClose, projectId }: Props
 
   return (
     <>
-      {/* Backdrop */}
+    <ModalShell onClose={requestClose}>
+      {/* Modal */}
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center"
-        style={{ backdropFilter: 'blur(4px)', background: 'rgba(0,0,0,0.5)' }}
-        onClick={(e) => { if (e.target === e.currentTarget) requestClose(); }}
+        ref={modalRef}
+        className="relative w-full flex flex-col"
+        style={{
+          maxWidth: 480,
+          maxHeight: '80vh',
+          background: 'rgba(15,23,42,0.97)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 12,
+          boxShadow: '0 24px 48px rgba(0,0,0,0.4)',
+          animation: 'quickModalIn 0.2s ease-out',
+          color: '#F1F5F9',
+        }}
+        onClick={e => e.stopPropagation()}
       >
-        {/* Modal */}
-        <div
-          ref={modalRef}
-          className="relative w-full flex flex-col"
-          style={{
-            maxWidth: 480,
-            maxHeight: '80vh',
-            background: 'rgba(15,23,42,0.97)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 12,
-            boxShadow: '0 24px 48px rgba(0,0,0,0.4)',
-            animation: 'quickModalIn 0.2s ease-out',
-            color: '#F1F5F9',
-          }}
-          onClick={e => e.stopPropagation()}
-        >
           {/* Header */}
           <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-white/[0.06] flex-shrink-0">
             <div className="flex items-center gap-2.5">
@@ -397,9 +393,9 @@ export default function QuickCreateTCModal({ isOpen, onClose, projectId }: Props
             </div>
           </div>
         </div>
-      </div>
+    </ModalShell>
 
-      {/* Discard confirm */}
+    {/* Discard confirm */}
       {showDiscardConfirm && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center"

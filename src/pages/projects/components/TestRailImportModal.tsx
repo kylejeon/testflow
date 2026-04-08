@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { parseCSV } from '../../../utils/testRailExport';
 import { supabase } from '../../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
+import { ModalShell } from '../../../components/ModalShell';
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
 type Method = 'api' | 'csv';
@@ -268,11 +269,7 @@ export default function TestRailImportModal({ onClose, onOpenCSV }: TestRailImpo
   const isWizard = step >= 2; // wizard (sidebar) layout from step 2 onward
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-[8vh]"
-      style={{ background: 'rgba(15,23,42,0.45)' }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
+    <ModalShell onClose={onClose}>
       <div
         className="bg-white flex flex-col mx-4"
         style={{
@@ -364,7 +361,7 @@ export default function TestRailImportModal({ onClose, onOpenCSV }: TestRailImpo
           </div>
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }
 

@@ -554,7 +554,6 @@ export default function AIAssistModal({ isOpen, onClose, projectId, onOpenGenera
             </div>
           )}
         </div>
-      </div>
 
       <style>{`
         @keyframes quickModalIn {
@@ -562,6 +561,6 @@ export default function AIAssistModal({ isOpen, onClose, projectId, onOpenGenera
           to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
-    </>
+    </ModalShell>
   );
 }

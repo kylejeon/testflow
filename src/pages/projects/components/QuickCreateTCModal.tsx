@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { markOnboardingStep } from '../../../lib/onboardingMarker';
+import { ModalShell } from '../../../components/ModalShell';
 
 interface QuickCreateTCModalProps {
   /** Empty string / undefined = no project exists → show no-project state */
@@ -142,11 +143,7 @@ export default function QuickCreateTCModal({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh]"
-      style={{ background: 'rgba(15,23,42,0.45)' }}
-      onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
-    >
+    <ModalShell onClose={handleClose}>
       <div
         className="bg-white w-full mx-4 flex flex-col"
         style={{
@@ -311,6 +308,6 @@ export default function QuickCreateTCModal({
           )}
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }
