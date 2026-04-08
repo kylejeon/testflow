@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { StepEditor, Step } from '../../../components/StepEditor';
 import type { SharedTestStep } from '../../../types/shared-steps';
+import { ModalShell } from '../../../components/ModalShell';
 
 const fieldCls = `w-full border border-slate-200 rounded-lg text-sm text-slate-700 px-3 py-2 bg-white focus:outline-none focus:border-indigo-400 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] transition-colors`;
 const labelCls = `block text-xs font-semibold text-slate-600 mb-1`;
@@ -42,12 +43,6 @@ export default function SharedStepModal({ projectId, sharedStep, onClose, onSave
   const [selectedTCIds, setSelectedTCIds] = useState<Set<string>>(new Set());
   const [savedNewVersion, setSavedNewVersion] = useState(0);
   const [bulkUpdating, setBulkUpdating] = useState(false);
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
 
   const getTagsArray = () =>
     tags ? tags.split(',').map(t => t.trim()).filter(t => t) : [];
@@ -176,23 +171,15 @@ export default function SharedStepModal({ projectId, sharedStep, onClose, onSave
 
   return (
     <>
-      <div
-        style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.4)', zIndex: 999, backdropFilter: 'blur(2px)' }}
-        onClick={onClose}
-      />
+    <ModalShell onClose={onClose}>
       <div
         style={{
-          position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
           width: '680px',
           maxWidth: 'calc(100vw - 2rem)',
           maxHeight: '90vh',
           background: '#fff',
           borderRadius: '1rem',
           boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-          zIndex: 1000,
           display: 'flex',
           flexDirection: 'column',
         }}
@@ -330,8 +317,9 @@ export default function SharedStepModal({ projectId, sharedStep, onClose, onSave
           </button>
         </div>
       </div>
+    </ModalShell>
 
-      {/* Bulk TC update dialog */}
+    {/* Bulk TC update dialog */}
       {showBulkUpdate && (
         <>
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', zIndex: 1100 }} />

@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { Link } from 'react-router-dom';
+import { ModalShell } from '../../../components/ModalShell';
 
 const labelCls = `block text-xs font-semibold text-slate-600 mb-1`;
 
@@ -34,12 +35,6 @@ export default function GitHubImportModal({ projectId, existingExternalIds, onCl
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<'config' | 'preview'>('config');
-
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [onClose]);
 
   useEffect(() => {
     (async () => {
@@ -131,24 +126,15 @@ export default function GitHubImportModal({ projectId, existingExternalIds, onCl
   };
 
   return (
-    <>
-      <div
-        style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.4)', zIndex: 999, backdropFilter: 'blur(2px)' }}
-        onClick={onClose}
-      />
+    <ModalShell onClose={onClose}>
       <div
         style={{
-          position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
           width: '100%',
           maxWidth: '42rem',
           maxHeight: '85vh',
           background: '#fff',
           borderRadius: '0.875rem',
           boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-          zIndex: 1000,
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
@@ -407,6 +393,6 @@ export default function GitHubImportModal({ projectId, existingExternalIds, onCl
           </div>
         )}
       </div>
-    </>
+    </ModalShell>
   );
 }

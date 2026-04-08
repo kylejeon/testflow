@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { ModalShell } from '../../../components/ModalShell';
 import { notifyProjectMembers } from '../../../hooks/useNotifications';
 import { triggerWebhook } from '../../../hooks/useWebhooks';
 import { sendLoopsEvent } from '../../../lib/loops';
@@ -252,7 +253,7 @@ export default function InviteMemberModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <ModalShell onClose={onClose}>
       <div className="bg-white rounded-xl w-full max-w-md shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -528,6 +529,6 @@ export default function InviteMemberModal({
           </div>
         )}
       </div>
-    </div>
+    </ModalShell>
   );
 }

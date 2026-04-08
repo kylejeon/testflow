@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../../lib/supabase';
 import { useToast } from '../../../components/Toast';
+import { ModalShell } from '../../../components/ModalShell';
 
 interface AddLinkModalProps {
   projectId: string;
@@ -51,7 +52,7 @@ export default function AddLinkModal({ projectId, onClose, onSuccess }: AddLinkM
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <ModalShell onClose={onClose}>
       <div className="bg-white rounded-lg shadow-xl max-w-lg w-full">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-bold text-gray-900">{t('addLinkTitle')}</h2>
@@ -123,6 +124,6 @@ export default function AddLinkModal({ projectId, onClose, onSuccess }: AddLinkM
           </div>
         </form>
       </div>
-    </div>
+    </ModalShell>
   );
 }

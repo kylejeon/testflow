@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { ModalShell } from '../../../components/ModalShell';
 import { exportToTestRail, exportToXLSX } from '../../../utils/testRailExport';
 import { parseCSVImport, parseExcelImport, type ImportedTestCase } from '../../../utils/excelImport';
 import { supabase } from '../../../lib/supabase';
@@ -450,11 +451,7 @@ export default function ExportImportModal({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: 'rgba(15,23,42,0.4)' }}
-      onClick={e => { if (e.target === e.currentTarget && !importing) onClose(); }}
-    >
+    <ModalShell onClose={onClose}>
       <div style={{ background: 'white', borderRadius: 12, width: '100%', maxWidth: 580, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.18)', overflow: 'hidden' }}>
 
         {/* ── Header ─────────────────────────────────────────────────────── */}
@@ -897,6 +894,6 @@ export default function ExportImportModal({
           </div>
         )}
       </div>
-    </div>
+    </ModalShell>
   );
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { ModalShell } from '../../../components/ModalShell';
 
 interface GapSuggestion {
   title: string;
@@ -163,15 +164,7 @@ export default function CoverageGapModal({ projectId, onClose, onGenerateTCs }: 
   const totalSuggestions = result?.gaps.reduce((s, g) => s + g.suggestions.length, 0) ?? 0;
 
   return (
-    <div
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1000,
-        background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '24px',
-      }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
+    <ModalShell onClose={onClose} zClass="z-[1000]">
       <div
         style={{
           background: '#fff', borderRadius: '16px',
@@ -391,6 +384,6 @@ export default function CoverageGapModal({ projectId, onClose, onGenerateTCs }: 
           </div>
         )}
       </div>
-    </div>
+    </ModalShell>
   );
 }

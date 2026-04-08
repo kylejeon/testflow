@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
+import { ModalShell } from '../../../components/ModalShell';
 
 interface Props {
   isOpen: boolean;

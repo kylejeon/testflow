@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../../lib/supabase';
 import type { SharedTestStep } from '../../../types/shared-steps';
+import { ModalShell } from '../../../components/ModalShell';
 
 interface Props {
   projectId: string;
@@ -41,24 +42,15 @@ export default function InsertSharedStepModal({ projectId, onInsert, onClose }: 
   const selected = sharedSteps.find(s => s.id === selectedId) || null;
 
   return (
-    <>
-      <div
-        style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.4)', zIndex: 1099, backdropFilter: 'blur(2px)' }}
-        onClick={onClose}
-      />
+    <ModalShell onClose={onClose} zClass="z-[1100]">
       <div
         style={{
-          position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
           width: '560px',
           maxWidth: 'calc(100vw - 2rem)',
           maxHeight: '80vh',
           background: '#fff',
           borderRadius: '1rem',
           boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
-          zIndex: 1100,
           display: 'flex',
           flexDirection: 'column',
         }}
@@ -179,6 +171,6 @@ export default function InsertSharedStepModal({ projectId, onInsert, onClose }: 
           </button>
         </div>
       </div>
-    </>
+    </ModalShell>
   );
 }

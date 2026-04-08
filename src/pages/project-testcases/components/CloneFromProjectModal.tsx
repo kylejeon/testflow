@@ -4,6 +4,7 @@
  */
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { ModalShell } from '../../../components/ModalShell';
 
 interface Project {
   id: string;
@@ -231,7 +232,7 @@ export default function CloneFromProjectModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <ModalShell onClose={onClose}>
       <div className="bg-white rounded-xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl">
         {/* Header */}
         <div className="p-6 border-b border-gray-200 flex items-center justify-between">
@@ -443,6 +444,6 @@ export default function CloneFromProjectModal({
           </div>
         )}
       </div>
-    </div>
+    </ModalShell>
   );
 }

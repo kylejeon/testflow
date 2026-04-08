@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { ModalShell } from '../../../components/ModalShell';
 
 interface ProjectMember {
   user_id: string;
@@ -104,7 +105,7 @@ export default function EditSessionModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <ModalShell onClose={onClose}>
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">Edit Session</h2>
@@ -364,6 +365,6 @@ export default function EditSessionModal({
           </div>
         </form>
       </div>
-    </div>
+    </ModalShell>
   );
 }

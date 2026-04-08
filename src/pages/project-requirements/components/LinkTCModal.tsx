@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../../lib/supabase';
 import { useToast } from '../../../components/Toast';
 import type { Requirement } from '../../../types/rtm';
+import { ModalShell } from '../../../components/ModalShell';
 
 const fieldCls = `w-full border border-slate-200 rounded-lg text-sm text-slate-700 px-3 py-2 bg-white focus:outline-none focus:border-indigo-400 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] transition-colors`;
 
@@ -35,12 +36,6 @@ export default function LinkTCModal({ projectId, requirement, onClose, onLinked 
   const [search, setSearch] = useState('');
   const [saving, setSaving] = useState(false);
   const [linkedIds, setLinkedIds] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [onClose]);
 
   // Fetch all TCs for project
   const { data: allTCs = [], isLoading: loadingTCs } = useQuery({
@@ -156,24 +151,15 @@ export default function LinkTCModal({ projectId, requirement, onClose, onLinked 
     [...linkedIds].some((id) => !existingLinks.includes(id));
 
   return (
-    <>
-      <div
-        style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.4)', zIndex: 999, backdropFilter: 'blur(2px)' }}
-        onClick={onClose}
-      />
+    <ModalShell onClose={onClose}>
       <div
         style={{
-          position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
           width: '100%',
           maxWidth: '40rem',
           maxHeight: '80vh',
           background: '#fff',
           borderRadius: '0.875rem',
           boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-          zIndex: 1000,
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
@@ -316,6 +302,6 @@ export default function LinkTCModal({ projectId, requirement, onClose, onLinked 
           </div>
         </div>
       </div>
-    </>
+    </ModalShell>
   );
 }

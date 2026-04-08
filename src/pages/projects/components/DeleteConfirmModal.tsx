@@ -1,4 +1,5 @@
 import type { Project } from '../../../lib/supabase';
+import { ModalShell } from '../../../components/ModalShell';
 
 interface DeleteConfirmModalProps {
   project: Project;
@@ -8,7 +9,7 @@ interface DeleteConfirmModalProps {
 
 export default function DeleteConfirmModal({ project, onClose, onDelete }: DeleteConfirmModalProps) {
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <ModalShell onClose={onClose}>
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
         <div className="p-6">
           <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -40,6 +41,6 @@ export default function DeleteConfirmModal({ project, onClose, onDelete }: Delet
           </div>
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }

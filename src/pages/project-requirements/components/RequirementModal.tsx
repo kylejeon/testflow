@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import type { Requirement, RequirementPriority, RequirementStatus } from '../../../types/rtm';
+import { ModalShell } from '../../../components/ModalShell';
 
 const fieldCls = `w-full border border-slate-200 rounded-lg text-sm text-slate-700 px-3 py-2 bg-white focus:outline-none focus:border-indigo-400 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] transition-colors`;
 const labelCls = `block text-xs font-semibold text-slate-600 mb-1`;
@@ -22,14 +23,6 @@ export default function RequirementModal({ projectId, requirement, onClose, onSa
   const [status, setStatus] = useState<RequirementStatus>(requirement?.status || 'active');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [onClose]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,26 +65,14 @@ export default function RequirementModal({ projectId, requirement, onClose, onSa
   };
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.4)', zIndex: 999, backdropFilter: 'blur(2px)' }}
-        onClick={onClose}
-      />
-
-      {/* Modal */}
+    <ModalShell onClose={onClose}>
       <div
         style={{
-          position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
           width: '100%',
           maxWidth: '36rem',
           background: '#fff',
           borderRadius: '0.875rem',
           boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-          zIndex: 1000,
           overflow: 'hidden',
         }}
       >
@@ -218,6 +199,6 @@ export default function RequirementModal({ projectId, requirement, onClose, onSa
           </div>
         </form>
       </div>
-    </>
+    </ModalShell>
   );
 }

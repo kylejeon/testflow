@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { Project } from '../../../lib/supabase';
+import { ModalShell } from '../../../components/ModalShell';
 
 interface EditProjectModalProps {
   project: Project;
@@ -23,19 +24,8 @@ export default function EditProjectModal({ project, onClose, onUpdate }: EditPro
     }
   };
 
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.body.style.overflow = prev;
-      document.removeEventListener('keydown', onKey);
-    };
-  }, []);
-
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <ModalShell onClose={onClose}>
       <div
         className="bg-white rounded-xl w-full max-w-lg shadow-2xl flex flex-col"
         style={{ maxHeight: 'calc(100vh - 48px)' }}
@@ -151,6 +141,6 @@ export default function EditProjectModal({ project, onClose, onUpdate }: EditPro
           </div>
         </form>
       </div>
-    </div>
+    </ModalShell>
   );
 }
