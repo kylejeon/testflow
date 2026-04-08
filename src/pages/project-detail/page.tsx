@@ -675,7 +675,7 @@ export default function ProjectDetail() {
           <main className="flex-1 overflow-y-auto flex flex-col bg-slate-50">
 
             {/* Subtab row */}
-            <div className="flex items-center border-b border-slate-200 bg-white flex-shrink-0 h-[2.625rem] px-4">
+            <div className="flex items-center border-b border-slate-200 bg-white flex-shrink-0 h-[2.625rem] px-4 overflow-x-auto" style={{ scrollbarWidth: 'none' } as React.CSSProperties}>
               {[
                 { key: 'overview',  label: 'Overview',      icon: 'ri-eye-line',          iconColor: '#6366F1' },
                 { key: 'analytics', label: 'Analytics',     icon: 'ri-bar-chart-2-fill',  iconColor: '#8B5CF6' },
@@ -698,7 +698,7 @@ export default function ProjectDetail() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowQuickCreateTC(true)}
-                  className="flex items-center gap-1.5 px-3 py-[5px] text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-md hover:bg-gray-50 hover:border-gray-300 transition-all"
+                  className="hidden md:flex items-center gap-1.5 px-3 py-[5px] text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-md hover:bg-gray-50 hover:border-gray-300 transition-all"
                 >
                   <i className="ri-file-add-line"></i>
                   <span>New TC</span>
@@ -706,7 +706,7 @@ export default function ProjectDetail() {
                 </button>
                 <button
                   onClick={() => setShowContinueRun(true)}
-                  className="flex items-center gap-1.5 px-3 py-[5px] text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-md hover:bg-gray-50 hover:border-gray-300 transition-all"
+                  className="hidden md:flex items-center gap-1.5 px-3 py-[5px] text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-md hover:bg-gray-50 hover:border-gray-300 transition-all"
                 >
                   <i className="ri-play-circle-line"></i>
                   <span>Continue Run</span>
