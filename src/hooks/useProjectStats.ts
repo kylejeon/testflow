@@ -278,7 +278,7 @@ export function useProjectStats(projectId: string, period: StatsPeriod = '30d') 
         milestoneStats,
       });
     } catch (err: any) {
-      setError(err.message || '통계 로드 실패');
+      setError(err.message || "Couldn't load stats. Please try again.");
     } finally {
       setLoading(false);
     }

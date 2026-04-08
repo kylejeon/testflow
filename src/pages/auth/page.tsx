@@ -82,7 +82,7 @@ export default function AuthPage() {
         window.history.replaceState(null, '', window.location.pathname);
         if (errorCode === 'otp_expired') {
           setMode('reset');
-          setError('비밀번호 재설정 링크가 만료되었습니다. 이메일을 다시 입력하고 새 링크를 발송해주세요.');
+          setError('Your password reset link has expired. Please enter your email to request a new one.');
         } else {
           setMode('reset');
           setError(

@@ -599,12 +599,12 @@ export default function ProjectRunsPage() {
       if (printWindow) {
         printWindow.onbeforeunload = () => { URL.revokeObjectURL(url); };
       } else {
-        showToast('팝업이 차단되었습니다. 팝업 차단을 해제해주세요.', 'warning');
+        showToast('Popup blocked. Please allow popups for this site and try again.', 'warning');
         URL.revokeObjectURL(url);
       }
     } catch (error) {
       console.error('Error generating PDF:', error);
-      showToast('Failed to generate PDF.', 'error');
+      showToast("Couldn't generate PDF. Please try again.", 'error');
     } finally {
       setGeneratingPdf(null);
     }
@@ -909,7 +909,7 @@ export default function ProjectRunsPage() {
           const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
           const monthlyRunCount = testRuns.filter(r => r.created_at >= startOfMonth).length;
           if (monthlyRunCount >= 10) {
-            showToast('이번 달 Test Run 생성 한도(10회)에 도달했습니다. Hobby 플랜 이상으로 업그레이드하면 무제한으로 생성할 수 있습니다.', 'error');
+            showToast("You've reached the monthly test run limit (10). Upgrade to Hobby or above for unlimited runs.", 'warning');
             setSubmitting(false);
             return;
           }
@@ -1085,7 +1085,7 @@ export default function ProjectRunsPage() {
       setShowDraftWarningDismissed(false);
     } catch (error) {
       console.error('Error saving test run:', error);
-      showToast('Failed to save test run. Please try again.', 'error');
+      showToast("Couldn't save the test run. Please try again.", 'error');
     } finally {
       setSubmitting(false);
     }
@@ -1329,7 +1329,7 @@ export default function ProjectRunsPage() {
     } catch (error) {
       console.error('Error deleting test run:', error);
       setDeleteRunId(null);
-      showToast('Failed to delete test run.', 'error');
+      showToast("Couldn't delete the test run. Please try again.", 'error');
     }
   };
 
@@ -1348,7 +1348,7 @@ export default function ProjectRunsPage() {
       setOpenMenuId(null);
     } catch (error) {
       console.error('Error updating test run status:', error);
-      showToast('Failed to change status.', 'error');
+      showToast("Couldn't change status. Please try again.", 'error');
     }
   };
 

@@ -531,7 +531,7 @@ export default function ProjectSharedSteps() {
       showToast('success', `${deleteTarget.custom_id} deleted.`);
       setDeleteTarget(null);
     } catch (err: any) {
-      showToast('error', err.message || 'Delete failed.');
+      showToast('error', err.message || "Couldn't delete. Please try again.");
     } finally {
       setDeletingId(null);
     }
@@ -579,7 +579,7 @@ export default function ProjectSharedSteps() {
       showToast('success', `${deleteTarget.custom_id} converted to inline steps and deleted.`);
       setDeleteTarget(null);
     } catch (err: any) {
-      showToast('error', err.message || 'Failed to convert and delete.');
+      showToast('error', err.message || "Couldn't convert and delete. Please try again.");
     } finally {
       setDeletingId(null);
     }

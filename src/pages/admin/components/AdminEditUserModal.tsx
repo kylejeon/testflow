@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { sendLoopsEvent, tierToPlanName } from '../../../lib/loops';
+import { ModalShell } from '../../../components/ModalShell';
 
 interface UserRow {
   id: string;
@@ -42,14 +43,6 @@ export default function AdminEditUserModal({ user, onClose, onSaved }: AdminEdit
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -96,7 +89,7 @@ export default function AdminEditUserModal({ user, onClose, onSaved }: AdminEdit
         onClose();
       }, 800);
     } catch (err: any) {
-      setError(err.message || '저장 중 오류가 발생했습니다.');
+      setError(err.message || "Couldn't save changes. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -109,10 +102,7 @@ export default function AdminEditUserModal({ user, onClose, onSaved }: AdminEdit
   const selectedTierOption = TIER_OPTIONS.find((t) => t.value === tier)!;
 
   return (
-    <div
-      className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
+    <ModalShell onClose={onClose}>
       <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl flex flex-col" style={{ maxHeight: 'calc(100vh - 48px)' }}>
         {/* Header */}
         <div className="bg-slate-900 px-6 py-5 flex items-center justify-between flex-shrink-0">
@@ -296,6 +286,6 @@ export default function AdminEditUserModal({ user, onClose, onSaved }: AdminEdit
           </div>
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }

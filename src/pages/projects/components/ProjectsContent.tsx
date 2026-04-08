@@ -375,7 +375,7 @@ export default function ProjectsContent() {
       navigate(`/projects/${projectId}`);
     } catch (err: any) {
       console.error('Sample project creation failed:', err);
-      showToast(`Failed to create sample project: ${err?.message || 'Unknown error'}`, 'error');
+      showToast("Couldn't create sample project. Please try again.", 'error');
     } finally {
       setSampleLoading(false);
     }
@@ -415,7 +415,7 @@ export default function ProjectsContent() {
       navigate(`/projects/${projectId}`);
     } catch (err: any) {
       console.error('Sample project creation failed:', err);
-      showToast('Failed to create sample project. Please try again later.', 'error');
+      showToast("Couldn't create sample project. Please try again.", 'error');
     } finally {
       setTipsSampleLoading(false);
     }
@@ -446,7 +446,7 @@ export default function ProjectsContent() {
         .order('created_at', { ascending: false })
         .limit(1);
       if (selectError) throw selectError;
-      if (!newProjects || newProjects.length === 0) throw new Error('프로젝트 생성 후 조회 실패');
+      if (!newProjects || newProjects.length === 0) throw new Error('Project created but could not be loaded');
 
       const projectId = newProjects[0].id;
 
@@ -469,7 +469,7 @@ export default function ProjectsContent() {
       void markOnboardingStep('createProject');
     } catch (error: any) {
       console.error('프로젝트 생성 오류:', error);
-      showToast(`Failed to create project: ${error?.message || 'Unknown error'}`, 'error');
+      showToast("Couldn't create project. Please try again.", 'error');
     }
   };
 
@@ -491,7 +491,7 @@ export default function ProjectsContent() {
       setEditingProject(null);
     } catch (error) {
       console.error('Error updating project:', error);
-      showToast('Failed to update project.', 'error');
+      showToast("Couldn't update project. Please try again.", 'error');
     }
   };
 
@@ -503,7 +503,7 @@ export default function ProjectsContent() {
       setDeletingProject(null);
     } catch (error: any) {
       console.error('프로젝트 삭제 오류:', error);
-      showToast(`Failed to delete project: ${error?.message || 'Unknown error'}`, 'error');
+      showToast("Couldn't delete project. Please try again.", 'error');
     }
   };
 
@@ -684,7 +684,7 @@ export default function ProjectsContent() {
       <div className="flex flex-col">
         {SubHeader}
         <div className="flex items-center justify-center" style={{ padding: '4rem 2rem' }}>
-          <p className="text-red-500">프로젝트를 불러오는 중 오류가 발생했습니다.</p>
+          <p className="text-red-500">Couldn't load projects. Please refresh the page.</p>
         </div>
       </div>
     );

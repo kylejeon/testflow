@@ -58,7 +58,7 @@ export default function AcceptInvitationPage() {
       if (!user) {
         setIsLoggedIn(false);
         setStatus('ready');
-        setMessage('로그인 후 프로젝트에 참여할 수 있습니다.');
+        setMessage('Please sign in to join the project.');
         return;
       }
 
@@ -67,24 +67,24 @@ export default function AcceptInvitationPage() {
       // 이메일 확인
       if (user.email !== verifyResult.invitation.email) {
         setStatus('error');
-        setMessage(`이 초대는 ${verifyResult.invitation.email}로 발송되었습니다. 해당 이메일로 로그인해주세요.`);
+        setMessage(`This invitation was sent to ${verifyResult.invitation.email}. Please sign in with that email address.`);
         return;
       }
 
       setStatus('ready');
-      setMessage('프로젝트 초대를 수락하시겠습니까?');
+      setMessage("You've been invited to join a project. Ready to accept?");
 
     } catch (error: any) {
       console.error('초대 확인 오류:', error);
       setStatus('error');
-      setMessage(error.message || '초대 정보를 확인하는 중 오류가 발생했습니다.');
+      setMessage(error.message || "Couldn't verify your invitation. Please try again.");
     }
   };
 
   const acceptInvitation = async () => {
     try {
       setStatus('accepting');
-      setMessage('프로젝트에 참여하는 중...');
+      setMessage('Joining the project...');
 
       const token = searchParams.get('token');
       const { data: { session } } = await supabase.auth.getSession();
@@ -115,20 +115,20 @@ export default function AcceptInvitationPage() {
           .eq('id', session.user.id)
           .maybeSingle();
 
-        const userName = profile?.full_name || profile?.email || session.user.email || '새 멤버';
+        const userName = profile?.full_name || profile?.email || session.user.email || 'A new member';
 
         await notifyProjectMembers({
           projectId: result.projectId,
           excludeUserId: session.user.id,
           type: 'member_joined',
-          title: '새 팀원이 합류했습니다',
-          message: `${userName}님이 프로젝트에 참여했습니다.`,
+          title: 'New team member joined',
+          message: `${userName} has joined the project.`,
           link: `/projects/${result.projectId}`,
         });
       }
 
       setStatus('success');
-      setMessage(result.message || '프로젝트에 성공적으로 참여했습니다!');
+      setMessage(result.message || "You've joined the project successfully!");
       
       // 2초 후 프로젝트 상세 페이지로 이동
       setTimeout(() => {
@@ -142,7 +142,7 @@ export default function AcceptInvitationPage() {
     } catch (error: any) {
       console.error('초대 수락 오류:', error);
       setStatus('error');
-      setMessage(error.message || '초대 수락 중 오류가 발생했습니다.');
+      setMessage(error.message || "Couldn't accept the invitation. Please try again.");
     }
   };
 
@@ -227,7 +227,7 @@ export default function AcceptInvitationPage() {
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">초대 수락 완료!</h2>
             <p className="text-gray-600 mb-6">{message}</p>
-            <div className="text-sm text-gray-500">잠시 후 프로젝트 페이지로 이동합니다...</div>
+            <div className="text-sm text-gray-500">Redirecting to the project shortly...</div>
           </div>
         )}
 
@@ -236,7 +236,7 @@ export default function AcceptInvitationPage() {
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <i className="ri-error-warning-fill text-4xl text-red-600"></i>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">오류 발생</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Something went wrong</h2>
             <p className="text-gray-600 mb-6">{message}</p>
             <button
               onClick={() => navigate('/projects')}

@@ -1303,7 +1303,7 @@ export default function RunDetail() {
       ));
     } else {
       // No existing result — show guidance instead of creating a failed result
-      showToast('error', '먼저 Add Result로 테스트 결과를 기록한 후 이슈를 연결해주세요.');
+      showToast('error', 'Add a test result first, then link an issue.');
     }
   };
 
@@ -1390,7 +1390,7 @@ export default function RunDetail() {
     try {
       if (!selectedTestCase || !currentUser) return;
       if (!runId) {
-        showToast('error', 'Run ID가 없습니다. 페이지를 새로고침해주세요.');
+        showToast('error', 'Run ID not found. Please refresh the page.');
         return;
       }
 

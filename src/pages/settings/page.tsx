@@ -1268,7 +1268,7 @@ export default function SettingsPage() {
       fetchCITokens();
     } catch (error) {
       console.error('Token creation error:', error);
-      showToast('Failed to create token.', 'error');
+      showToast("Couldn't create the token. Please try again.", 'error');
     } finally {
       setCreatingToken(false);
     }
@@ -1327,7 +1327,7 @@ export default function SettingsPage() {
       fetchCITokens();
     } catch (error) {
       console.error('Token deletion error:', error);
-      showToast('Failed to delete token.', 'error');
+      showToast("Couldn't delete the token. Please try again.", 'error');
     }
   };
 

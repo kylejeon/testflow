@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useToast } from '../../../components/Toast';
+import { ModalShell } from '../../../components/ModalShell';
 
 interface CreateProjectModalProps {
   onClose: () => void;
@@ -74,17 +75,6 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
     checkProjectLimit();
   }, []);
 
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.body.style.overflow = prev;
-      document.removeEventListener('keydown', onKey);
-    };
-  }, []);
-
   const checkProjectLimit = async () => {
     try {
       setLoading(true);
@@ -144,7 +134,7 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
       setCanCreate(projectCount < limits.maxProjects);
     } catch (error) {
       console.error('Error checking project limit:', error);
-      showToast(error instanceof Error ? error.message : 'Failed to check project limit.', 'error');
+      showToast(error instanceof Error ? error.message : "Couldn't check your project limit. Please try again.", 'error');
     } finally {
       setLoading(false);
     }
@@ -202,7 +192,7 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <ModalShell onClose={onClose}>
       <div
         className="bg-white rounded-xl shadow-2xl w-full max-w-lg flex flex-col"
         style={{ maxHeight: 'calc(100vh - 48px)' }}
@@ -401,6 +391,6 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
           </form>
         )}
       </div>
-    </div>
+    </ModalShell>
   );
 }
