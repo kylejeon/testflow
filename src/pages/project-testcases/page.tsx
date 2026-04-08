@@ -8,7 +8,7 @@ import AIGenerateModal from './components/AIGenerateModal';
 import { markOnboardingStep } from '../../lib/onboardingMarker';
 import ProjectHeader from '../../components/ProjectHeader';
 import { useToast } from '../../components/Toast';
-import { ListSkeleton } from '../../components/Skeleton';
+import { TestCasesListSkeleton } from '../../components/Skeleton';
 
 export default function ProjectTestCases() {
   const { id } = useParams();
@@ -524,7 +524,7 @@ export default function ProjectTestCases() {
           {/* ── Content: TestCaseList (handles sidebar + list + detail panel) ── */}
           <div className="flex-1 min-h-0 overflow-hidden">
             {loading ? (
-              <ListSkeleton rows={8} />
+              <TestCasesListSkeleton rows={8} />
             ) : (
               <TestCaseList
                 testCases={filteredTestCases}

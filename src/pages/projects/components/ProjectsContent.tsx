@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { markOnboardingStep } from '../../../lib/onboardingMarker';
 import { supabase, type Project } from '../../../lib/supabase';
-import { CardSkeleton } from '../../../components/Skeleton';
+import { ProjectsGridSkeleton } from '../../../components/Skeleton';
 import { loadProjectDetailData } from '../../project-detail/queryFns';
 import CreateProjectModal from './CreateProjectModal';
 import EditProjectModal from './EditProjectModal';
@@ -669,11 +669,7 @@ export default function ProjectsContent() {
     return (
       <div className="flex flex-col h-full">
         {SubHeader}
-        <div role="status" aria-label="Loading projects" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <CardSkeleton key={i} />
-          ))}
-        </div>
+        <ProjectsGridSkeleton count={6} />
       </div>
     );
   }

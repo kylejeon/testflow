@@ -14,7 +14,7 @@ import { type AnyStep, isSharedStepRef } from '../../types/shared-steps';
 import { type SharedStepCache, expandFlatSteps } from '../../lib/expandSharedSteps';
 import EmptyState from '../../components/EmptyState';
 import TestRunsIllustration from '../../components/illustrations/TestRunsIllustration';
-import { CardSkeleton } from '../../components/Skeleton';
+import { RunsListSkeleton } from '../../components/Skeleton';
 
 interface TestRun {
   id: string;
@@ -1811,9 +1811,7 @@ export default function ProjectRunsPage() {
           <div className="flex-1 overflow-y-auto bg-slate-50">
           <div className="p-5">
             {loading ? (
-              <div role="status" aria-label="Loading runs" className="space-y-3">
-                {Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)}
-              </div>
+              <RunsListSkeleton count={5} />
             ) : (() => {
               const filteredRuns = getSortedRuns(getFilteredRuns());
               if (filteredRuns.length === 0) {
