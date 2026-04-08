@@ -339,7 +339,7 @@ export default function ExportImportModal({
     );
 
     if (exportFormat === 'xlsx') {
-      exportToXLSX(expandedCases, resolvedProjectName, selectedColumns);
+      await exportToXLSX(expandedCases, resolvedProjectName, selectedColumns);
     } else {
       exportToTestRail(expandedCases, resolvedProjectName, selectedColumns);
     }

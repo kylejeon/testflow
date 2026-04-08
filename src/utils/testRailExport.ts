@@ -245,13 +245,14 @@ export const exportToTestRail = (
 };
 
 /**
- * XLSX Export
+ * XLSX Export (ExcelJS — supports wrap text, bold header, column widths)
  */
-export const exportToXLSX = (
+export const exportToXLSX = async (
   testCases: TestCase[],
   projectName: string = 'Project',
   selectedColumns?: Set<string>
-): void => {
+): Promise<void> => {
+  const ExcelJS = await import('exceljs');
   const safeName = resolveSafeName(projectName);
   const headers = selectedColumns
     ? ALL_EXPORT_HEADERS.filter(h => selectedColumns.has(h))
@@ -259,25 +260,47 @@ export const exportToXLSX = (
 
   const dataRows = testCases.map(tc => headers.map(col => getColValue(tc, col)));
 
-  const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('Test Cases');
 
-  // Column widths: fit to longest cell value (capped at 80 chars)
-  ws['!cols'] = headers.map((h, ci) => {
+  // Column widths: fit to longest line in each column (capped at 80 chars)
+  ws.columns = headers.map((h, ci) => {
     let max = h.length;
     dataRows.forEach(row => {
       const lines = (row[ci] || '').split('\n');
       const longest = Math.max(...lines.map(l => l.length));
       if (longest > max) max = longest;
     });
-    return { wch: Math.min(Math.max(max + 2, 10), 80) };
+    return { header: h, key: String(ci), width: Math.min(Math.max(max + 2, 10), 80) };
   });
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Test Cases');
+  // Style header row: bold, light background
+  const headerRow = ws.getRow(1);
+  headerRow.font = { bold: true };
+  headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+  headerRow.alignment = { vertical: 'middle' };
+  headerRow.commit();
 
+  // Add data rows with wrap text
+  dataRows.forEach(row => {
+    const added = ws.addRow(row);
+    added.alignment = { wrapText: true, vertical: 'top' };
+    added.commit();
+  });
+
+  // Download via blob
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
   const safeProjectName = safeName.replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_').trim() || 'project';
   const dateStr = new Date().toISOString().slice(0, 10);
-  XLSX.writeFile(wb, `${safeProjectName}-${dateStr}.xlsx`);
+  link.download = `${safeProjectName}-${dateStr}.xlsx`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 };
 
 /**
