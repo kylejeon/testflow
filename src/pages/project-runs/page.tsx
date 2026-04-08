@@ -1830,11 +1830,12 @@ export default function ProjectRunsPage() {
               const filteredRuns = getSortedRuns(getFilteredRuns());
               if (filteredRuns.length === 0) {
                 return (
-                  <div className="text-center py-16">
-                    <i className="ri-play-circle-line text-5xl text-gray-200 mb-3 block"></i>
-                    <p className="text-gray-500 text-sm">No runs found</p>
-                    <p className="text-gray-400 text-xs mt-1">Try adjusting your filters or create a new run</p>
-                  </div>
+                  <EmptyState
+                    icon={<TestRunsIllustration />}
+                    title="No runs yet"
+                    description="Kick off your first run to track which test cases pass, fail, or need attention."
+                    action={{ label: 'Start a run', onClick: () => setShowAddRunModal(true) }}
+                  />
                 );
               }
               const useGroups = activeTab !== 'completed';
