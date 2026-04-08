@@ -78,7 +78,7 @@ export function ToastContainer({ toasts, dismiss }: { toasts: ToastItem[]; dismi
   return <ToastList toasts={toasts} dismiss={dismiss} />;
 }
 
-function ToastList({ toasts, dismiss }: { toasts: ToastItem[]; dismiss: (id: number) => void }) {
+function ToastList({ toasts = [], dismiss }: { toasts?: ToastItem[]; dismiss: (id: number) => void }) {
   if (toasts.length === 0) return null;
   return (
     <div className="fixed bottom-4 right-4 z-[9999] flex flex-col gap-2 max-w-sm w-full pointer-events-none">
