@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import ProjectHeader from '../../components/ProjectHeader';
 import { Avatar } from '../../components/Avatar';
+import { useToast } from '../../components/Toast';
 
 interface Session {
   id: string;
@@ -37,6 +38,7 @@ interface ProjectMember {
 export default function ProjectSessions() {
   const { id: projectId } = useParams();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [project, setProject] = useState<any>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
@@ -361,7 +363,7 @@ export default function ProjectSessions() {
 
   const handleAddSession = async () => {
     if (!formData.name.trim()) {
-      alert('Please enter a session name');
+      showToast('Please enter a session name.', 'warning');
       return;
     }
 
@@ -411,7 +413,7 @@ export default function ProjectSessions() {
       setShowAddSessionModal(false);
     } catch (error) {
       console.error('Error saving session:', error);
-      alert('Failed to save session. Please try again.');
+      showToast('Failed to save session. Please try again.', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -448,7 +450,7 @@ export default function ProjectSessions() {
       setOpenMenuId(null);
     } catch (error) {
       console.error('Error closing session:', error);
-      alert('Failed to end session.');
+      showToast('Failed to end session.', 'error');
     }
   };
 
@@ -467,7 +469,7 @@ export default function ProjectSessions() {
       setOpenMenuId(null);
     } catch (error) {
       console.error('Error deleting session:', error);
-      alert('Failed to delete session.');
+      showToast('Failed to delete session.', 'error');
     }
   };
 

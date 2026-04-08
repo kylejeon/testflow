@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { useToast } from '../../../components/Toast';
 
 interface CreateProjectModalProps {
   onClose: () => void;
@@ -54,6 +55,7 @@ const TEMPLATES = [
 ];
 
 export default function CreateProjectModal({ onClose, onCreate }: CreateProjectModalProps) {
+  const { showToast } = useToast();
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -142,7 +144,7 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
       setCanCreate(projectCount < limits.maxProjects);
     } catch (error) {
       console.error('Error checking project limit:', error);
-      alert(error instanceof Error ? error.message : '프로젝트 한도를 확인하는 중 오류가 발생했습니다.');
+      showToast(error instanceof Error ? error.message : 'Failed to check project limit.', 'error');
     } finally {
       setLoading(false);
     }

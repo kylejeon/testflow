@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import PageLoader from '../../components/PageLoader';
+import { useToast } from '../../components/Toast';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import QuillEditor from './components/QuillEditor';
@@ -59,6 +60,7 @@ interface JiraSettings {
 export default function SessionDetail() {
   const { projectId, sessionId } = useParams();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [session, setSession] = useState<any>(null);
   const [milestone, setMilestone] = useState<any>(null);
   const [milestones, setMilestones] = useState<any[]>([]);
@@ -449,7 +451,7 @@ export default function SessionDetail() {
       setAttachments([...attachments, ...uploadedFiles]);
     } catch (error) {
       console.error('파일 업로드 오류:', error);
-      alert('Failed to upload file.');
+      showToast('Failed to upload file.', 'error');
     } finally {
       setUploadingFiles(false);
       if (fileInputRef.current) {
@@ -478,7 +480,7 @@ export default function SessionDetail() {
   const handleScreenshot = async () => {
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-        alert('이 브라우저는 스크린샷 기능을 지원하지 않습니다.');
+        showToast('Screenshot capture is not supported in this browser.', 'warning');
         return;
       }
 
@@ -541,7 +543,7 @@ export default function SessionDetail() {
             }]);
           } catch (error: any) {
             console.error('스크린샷 업로드 오류:', error);
-            alert(`Failed to upload screenshot: ${error.message || 'Unknown error'}`);
+            showToast('Failed to upload screenshot.', 'error');
           } finally {
             setUploadingFiles(false);
           }
@@ -552,7 +554,7 @@ export default function SessionDetail() {
         return;
       }
       console.error('스크린샷 캡처 오류:', error);
-      alert('Failed to capture screenshot.');
+      showToast('Failed to capture screenshot.', 'error');
     }
   };
 
@@ -580,7 +582,7 @@ export default function SessionDetail() {
 
   const handleCreateJiraIssue = async () => {
     if (!issueFormData.summary.trim()) {
-      alert('Summary는 필수 항목입니다.');
+      showToast('Summary is required.', 'warning');
       return;
     }
 
@@ -622,7 +624,7 @@ export default function SessionDetail() {
       if (data.success && data.issue && data.issue.key) {
         const newIssueKey = data.issue.key;
         setLinkedIssues([...linkedIssues, newIssueKey]);
-        alert(`Jira issue created: ${newIssueKey}`);
+        showToast(`Jira issue created: ${newIssueKey}`, 'success');
         setShowAddIssueModal(false);
         setIssueFormData({
           summary: '',
@@ -638,7 +640,7 @@ export default function SessionDetail() {
       }
     } catch (error: any) {
       console.error('Jira 이슈 생성 오류:', error);
-      alert(`Failed to create Jira issue: ${error.message || 'Unknown error'}`);
+      showToast('Failed to create Jira issue.', 'error');
     } finally {
       setCreatingIssue(false);
     }
@@ -680,7 +682,7 @@ export default function SessionDetail() {
       setSession((prev: any) => ({ ...prev, started_at: now, status: 'active', paused_duration: 0 }));
     } catch (error) {
       console.error('세션 시작 오류:', error);
-      alert('Failed to start session.');
+      showToast('Failed to start session.', 'error');
     }
   };
 
@@ -698,7 +700,7 @@ export default function SessionDetail() {
       setSession((prev: any) => ({ ...prev, paused_at: now }));
     } catch (error) {
       console.error('세션 일시정지 오류:', error);
-      alert('Failed to pause session.');
+      showToast('Failed to pause session.', 'error');
     }
   };
 
@@ -726,7 +728,7 @@ export default function SessionDetail() {
       }));
     } catch (error) {
       console.error('세션 재개 오류:', error);
-      alert('Failed to resume session.');
+      showToast('Failed to resume session.', 'error');
     }
   };
 
@@ -796,7 +798,7 @@ export default function SessionDetail() {
       setShowReopenConfirmModal(false);
     } catch (error) {
       console.error('세션 재개 오류:', error);
-      alert('Failed to reopen session.');
+      showToast('Failed to reopen session.', 'error');
     }
   };
 
@@ -919,7 +921,7 @@ export default function SessionDetail() {
       setLogs(prev => prev.filter(l => l.id !== logId));
     } catch (error) {
       console.error('로그 삭제 오류:', error);
-      alert('Failed to delete log.');
+      showToast('Failed to delete log.', 'error');
     }
   };
 
@@ -949,7 +951,7 @@ export default function SessionDetail() {
       setEditingLog(null);
     } catch (error) {
       console.error('로그 수정 오류:', error);
-      alert('Failed to update log.');
+      showToast('Failed to update log.', 'error');
     } finally {
       setSavingLog(false);
     }

@@ -1,5 +1,6 @@
 
 import { useEditor, EditorContent } from '@tiptap/react';
+import { useToast } from '../../../components/Toast';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
@@ -17,6 +18,7 @@ interface TipTapEditorProps {
 export default function TipTapEditor({ value, onChange, placeholder = 'Enter text...', projectId }: TipTapEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const { showToast } = useToast();
 
   const editor = useEditor({
     extensions: [
@@ -57,7 +59,7 @@ export default function TipTapEditor({ value, onChange, placeholder = 'Enter tex
 
     // 이미지 파일 검증
     if (!file.type.startsWith('image/')) {
-      alert('이미지 파일만 업로드할 수 있습니다.');
+      showToast('Only image files can be uploaded.', 'warning');
       return;
     }
 
@@ -94,7 +96,7 @@ export default function TipTapEditor({ value, onChange, placeholder = 'Enter tex
       }
     } catch (error) {
       console.error('이미지 업로드 오류:', error);
-      alert('Failed to upload image.');
+      showToast('Failed to upload image.', 'error');
     } finally {
       setUploadingImage(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

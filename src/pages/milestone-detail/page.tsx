@@ -1,4 +1,5 @@
 import PageLoader from '../../components/PageLoader';
+import { useToast } from '../../components/Toast';
 import { StatusBadge, type TestStatus } from '../../components/StatusBadge';
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
@@ -474,6 +475,7 @@ export default function MilestoneDetail() {
   const { projectId, milestoneId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   // ── UI state (user-interactive) ─────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<'results' | 'status' | 'activity' | 'issues'>('results');
@@ -593,7 +595,7 @@ export default function MilestoneDetail() {
       queryClient.invalidateQueries({ queryKey: ['milestone-detail', milestoneId] });
     } catch (error) {
       console.error('마일스톤 수정 오류:', error);
-      alert('Failed to update milestone.');
+      showToast('Failed to update milestone.', 'error');
     }
   };
 

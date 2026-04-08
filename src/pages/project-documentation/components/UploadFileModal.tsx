@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../../lib/supabase';
+import { useToast } from '../../../components/Toast';
 
 interface UploadFileModalProps {
   projectId: string;
@@ -11,6 +12,7 @@ interface UploadFileModalProps {
 
 export default function UploadFileModal({ projectId, onClose, onSuccess }: UploadFileModalProps) {
   const { t } = useTranslation('documentation');
+  const { showToast } = useToast();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [file, setFile] = useState<File | null>(null);
@@ -31,7 +33,7 @@ export default function UploadFileModal({ projectId, onClose, onSuccess }: Uploa
     e.preventDefault();
     
     if (!title.trim() || !file) {
-      alert(t('titleAndFileRequired'));
+      showToast('Title and file are required.', 'warning');
       return;
     }
 
@@ -76,7 +78,7 @@ export default function UploadFileModal({ projectId, onClose, onSuccess }: Uploa
       onSuccess();
     } catch (error) {
       console.error('파일 업로드 오류:', error);
-      alert(t('uploadFileFailed'));
+      showToast('Failed to upload file.', 'error');
     } finally {
       setLoading(false);
       setUploadProgress(0);

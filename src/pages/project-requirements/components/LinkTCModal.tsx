@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../../lib/supabase';
+import { useToast } from '../../../components/Toast';
 import type { Requirement } from '../../../types/rtm';
 
 const fieldCls = `w-full border border-slate-200 rounded-lg text-sm text-slate-700 px-3 py-2 bg-white focus:outline-none focus:border-indigo-400 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] transition-colors`;
@@ -30,6 +31,7 @@ interface Props {
 
 export default function LinkTCModal({ projectId, requirement, onClose, onLinked }: Props) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [search, setSearch] = useState('');
   const [saving, setSaving] = useState(false);
   const [linkedIds, setLinkedIds] = useState<Set<string>>(new Set());
@@ -142,7 +144,7 @@ export default function LinkTCModal({ projectId, requirement, onClose, onLinked 
       onLinked();
       onClose();
     } catch (err: any) {
-      alert(err.message || 'Failed to save links.');
+      showToast(err.message || 'Failed to save links.', 'error');
     } finally {
       setSaving(false);
     }

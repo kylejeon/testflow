@@ -1200,11 +1200,11 @@ export default function SettingsPage() {
   const handleTestConnection = async () => {
     const selectedToken = ciTokens.find((t) => t.id === connTestTokenId) ?? ciTokens[0];
     if (!selectedToken) {
-      alert('Please create an API token first.');
+      showToast('Please create an API token first.', 'warning');
       return;
     }
     if (!connTestRunId.trim()) {
-      alert('Please enter a Run ID.');
+      showToast('Please enter a Run ID.', 'warning');
       return;
     }
     setConnTestLoading(true);
@@ -1241,7 +1241,7 @@ export default function SettingsPage() {
 
   const handleCreateToken = async () => {
     if (!newTokenName.trim()) {
-      alert('Please enter a token name.');
+      showToast('Please enter a token name.', 'warning');
       return;
     }
 
@@ -1262,13 +1262,13 @@ export default function SettingsPage() {
 
       if (error) throw error;
 
-      alert('API token created. Please store it in a safe place.');
+      showToast('API token created. Store it somewhere safe — it won\'t be shown again.', 'success');
       setNewTokenName('');
       setShowNewTokenModal(false);
       fetchCITokens();
     } catch (error) {
       console.error('Token creation error:', error);
-      alert('Failed to create token.');
+      showToast('Failed to create token.', 'error');
     } finally {
       setCreatingToken(false);
     }
@@ -1323,11 +1323,11 @@ export default function SettingsPage() {
 
       if (error) throw error;
 
-      alert('Token deleted successfully.');
+      showToast('Token deleted successfully.', 'success');
       fetchCITokens();
     } catch (error) {
       console.error('Token deletion error:', error);
-      alert('Failed to delete token.');
+      showToast('Failed to delete token.', 'error');
     }
   };
 
@@ -1625,7 +1625,7 @@ def pytest_sessionfinish(session, exitstatus):
 
   const handleExportJSON = async () => {
     try {
-      if (!userProjects.length) { alert('No projects found to export.'); return; }
+      if (!userProjects.length) { showToast('No projects found to export.', 'warning'); return; }
       const projectIds = userProjects.map(p => p.id);
       const [{ projectNameMap, tcIdLabelMap }, tcRes, runRes] = await Promise.all([
         buildExportHelpers(projectIds),
@@ -1657,20 +1657,20 @@ def pytest_sessionfinish(session, exitstatus):
       URL.revokeObjectURL(url);
     } catch (e) {
       console.error('JSON export error:', e);
-      alert('Export failed. Please try again.');
+      showToast('Export failed. Please try again.', 'error');
     }
   };
 
   const handleExportCSV = async () => {
     try {
-      if (!userProjects.length) { alert('No projects found to export.'); return; }
+      if (!userProjects.length) { showToast('No projects found to export.', 'warning'); return; }
       const projectIds = userProjects.map(p => p.id);
       const [{ projectNameMap, tcIdLabelMap }, tcResult] = await Promise.all([
         buildExportHelpers(projectIds),
         supabase.from('test_cases').select('id, title, status, priority, project_id, created_at, updated_at').in('project_id', projectIds).order('created_at', { ascending: true }),
       ]);
       if (tcResult.error) throw tcResult.error;
-      if (!tcResult.data || tcResult.data.length === 0) { alert('No test cases found to export.'); return; }
+      if (!tcResult.data || tcResult.data.length === 0) { showToast('No test cases found to export.', 'warning'); return; }
       const headers = ['TC ID', 'Title', 'Status', 'Priority', 'Project Name', 'Created At', 'Updated At'];
       const rows = tcResult.data.map((tc: any) =>
         [
@@ -1695,7 +1695,7 @@ def pytest_sessionfinish(session, exitstatus):
       URL.revokeObjectURL(url);
     } catch (e) {
       console.error('CSV export error:', e);
-      alert('Export failed. Please try again.');
+      showToast('Export failed. Please try again.', 'error');
     }
   };
 

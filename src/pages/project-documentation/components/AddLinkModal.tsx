@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../../lib/supabase';
+import { useToast } from '../../../components/Toast';
 
 interface AddLinkModalProps {
   projectId: string;
@@ -11,6 +12,7 @@ interface AddLinkModalProps {
 
 export default function AddLinkModal({ projectId, onClose, onSuccess }: AddLinkModalProps) {
   const { t } = useTranslation('documentation');
+  const { showToast } = useToast();
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
   const [description, setDescription] = useState('');
@@ -20,7 +22,7 @@ export default function AddLinkModal({ projectId, onClose, onSuccess }: AddLinkM
     e.preventDefault();
     
     if (!title.trim() || !url.trim()) {
-      alert(t('titleAndUrlRequired'));
+      showToast('Title and URL are required.', 'warning');
       return;
     }
 
@@ -42,7 +44,7 @@ export default function AddLinkModal({ projectId, onClose, onSuccess }: AddLinkM
       onSuccess();
     } catch (error) {
       console.error('링크 추가 오류:', error);
-      alert(t('addLinkFailed'));
+      showToast('Failed to add link.', 'error');
     } finally {
       setLoading(false);
     }
