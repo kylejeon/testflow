@@ -15,7 +15,7 @@ import StatCards, { type StatCardsData } from './StatCards';
 import { Avatar } from '../../../components/Avatar';
 import { useTranslation } from 'react-i18next';
 import { useSampleProject } from '../../../hooks/useSampleProject';
-import { useToast, ToastContainer } from '../../../components/Toast';
+import { useToast } from '../../../components/Toast';
 
 // ── Health score helpers ────────────────────────────────────────────────────
 function getProjectHealth(passRate: number | null): { color: 'green' | 'yellow' | 'red' | 'gray'; label: string } {
@@ -290,7 +290,7 @@ export default function ProjectsContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'activity' | 'name' | 'health' | 'created'>('activity');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const { toasts, showToast, dismiss } = useToast();
+  const { showToast } = useToast();
   const menuRef = useRef<HTMLDivElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -792,7 +792,6 @@ export default function ProjectsContent() {
             onOpenCSV={() => { /* CSV import is project-specific; guide to a project first */ showToast('Select a project first to use CSV import', 'info'); }}
           />
         )}
-        <ToastContainer toasts={toasts} dismiss={dismiss} />
       </>
     );
   }
@@ -1034,7 +1033,6 @@ export default function ProjectsContent() {
       {deletingProject && (
         <DeleteConfirmModal project={deletingProject} onClose={() => setDeletingProject(null)} onDelete={handleDeleteProject} />
       )}
-      <ToastContainer toasts={toasts} dismiss={dismiss} />
     </>
   );
 }

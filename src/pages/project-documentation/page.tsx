@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import ProjectHeader from '../../components/ProjectHeader';
 import { Avatar } from '../../components/Avatar';
-import { useToast, ToastContainer } from '../../components/Toast';
+import { useToast } from '../../components/Toast';
 
 interface DocumentItem {
   id: string;
@@ -83,7 +83,7 @@ const getFileExt = (doc: DocumentItem): string => {
 export default function ProjectDocumentation() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { toasts, showToast, dismiss } = useToast();
+  const { showToast } = useToast();
 
   const [project, setProject] = useState<any>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
@@ -919,7 +919,6 @@ export default function ProjectDocumentation() {
         </div>
       )}
 
-      <ToastContainer toasts={toasts} dismiss={dismiss} />
     </div>
   );
 }

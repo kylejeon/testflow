@@ -4,7 +4,7 @@ import SEOHead from '../../components/SEOHead';
 import Logo from '../../components/Logo';
 import { useLanguage } from '../../hooks/useLanguage';
 import { registerPaddleErrorHandler } from '../../lib/paddle';
-import { useToast, ToastContainer } from '../../components/Toast';
+import { useToast } from '../../components/Toast';
 import { supabase } from '../../lib/supabase';
 import { getPaymentProvider, openCheckout } from '../../lib/payment';
 
@@ -877,7 +877,7 @@ export default function HomePage() {
   const lang = currentLanguage === 'ko' ? 'ko' : 'en';
   const t = content[lang];
 
-  const { toasts, showToast, dismiss } = useToast();
+  const { showToast } = useToast();
   const [userSession, setUserSession] = useState<{ id: string; email: string; payment_provider?: string | null; subscription_tier?: number } | null>(null);
 
   // Register Paddle error handler so checkout errors surface as toasts
@@ -1912,7 +1912,6 @@ export default function HomePage() {
           </div>
         </footer>
       </div>
-      <ToastContainer toasts={toasts} dismiss={dismiss} />
     </>
   );
 }

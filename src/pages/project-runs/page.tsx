@@ -9,9 +9,11 @@ import { notifyProjectMembers } from '../../hooks/useNotifications';
 import { triggerWebhook } from '../../hooks/useWebhooks';
 import ProjectHeader from '../../components/ProjectHeader';
 import { Avatar } from '../../components/Avatar';
-import { useToast, ToastContainer } from '../../components/Toast';
+import { useToast } from '../../components/Toast';
 import { type AnyStep, isSharedStepRef } from '../../types/shared-steps';
 import { type SharedStepCache, expandFlatSteps } from '../../lib/expandSharedSteps';
+import EmptyState from '../../components/EmptyState';
+import TestRunsIllustration from '../../components/illustrations/TestRunsIllustration';
 
 interface TestRun {
   id: string;
@@ -86,7 +88,7 @@ interface Contributor {
 export default function ProjectRunsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { toasts, showToast, dismiss } = useToast();
+  const { showToast } = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'completed'>('all');
   const [resultFilter, setResultFilter] = useState<'all' | 'has_failures' | 'all_passed' | 'has_blocked'>('all');
@@ -1605,7 +1607,6 @@ export default function ProjectRunsPage() {
 
   return (
     <div className="flex h-screen bg-white">
-      <ToastContainer toasts={toasts} dismiss={dismiss} />
 
       {/* ── Delete Run Confirmation Modal ── */}
       {deleteRunId && (

@@ -13,6 +13,8 @@ import OnboardingChecklist from "./components/onboarding/OnboardingChecklist";
 import { CommandPalette } from "./components/CommandPalette";
 import { KeyboardShortcutsHelp } from "./components/KeyboardShortcutsHelp";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { ToastProvider } from "./components/Toast";
 
 /**
  * Supabase 인증 콜백(비밀번호 재설정, OAuth 등)이 루트 URL로 오는 경우를
@@ -198,13 +200,17 @@ function AppContent() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <I18nextProvider i18n={i18n}>
-        <BrowserRouter basename={__BASE_PATH__}>
-          <AppContent />
-        </BrowserRouter>
-      </I18nextProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <I18nextProvider i18n={i18n}>
+          <ToastProvider>
+            <BrowserRouter basename={__BASE_PATH__}>
+              <AppContent />
+            </BrowserRouter>
+          </ToastProvider>
+        </I18nextProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

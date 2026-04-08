@@ -13,7 +13,7 @@ import ProjectMembersPanel from '../project-detail/components/ProjectMembersPane
 import InviteMemberModal from '../project-detail/components/InviteMemberModal';
 import { getPaymentProvider, openCheckout } from '../../lib/payment';
 import { registerPaddleErrorHandler, registerPaddleSuccessHandler } from '../../lib/paddle';
-import { useToast, ToastContainer } from '../../components/Toast';
+import { useToast } from '../../components/Toast';
 
 interface JiraSettings {
   domain: string;
@@ -311,7 +311,7 @@ function DangerZoneSection({ email }: { email: string }) {
 }
 
 export default function SettingsPage() {
-  const { toasts, showToast, dismiss } = useToast();
+  const { showToast } = useToast();
 
   useEffect(() => {
     registerPaddleErrorHandler((msg) => showToast(msg, 'error'));
@@ -4118,7 +4118,6 @@ describe('Login', () => {
           </div>
         </div>
       )}
-      <ToastContainer toasts={toasts} dismiss={dismiss} />
     </>
   );
 }

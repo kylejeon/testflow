@@ -8,7 +8,7 @@ import { notifyProjectMembers } from '../../hooks/useNotifications';
 import { triggerWebhook } from '../../hooks/useWebhooks';
 import ProjectHeader from '../../components/ProjectHeader';
 import { Avatar, AvatarStack } from '../../components/Avatar';
-import { useToast, ToastContainer } from '../../components/Toast';
+import { useToast } from '../../components/Toast';
 
 interface Milestone {
   id: string;
@@ -91,7 +91,7 @@ export default function ProjectMilestones() {
   const [milestoneRunAssignees, setMilestoneRunAssignees] = useState<Map<string, string[]>>(new Map());
   const [milestoneAssigneeProfiles, setMilestoneAssigneeProfiles] = useState<Map<string, { name: string | null; email: string; url: string | null }>>(new Map());
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const { toasts, showToast, dismiss } = useToast();
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (id) {
@@ -1024,7 +1024,6 @@ export default function ProjectMilestones() {
         </div>
       )}
 
-      <ToastContainer toasts={toasts} dismiss={dismiss} />
     </div>
   );
 }
