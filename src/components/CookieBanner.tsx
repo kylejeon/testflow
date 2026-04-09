@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
+import { logCookieConsent } from '../lib/consentLog';
 
 const CONSENT_KEY = 'testably_cookie_consent';
 
@@ -36,9 +38,15 @@ export default function CookieBanner() {
 
   if (!visible) return null;
 
-  const accept = (fn: boolean, an: boolean, mk: boolean) => {
+  const accept = async (fn: boolean, an: boolean, mk: boolean) => {
     saveConsent({ functional: fn, analytics: an, marketing: mk });
     setVisible(false);
+    // 개인정보보호법 입증책임 대응: 쿠키 동의 이력 서버 저장
+    const { data: { session } } = await supabase.auth.getSession();
+    logCookieConsent({
+      userId: session?.user?.id ?? null,
+      consents: { essential: true, functional: fn, analytics: an, marketing: mk },
+    });
   };
 
   const toggleRow = (label: string, checked: boolean, onChange: (v: boolean) => void) => (
