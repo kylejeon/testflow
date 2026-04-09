@@ -120,6 +120,68 @@ The application requires the following Supabase tables:
 - `project_documents` - Project documentation
 - `jira_settings` - Jira integration settings
 
+## Monitoring & Observability
+
+### Error Tracking — Sentry
+
+Sentry is integrated via `@sentry/react` + `@sentry/vite-plugin`.
+
+- **SDK init**: `src/lib/sentry.ts` → called in `src/main.tsx`
+- **DSN**: set `VITE_SENTRY_DSN` in your environment (see `.env.example`)
+- **Source maps**: uploaded automatically when `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT` are set (CI / Vercel builds only)
+- Events are dropped in development; only sent in `production` and `preview` environments
+
+### Uptime Monitoring — Health Endpoint
+
+A public health check endpoint is available at:
+
+```
+GET https://ahzfskzuyzcmgilcvozn.supabase.co/functions/v1/health
+```
+
+Returns `200 OK` when all dependencies are healthy, `503 Degraded` otherwise. Response format:
+
+```json
+{
+  "status": "ok",
+  "timestamp": "2026-01-01T00:00:00.000Z",
+  "checks": {
+    "supabase": { "ok": true, "latency_ms": 120 },
+    "paddle":   { "ok": true, "latency_ms": 80 },
+    "loops":    { "ok": true, "latency_ms": 60 }
+  }
+}
+```
+
+**Registering with an uptime service (BetterStack / UptimeRobot)**:
+
+1. Create a new monitor in your uptime service
+2. Set the URL to `https://ahzfskzuyzcmgilcvozn.supabase.co/functions/v1/health`
+3. Set check interval to **1 minute**
+4. Alert on non-2xx response or response time > 5s
+5. (Optional) Create a BetterStack Heartbeat and set `BETTERSTACK_HEARTBEAT_URL` in your CI to ping it after each successful smoke run
+
+### Smoke Tests — Playwright
+
+Minimal smoke tests live in `e2e/smoke/` and run against the production URL by default.
+
+```bash
+# Run smoke tests
+npm run test:smoke
+
+# Run against a different URL
+SMOKE_BASE_URL=https://staging.testably.app npm run test:smoke
+```
+
+**Required environment variables** (set in GitHub Actions Secrets or `.env`):
+
+| Variable | Description |
+|---|---|
+| `SMOKE_BASE_URL` | Target URL (default: `https://testably.app`) |
+| `SMOKE_TEST_EMAIL` | Dedicated smoke test account email |
+| `SMOKE_TEST_PASSWORD` | Smoke test account password |
+| `SMOKE_PROJECT_ID` | UUID of the dedicated smoke test project |
+
 ## License
 
 MIT License
