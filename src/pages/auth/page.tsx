@@ -725,8 +725,9 @@ export default function AuthPage() {
 
                   {/* Email */}
                   <div className="mb-4">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                    <label htmlFor="auth-email" className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
                     <input
+                      id="auth-email"
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -742,8 +743,9 @@ export default function AuthPage() {
 
                   {/* Password */}
                   <div className="mb-2">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+                    <label htmlFor="auth-password" className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
                     <input
+                      id="auth-password"
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}

@@ -1,15 +1,19 @@
 import { test, expect } from '@playwright/test';
 
-const EMAIL = process.env.SMOKE_TEST_EMAIL!;
-const PASSWORD = process.env.SMOKE_TEST_PASSWORD!;
+const EMAIL = process.env.SMOKE_TEST_EMAIL;
+const PASSWORD = process.env.SMOKE_TEST_PASSWORD;
+
+// Skip the entire file gracefully when credentials are not configured
+test.skip(!EMAIL || !PASSWORD, 'SMOKE_TEST_EMAIL / SMOKE_TEST_PASSWORD not configured — skipping');
 
 // Shared login helper — avoids repeating across smoke tests
 async function login(page: import('@playwright/test').Page) {
   await page.goto('/auth');
-  await page.getByLabel(/email/i).fill(EMAIL);
-  await page.getByLabel(/password/i).fill(PASSWORD);
-  await page.getByRole('button', { name: /sign in|log in/i }).click();
-  await expect(page).toHaveURL(/\/projects/, { timeout: 15_000 });
+  await page.waitForLoadState('networkidle');
+  await page.getByLabel(/email/i).fill(EMAIL!);
+  await page.getByLabel(/password/i).fill(PASSWORD!);
+  await page.getByRole('button', { name: /log in|sign in/i }).click();
+  await expect(page).toHaveURL(/\/projects/, { timeout: 20_000 });
 }
 
 const SMOKE_PROJECT_NAME = `__smoke_${Date.now()}`;
