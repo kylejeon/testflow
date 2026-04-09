@@ -21,7 +21,7 @@ const content = {
         heading: 'Subscription Plans and Billing',
         body: 'Testably offers the following paid plans:',
         list: [
-          'Hobby — $19/month (or $190/year)',
+          'Hobby — $19/month (or $194/year)',
           'Starter — $49/month (or $499/year, ~15% discount)',
           'Professional — $99/month (or $1,009/year, ~15% discount)',
           'Enterprise S — $249/month (or $2,540/year)',
@@ -85,7 +85,7 @@ const content = {
         heading: '구독 플랜 및 결제',
         body: 'Testably는 다음 유료 플랜을 제공합니다:',
         list: [
-          'Hobby — 월 $19 (연 $190)',
+          'Hobby — 월 $19 (연 $194)',
           'Starter — 월 $49 (연 $499, 약 15% 할인)',
           'Professional — 월 $99 (연 $1,009, 약 15% 할인)',
           'Enterprise S — 월 $249 (연 $2,540)',

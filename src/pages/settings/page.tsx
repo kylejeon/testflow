@@ -92,7 +92,7 @@ const TIER_INFO = {
     color: 'bg-emerald-50 text-emerald-700 border-emerald-300',
     icon: 'ri-seedling-line',
     monthlyPrice: 19,
-    annualPrice: 190,
+    annualPrice: 194,
     priceDesc: '/ mo',
     basePlan: 'Free',
     features: ['3 projects · 5 members', 'Up to 200 test cases / project · unlimited runs', 'Export/Import CSV', 'Jira Integration (full)', 'Requirements & Traceability', 'Steps Library (10 steps)', '15 AI generations / month'],

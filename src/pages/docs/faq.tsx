@@ -53,7 +53,7 @@ const generalFaqs: FaqItem[] = [
   },
   {
     q: 'Q4. Is there a discount for annual billing?',
-    a: 'Yes. Choosing Annual billing saves 15% compared to monthly pricing. For example, Professional is ~$84/mo (billed $1,008/yr) instead of $99/mo. You can switch billing cycles in Settings > Billing.',
+    a: 'Yes. Choosing Annual billing saves 15% compared to monthly pricing. For example, Professional is ~$84/mo (billed $1,009/yr) instead of $99/mo. You can switch billing cycles in Settings > Billing.',
   },
   {
     q: 'Q5. Can I import data from another test management tool?',

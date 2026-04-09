@@ -176,7 +176,7 @@ export default function DocsAccountBillingPage() {
 
           <div className="mt-4 bg-green-50 border-l-4 border-green-500 rounded-r-lg px-4 py-3">
             <p className="text-xs font-bold text-green-700 uppercase tracking-wide mb-1">Annual Discount</p>
-            <p className="text-sm text-green-800">Choose Annual billing and save <strong>15%</strong> compared to monthly. For example, Professional is ~$84/mo (billed $1,008/yr) instead of $99/mo. Toggle between Monthly and Annual when selecting a plan.</p>
+            <p className="text-sm text-green-800">Choose Annual billing and save <strong>15%</strong> compared to monthly. For example, Professional is ~$84/mo (billed $1,009/yr) instead of $99/mo. Toggle between Monthly and Annual when selecting a plan.</p>
           </div>
 
           <div className="mt-3 bg-purple-50 border-l-4 border-purple-500 rounded-r-lg px-4 py-3">

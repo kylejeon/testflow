@@ -197,11 +197,11 @@ const faqs = [
   },
   {
     q: 'Do you offer annual billing?',
-    a: 'Yes! Annual billing is available with a 20% discount on all paid plans. You can switch to annual billing from your account settings at any time.',
+    a: 'Yes! Annual billing is available with a 15% discount on all paid plans. You can switch to annual billing from your account settings at any time.',
   },
   {
     q: 'What payment methods do you accept?',
-    a: 'We accept all major credit cards (Visa, Mastercard, American Express). Payments are processed securely via Lemon Squeezy.',
+    a: 'We accept all major credit cards (Visa, Mastercard, American Express). Payments are processed securely via Paddle.',
   },
 ];
 
