@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test('landing page loads and Get Started is clickable', async ({ page }) => {
+test('landing page loads and primary CTA is visible', async ({ page }) => {
   await page.goto('/');
 
   // Wait for the SPA to fully render (JS bundle load + React render)
@@ -10,8 +10,11 @@ test('landing page loads and Get Started is clickable', async ({ page }) => {
   await expect(page).not.toHaveURL(/error/);
   await expect(page.locator('body')).toBeVisible();
 
-  // Primary CTA must be present and enabled
-  const cta = page.getByRole('link', { name: /get started/i }).first();
+  // Primary CTA — the home page uses <button> elements that navigate('/auth'),
+  // not <a> tags, so we match by button role with common CTA text variants.
+  const cta = page
+    .getByRole('button', { name: /get started|start for free|start free/i })
+    .first();
   await expect(cta).toBeVisible();
   await expect(cta).toBeEnabled();
 });
