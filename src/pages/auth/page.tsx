@@ -30,6 +30,28 @@ export default function AuthPage() {
   const [checkingInvitation, setCheckingInvitation] = useState(false);
   const [isOAuthRedirect, setIsOAuthRedirect] = useState(false);
 
+  // Consent checkboxes (signup only)
+  const [consentAge, setConsentAge] = useState(false);
+  const [consentTerms, setConsentTerms] = useState(false);
+  const [consentPrivacy, setConsentPrivacy] = useState(false);
+  const [consentDelegate, setConsentDelegate] = useState(false);
+  const [consentMarketing, setConsentMarketing] = useState(false);
+  const [consentAnalytics, setConsentAnalytics] = useState(false);
+  const [consentPromo, setConsentPromo] = useState(false);
+
+  const requiredConsentsChecked = consentAge && consentTerms && consentPrivacy && consentDelegate;
+  const allConsentsChecked = requiredConsentsChecked && consentMarketing && consentAnalytics && consentPromo;
+
+  const handleAgreeAll = (checked: boolean) => {
+    setConsentAge(checked);
+    setConsentTerms(checked);
+    setConsentPrivacy(checked);
+    setConsentDelegate(checked);
+    setConsentMarketing(checked);
+    setConsentAnalytics(checked);
+    setConsentPromo(checked);
+  };
+
   const navigateToDefaultOrProjects = async (userId: string) => {
     try {
       const { data: profile } = await supabase
@@ -283,6 +305,11 @@ export default function AuthPage() {
     setSuccess('');
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
+      setLoading(false);
+      return;
+    }
+    if (!requiredConsentsChecked) {
+      setError('필수 동의 항목을 모두 체크해 주세요.');
       setLoading(false);
       return;
     }
@@ -769,9 +796,73 @@ export default function AuthPage() {
                     </div>
                   )}
 
+                  {/* Consent checkboxes — signup only */}
+                  {mode === 'signup' && (
+                    <div className="mb-5 rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-2.5 text-sm">
+                      {/* 전체동의 */}
+                      <label className="flex items-center gap-2.5 cursor-pointer font-semibold text-gray-800 pb-2 border-b border-gray-200">
+                        <input
+                          type="checkbox"
+                          checked={allConsentsChecked}
+                          onChange={(e) => handleAgreeAll(e.target.checked)}
+                          className="w-4 h-4 rounded accent-indigo-600 cursor-pointer"
+                        />
+                        전체 동의 (필수 + 선택 포함)
+                      </label>
+
+                      {/* 필수 항목 */}
+                      {([
+                        { label: '[필수] 만 14세 이상입니다', checked: consentAge, set: setConsentAge },
+                        { label: '[필수] 이용약관에 동의합니다', checked: consentTerms, set: setConsentTerms, link: '/terms' },
+                        { label: '[필수] 개인정보 수집·이용에 동의합니다', checked: consentPrivacy, set: setConsentPrivacy, link: '/privacy' },
+                        { label: '[필수] 개인정보 처리위탁에 동의합니다', checked: consentDelegate, set: setConsentDelegate, link: '/privacy' },
+                      ] as { label: string; checked: boolean; set: (v: boolean) => void; link?: string }[]).map(({ label, checked, set, link }) => (
+                        <label key={label} className="flex items-center gap-2.5 cursor-pointer text-gray-700">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) => set(e.target.checked)}
+                            className="w-4 h-4 rounded accent-indigo-600 cursor-pointer flex-shrink-0"
+                          />
+                          <span className="flex-1">{label}</span>
+                          {link && (
+                            <a
+                              href={link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-indigo-500 hover:underline text-xs whitespace-nowrap flex-shrink-0"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              보기
+                            </a>
+                          )}
+                        </label>
+                      ))}
+
+                      {/* 선택 항목 */}
+                      <div className="pt-1 border-t border-gray-200 space-y-2 text-gray-500">
+                        {([
+                          { label: '[선택] 마케팅 정보 수신에 동의합니다', checked: consentMarketing, set: setConsentMarketing },
+                          { label: '[선택] 서비스 분석·개선 목적 데이터 수집에 동의합니다', checked: consentAnalytics, set: setConsentAnalytics },
+                          { label: '[선택] 프로모션·할인 안내 수신(SMS/카카오)에 동의합니다', checked: consentPromo, set: setConsentPromo },
+                        ] as { label: string; checked: boolean; set: (v: boolean) => void }[]).map(({ label, checked, set }) => (
+                          <label key={label} className="flex items-center gap-2.5 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(e) => set(e.target.checked)}
+                              className="w-4 h-4 rounded accent-indigo-600 cursor-pointer flex-shrink-0"
+                            />
+                            <span>{label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || (mode === 'signup' && !requiredConsentsChecked)}
                     className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading

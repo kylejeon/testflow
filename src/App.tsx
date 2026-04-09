@@ -16,6 +16,7 @@ import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ToastProvider } from "./components/Toast";
 import { setSentryUser } from "./lib/sentry";
+import CookieBanner from "./components/CookieBanner";
 
 /**
  * Supabase 인증 콜백(비밀번호 재설정, OAuth 등)이 루트 URL로 오는 경우를
@@ -198,6 +199,9 @@ function AppContent() {
         open={shortcutsHelpOpen}
         onClose={() => setShortcutsHelpOpen(false)}
       />
+
+      {/* Cookie consent banner — shown on first visit */}
+      <CookieBanner />
     </>
   );
 }
