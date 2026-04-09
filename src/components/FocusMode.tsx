@@ -205,7 +205,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
           .eq('user_id', user.id)
           .maybeSingle(),
       ]);
-      if (ghResult.data?.token) setGithubSettings(ghResult.data);
+      if (ghResult.data?.token) setGithubSettings({ ...ghResult.data, default_labels: ghResult.data.default_labels || [] });
       if (jiraResult.data?.domain) setJiraSettings(jiraResult.data);
     })();
   }, []);
