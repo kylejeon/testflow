@@ -43,6 +43,7 @@ interface TestResult {
   attachments: string[];
   stepStatuses?: Record<number, string>;
   issues?: string[];
+  github_issues?: { number: number; url: string; repo: string }[];
   run?: {
     id: string;
     name: string;
@@ -186,6 +187,8 @@ export default function RunDetail() {
     assignee: '',
   });
   const [creatingGithubIssue, setCreatingGithubIssue] = useState(false);
+  const [pendingGithubIssues, setPendingGithubIssues] = useState<{ number: number; url: string; repo: string }[]>([]);
+  const [createdGithubIssue, setCreatedGithubIssue] = useState<{ number: number; url: string; repo: string } | null>(null);
   const [githubLabelInput, setGithubLabelInput] = useState('');
   const [githubLabelComposing, setGithubLabelComposing] = useState(false);
   const [githubAssignees, setGithubAssignees] = useState<{ login: string; avatar_url: string }[]>([]);
@@ -1295,6 +1298,7 @@ export default function RunDetail() {
     setIsTimerRunning(false);
     setTimerStartTime(null);
     setElapsedSeconds(0);
+    setPendingGithubIssues([]);
   }, []);
 
   const handleAddResult = () => {
@@ -1452,6 +1456,7 @@ export default function RunDetail() {
           attachments: resultFormData.attachments.map(f => f.url),
           step_statuses: stepStatuses,
           issues: finalIssuesList,
+          github_issues: pendingGithubIssues,
           ...(resolvedAt ? { resolved_at: resolvedAt } : {}),
         })
         .select()
@@ -1517,7 +1522,12 @@ export default function RunDetail() {
                 assignee: githubSettings.auto_assign_enabled && githubSettings.assignee_username ? githubSettings.assignee_username : undefined,
               },
             });
-            if (ghData?.success && ghData?.issue?.number) {
+            if (ghData?.success && ghData?.issue?.number && data?.id) {
+              const autoGhIssue = { number: ghData.issue.number, url: ghData.issue.html_url, repo: githubSettings.repo };
+              const existingGhIssues = data?.github_issues || [];
+              await supabase.from('test_results')
+                .update({ github_issues: [...existingGhIssues, autoGhIssue] })
+                .eq('id', data.id);
               showToast('success', `GitHub issue #${ghData.issue.number} created automatically`);
             }
           } catch (err) {
@@ -1536,6 +1546,7 @@ export default function RunDetail() {
         timestamp: new Date(data.created_at),
         stepStatuses: data.step_statuses,
         issues: data.issues || [],
+        github_issues: data.github_issues || [],
       };
 
       setTestResults([newResult, ...testResults]);
@@ -2162,14 +2173,13 @@ export default function RunDetail() {
 
       if (error) throw error;
       if (data?.success && data?.issue?.number) {
-        showToast('success', `GitHub issue #${data.issue.number} created`);
-        setShowGithubIssueModal(false);
+        const newIssue = { number: data.issue.number, url: data.issue.html_url, repo: githubSettings.repo };
+        setPendingGithubIssues(prev => [...prev, newIssue]);
+        setCreatedGithubIssue(newIssue);
         setGithubIssueFormData({ title: '', body: '', labels: '', assignee: '' });
         setGithubLabelInput('');
         setAssigneeQuery('');
         setShowAssigneeSuggest(false);
-        setActiveTab('issues');
-        await fetchTestResults();
       } else {
         throw new Error(data?.error || 'Failed to create GitHub issue.');
       }
@@ -3700,6 +3710,27 @@ export default function RunDetail() {
                           ))}
                         </div>
                       )}
+                      {pendingGithubIssues.length > 0 && (
+                        <div className="mt-3 space-y-2">
+                          {pendingGithubIssues.map((gi) => (
+                            <div key={gi.url} className="flex items-center justify-between p-2 bg-slate-50 rounded-lg group border border-slate-200">
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <i className="ri-github-fill text-slate-500 text-sm"></i>
+                                <a href={gi.url} target="_blank" rel="noopener noreferrer" className="text-sm text-slate-700 hover:underline truncate">
+                                  {gi.repo}#{gi.number}
+                                </a>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setPendingGithubIssues(prev => prev.filter(x => x.url !== gi.url))}
+                                className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all cursor-pointer opacity-0 group-hover:opacity-100"
+                              >
+                                <i className="ri-close-line"></i>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {/* Attachments */}
@@ -3958,7 +3989,7 @@ export default function RunDetail() {
                     <i className="ri-github-fill"></i> Create GitHub Issue
                   </h2>
                   <button
-                    onClick={() => setShowGithubIssueModal(false)}
+                    onClick={() => { setShowGithubIssueModal(false); setCreatedGithubIssue(null); }}
                     className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
                   >
                     <i className="ri-close-line text-xl"></i>
@@ -4086,25 +4117,45 @@ export default function RunDetail() {
                     </div>
                   )}
                 </div>
+                {createdGithubIssue && (
+                  <div className="mx-6 mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
+                    <i className="ri-checkbox-circle-fill text-green-500 text-lg flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-green-800">
+                        #{createdGithubIssue.number} 생성됨
+                      </p>
+                      <a
+                        href={createdGithubIssue.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-green-700 hover:underline truncate block"
+                      >
+                        {createdGithubIssue.url}
+                      </a>
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200 bg-gray-50">
                   <button
-                    onClick={() => setShowGithubIssueModal(false)}
+                    onClick={() => { setShowGithubIssueModal(false); setCreatedGithubIssue(null); }}
                     disabled={creatingGithubIssue}
                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg cursor-pointer whitespace-nowrap disabled:opacity-50"
                   >
-                    Cancel
+                    {createdGithubIssue ? 'Done' : 'Cancel'}
                   </button>
-                  <button
-                    onClick={handleCreateGithubIssue}
-                    disabled={creatingGithubIssue || !githubIssueFormData.title.trim()}
-                    className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 text-sm font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                  >
-                    {creatingGithubIssue ? (
-                      <><i className="ri-loader-4-line animate-spin"></i>Creating...</>
-                    ) : (
-                      <><i className="ri-github-fill"></i>Create Issue</>
-                    )}
-                  </button>
+                  {!createdGithubIssue && (
+                    <button
+                      onClick={handleCreateGithubIssue}
+                      disabled={creatingGithubIssue || !githubIssueFormData.title.trim()}
+                      className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 text-sm font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {creatingGithubIssue ? (
+                        <><i className="ri-loader-4-line animate-spin"></i>Creating...</>
+                      ) : (
+                        <><i className="ri-github-fill"></i>Create Issue</>
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -4687,6 +4738,27 @@ function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, ste
                   >
                     <i className="ri-link text-sm"></i>
                     {issueKey}
+                    <i className="ri-external-link-line text-xs"></i>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {result.github_issues && result.github_issues.length > 0 && (
+            <div className="px-6 pb-4">
+              <h4 className="text-sm font-semibold text-gray-700 mb-2">GitHub Issues</h4>
+              <div className="flex flex-wrap gap-2">
+                {result.github_issues.map((gi, idx) => (
+                  <a
+                    key={idx}
+                    href={gi.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-50 text-slate-700 rounded-lg border border-slate-200 hover:bg-slate-100 transition-all text-sm font-medium"
+                  >
+                    <i className="ri-github-fill text-sm"></i>
+                    {gi.repo}#{gi.number}
                     <i className="ri-external-link-line text-xs"></i>
                   </a>
                 ))}

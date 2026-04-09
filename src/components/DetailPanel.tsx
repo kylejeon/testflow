@@ -455,6 +455,22 @@ export function DetailPanel({
     new Map(allIssues.map((i) => [i.issueKey, i])).values()
   );
 
+  // GitHub issues from test results
+  const allGithubIssues = testResults
+    .filter((r) => r.github_issues && r.github_issues.length > 0)
+    .flatMap((r) =>
+      (r.github_issues || []).map((gi: { number: number; url: string; repo: string }) => ({
+        number: gi.number,
+        url: gi.url,
+        repo: gi.repo,
+        status: r.status,
+        createdAt: r.timestamp,
+      }))
+    );
+  const uniqueGithubIssues = Array.from(
+    new Map(allGithubIssues.map((i) => [i.url, i])).values()
+  );
+
   return (
     <div className="w-[500px] min-w-[500px] bg-white border-l border-gray-200 flex flex-col overflow-hidden flex-shrink-0">
 
@@ -929,7 +945,7 @@ export function DetailPanel({
           const counts: Record<string, number | undefined> = {
             comments: comments.length || undefined,
             results: testResults.length || undefined,
-            issues: uniqueIssues.length || undefined,
+            issues: (uniqueIssues.length + uniqueGithubIssues.length) || undefined,
             history: undefined,
           };
           const count = counts[tab];
@@ -1116,7 +1132,7 @@ export function DetailPanel({
               </div>
             )}
 
-            {uniqueIssues.length === 0 ? (
+            {uniqueIssues.length === 0 && uniqueGithubIssues.length === 0 ? (
               <div className="text-center py-6">
                 <i className="ri-bug-line text-2xl text-gray-300 block mb-2" />
                 <p className="text-xs text-gray-400 mb-3">No linked issues</p>
@@ -1149,9 +1165,7 @@ export function DetailPanel({
                     : '';
                   const card = (
                     <div className="flex items-center gap-2.5">
-                      <div
-                        className="w-6 h-6 flex items-center justify-center flex-shrink-0 bg-rose-50 text-rose-500 rounded"
-                      >
+                      <div className="w-6 h-6 flex items-center justify-center flex-shrink-0 bg-rose-50 text-rose-500 rounded">
                         <i className="ri-bug-line text-sm" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1178,6 +1192,37 @@ export function DetailPanel({
                     </div>
                   );
                 })}
+
+                {uniqueGithubIssues.map((gi, idx) => {
+                  const dateStr = gi.createdAt instanceof Date
+                    ? gi.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                    : '';
+                  const statusLabel = gi.status
+                    ? gi.status.charAt(0).toUpperCase() + gi.status.slice(1)
+                    : '';
+                  return (
+                    <a
+                      key={idx}
+                      href={gi.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block bg-white border border-gray-200 rounded-lg p-3 hover:border-slate-400 hover:shadow-sm transition-all"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-6 h-6 flex items-center justify-center flex-shrink-0 bg-slate-100 text-slate-600 rounded">
+                          <i className="ri-github-fill text-sm" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-semibold text-gray-800 truncate">{gi.repo}#{gi.number}</div>
+                          <div className="text-xs text-gray-400">
+                            #{gi.number}{statusLabel ? ` · ${statusLabel}` : ''}{dateStr ? ` · ${dateStr}` : ''}
+                          </div>
+                        </div>
+                      </div>
+                    </a>
+                  );
+                })}
+
                 <div className="flex items-center justify-center gap-2 pt-2 flex-wrap">
                   <button
                     onClick={() => { setShowLinkInput(true); setLinkIssueKey(''); }}
