@@ -16,6 +16,14 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    // Sentry source map upload — only runs when SENTRY_AUTH_TOKEN is set (CI/production builds)
+    sentryVitePlugin({
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      // Disable plugin entirely when no auth token (local dev, preview)
+      disable: !process.env.SENTRY_AUTH_TOKEN,
+    }),
     AutoImport({
       imports: [
         {
@@ -68,6 +76,7 @@ export default defineConfig({
   ],
   base,
   build: {
+    // Source maps required for Sentry to show original code in error traces
     sourcemap: true,
     outDir: "dist",
   },
