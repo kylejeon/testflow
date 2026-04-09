@@ -2,16 +2,20 @@ name: Smoke Tests
 
 on:
   schedule:
-    # Every 30 minutes. GitHub Actions scheduler for scheduled workflows
-    # is subject to significant delays (30–90 min) under load — especially
-    # for repos without consistent push activity on the default branch.
-    # Running every 30 min reduces false-positive BetterStack missed-heartbeat
-    # alerts while keeping coverage frequent enough to catch outages quickly.
+    # Every 30 minutes. NOTE: GitHub Actions scheduled workflows in low-activity
+    # repos experience 30–90+ min delays and occasional ghost runs (queued but
+    # never assigned a runner). This is a known GitHub limitation.
     #
-    # ⚠️  BetterStack Heartbeat settings must match:
-    #       Period:       30 minutes
-    #       Grace period: 20 minutes   (allows up to 50 min total before alert)
+    # ⚠️  BetterStack Heartbeat must be set to:
+    #       Period:       60 minutes
+    #       Grace period: 30 minutes  (= 90 min total window)
+    # This accommodates GitHub's actual scheduler behavior.
     - cron: '*/30 * * * *'
+  # Push to main also triggers smoke — ensures every deploy is validated
+  # and provides a reliable heartbeat ping after each code change.
+  push:
+    branches:
+      - main
   # Allow manual trigger for debugging / incident recovery
   workflow_dispatch:
 
@@ -49,7 +53,17 @@ jobs:
         if: success()
         run: |
           if [ -n "$BETTERSTACK_HEARTBEAT_URL" ]; then
-            curl -s -o /dev/null "$BETTERSTACK_HEARTBEAT_URL"
+            # --retry 3: handles transient network errors silently hiding with -s -o /dev/null
+            # -w: print HTTP status so CI log shows if BetterStack returned non-2xx
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              --retry 3 --retry-delay 5 --retry-connrefused \
+              "$BETTERSTACK_HEARTBEAT_URL")
+            echo "BetterStack heartbeat HTTP status: $HTTP_STATUS"
+            if [[ "$HTTP_STATUS" != 2* ]]; then
+              echo "::warning::BetterStack heartbeat returned $HTTP_STATUS"
+            fi
+          else
+            echo "BETTERSTACK_HEARTBEAT_URL not set — skipping heartbeat ping"
           fi
         env:
           BETTERSTACK_HEARTBEAT_URL: ${{ secrets.BETTERSTACK_HEARTBEAT_URL }}
