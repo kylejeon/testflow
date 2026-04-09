@@ -682,6 +682,7 @@ export default function RunDetail() {
           elapsed,
           created_at,
           issues,
+          github_issues,
           step_statuses,
           attachments,
           run:test_runs!test_results_run_id_fkey(
@@ -709,6 +710,7 @@ export default function RunDetail() {
         timestamp: new Date(item.created_at),
         stepStatuses: item.step_statuses,
         issues: item.issues || [],
+        github_issues: item.github_issues || [],
         run: item.run ? {
           id: item.run.id,
           name: item.run.name,
