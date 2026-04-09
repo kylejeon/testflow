@@ -2,9 +2,17 @@ name: Smoke Tests
 
 on:
   schedule:
-    # Every 15 minutes around the clock
-    - cron: '*/15 * * * *'
-  # Allow manual trigger for debugging
+    # Every 30 minutes. GitHub Actions scheduler for scheduled workflows
+    # is subject to significant delays (30–90 min) under load — especially
+    # for repos without consistent push activity on the default branch.
+    # Running every 30 min reduces false-positive BetterStack missed-heartbeat
+    # alerts while keeping coverage frequent enough to catch outages quickly.
+    #
+    # ⚠️  BetterStack Heartbeat settings must match:
+    #       Period:       30 minutes
+    #       Grace period: 20 minutes   (allows up to 50 min total before alert)
+    - cron: '*/30 * * * *'
+  # Allow manual trigger for debugging / incident recovery
   workflow_dispatch:
 
 jobs:
