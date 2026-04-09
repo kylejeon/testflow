@@ -15,6 +15,7 @@ import { KeyboardShortcutsHelp } from "./components/KeyboardShortcutsHelp";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ToastProvider } from "./components/Toast";
+import { setSentryUser } from "./lib/sentry";
 
 /**
  * Supabase 인증 콜백(비밀번호 재설정, OAuth 등)이 루트 URL로 오는 경우를
@@ -70,6 +71,7 @@ function AppContent() {
       if (!user) return;
       setIsAuthenticated(true);
       setUserId(user.id);
+      setSentryUser({ id: user.id, email: user.email });
       const name =
         user.user_metadata?.full_name ||
         user.user_metadata?.name ||
@@ -82,11 +84,13 @@ function AppContent() {
       if (_event === 'SIGNED_OUT') {
         queryClient.clear();
         setUserId(null);
+        setSentryUser(null);
       }
       setIsAuthenticated(!!session?.user);
       if (session?.user) {
         const u = session.user;
         setUserId(u.id);
+        setSentryUser({ id: u.id, email: u.email });
         const name =
           u.user_metadata?.full_name ||
           u.user_metadata?.name ||
