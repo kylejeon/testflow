@@ -41,7 +41,6 @@ export default function CookieBanner() {
   const accept = async (fn: boolean, an: boolean, mk: boolean) => {
     saveConsent({ functional: fn, analytics: an, marketing: mk });
     setVisible(false);
-    // 개인정보보호법 입증책임 대응: 쿠키 동의 이력 서버 저장
     const { data: { session } } = await supabase.auth.getSession();
     logCookieConsent({
       userId: session?.user?.id ?? null,
@@ -76,13 +75,13 @@ export default function CookieBanner() {
               <i className="ri-cookie-line text-indigo-500 text-xl flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-semibold text-gray-900 mb-1">
-                  Testably는 더 나은 서비스를 위해 쿠키를 사용합니다.
+                  We use cookies to improve your experience.
                 </p>
                 <p className="text-xs text-gray-500 leading-relaxed">
-                  필수 쿠키는 로그인 유지 및 보안을 위해 반드시 필요하며, 분석·마케팅 쿠키는 선택 사항입니다.
-                  선택 쿠키에 동의하시면 서비스 이용 분석과 기능 개선에 활용됩니다.{' '}
+                  Strictly necessary cookies are required for login and security. Optional cookies help us
+                  analyze usage and improve our service.{' '}
                   <Link to="/cookies" className="text-indigo-600 hover:underline">
-                    자세히 보기 →
+                    Learn more →
                   </Link>
                 </p>
               </div>
@@ -92,41 +91,41 @@ export default function CookieBanner() {
                 onClick={() => accept(true, true, true)}
                 className="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors cursor-pointer"
               >
-                모두 허용
+                Accept all
               </button>
               <button
                 onClick={() => accept(false, false, false)}
                 className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-200 transition-colors cursor-pointer"
               >
-                필수만 허용
+                Essential only
               </button>
               <button
                 onClick={() => setShowSettings(true)}
                 className="px-4 py-2 border border-gray-300 text-gray-600 text-sm font-semibold rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
               >
-                설정
+                Customize
               </button>
             </div>
           </div>
         ) : (
           <div className="p-5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-gray-900">쿠키 설정</h3>
+              <h3 className="text-sm font-semibold text-gray-900">Cookie preferences</h3>
               <button
                 onClick={() => setShowSettings(false)}
                 className="text-gray-400 hover:text-gray-600 cursor-pointer"
               >
                 <i className="ri-arrow-left-line text-sm" />
-                <span className="text-xs ml-1">뒤로</span>
+                <span className="text-xs ml-1">Back</span>
               </button>
             </div>
 
             <div className="space-y-1 divide-y divide-gray-100 mb-4">
-              {/* 필수 — 비활성화 */}
+              {/* Strictly necessary — always on */}
               <label className="flex items-center justify-between py-2 opacity-60">
                 <div>
-                  <span className="text-sm font-medium text-gray-700">필수 쿠키</span>
-                  <p className="text-xs text-gray-400">로그인 세션 유지, 보안, CSRF 방어 (비활성화 불가)</p>
+                  <span className="text-sm font-medium text-gray-700">Strictly necessary</span>
+                  <p className="text-xs text-gray-400">Login sessions, security &amp; CSRF protection (always on)</p>
                 </div>
                 <span className="relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full bg-indigo-600">
                   <span className="inline-block h-3.5 w-3.5 translate-x-4 rounded-full bg-white shadow" />
@@ -135,17 +134,17 @@ export default function CookieBanner() {
 
               <div className="pt-1">
                 {toggleRow(
-                  '기능 쿠키 — 언어·테마·작업공간 등 사용자 환경 저장',
+                  'Functional — language, theme & workspace preferences',
                   functional,
                   setFunctional,
                 )}
                 {toggleRow(
-                  '분석 쿠키 — 서비스 이용 패턴 분석·기능 개선',
+                  'Analytics — usage patterns & product improvements',
                   analytics,
                   setAnalytics,
                 )}
                 {toggleRow(
-                  '마케팅 쿠키 — 광고 성과 측정·리타게팅',
+                  'Marketing — ad performance & retargeting',
                   marketing,
                   setMarketing,
                 )}
@@ -156,7 +155,7 @@ export default function CookieBanner() {
               onClick={() => accept(functional, analytics, marketing)}
               className="w-full py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors cursor-pointer"
             >
-              선택 저장
+              Save preferences
             </button>
           </div>
         )}
