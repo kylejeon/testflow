@@ -236,8 +236,8 @@ const content = {
     pricingSection: {
       badge: 'Pricing',
       title: 'Plans that scale with your team',
-      description: 'Flat-rate pricing — no per-seat charges. Free forever for up to 3 members. 14-day free trial on all paid plans.',
-      note: 'Free forever for up to 3 members · 14-day free trial on all paid plans · No per-seat charges',
+      description: 'Flat-rate pricing — no per-seat charges. Free forever for up to 2 members. 14-day free trial on all paid plans.',
+      note: 'Free forever for up to 2 members · 14-day free trial on all paid plans · No per-seat charges',
     },
     pricingPlans: [
       {
@@ -271,7 +271,7 @@ const content = {
       },
       {
         name: 'Professional', planColor: '#C084FC', price: '$99', period: '/ month',
-        annualMonthly: 84.17, annualTotal: 1010,
+        annualMonthly: 84.17, annualTotal: 1009,
         users: 'Up to 20 users',
         description: 'Full-featured for professional QA teams',
         basePlan: 'Starter',
@@ -689,7 +689,7 @@ const content = {
       },
       {
         name: 'Professional', planColor: '#C084FC', price: '$99', period: '/ 월',
-        annualMonthly: 84.17, annualTotal: 1010,
+        annualMonthly: 84.17, annualTotal: 1009,
         users: '최대 20명',
         description: '전문 QA 팀을 위한 완전한 기능',
         basePlan: 'Starter',

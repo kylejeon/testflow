@@ -90,7 +90,7 @@ const featureFaqs: FaqItem[] = [
           <li><strong>Text-based:</strong> Describe a feature in plain text and AI generates test cases.</li>
           <li><strong>Session-based (Professional+):</strong> Select a Discovery Log session and AI generates test cases from your exploratory testing notes.</li>
         </ul>
-        <p className="mt-2">Monthly generation limits: Free (5), Starter (30), Professional (150), Enterprise (unlimited).</p>
+        <p className="mt-2">Monthly generation limits: Free (3), Starter (30), Professional (150), Enterprise (unlimited).</p>
       </>
     ),
   },

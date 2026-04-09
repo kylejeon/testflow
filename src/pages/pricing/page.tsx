@@ -424,7 +424,7 @@ export default function PricingPage() {
                     <th className="text-center px-4 py-4 font-semibold text-gray-700">Free</th>
                     <th className="text-center px-4 py-4 font-semibold text-emerald-600">
                       <div>Hobby</div>
-                      <div className="text-xs font-normal text-emerald-400">$19/mo</div>
+                      <div className="text-xs font-normal text-emerald-400">$19/mo · $194/yr</div>
                     </th>
                     <th className="text-center px-4 py-4 font-semibold text-gray-700">
                       <div>Starter</div>
