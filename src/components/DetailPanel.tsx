@@ -451,9 +451,16 @@ export function DetailPanel({
         createdAt: r.timestamp,
       }))
     );
-  const uniqueIssues = Array.from(
-    new Map(allIssues.map((i) => [i.issueKey, i])).values()
-  );
+  // Keep only the FIRST occurrence per issueKey (testResults is newest-first,
+  // so first = most recent result). Using new Map(array) would keep the LAST
+  // occurrence, which would surface stale status from older results.
+  const uniqueIssuesMap = new Map<string, (typeof allIssues)[0]>();
+  for (const issue of allIssues) {
+    if (!uniqueIssuesMap.has(issue.issueKey)) {
+      uniqueIssuesMap.set(issue.issueKey, issue);
+    }
+  }
+  const uniqueIssues = Array.from(uniqueIssuesMap.values());
 
   // GitHub issues from test results
   const allGithubIssues = testResults
@@ -467,9 +474,14 @@ export function DetailPanel({
         createdAt: r.timestamp,
       }))
     );
-  const uniqueGithubIssues = Array.from(
-    new Map(allGithubIssues.map((i) => [i.url, i])).values()
-  );
+  // Same: keep first occurrence (= most recent result) per GitHub issue URL
+  const uniqueGithubIssuesMap = new Map<string, (typeof allGithubIssues)[0]>();
+  for (const gi of allGithubIssues) {
+    if (!uniqueGithubIssuesMap.has(gi.url)) {
+      uniqueGithubIssuesMap.set(gi.url, gi);
+    }
+  }
+  const uniqueGithubIssues = Array.from(uniqueGithubIssuesMap.values());
 
   return (
     <div className="w-[500px] min-w-[500px] bg-white border-l border-gray-200 flex flex-col overflow-hidden flex-shrink-0">
