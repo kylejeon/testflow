@@ -188,7 +188,6 @@ export default function RunDetail() {
   });
   const [creatingGithubIssue, setCreatingGithubIssue] = useState(false);
   const [pendingGithubIssues, setPendingGithubIssues] = useState<{ number: number; url: string; repo: string }[]>([]);
-  const [createdGithubIssue, setCreatedGithubIssue] = useState<{ number: number; url: string; repo: string } | null>(null);
   const [githubLabelInput, setGithubLabelInput] = useState('');
   const [githubLabelComposing, setGithubLabelComposing] = useState(false);
   const [githubAssignees, setGithubAssignees] = useState<{ login: string; avatar_url: string }[]>([]);
@@ -2175,11 +2174,12 @@ export default function RunDetail() {
       if (data?.success && data?.issue?.number) {
         const newIssue = { number: data.issue.number, url: data.issue.html_url, repo: githubSettings.repo };
         setPendingGithubIssues(prev => [...prev, newIssue]);
-        setCreatedGithubIssue(newIssue);
+        setShowGithubIssueModal(false);
         setGithubIssueFormData({ title: '', body: '', labels: '', assignee: '' });
         setGithubLabelInput('');
         setAssigneeQuery('');
         setShowAssigneeSuggest(false);
+        showToast('success', `GitHub issue #${data.issue.number} created`);
       } else {
         throw new Error(data?.error || 'Failed to create GitHub issue.');
       }
@@ -3989,7 +3989,7 @@ export default function RunDetail() {
                     <i className="ri-github-fill"></i> Create GitHub Issue
                   </h2>
                   <button
-                    onClick={() => { setShowGithubIssueModal(false); setCreatedGithubIssue(null); }}
+                    onClick={() => setShowGithubIssueModal(false)}
                     className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
                   >
                     <i className="ri-close-line text-xl"></i>
@@ -4117,45 +4117,25 @@ export default function RunDetail() {
                     </div>
                   )}
                 </div>
-                {createdGithubIssue && (
-                  <div className="mx-6 mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
-                    <i className="ri-checkbox-circle-fill text-green-500 text-lg flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-green-800">
-                        #{createdGithubIssue.number} 생성됨
-                      </p>
-                      <a
-                        href={createdGithubIssue.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-green-700 hover:underline truncate block"
-                      >
-                        {createdGithubIssue.url}
-                      </a>
-                    </div>
-                  </div>
-                )}
                 <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200 bg-gray-50">
                   <button
-                    onClick={() => { setShowGithubIssueModal(false); setCreatedGithubIssue(null); }}
+                    onClick={() => setShowGithubIssueModal(false)}
                     disabled={creatingGithubIssue}
                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg cursor-pointer whitespace-nowrap disabled:opacity-50"
                   >
-                    {createdGithubIssue ? 'Done' : 'Cancel'}
+                    Cancel
                   </button>
-                  {!createdGithubIssue && (
-                    <button
-                      onClick={handleCreateGithubIssue}
-                      disabled={creatingGithubIssue || !githubIssueFormData.title.trim()}
-                      className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 text-sm font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                    >
-                      {creatingGithubIssue ? (
-                        <><i className="ri-loader-4-line animate-spin"></i>Creating...</>
-                      ) : (
-                        <><i className="ri-github-fill"></i>Create Issue</>
-                      )}
-                    </button>
-                  )}
+                  <button
+                    onClick={handleCreateGithubIssue}
+                    disabled={creatingGithubIssue || !githubIssueFormData.title.trim()}
+                    className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 text-sm font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {creatingGithubIssue ? (
+                      <><i className="ri-loader-4-line animate-spin"></i>Creating...</>
+                    ) : (
+                      <><i className="ri-github-fill"></i>Create Issue</>
+                    )}
+                  </button>
                 </div>
               </div>
             </div>
