@@ -186,6 +186,11 @@ export default function RunDetail() {
     assignee: '',
   });
   const [creatingGithubIssue, setCreatingGithubIssue] = useState(false);
+  const [githubLabelInput, setGithubLabelInput] = useState('');
+  const [githubLabelComposing, setGithubLabelComposing] = useState(false);
+  const [githubAssignees, setGithubAssignees] = useState<{ login: string; avatar_url: string }[]>([]);
+  const [assigneeQuery, setAssigneeQuery] = useState('');
+  const [showAssigneeSuggest, setShowAssigneeSuggest] = useState(false);
   const [issueFormData, setIssueFormData] = useState({
     summary: '',
     description: '',
@@ -213,6 +218,7 @@ export default function RunDetail() {
     return new Date() < new Date(launchDate.getTime() + 30 * 24 * 60 * 60 * 1000);
   });
   const moreMenuRef = useRef<HTMLDivElement>(null);
+  const assigneeSuggestRef = useRef<HTMLDivElement>(null);
 
   // ── Shared Step version tracking ─────────────────────────────────────────
   // Map: shared_step_id → { version, custom_id, name, steps (latest) }
@@ -315,6 +321,17 @@ export default function RunDetail() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [showMoreMenu]);
+
+  useEffect(() => {
+    if (!showAssigneeSuggest) return;
+    const handler = (e: MouseEvent) => {
+      if (assigneeSuggestRef.current && !assigneeSuggestRef.current.contains(e.target as Node)) {
+        setShowAssigneeSuggest(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showAssigneeSuggest]);
 
   const handleExportCSV = () => {
     setShowMoreMenu(false);
@@ -2148,6 +2165,9 @@ export default function RunDetail() {
         showToast('success', `GitHub issue #${data.issue.number} created`);
         setShowGithubIssueModal(false);
         setGithubIssueFormData({ title: '', body: '', labels: '', assignee: '' });
+        setGithubLabelInput('');
+        setAssigneeQuery('');
+        setShowAssigneeSuggest(false);
         setActiveTab('issues');
         await fetchTestResults();
       } else {
@@ -2160,6 +2180,26 @@ export default function RunDetail() {
       setCreatingGithubIssue(false);
     }
   };
+
+  const fetchGithubAssignees = useCallback(async () => {
+    if (!githubSettings?.token || !githubSettings?.owner || !githubSettings?.repo) return;
+    try {
+      const res = await fetch(
+        `https://api.github.com/repos/${githubSettings.owner}/${githubSettings.repo}/assignees?per_page=100`,
+        {
+          headers: {
+            Authorization: `Bearer ${githubSettings.token}`,
+            Accept: 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+          },
+        }
+      );
+      if (res.ok) setGithubAssignees(await res.json());
+    } catch { /* ignore */ }
+  }, [githubSettings]);
+
+  const getGithubLabelsArray = () =>
+    githubIssueFormData.labels ? githubIssueFormData.labels.split(',').map(t => t.trim()).filter(t => t) : [];
 
   const handleCopyRunId = () => {
     if (!runId) return;
@@ -3613,8 +3653,12 @@ export default function RunDetail() {
                                   return;
                                 }
                                 const tcTitle = selectedTestCase ? `[Test Failed] ${selectedTestCase.title}` : '';
-                                setGithubIssueFormData(prev => ({ ...prev, title: tcTitle }));
+                                setGithubIssueFormData(prev => ({ ...prev, title: tcTitle, labels: '', assignee: '' }));
+                                setGithubLabelInput('');
+                                setAssigneeQuery('');
+                                setShowAssigneeSuggest(false);
                                 setShowGithubIssueModal(true);
+                                fetchGithubAssignees();
                               }}
                               className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200"
                             >
@@ -3944,26 +3988,87 @@ export default function RunDetail() {
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
+                    {/* Labels — chip input */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">Labels</label>
+                      {getGithubLabelsArray().length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mb-2">
+                          {getGithubLabelsArray().map((label, i) => (
+                            <span key={i} className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium">
+                              {label}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const arr = getGithubLabelsArray().filter((_, j) => j !== i);
+                                  setGithubIssueFormData(prev => ({ ...prev, labels: arr.join(', ') }));
+                                }}
+                                className="w-3.5 h-3.5 flex items-center justify-center text-indigo-500 hover:text-indigo-800 rounded-full transition-colors"
+                              >
+                                <i className="ri-close-line text-[10px]" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       <input
                         type="text"
-                        value={githubIssueFormData.labels}
-                        onChange={(e) => setGithubIssueFormData({ ...githubIssueFormData, labels: e.target.value })}
-                        placeholder="bug, test-failure"
+                        value={githubLabelInput}
+                        onChange={(e) => setGithubLabelInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !githubLabelComposing) {
+                            e.preventDefault();
+                            const trimmed = githubLabelInput.trim();
+                            if (trimmed) {
+                              const current = getGithubLabelsArray();
+                              if (!current.includes(trimmed)) {
+                                setGithubIssueFormData(prev => ({ ...prev, labels: [...current, trimmed].join(', ') }));
+                              }
+                              setGithubLabelInput('');
+                            }
+                          }
+                        }}
+                        onCompositionStart={() => setGithubLabelComposing(true)}
+                        onCompositionEnd={() => setGithubLabelComposing(false)}
+                        placeholder="Type label, press Enter"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                       />
-                      <p className="text-xs text-gray-500 mt-1">Comma-separated</p>
                     </div>
-                    <div>
+                    {/* Assignee — autocomplete */}
+                    <div className="relative" ref={assigneeSuggestRef}>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">Assignee</label>
                       <input
                         type="text"
-                        value={githubIssueFormData.assignee}
-                        onChange={(e) => setGithubIssueFormData({ ...githubIssueFormData, assignee: e.target.value })}
-                        placeholder="GitHub username"
+                        value={assigneeQuery}
+                        onChange={(e) => {
+                          setAssigneeQuery(e.target.value);
+                          setGithubIssueFormData(prev => ({ ...prev, assignee: e.target.value }));
+                          setShowAssigneeSuggest(true);
+                        }}
+                        onFocus={() => setShowAssigneeSuggest(true)}
+                        placeholder="Search collaborator..."
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                       />
+                      {showAssigneeSuggest && githubAssignees.filter(a => !assigneeQuery || a.login.toLowerCase().includes(assigneeQuery.toLowerCase())).length > 0 && (
+                        <ul className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                          {githubAssignees
+                            .filter(a => !assigneeQuery || a.login.toLowerCase().includes(assigneeQuery.toLowerCase()))
+                            .map(a => (
+                              <li
+                                key={a.login}
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  setAssigneeQuery(a.login);
+                                  setGithubIssueFormData(prev => ({ ...prev, assignee: a.login }));
+                                  setShowAssigneeSuggest(false);
+                                }}
+                                className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer text-sm"
+                              >
+                                <img src={a.avatar_url} className="w-5 h-5 rounded-full" alt="" />
+                                {a.login}
+                              </li>
+                            ))}
+                        </ul>
+                      )}
                     </div>
                   </div>
                   {githubSettings && (
