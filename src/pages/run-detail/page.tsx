@@ -188,6 +188,7 @@ export default function RunDetail() {
   });
   const [creatingGithubIssue, setCreatingGithubIssue] = useState(false);
   const [pendingGithubIssues, setPendingGithubIssues] = useState<{ number: number; url: string; repo: string }[]>([]);
+  const [pendingJiraIssues, setPendingJiraIssues] = useState<string[]>([]);
   const [githubLabelInput, setGithubLabelInput] = useState('');
   const [githubLabelComposing, setGithubLabelComposing] = useState(false);
   const [githubAssignees, setGithubAssignees] = useState<{ login: string; avatar_url: string }[]>([]);
@@ -1300,6 +1301,7 @@ export default function RunDetail() {
     setTimerStartTime(null);
     setElapsedSeconds(0);
     setPendingGithubIssues([]);
+    setPendingJiraIssues([]);
   }, []);
 
   const handleAddResult = () => {
@@ -1419,8 +1421,8 @@ export default function RunDetail() {
       // 타이머 정지
       setIsTimerRunning(false);
 
-      // 입력 중인 이슈가 있으면 자동으로 추가
-      let finalIssuesList = [...resultFormData.issuesList];
+      // 입력 중인 이슈가 있으면 자동으로 추가 (pending Jira issues도 포함)
+      let finalIssuesList = [...resultFormData.issuesList, ...pendingJiraIssues];
       if (resultFormData.issues.trim()) {
         const pendingIssue = resultFormData.issues.trim().toUpperCase();
         if (!finalIssuesList.includes(pendingIssue)) {
@@ -2096,8 +2098,14 @@ export default function RunDetail() {
       if (data.success && data.issue && data.issue.key) {
         const newIssueKey = data.issue.key;
 
-        if (testResults.length > 0) {
-          // 최신 result에 이슈 추가
+        // Add Result 모달이 열려 있는 경우: pending 상태로 보관 (새 result에 포함)
+        if (showAddResultModal) {
+          setPendingJiraIssues(prev => [...prev, newIssueKey]);
+          showToast('success', `Jira issue ${newIssueKey} created`);
+          setShowAddIssueModal(false);
+          setIssueFormData({ summary: '', description: '', issueType: 'Bug', priority: 'Medium', labels: '', assignee: '', components: '' });
+        } else if (testResults.length > 0) {
+          // Issues 탭에서 직접 생성: 최신 result에 이슈 추가
           const latestResult = testResults[0];
           const updatedIssues = [...(latestResult.issues || []), newIssueKey];
 
@@ -2114,32 +2122,30 @@ export default function RunDetail() {
               ? { ...r, issues: updatedIssues }
               : r
           ));
+
+          showToast('success', `Jira issue ${newIssueKey} created`);
+          setShowAddIssueModal(false);
+          setIssueFormData({
+            summary: '',
+            description: '',
+            issueType: 'Bug',
+            priority: 'Medium',
+            labels: '',
+            assignee: '',
+            components: '',
+          });
+
+          // Issues 탭으로 전환
+          setActiveTab('issues');
+
+          // 최신 결과 다시 로드
+          await fetchTestResults();
         } else {
           // result가 없는 경우: 이슈 키만 메모리에 임시 보관 (자동 failed result 생성 없음)
-          // 사용자에게 결과 기록을 안내하고 모달을 닫음
           showToast('success', `Jira issue ${newIssueKey} created. Add Result로 테스트 결과를 기록하면 이슈가 자동으로 연결됩니다.`);
           setShowAddIssueModal(false);
           setIssueFormData({ summary: '', description: '', issueType: 'Bug', priority: 'Medium', labels: '', assignee: '', components: '' });
-          return;
         }
-
-        showToast('success', `Jira issue ${newIssueKey} created`);
-        setShowAddIssueModal(false);
-        setIssueFormData({
-          summary: '',
-          description: '',
-          issueType: 'Bug',
-          priority: 'Medium',
-          labels: '',
-          assignee: '',
-          components: '',
-        });
-
-        // Issues 탭으로 전환
-        setActiveTab('issues');
-
-        // 최신 결과 다시 로드
-        await fetchTestResults();
       } else {
         throw new Error(data.error || data.message || 'Failed to create Jira issue.');
       }
@@ -3704,6 +3710,25 @@ export default function RunDetail() {
                               <button
                                 type="button"
                                 onClick={() => handleRemoveIssue(issueKey)}
+                                className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all cursor-pointer opacity-0 group-hover:opacity-100"
+                              >
+                                <i className="ri-close-line"></i>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {pendingJiraIssues.length > 0 && (
+                        <div className="mt-3 space-y-2">
+                          {pendingJiraIssues.map((issueKey) => (
+                            <div key={issueKey} className="flex items-center justify-between p-2 bg-indigo-50 rounded-lg group border border-indigo-200">
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <i className="ri-bug-line text-indigo-500 text-sm"></i>
+                                <span className="text-sm text-indigo-700 font-medium truncate">{issueKey}</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setPendingJiraIssues(prev => prev.filter(k => k !== issueKey))}
                                 className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all cursor-pointer opacity-0 group-hover:opacity-100"
                               >
                                 <i className="ri-close-line"></i>
