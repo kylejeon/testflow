@@ -7,7 +7,10 @@ import { getPaymentProvider, openCheckout } from '../../lib/payment';
 const plans = [
   {
     name: 'Free',
-    price: '$0',
+    tier: 1,
+    monthlyPrice: 0,
+    annualPrice: 0,
+    annualMonthly: 0,
     period: 'forever',
     description: 'Perfect for solo testers getting started',
     members: '2 members',
@@ -23,14 +26,17 @@ const plans = [
       'Jira integration (read-only)',
       '3 AI generations / month',
     ],
-    cta: 'Get Started Free',
+    cta: 'Get Started',
     highlighted: false,
     icon: 'ri-user-line',
     popular: '',
   },
   {
     name: 'Hobby',
-    price: '$19',
+    tier: 2,
+    monthlyPrice: 19,
+    annualPrice: 194,
+    annualMonthly: 16,
     period: '/ month',
     description: 'For individuals and small teams ramping up',
     members: '5 members',
@@ -46,14 +52,17 @@ const plans = [
       'Steps Library (10 steps)',
       '15 AI generations / month',
     ],
-    cta: 'Get Started',
+    cta: 'Start Free Trial',
     highlighted: false,
     icon: 'ri-seedling-line',
     popular: '',
   },
   {
     name: 'Starter',
-    price: '$49',
+    tier: 3,
+    monthlyPrice: 49,
+    annualPrice: 499,
+    annualMonthly: 42,
     period: '/ month',
     description: 'For growing teams that need more power',
     members: '5 members',
@@ -79,7 +88,10 @@ const plans = [
   },
   {
     name: 'Professional',
-    price: '$99',
+    tier: 4,
+    monthlyPrice: 99,
+    annualPrice: 1009,
+    annualMonthly: 84,
     period: '/ month',
     description: 'Full-featured for professional QA teams',
     members: '20 members',
@@ -95,7 +107,7 @@ const plans = [
       'Priority support',
       '150 AI generations / month',
     ],
-    cta: 'Get Started',
+    cta: 'Start Free Trial',
     highlighted: true,
     icon: 'ri-vip-crown-line',
     popular: 'Most popular',
@@ -213,6 +225,7 @@ function CheckIcon({ checked }: { checked: boolean }) {
 export default function PricingPage() {
   const navigate = useNavigate();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
   const [userSession, setUserSession] = useState<{ id: string; email: string; payment_provider?: string | null; subscription_tier?: number } | null>(null);
 
   useEffect(() => {
@@ -231,11 +244,13 @@ export default function PricingPage() {
     });
   }, []);
 
+  const currentTier = userSession?.subscription_tier ?? null;
+
   const handlePlanCta = async (planName: string) => {
     if (planName === 'Free') { navigate('/auth'); return; }
     if (!userSession) { navigate('/auth'); return; }
     const provider = getPaymentProvider(userSession);
-    await openCheckout(planName, 'monthly', provider, userSession.email, userSession.id);
+    await openCheckout(planName, billingPeriod, provider, userSession.email, userSession.id);
   };
 
   return (
@@ -255,7 +270,30 @@ export default function PricingPage() {
               <span className="text-indigo-200 text-sm font-medium">Pricing</span>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">Plans that scale with your team</h1>
-            <p className="text-white/50 text-lg">Flat-rate pricing. No per-seat charges. All paid plans include a 14-day free trial.</p>
+            <p className="text-white/50 text-lg mb-8">Flat-rate pricing. No per-seat charges. All paid plans include a 14-day free trial.</p>
+
+            {/* Billing toggle */}
+            <div className="inline-flex items-center gap-1 bg-white/10 border border-white/20 rounded-full p-1">
+              <button
+                onClick={() => setBillingPeriod('monthly')}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer ${
+                  billingPeriod === 'monthly' ? 'bg-white text-gray-900' : 'text-white/70 hover:text-white'
+                }`}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setBillingPeriod('annual')}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+                  billingPeriod === 'annual' ? 'bg-white text-gray-900' : 'text-white/70 hover:text-white'
+                }`}
+              >
+                Annual
+                <span className="text-[10px] font-bold bg-emerald-500 text-white px-1.5 py-0.5 rounded-full leading-none">
+                  Save 15%
+                </span>
+              </button>
+            </div>
           </div>
         </header>
 
@@ -264,60 +302,96 @@ export default function PricingPage() {
           <div className="max-w-5xl mx-auto px-6">
             {/* Free / Hobby / Starter / Professional */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5 items-start mb-6">
-              {plans.map((plan) => (
-                <article
-                  key={plan.name}
-                  className={`rounded-2xl p-6 border flex flex-col transition-all ${
-                    plan.highlighted
-                      ? 'bg-indigo-500 border-indigo-500 shadow-xl shadow-indigo-200 scale-[1.02]'
-                      : 'bg-white border-gray-200 hover:border-indigo-200 hover:shadow-md'
-                  }`}
-                >
-                  <div className="mb-4">
-                    <div className={`w-10 h-10 flex items-center justify-center rounded-xl mb-3 ${plan.highlighted ? 'bg-white/20' : 'bg-indigo-50'}`}>
-                      <i className={`${plan.icon} text-xl ${plan.highlighted ? 'text-white' : 'text-indigo-600'}`}></i>
-                    </div>
-                    {plan.popular && (
-                      <div className="inline-flex items-center gap-1 bg-white/25 rounded-full px-3 py-1 mb-2">
-                        <i className="ri-star-fill text-white text-xs"></i>
-                        <span className="text-white text-xs font-semibold">{plan.popular}</span>
+              {plans.map((plan) => {
+                const isCurrentPlan = currentTier === plan.tier;
+                const displayPrice = billingPeriod === 'annual' && plan.annualMonthly > 0
+                  ? `$${plan.annualMonthly}`
+                  : plan.monthlyPrice === 0 ? '$0' : `$${plan.monthlyPrice}`;
+                const savingsPerYear = plan.monthlyPrice > 0
+                  ? plan.monthlyPrice * 12 - plan.annualPrice
+                  : 0;
+
+                return (
+                  <article
+                    key={plan.name}
+                    className={`rounded-2xl p-6 border flex flex-col transition-all relative ${
+                      isCurrentPlan
+                        ? 'ring-2 ring-emerald-400 border-emerald-300'
+                        : plan.highlighted
+                        ? 'bg-indigo-500 border-indigo-500 shadow-xl shadow-indigo-200 scale-[1.02]'
+                        : 'bg-white border-gray-200 hover:border-indigo-200 hover:shadow-md'
+                    } ${!plan.highlighted && !isCurrentPlan ? 'bg-white' : ''}`}
+                  >
+                    {isCurrentPlan && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap">
+                        Current Plan
                       </div>
                     )}
-                    <h3 className={`text-lg font-bold mb-1 ${plan.highlighted ? 'text-white' : 'text-gray-900'}`}>{plan.name}</h3>
-                    <p className={`text-xs leading-relaxed ${plan.highlighted ? 'text-white/70' : 'text-gray-500'}`}>{plan.description}</p>
-                  </div>
 
-                  <div className={`mb-4 pb-4 border-b ${plan.highlighted ? 'border-white/20' : 'border-gray-100'}`}>
-                    <span className={`text-3xl font-black ${plan.highlighted ? 'text-white' : 'text-gray-900'}`}>{plan.price}</span>
-                    <span className={`text-xs ml-1.5 ${plan.highlighted ? 'text-white/70' : 'text-gray-500'}`}>{plan.period}</span>
-                  </div>
-
-                  <ul className="space-y-2.5 mb-6 flex-1">
-                    {plan.basePlan && (
-                      <li className={`text-xs font-semibold mb-1 ${plan.highlighted ? 'text-white/60' : 'text-gray-400'}`}>
-                        Everything in {plan.basePlan}, plus:
-                      </li>
-                    )}
-                    {plan.features.map((f) => (
-                      <li key={f} className="flex items-start gap-2">
-                        <div className={`w-4 h-4 flex items-center justify-center rounded-full flex-shrink-0 mt-0.5 ${plan.highlighted ? 'bg-white/25' : 'bg-indigo-100'}`}>
-                          <i className={`ri-check-line text-xs ${plan.highlighted ? 'text-white' : 'text-indigo-600'}`}></i>
+                    <div className="mb-4">
+                      <div className={`w-10 h-10 flex items-center justify-center rounded-xl mb-3 ${plan.highlighted ? 'bg-white/20' : 'bg-indigo-50'}`}>
+                        <i className={`${plan.icon} text-xl ${plan.highlighted ? 'text-white' : 'text-indigo-600'}`}></i>
+                      </div>
+                      {plan.popular && (
+                        <div className={`inline-flex items-center gap-1 rounded-full px-3 py-1 mb-2 ${plan.highlighted ? 'bg-white/25' : 'bg-indigo-100'}`}>
+                          <i className={`ri-star-fill text-xs ${plan.highlighted ? 'text-white' : 'text-indigo-600'}`}></i>
+                          <span className={`text-xs font-semibold ${plan.highlighted ? 'text-white' : 'text-indigo-700'}`}>{plan.popular}</span>
                         </div>
-                        <span className={`text-xs leading-relaxed ${plan.highlighted ? 'text-white/90' : 'text-gray-700'}`}>{f}</span>
-                      </li>
-                    ))}
-                  </ul>
+                      )}
+                      <h3 className={`text-lg font-bold mb-1 ${plan.highlighted ? 'text-white' : 'text-gray-900'}`}>{plan.name}</h3>
+                      <p className={`text-xs leading-relaxed ${plan.highlighted ? 'text-white/70' : 'text-gray-500'}`}>{plan.description}</p>
+                    </div>
 
-                  <button
-                    onClick={() => handlePlanCta(plan.name)}
-                    className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap ${
-                      plan.highlighted ? 'bg-white text-indigo-600 hover:bg-gray-50' : 'bg-indigo-500 text-white hover:bg-indigo-600'
-                    }`}
-                  >
-                    {plan.cta}
-                  </button>
-                </article>
-              ))}
+                    <div className={`mb-4 pb-4 border-b ${plan.highlighted ? 'border-white/20' : 'border-gray-100'}`}>
+                      <span className={`text-3xl font-black ${plan.highlighted ? 'text-white' : 'text-gray-900'}`}>{displayPrice}</span>
+                      {plan.monthlyPrice > 0 && (
+                        <span className={`text-xs ml-1.5 ${plan.highlighted ? 'text-white/70' : 'text-gray-500'}`}>
+                          {billingPeriod === 'annual' ? '/ mo · billed annually' : '/ month'}
+                        </span>
+                      )}
+                      {plan.monthlyPrice === 0 && (
+                        <span className={`text-xs ml-1.5 ${plan.highlighted ? 'text-white/70' : 'text-gray-500'}`}>forever</span>
+                      )}
+                      {billingPeriod === 'annual' && savingsPerYear > 0 && (
+                        <div className={`text-[10px] font-semibold mt-1 ${plan.highlighted ? 'text-emerald-200' : 'text-emerald-600'}`}>
+                          Save ${savingsPerYear}/year
+                        </div>
+                      )}
+                    </div>
+
+                    <ul className="space-y-2.5 mb-6 flex-1">
+                      {plan.basePlan && (
+                        <li className={`text-xs font-semibold mb-1 ${plan.highlighted ? 'text-white/60' : 'text-gray-400'}`}>
+                          Everything in {plan.basePlan}, plus:
+                        </li>
+                      )}
+                      {plan.features.map((f) => (
+                        <li key={f} className="flex items-start gap-2">
+                          <div className={`w-4 h-4 flex items-center justify-center rounded-full flex-shrink-0 mt-0.5 ${plan.highlighted ? 'bg-white/25' : 'bg-indigo-100'}`}>
+                            <i className={`ri-check-line text-xs ${plan.highlighted ? 'text-white' : 'text-indigo-600'}`}></i>
+                          </div>
+                          <span className={`text-xs leading-relaxed ${plan.highlighted ? 'text-white/90' : 'text-gray-700'}`}>{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    {isCurrentPlan ? (
+                      <div className="w-full py-2.5 rounded-xl font-semibold text-sm text-center bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <i className="ri-check-line mr-1"></i> Active Plan
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handlePlanCta(plan.name)}
+                        className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap ${
+                          plan.highlighted ? 'bg-white text-indigo-600 hover:bg-gray-50' : 'bg-indigo-500 text-white hover:bg-indigo-600'
+                        }`}
+                      >
+                        {plan.cta}
+                      </button>
+                    )}
+                  </article>
+                );
+              })}
             </div>
 
             {/* Enterprise Tiers */}
