@@ -27,6 +27,7 @@ export interface UseOnboardingReturn {
   markStep: (step: keyof OnboardingState['steps']) => Promise<void>;
   dismissChecklist: () => Promise<void>;
   setSampleProjectCreated: () => Promise<void>;
+  resetWelcome: () => Promise<void>;
   refetch: () => Promise<void>;
 }
 
@@ -241,12 +242,26 @@ export function useOnboarding(): UseOnboardingReturn {
     }));
   }, []);
 
+  const resetWelcome = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('user_onboarding')
+      .update({ welcome_completed: false })
+      .eq('user_id', user.id);
+
+    if (error) throw error;
+    setState((prev) => ({ ...prev, welcomeCompleted: false }));
+  }, []);
+
   return {
     state,
     completeWelcome,
     markStep,
     dismissChecklist,
     setSampleProjectCreated,
+    resetWelcome,
     refetch: fetchOnboarding,
   };
 }

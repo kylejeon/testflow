@@ -55,7 +55,7 @@ function RecoveryHandler() {
 function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { state, completeWelcome, markStep, dismissChecklist, setSampleProjectCreated } = useOnboarding();
+  const { state, completeWelcome, markStep, dismissChecklist, setSampleProjectCreated, resetWelcome } = useOnboarding();
   const { createSampleProject } = useSampleProject();
 
   const [userName, setUserName] = useState('');
@@ -148,22 +148,40 @@ function AppContent() {
     [completeWelcome, createSampleProject, setSampleProjectCreated, markStep, navigate],
   );
 
-  const handleWelcomeSkip = useCallback(() => {
-    // Temporarily hide modal — does NOT persist to DB.
-    // Refresh will show the modal again.
+  const handleWelcomeSkip = useCallback((persist: boolean) => {
     setWelcomeForceHidden(true);
-  }, []);
+    if (persist && userId) {
+      localStorage.setItem(`_tc_onb_skip_${userId}`, '1');
+    }
+  }, [userId]);
+
+  // Listen for replay event from Settings
+  useEffect(() => {
+    const handler = async () => {
+      if (userId) localStorage.removeItem(`_tc_onb_skip_${userId}`);
+      setWelcomeForceHidden(false);
+      try { await resetWelcome(); } catch { /* silent */ }
+    };
+    window.addEventListener('onboarding:replay', handler);
+    return () => window.removeEventListener('onboarding:replay', handler);
+  }, [userId, resetWelcome]);
+
+  const skippedViaLocalStorage = userId
+    ? localStorage.getItem(`_tc_onb_skip_${userId}`) === '1'
+    : false;
 
   const showWelcome =
     isAuthenticated &&
     !state.isLoading &&
     !state.welcomeCompleted &&
-    !welcomeForceHidden;
+    !welcomeForceHidden &&
+    !skippedViaLocalStorage;
 
   const showChecklist =
     isAuthenticated &&
     !state.isLoading &&
     state.welcomeCompleted &&
+    !state.checklistDismissed &&
     !state.isComplete;
 
   return (
@@ -173,6 +191,7 @@ function AppContent() {
 
       {showWelcome && (
         <WelcomeScreen
+          userId={userId}
           onComplete={handleWelcomeComplete}
           onSkip={handleWelcomeSkip}
         />

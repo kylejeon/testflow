@@ -1941,6 +1941,26 @@ def pytest_sessionfinish(session, exitstatus):
                           </button>
                         </div>
                       </div>
+                      {/* Replay Setup Guide */}
+                      <div className="bg-white border border-slate-200 rounded-[0.625rem] p-6 mb-4">
+                        <h3 className="text-[0.9375rem] font-bold text-slate-900 mb-1 flex items-center gap-2">
+                          <i className="ri-compass-discover-line text-indigo-500"></i>
+                          Setup Guide
+                        </h3>
+                        <p className="text-[0.8125rem] text-slate-500 mb-4">
+                          Revisit the getting-started wizard to explore key features of Testably.
+                        </p>
+                        <button
+                          onClick={() => {
+                            window.dispatchEvent(new CustomEvent('onboarding:replay'));
+                          }}
+                          className="inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md bg-indigo-50 text-indigo-600 border border-indigo-200 hover:bg-indigo-100 transition-colors cursor-pointer"
+                        >
+                          <i className="ri-refresh-line"></i>
+                          Replay Setup Guide
+                        </button>
+                      </div>
+
                       <DangerZoneSection email={userProfile.email} />
                     </>
                   )}
