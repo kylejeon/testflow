@@ -130,7 +130,7 @@ const enterpriseTiers = [
       'Dedicated support',
       'SLA guarantee',
     ],
-    cta: 'Get Started',
+    cta: 'Contact Us',
     icon: 'ri-building-2-line',
   },
   {
@@ -143,7 +143,7 @@ const enterpriseTiers = [
     features: [
       '51–100 team members',
     ],
-    cta: 'Get Started',
+    cta: 'Contact Us',
     icon: 'ri-building-4-line',
   },
   {
@@ -158,7 +158,7 @@ const enterpriseTiers = [
       'Custom contract & SLA',
       'Dedicated infrastructure',
     ],
-    cta: 'Contact Sales',
+    cta: 'Contact Us',
     icon: 'ri-government-line',
   },
 ];
@@ -169,10 +169,12 @@ const comparisonRows = [
   { feature: 'Test cases / project', free: '100', hobby: '200', starter: 'Unlimited', pro: 'Unlimited', entS: 'Unlimited', entM: 'Unlimited', entL: 'Unlimited' },
   { feature: 'AI generations / month', free: '3', hobby: '15', starter: '30', pro: '150', entS: 'Unlimited', entM: 'Unlimited', entL: 'Unlimited' },
   { feature: 'Test runs / month', free: '10', hobby: 'Unlimited', starter: 'Unlimited', pro: 'Unlimited', entS: 'Unlimited', entM: 'Unlimited', entL: 'Unlimited' },
+  { feature: 'Run history retention', free: '30 days', hobby: '90 days', starter: '1 year', pro: '2 years', entS: 'Unlimited', entM: 'Unlimited', entL: 'Unlimited' },
   { feature: 'Test case management', free: true, hobby: true, starter: true, pro: true, entS: true, entM: true, entL: true },
   { feature: 'TC Versioning', free: true, hobby: true, starter: true, pro: true, entS: true, entM: true, entL: true },
   { feature: 'Suggest Edge Cases (AI)', free: true, hobby: true, starter: true, pro: true, entS: true, entM: true, entL: true },
   { feature: 'Jira integration', free: 'Read-only', hobby: 'Full', starter: 'Full', pro: 'Full', entS: 'Full', entM: 'Full', entL: 'Full' },
+  { feature: 'GitHub integration', free: false, hobby: false, starter: true, pro: true, entS: true, entM: true, entL: true },
   { feature: 'Export/Import CSV', free: false, hobby: true, starter: true, pro: true, entS: true, entM: true, entL: true },
   { feature: 'RTM / Traceability', free: false, hobby: true, starter: true, pro: true, entS: true, entM: true, entL: true },
   { feature: 'Steps Library', free: false, hobby: '10 steps', starter: '20 steps', pro: 'Unlimited', entS: 'Full history', entM: 'Full history', entL: 'Full history' },
@@ -184,7 +186,7 @@ const comparisonRows = [
   { feature: 'CI/CD integration', free: false, hobby: false, starter: false, pro: true, entS: true, entM: true, entL: true },
   { feature: 'Test Automation Framework SDK', free: false, hobby: false, starter: false, pro: true, entS: true, entM: true, entL: true },
   { feature: 'Advanced reporting', free: false, hobby: false, starter: false, pro: true, entS: true, entM: true, entL: true },
-  { feature: 'Dedicated support', free: false, hobby: false, starter: false, pro: false, entS: true, entM: true, entL: true },
+  { feature: 'Support level', free: 'Community', hobby: 'Email', starter: 'Email', pro: 'Priority', entS: 'Dedicated', entM: 'Dedicated', entL: 'Dedicated' },
   { feature: 'SLA guarantee', free: false, hobby: false, starter: false, pro: false, entS: true, entM: true, entL: true },
   { feature: 'Custom contract & SLA', free: false, hobby: false, starter: false, pro: false, entS: false, entM: false, entL: true },
   { feature: 'Dedicated infrastructure', free: false, hobby: false, starter: false, pro: false, entS: false, entM: false, entL: true },
@@ -439,21 +441,12 @@ export default function PricingPage() {
                       ))}
                     </ul>
 
-                    {tier.cta === 'Contact Sales' ? (
-                      <a
-                        href="mailto:hello@testably.app?subject=Enterprise%20Plan%20Inquiry"
-                        className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap block text-center border-2 border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-white"
-                      >
-                        {tier.cta}
-                      </a>
-                    ) : (
-                      <button
-                        onClick={() => handlePlanCta(tier.name)}
-                        className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap block text-center border-2 border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-white"
-                      >
-                        {tier.cta}
-                      </button>
-                    )}
+                    <a
+                      href="mailto:hello@testably.app?subject=Enterprise%20Plan%20Inquiry"
+                      className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap block text-center border-2 border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-white"
+                    >
+                      {tier.cta}
+                    </a>
                   </div>
                 ))}
               </div>
