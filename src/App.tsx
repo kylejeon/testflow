@@ -187,7 +187,9 @@ function AppContent() {
   return (
     <>
       <RecoveryHandler />
-      <AppRoutes />
+      <ErrorBoundary sectionName="App Routes">
+        <AppRoutes />
+      </ErrorBoundary>
 
       {showWelcome && (
         <WelcomeScreen

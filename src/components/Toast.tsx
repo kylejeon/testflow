@@ -139,3 +139,52 @@ export function useToast() {
   if (!ctx) throw new Error('useToast must be used within ToastProvider');
   return ctx;
 }
+
+/**
+ * Converts an API or Supabase error into a human-readable message.
+ * Avoids generic "Network error" by mapping known error codes/messages
+ * to actionable descriptions.
+ */
+export function getApiErrorMessage(error: unknown): string {
+  if (!error) return 'An unexpected error occurred.';
+
+  const err = error as { message?: string; code?: string; status?: number; statusCode?: number };
+
+  // Supabase / PostgREST specific codes
+  if (err.code) {
+    switch (err.code) {
+      case 'PGRST116': return 'Record not found.';
+      case 'PGRST301': return 'You don\'t have permission to perform this action.';
+      case '23505': return 'This record already exists.';
+      case '23503': return 'Cannot complete: related record is missing.';
+      case '42501': return 'Permission denied. Check your plan or role.';
+      case 'auth/invalid-email': return 'Invalid email address.';
+      case 'auth/user-not-found': return 'No account found with this email.';
+      case 'auth/wrong-password': return 'Incorrect password.';
+    }
+  }
+
+  // HTTP status codes
+  const status = err.status ?? err.statusCode;
+  if (status === 401) return 'Session expired. Please log in again.';
+  if (status === 403) return 'You don\'t have permission to perform this action.';
+  if (status === 404) return 'The requested resource was not found.';
+  if (status === 409) return 'A conflict occurred — the record may already exist.';
+  if (status === 429) return 'Too many requests. Please wait a moment and try again.';
+  if (status && status >= 500) return 'Server error. Please try again shortly.';
+
+  // Network/fetch errors
+  const msg = err.message?.toLowerCase() ?? '';
+  if (msg.includes('network') || msg.includes('failed to fetch') || msg.includes('load failed')) {
+    return 'Network error. Check your connection and try again.';
+  }
+  if (msg.includes('timeout')) return 'Request timed out. Please try again.';
+  if (msg.includes('aborted')) return 'Request was cancelled.';
+
+  // Fall back to the error message itself if it's short and readable
+  if (err.message && err.message.length < 120 && !err.message.startsWith('{}')) {
+    return err.message;
+  }
+
+  return 'Something went wrong. Please try again.';
+}

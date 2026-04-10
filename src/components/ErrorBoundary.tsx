@@ -1,7 +1,17 @@
 import { Component, ReactNode } from 'react';
+import { Sentry } from '../lib/sentry';
 
 interface Props {
   children: ReactNode;
+  /** Custom fallback UI. If not provided, uses the default full-page error view. */
+  fallback?: ReactNode;
+  /**
+   * Compact section-level mode: renders a small inline error card instead of
+   * a full-page takeover. Use this to wrap individual panels/widgets.
+   */
+  section?: boolean;
+  /** Human-readable label for the section (for Sentry breadcrumb). */
+  sectionName?: string;
 }
 
 interface State {
@@ -9,7 +19,7 @@ interface State {
   error: Error | null;
 }
 
-function ErrorFallback({ error, onReset }: { error: Error | null; onReset: () => void }) {
+function FullPageFallback({ error, onReset }: { error: Error | null; onReset: () => void }) {
   return (
     <main
       role="alert"
@@ -42,7 +52,7 @@ function ErrorFallback({ error, onReset }: { error: Error | null; onReset: () =>
           Reload page
         </button>
         <a
-          href="/dashboard"
+          href="/projects"
           className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
         >
           Go to Dashboard
@@ -68,6 +78,30 @@ function ErrorFallback({ error, onReset }: { error: Error | null; onReset: () =>
   );
 }
 
+function SectionFallback({ sectionName, onReset }: { sectionName?: string; onReset: () => void }) {
+  return (
+    <div
+      role="alert"
+      className="rounded-xl border border-red-100 bg-red-50 p-6 text-center my-4"
+    >
+      <i className="ri-error-warning-line text-2xl text-red-400 mb-2 block"></i>
+      <p className="text-sm font-medium text-red-700">
+        {sectionName ? `"${sectionName}" failed to load.` : 'This section failed to load.'}
+      </p>
+      <p className="text-xs text-red-500 mt-1 mb-3">
+        Please refresh or contact support if the problem persists.
+      </p>
+      <button
+        onClick={onReset}
+        className="inline-flex items-center gap-1 text-xs font-medium text-red-600 border border-red-200 rounded-md px-3 py-1.5 hover:bg-red-100 transition-colors cursor-pointer"
+      >
+        <i className="ri-refresh-line"></i>
+        Retry
+      </button>
+    </div>
+  );
+}
+
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { hasError: false, error: null };
 
@@ -77,15 +111,40 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error('[ErrorBoundary]', error, info);
+
+    // Report to Sentry with component stack context
+    Sentry.withScope((scope) => {
+      if (this.props.sectionName) {
+        scope.setTag('error_boundary', this.props.sectionName);
+      }
+      scope.setExtra('componentStack', info.componentStack);
+      Sentry.captureException(error);
+    });
   }
 
   handleReset = () => {
-    window.location.reload();
+    if (this.props.section) {
+      // Section errors: reset state to retry rendering
+      this.setState({ hasError: false, error: null });
+    } else {
+      window.location.reload();
+    }
   };
 
   render() {
     if (this.state.hasError) {
-      return <ErrorFallback error={this.state.error} onReset={this.handleReset} />;
+      if (this.props.fallback) return this.props.fallback;
+
+      if (this.props.section) {
+        return (
+          <SectionFallback
+            sectionName={this.props.sectionName}
+            onReset={this.handleReset}
+          />
+        );
+      }
+
+      return <FullPageFallback error={this.state.error} onReset={this.handleReset} />;
     }
     return this.props.children;
   }
