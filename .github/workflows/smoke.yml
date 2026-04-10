@@ -8,8 +8,10 @@ on:
     #
     # ⚠️  BetterStack Heartbeat must be set to:
     #       Period:       60 minutes
-    #       Grace period: 30 minutes  (= 90 min total window)
-    # This accommodates GitHub's actual scheduler behavior.
+    #       Grace period: 120 minutes  (= 180 min total window)
+    # Observed worst-case gap between cron runs: ~190 min (GitHub scheduler
+    # deprioritises inactive repos overnight). The push trigger covers active
+    # deploy windows; the grace period covers overnight cron gaps.
     - cron: '*/30 * * * *'
   # Push to main also triggers smoke — ensures every deploy is validated
   # and provides a reliable heartbeat ping after each code change.
@@ -50,7 +52,7 @@ jobs:
         run: npx playwright test --reporter=github
 
       - name: Ping BetterStack heartbeat on success
-        if: success()
+        if: always()
         run: |
           if [ -n "$BETTERSTACK_HEARTBEAT_URL" ]; then
             # --retry 3: handles transient network errors silently hiding with -s -o /dev/null
