@@ -17,6 +17,7 @@ import { Avatar } from '../../../components/Avatar';
 import { useTranslation } from 'react-i18next';
 import { useSampleProject } from '../../../hooks/useSampleProject';
 import { useToast } from '../../../components/Toast';
+import UpgradeBanner from '../../../components/UpgradeBanner';
 
 // ── Health score helpers ────────────────────────────────────────────────────
 function getProjectHealth(passRate: number | null): { color: 'green' | 'yellow' | 'red' | 'gray'; label: string } {
@@ -300,6 +301,18 @@ export default function ProjectsContent() {
     queryKey: ['projects'],
     queryFn: loadProjectsData,
   });
+
+  // Tier limit state for upsell
+  const [subscriptionTier, setSubscriptionTier] = useState<number>(1);
+  const TIER_PROJECT_LIMITS: Record<number, number> = { 1: 1, 2: 3, 3: 10, 4: Infinity, 5: Infinity, 6: Infinity, 7: Infinity };
+
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).maybeSingle();
+      setSubscriptionTier(profile?.subscription_tier ?? 1);
+    });
+  }, []);
 
   // Destructure from query data
   const projects = data?.projects ?? [];
@@ -713,6 +726,32 @@ export default function ProjectsContent() {
           {SubHeader}
           <div style={{ padding: '1.5rem' }}>
             <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+              {/* Project limit upsell banner */}
+              {(() => {
+                const maxProjects = TIER_PROJECT_LIMITS[subscriptionTier] ?? 1;
+                const atLimit = isFinite(maxProjects) && projects.length >= maxProjects;
+                const nearLimit = isFinite(maxProjects) && !atLimit && projects.length >= maxProjects - 1 && maxProjects > 1;
+                if (atLimit) {
+                  return (
+                    <UpgradeBanner
+                      message={`You've used ${projects.length} of ${maxProjects} project${maxProjects !== 1 ? 's' : ''} on your current plan. Upgrade to create more.`}
+                      inline
+                      className="mb-4"
+                    />
+                  );
+                }
+                if (nearLimit) {
+                  return (
+                    <UpgradeBanner
+                      message={`You're using ${projects.length} of ${maxProjects} projects. You can create 1 more on your current plan.`}
+                      inline
+                      className="mb-4"
+                    />
+                  );
+                }
+                return null;
+              })()}
+
               {/* Stat cards — show as soon as there is 1+ project */}
               <StatCards data={statCardsData} />
               <SparseState

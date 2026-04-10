@@ -5,6 +5,7 @@ import { notifyProjectMembers } from '../../../hooks/useNotifications';
 import { triggerWebhook } from '../../../hooks/useWebhooks';
 import { sendLoopsEvent } from '../../../lib/loops';
 import { markOnboardingStep } from '../../../lib/onboardingMarker';
+import UpgradeBanner from '../../../components/UpgradeBanner';
 
 interface InviteMemberModalProps {
   isOpen: boolean;
@@ -284,62 +285,28 @@ export default function InviteMemberModal({
           </div>
         ) : !canInvite ? (
           <div className="p-6">
-            <div className="p-6 bg-amber-50 border border-amber-200 rounded-xl text-center">
-              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i className="ri-team-line text-3xl text-amber-600"></i>
-              </div>
-              <h3 className="text-lg font-bold text-amber-800 mb-2">Member Limit Reached</h3>
-              <p className="text-amber-700 mb-4">
-                The {subscriptionTier === 1 ? 'Free' : subscriptionTier === 2 ? 'Hobby' : subscriptionTier === 3 ? 'Starter' : subscriptionTier === 4 ? 'Professional' : subscriptionTier === 5 ? 'Enterprise S' : subscriptionTier === 6 ? 'Enterprise M' : 'Enterprise L'} plan allows
-                a maximum of {maxMembers} members per project.
-                <br />
-                You currently have {currentMemberCount} members.
-              </p>
-              <p className="text-sm text-amber-600 mb-4">
-                Please upgrade your plan to invite more teammates.
-              </p>
-              <div className="flex gap-3 justify-center">
-                <button
-                  onClick={onClose}
-                  className="px-5 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-all cursor-pointer whitespace-nowrap"
-                >
-                  Close
-                </button>
-                <a
-                  href="/settings"
-                  className="px-5 py-2.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 font-medium transition-all cursor-pointer whitespace-nowrap inline-flex items-center gap-2"
-                >
-                  <i className="ri-vip-crown-line"></i>
-                  View Plans
-                </a>
-              </div>
+            <UpgradeBanner
+              message={`You've used ${currentMemberCount} of ${maxMembers} team members. Upgrade to add more teammates.`}
+              ctaLabel="Upgrade Plan"
+              hideDismiss
+            />
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={onClose}
+                className="px-5 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-all cursor-pointer whitespace-nowrap"
+              >
+                Close
+              </button>
             </div>
           </div>
         ) : (
           <div className="p-6">
-            {subscriptionTier === 1 && (
-              <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-3">
-                <i className="ri-information-line text-gray-500"></i>
-                <span className="text-sm text-gray-600">
-                  Free plan: {currentMemberCount}/{maxMembers} members used
-                </span>
-              </div>
-            )}
-            {subscriptionTier === 2 && (
-              <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-3">
-                <i className="ri-information-line text-gray-500"></i>
-                <span className="text-sm text-gray-600">
-                  Starter plan: {currentMemberCount}/{maxMembers} members used
-                </span>
-              </div>
-            )}
-            {subscriptionTier === 3 && (
-              <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-3">
-                <i className="ri-information-line text-gray-500"></i>
-                <span className="text-sm text-gray-600">
-                  Professional plan: {currentMemberCount}/{maxMembers} members used
-                </span>
-              </div>
+            {isFinite(maxMembers) && currentMemberCount >= maxMembers - 1 && currentMemberCount < maxMembers && (
+              <UpgradeBanner
+                message={`You're using ${currentMemberCount} of ${maxMembers} team members. You can invite 1 more on your current plan.`}
+                inline
+                className="mb-4"
+              />
             )}
             
             {error && (
