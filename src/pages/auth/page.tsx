@@ -476,8 +476,8 @@ export default function AuthPage() {
   return (
     <>
       <SEOHead
-        title="Log in / Sign up | Testably"
-        description="Log in or create a new Testably account. Start managing your QA tests today."
+        title="Sign In — Testably"
+        description="Sign in or create a free Testably account. Manage test cases, runs, and QA workflows for your team."
         noindex={true}
       />
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 flex items-center justify-center p-4">

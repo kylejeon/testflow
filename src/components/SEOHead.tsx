@@ -25,7 +25,7 @@ export default function SEOHead({
   keywords = 'test management, QA platform, test cases, test runs, milestones, Jira integration',
   ogTitle,
   ogDescription,
-  ogImage = 'https://readdy.ai/api/search-image?query=modern%20professional%20QA%20testing%20management%20platform%20dashboard%20interface%20with%20clean%20design%2C%20test%20case%20management%20system%2C%20quality%20assurance%20software%2C%20professional%20tech%20workspace%2C%20minimalist%20UI%20design%2C%20teal%20and%20navy%20blue%20color%20scheme%2C%20organized%20workflow%20visualization%2C%20digital%20testing%20tools&width=1200&height=630&seq=testably-og-default&orientation=landscape',
+  ogImage = '/brand/og-dark-1200x630.png',
   ogUrl,
   ogType = 'website',
   twitterCard = 'summary_large_image',

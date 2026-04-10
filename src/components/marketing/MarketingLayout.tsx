@@ -9,6 +9,7 @@ interface MarketingLayoutProps {
   title: string;
   description: string;
   keywords?: string;
+  ogImage?: string;
   className?: string;
   showCTA?: boolean;
 }
@@ -18,12 +19,13 @@ export default function MarketingLayout({
   title,
   description,
   keywords,
+  ogImage,
   className,
   showCTA = true,
 }: MarketingLayoutProps) {
   return (
     <>
-      <SEOHead title={title} description={description} keywords={keywords} />
+      <SEOHead title={title} description={description} keywords={keywords} ogImage={ogImage} />
       <div
         className={`min-h-screen bg-white ${className ?? ''}`}
         style={{ fontFamily: '"Inter", "Noto Sans KR", sans-serif' }}

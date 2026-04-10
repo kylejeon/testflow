@@ -200,7 +200,7 @@ export default function CookiePolicyPage() {
 
   return (
     <MarketingLayout
-      title={lang === 'ko' ? '쿠키 정책 | Testably' : 'Cookie Policy — Testably'}
+      title={lang === 'ko' ? '쿠키 정책 | Testably' : 'Cookie Notice — Testably'}
       description="Testably's Cookie Policy — learn what cookies and tracking technologies we use, why we use them, and how to manage your cookie preferences."
       keywords="Testably cookie policy, cookies, tracking, browser storage"
       showCTA={false}
