@@ -7,7 +7,7 @@ const content = {
   en: {
     badge: 'Legal',
     title: 'Terms of Service',
-    updated: 'Last Updated: January 1, 2025',
+    updated: 'Last Updated: April 10, 2026',
     back: 'Back to Home',
     privacy: 'Privacy Policy',
     terms: 'Terms of Service',
@@ -48,10 +48,10 @@ const content = {
         body: 'The Company offers paid plans including Hobby ($19/month), Starter ($49/month), Professional ($99/month), Enterprise S ($249/month), Enterprise M ($499/month), and Enterprise L (custom pricing). To use paid services, users must select a plan and complete payment.',
         refundTitle: 'Refund Policy',
         refundList: [
-          'No charges are incurred if canceled during the 14-day free trial period.',
-          'A full refund is available if no usage has occurred within 7 days of payment.',
-          'No refund is provided for the remaining period after 7 days.',
-          'Enterprise plan refunds are subject to separate contract terms.',
+          'Monthly plans: Full refund within 14 days of billing. No refund after 14 days.',
+          'Annual plans: Full refund within 30 days of billing. Pro-rata partial refund available after 30 days.',
+          'Enterprise plans: Subject to separate contract terms.',
+          'Refund requests can be submitted via Settings → Billing or by emailing support@testably.app.',
         ],
       },
       {
@@ -99,7 +99,7 @@ const content = {
   ko: {
     badge: '법적 고지',
     title: '이용약관',
-    updated: '최종 수정일: 2025년 1월 1일',
+    updated: '최종 수정일: 2026년 4월 10일',
     back: '홈으로 돌아가기',
     privacy: '개인정보처리방침',
     terms: '이용약관',
@@ -140,10 +140,10 @@ const content = {
         body: '회사는 Starter, Professional, Enterprise 등 유료 요금제를 제공합니다. 유료 서비스 이용을 위해서는 해당 요금제를 선택하고 결제를 완료해야 합니다.',
         refundTitle: '환불 정책',
         refundList: [
-          '14일 무료 체험 기간 중 취소 시 요금이 청구되지 않습니다.',
-          '유료 결제 후 7일 이내 미사용 시 전액 환불이 가능합니다.',
-          '7일 초과 후에는 잔여 기간에 대한 환불이 제공되지 않습니다.',
-          'Enterprise 플랜의 환불은 별도 계약 조건에 따릅니다.',
+          '월간 구독: 결제일로부터 14일 이내 전액 환불. 14일 경과 후 환불 불가.',
+          '연간 구독: 결제일로부터 30일 이내 전액 환불. 30일 경과 후 사용 비례(pro-rata) 부분 환불 가능.',
+          'Enterprise 플랜: 별도 계약 조건 우선 적용.',
+          '환불 요청: 설정(Settings) → 결제(Billing) 또는 support@testably.app 이메일.',
         ],
       },
       {

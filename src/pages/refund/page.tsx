@@ -1,4 +1,3 @@
-import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import MarketingLayout from '../../components/marketing/MarketingLayout';
 import { useLanguage } from '../../hooks/useLanguage';
@@ -7,7 +6,7 @@ const content = {
   en: {
     badge: 'Legal',
     title: 'Refund Policy',
-    updated: 'Last Updated: April 7, 2026',
+    updated: 'Last Updated: April 10, 2026',
     sections: [
       {
         heading: 'Overview',
@@ -31,23 +30,41 @@ const content = {
         note: 'Subscriptions are billed in advance on a monthly or annual basis. Viewer seats are free and do not incur charges regardless of plan.',
       },
       {
-        heading: '14-Day Refund Guarantee',
-        body: 'We offer a full refund within 14 days of purchase for any reason, no questions asked. This applies to both initial purchases and subscription renewals. To request a refund, contact us at support@testably.app with your order details.',
-        note: 'Refunds will be processed within 5–10 business days via the original payment method.',
+        heading: 'Monthly Subscription Refunds',
+        body: 'For monthly subscriptions, a full refund is available within 14 days of the billing date, for any reason, no questions asked. After 14 days, no refund is provided for the remainder of the current billing period. Upon cancellation, your access continues until the end of the current billing cycle.',
+        note: 'Partial refunds are not available for monthly subscriptions.',
       },
       {
-        heading: 'Subscription Cancellation',
-        body: 'You can cancel your subscription at any time from your account settings. Cancellation takes effect at the end of the current billing period — you retain full access to the Service until then. Refunds for subscriptions are available within the 14-day refund window from the initial purchase or most recent renewal date.',
+        heading: 'Annual Subscription Refunds',
+        body: 'Annual subscriptions follow a two-tier refund model:',
+        list: [
+          'Full refund: Available within 30 days of the billing date, for any reason.',
+          'Pro-rata partial refund: Available after 30 days. You are charged for the months already used, and the remaining unused months are refunded.',
+        ],
+        note: 'Example: If you paid $194/year and request a refund in month 5, you are charged for 5 months of usage and the remaining 7 months are refunded proportionally.',
+      },
+      {
+        heading: 'Exceptions',
+        body: 'The following exceptions apply to this Refund Policy:',
+        list: [
+          'Enterprise contracts: Enterprise plans are governed by separate contract terms that take precedence over this policy.',
+          'Service outages (SLA breach): If the Service fails to meet its Service Level Agreement, a refund may be reviewed regardless of the time elapsed since payment.',
+          'Fraudulent or abusive use: Refund requests may be denied if the account has violated our Terms of Service, including fraudulent or abusive use of the Service.',
+          'Promotional pricing: Refund amounts are calculated based on the actual amount paid, not the standard list price.',
+        ],
       },
       {
         heading: 'How to Request a Refund',
-        body: 'To request a refund, please contact our support team at support@testably.app with the following information:',
+        body: 'To request a refund, please use one of the following methods:',
         list: [
-          'Your account email address',
-          'The date of the transaction',
-          'Your order or transaction ID (if available)',
+          'Via your account: Go to Settings → Billing and submit a refund request directly.',
+          'Via email: Contact us at support@testably.app with your account email, transaction date, and order/transaction ID (if available).',
         ],
-        note: 'We will respond within 3 business days. Approved refunds are processed through Paddle and typically appear in your account within 5–10 business days, depending on your payment method and financial institution.',
+        note: 'We will acknowledge your request within 3 business days. Approved refunds are processed through Paddle and typically appear in your account within 3–10 business days, depending on your payment method and financial institution.',
+      },
+      {
+        heading: 'Subscription Cancellation',
+        body: 'You can cancel your subscription at any time from your account settings. Cancellation takes effect at the end of the current billing period — you retain full access to the Service until then. If you are eligible for a refund under this policy, you may request one at the time of cancellation.',
       },
       {
         heading: 'Payment Processing',
@@ -71,7 +88,7 @@ const content = {
   ko: {
     badge: '법적 정보',
     title: '환불 정책',
-    updated: '최종 수정일: 2026년 4월 7일',
+    updated: '최종 수정일: 2026년 4월 10일',
     sections: [
       {
         heading: '개요',
@@ -95,23 +112,41 @@ const content = {
         note: '구독 요금은 월간 또는 연간 단위로 선결제됩니다. Viewer 시트는 플랜에 관계없이 무료입니다.',
       },
       {
-        heading: '14일 환불 보장',
-        body: '구매 후 14일 이내에는 이유를 불문하고 전액 환불을 제공합니다. 이는 최초 구매 및 구독 갱신 모두에 적용됩니다. 환불을 요청하시려면 support@testably.app으로 주문 정보와 함께 연락 주세요.',
-        note: '환불은 영업일 기준 5~10일 이내에 원래 결제 수단으로 처리됩니다.',
+        heading: '월간 구독 환불',
+        body: '월간 구독의 경우, 결제일로부터 14일 이내에는 이유를 불문하고 전액 환불이 가능합니다. 14일 경과 후에는 잔여 구독 기간에 대한 환불이 제공되지 않습니다. 취소 후에도 현재 결제 주기 종료일까지 서비스를 이용할 수 있습니다.',
+        note: '월간 구독에는 부분 환불이 적용되지 않습니다.',
       },
       {
-        heading: '구독 취소',
-        body: '구독 취소는 계정 설정에서 언제든 가능하며, 현재 결제 주기가 끝난 후 적용됩니다. 취소 이후에도 결제 주기 종료일까지 서비스를 계속 이용할 수 있습니다. 구독 환불은 최초 구매 또는 가장 최근 갱신일로부터 14일 이내에 가능합니다.',
+        heading: '연간 구독 환불',
+        body: '연간 구독은 2단계 환불 정책을 따릅니다:',
+        list: [
+          '전액 환불: 결제일로부터 30일 이내에 이유를 불문하고 전액 환불이 가능합니다.',
+          '비례 부분 환불(Pro-rata): 30일 경과 후에도 이미 사용한 기간을 제외한 남은 기간에 대해 비례 환불이 가능합니다.',
+        ],
+        note: '예시: 연간 $194를 결제하고 5개월 차에 환불을 요청하는 경우, 사용한 5개월분이 청구되고 남은 7개월분이 비례 환불됩니다.',
+      },
+      {
+        heading: '예외 사항',
+        body: '본 환불 정책에는 다음 예외 사항이 적용됩니다:',
+        list: [
+          'Enterprise 계약: Enterprise 플랜은 별도의 계약 조건이 우선 적용됩니다.',
+          '서비스 장애(SLA 미달): 서비스가 SLA를 충족하지 못한 경우, 결제 후 경과 기간에 관계없이 환불이 검토될 수 있습니다.',
+          '사기적 또는 악의적 사용: 이용약관 위반(사기적 사용 등)이 확인된 경우 환불이 거부될 수 있습니다.',
+          '프로모션 가격: 환불 금액은 정가가 아닌 실제 결제 금액을 기준으로 산정됩니다.',
+        ],
       },
       {
         heading: '환불 요청 방법',
-        body: '환불을 요청하시려면 support@testably.app으로 다음 정보와 함께 연락해 주세요:',
+        body: '환불을 요청하시려면 아래 방법 중 하나를 이용해 주세요:',
         list: [
-          '계정 이메일 주소',
-          '결제 일자',
-          '주문 또는 거래 ID (있는 경우)',
+          '계정에서 직접: 설정(Settings) → 결제(Billing) 메뉴에서 환불 요청을 제출합니다.',
+          '이메일로: support@testably.app으로 계정 이메일, 결제 일자, 주문/거래 ID(있는 경우)를 포함하여 연락합니다.',
         ],
-        note: '요청을 검토하여 영업일 기준 3일 이내 답변드립니다. 승인된 환불은 Paddle을 통해 처리되며, 결제 수단과 금융기관에 따라 5~10 영업일 내에 반영됩니다.',
+        note: '요청을 검토하여 영업일 기준 3일 이내 답변드립니다. 승인된 환불은 Paddle을 통해 처리되며, 결제 수단과 금융기관에 따라 3~10 영업일 내에 반영됩니다.',
+      },
+      {
+        heading: '구독 취소',
+        body: '구독 취소는 계정 설정에서 언제든 가능하며, 현재 결제 주기가 끝난 후 적용됩니다. 취소 이후에도 결제 주기 종료일까지 서비스를 계속 이용할 수 있습니다. 본 정책에 따라 환불 자격이 있는 경우 취소 시점에 환불을 요청할 수 있습니다.',
       },
       {
         heading: '결제 처리',
@@ -214,12 +249,8 @@ export default function RefundPolicyPage() {
             <i className="ri-file-text-line text-indigo-500 text-lg flex-shrink-0"></i>
             <p className="text-gray-600">
               {lang === 'ko'
-                ? '서비스 이용 조건에 대한 자세한 내용은 '
-                : 'For full terms and conditions, please see our '}
-              <Link to="/terms" className="text-indigo-600 font-semibold hover:underline">
-                {lang === 'ko' ? '이용약관' : 'Terms of Service'}
-              </Link>
-              {lang === 'ko' ? '을 참조하세요.' : '.'}
+                ? <>서비스 이용 조건에 대한 자세한 내용은 <Link to="/terms" className="text-indigo-600 font-semibold hover:underline">이용약관</Link>을 참조하세요.</>
+                : <>For full terms and conditions, please see our <Link to="/terms" className="text-indigo-600 font-semibold hover:underline">Terms of Service</Link>.</>}
             </p>
           </div>
         </article>
