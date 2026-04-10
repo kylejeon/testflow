@@ -15,6 +15,8 @@ interface SEOHeadProps {
   twitterImage?: string;
   canonical?: string;
   noindex?: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  structuredData?: Record<string, any>;
 }
 
 export default function SEOHead({
@@ -32,6 +34,7 @@ export default function SEOHead({
   twitterImage,
   canonical,
   noindex = false,
+  structuredData,
 }: SEOHeadProps) {
   useEffect(() => {
     // Set title
@@ -94,6 +97,18 @@ export default function SEOHead({
     
     canonicalElement.setAttribute('href', canonical || window.location.href);
 
+    // Structured data (JSON-LD)
+    const existingJsonLd = document.querySelector('script[type="application/ld+json"]#seo-structured-data');
+    if (structuredData) {
+      const script = existingJsonLd ?? document.createElement('script');
+      script.setAttribute('type', 'application/ld+json');
+      script.setAttribute('id', 'seo-structured-data');
+      script.textContent = JSON.stringify(structuredData);
+      if (!existingJsonLd) document.head.appendChild(script);
+    } else if (existingJsonLd) {
+      existingJsonLd.remove();
+    }
+
     // Cleanup function
     return () => {
       // Reset to default title on unmount
@@ -114,6 +129,7 @@ export default function SEOHead({
     twitterImage,
     canonical,
     noindex,
+    structuredData,
   ]);
 
   return null;

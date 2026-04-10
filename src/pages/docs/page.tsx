@@ -40,9 +40,9 @@ const categories = [
 export default function DocsPage() {
   return (
     <MarketingLayout
-      title="Documentation | Testably"
-      description="Learn how to use Testably. Guides, tutorials, and best practices."
-      keywords="testably documentation, how to use testably, QA guides, tutorials"
+      title="Documentation — Testably | Guides, Tutorials &amp; Best Practices"
+      description="Testably documentation — step-by-step guides, tutorials, and best practices for test case management, test runs, Jira integration, CI/CD, and more."
+      keywords="testably documentation, how to use testably, QA guides, test case management tutorial, Jira integration guide"
     >
       {/* Hero */}
       <header className="py-24 bg-gray-950 text-center relative overflow-hidden">

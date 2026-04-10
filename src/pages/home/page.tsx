@@ -989,9 +989,9 @@ export default function HomePage() {
   return (
     <>
       <SEOHead
-        title="Testably - QA Test Management Platform | Start for Free"
-        description="Faster, smarter QA test management. Manage test cases, runs, milestones, sessions, and team collaboration in one platform. Jira integration, CI/CD support, 14-day free trial."
-        keywords="QA test management, test case management, test run, test automation, Jira integration, software testing, quality assurance, QA tools, testing platform"
+        title="Testably — Test Case Management for Modern QA Teams"
+        description="Testably brings your entire QA workflow together — test cases, runs, milestones, sessions, and team collaboration in one platform. Jira integration, CI/CD support, AI test generation, 14-day free trial."
+        keywords="test case management, QA test management, test run, test automation, Jira integration, software testing, quality assurance, QA tools, testing platform, modern QA"
         ogType="website"
         structuredData={{
           '@context': 'https://schema.org',

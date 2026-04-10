@@ -209,8 +209,9 @@ export default function TermsPage() {
 
   return (
     <MarketingLayout
-      title={lang === 'ko' ? '이용약관 | Testably' : 'Terms of Service | Testably'}
-      description="Terms and conditions for using Testably."
+      title={lang === 'ko' ? '이용약관 | Testably' : 'Terms of Service — Testably'}
+      description="Read the Terms of Service for Testably — the QA test management platform. Understand your rights, obligations, and our service policies."
+      keywords="Testably terms of service, terms and conditions, QA platform legal"
       showCTA={false}
     >
 

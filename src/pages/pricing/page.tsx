@@ -240,9 +240,9 @@ export default function PricingPage() {
 
   return (
     <MarketingLayout
-      title="Pricing | Testably"
-      description="Simple flat-rate pricing for teams. Free plan available. No per-seat fees."
-      keywords="testably pricing, QA tool pricing, test management cost, flat rate QA software"
+      title="Pricing — Testably | Free, Hobby, Professional, Enterprise Plans"
+      description="Simple flat-rate pricing for QA teams. Free plan forever, Hobby $19/mo, Professional $99/mo. No per-seat fees. All paid plans include a 14-day free trial."
+      keywords="testably pricing, QA tool pricing, test management cost, flat rate QA software, free QA tool, test management plans"
       showCTA={false}
     >
 

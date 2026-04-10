@@ -176,8 +176,9 @@ export default function RefundPolicyPage() {
 
   return (
     <MarketingLayout
-      title={lang === 'ko' ? '환불 정책 | Testably' : 'Refund Policy | Testably'}
-      description="Refund policy for Testably paid subscription plans."
+      title={lang === 'ko' ? '환불 정책 | Testably' : 'Refund Policy — Testably'}
+      description="Testably's Refund Policy — understand our refund process, eligibility criteria, and how to request a refund for paid subscription plans."
+      keywords="Testably refund policy, subscription refund, cancellation policy"
       showCTA={false}
     >
       <main className="max-w-3xl mx-auto px-6 py-16">

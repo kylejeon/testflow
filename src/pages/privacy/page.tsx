@@ -206,8 +206,9 @@ export default function PrivacyPage() {
 
   return (
     <MarketingLayout
-      title={lang === 'ko' ? '개인정보처리방침 | Testably' : 'Privacy Policy | Testably'}
-      description="How Testably collects, uses, and protects your data."
+      title={lang === 'ko' ? '개인정보처리방침 | Testably' : 'Privacy Policy — Testably'}
+      description="Testably's Privacy Policy — how we collect, use, and protect your personal data in compliance with GDPR and relevant privacy regulations."
+      keywords="Testably privacy policy, data protection, GDPR, personal information"
       showCTA={false}
     >
 
