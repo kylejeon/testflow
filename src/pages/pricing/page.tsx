@@ -303,7 +303,7 @@ export default function PricingPage() {
         <section className="py-16 bg-gray-50">
           <div className="max-w-5xl mx-auto px-6">
             {/* Free / Hobby / Starter / Professional */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5 items-start mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5 items-stretch mb-6">
               {plans.map((plan) => {
                 const isCurrentPlan = currentTier === plan.tier;
                 const displayPrice = billingPeriod === 'annual' && plan.annualMonthly > 0
@@ -316,7 +316,7 @@ export default function PricingPage() {
                 return (
                   <article
                     key={plan.name}
-                    className={`rounded-2xl p-6 border flex flex-col transition-all relative ${
+                    className={`rounded-2xl p-6 border flex flex-col transition-all relative h-full ${
                       plan.highlighted
                         ? 'bg-indigo-500 border-indigo-500 shadow-xl shadow-indigo-200 scale-[1.02]'
                         : 'bg-white border-gray-200 hover:border-indigo-200 hover:shadow-md'
