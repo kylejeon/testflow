@@ -715,6 +715,12 @@ export default function ProjectsContent() {
         {showCreateModal && (
           <CreateProjectModal onClose={() => { setShowCreateModal(false); clearActionParam(); }} onCreate={handleCreateProject} />
         )}
+        {showImportModal && (
+          <TestRailImportModal
+            onClose={() => { setShowImportModal(false); queryClient.invalidateQueries({ queryKey: ['projects'] }); }}
+            onOpenCSV={() => { showToast('Select a project first to use CSV import', 'info'); }}
+          />
+        )}
       </>
     );
   }
