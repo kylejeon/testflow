@@ -14,6 +14,7 @@ import ProjectHeader from '../../components/ProjectHeader';
 import QuickCreateTCModal from './components/QuickCreateTCModal';
 import ContinueRunPanel from './components/ContinueRunPanel';
 import AIAssistModal from './components/AIAssistModal';
+import UpgradeBanner from '../../components/UpgradeBanner';
 import AIGenerateModal from '../project-testcases/components/AIGenerateModal';
 import AnalyticsTab from './AnalyticsTab';
 import ActivityFeedTab from './ActivityFeedTab';
@@ -1316,6 +1317,19 @@ export default function ProjectDetail() {
                             Upgrade <i className="ri-arrow-right-up-line text-xs" />
                           </Link>
                         </div>
+                        {aiLimit > 0 && aiUsageCount / aiLimit >= 0.8 && (
+                          <UpgradeBanner
+                            message={
+                              aiUsageCount >= aiLimit
+                                ? `You've used all ${aiLimit} AI generations this month.`
+                                : `You've used ${aiUsageCount} of ${aiLimit} AI generations this month.`
+                            }
+                            ctaLabel="Upgrade"
+                            inline
+                            dismissKey={`ai-limit-${currentTier}`}
+                            className="mt-3"
+                          />
+                        )}
                       </>
                     )}
                   </div>

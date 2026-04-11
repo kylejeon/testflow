@@ -13,6 +13,7 @@ import TestCasesIllustration from '../../../components/illustrations/TestCasesIl
 import { LifecycleBadge, type LifecycleStatus } from '../../../components/LifecycleBadge';
 import { Avatar } from '../../../components/Avatar';
 import { useToast } from '../../../components/Toast';
+import UpgradeBanner from '../../../components/UpgradeBanner';
 
 interface TestCase {
   id: string;
@@ -2620,6 +2621,28 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
       {/* 테스트 케이스 목록 */}
       <div className="flex-1 flex flex-col overflow-hidden">
+        {/* TC 한도 접근 배너 (80%+) */}
+        {(() => {
+          const TC_LIMITS: Record<number, number> = { 1: 100, 2: 200 };
+          const tcLimit = TC_LIMITS[userTier];
+          if (!tcLimit) return null;
+          const pct = testCases.length / tcLimit;
+          if (pct < 0.8) return null;
+          const atLimit = testCases.length >= tcLimit;
+          return (
+            <UpgradeBanner
+              message={
+                atLimit
+                  ? `You've reached the ${tcLimit} test case limit on your plan. Upgrade to add more.`
+                  : `You've used ${testCases.length} of ${tcLimit} test cases. Approaching your plan limit.`
+              }
+              ctaLabel="Upgrade Plan"
+              inline
+              dismissKey={`tc-limit-${userTier}`}
+              className="mx-4 mt-3"
+            />
+          );
+        })()}
         {/* 액션 바 */}
         <div className="flex items-center justify-end gap-2 px-4 py-[0.6875rem] border-b border-gray-100 bg-white flex-shrink-0">
           <button

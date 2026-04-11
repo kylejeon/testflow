@@ -10,6 +10,12 @@ interface UpgradeBannerProps {
   inline?: boolean;
   /** Hide the dismiss button */
   hideDismiss?: boolean;
+  /**
+   * sessionStorage key for dismiss persistence.
+   * When set, dismissal is remembered for the current browser session
+   * (clears on tab close / next login). Omit to use component-local state only.
+   */
+  dismissKey?: string;
   /** Called when the user dismisses the banner */
   onDismiss?: () => void;
   className?: string;
@@ -24,14 +30,19 @@ export default function UpgradeBanner({
   ctaLabel = 'Upgrade to unlock',
   inline = false,
   hideDismiss = false,
+  dismissKey,
   onDismiss,
   className = '',
 }: UpgradeBannerProps) {
-  const [dismissed, setDismissed] = useState(false);
+  const storageKey = dismissKey ? `_ub_dismissed_${dismissKey}` : null;
+  const [dismissed, setDismissed] = useState(() =>
+    storageKey ? sessionStorage.getItem(storageKey) === '1' : false,
+  );
 
   if (dismissed) return null;
 
   const handleDismiss = () => {
+    if (storageKey) sessionStorage.setItem(storageKey, '1');
     setDismissed(true);
     onDismiss?.();
   };
