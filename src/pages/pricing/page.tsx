@@ -130,7 +130,7 @@ const enterpriseTiers = [
       'Dedicated support',
       'SLA guarantee',
     ],
-    cta: 'Contact Us',
+    cta: 'Get Started',
     icon: 'ri-building-2-line',
   },
   {
@@ -143,7 +143,7 @@ const enterpriseTiers = [
     features: [
       '51–100 team members',
     ],
-    cta: 'Contact Us',
+    cta: 'Get Started',
     icon: 'ri-building-4-line',
   },
   {
@@ -325,8 +325,8 @@ export default function PricingPage() {
                     } ${!plan.highlighted && !isCurrentPlan ? 'bg-white' : ''}`}
                   >
                     {isCurrentPlan && (
-                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-xs font-bold px-4 py-1.5 rounded-full whitespace-nowrap shadow-md flex items-center gap-1.5">
-                        <i className="ri-checkbox-circle-fill text-sm"></i>
+                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full whitespace-nowrap flex items-center gap-1.5 px-4 py-1.5 shadow-md" style={{ backgroundColor: '#059669', color: '#ffffff', fontSize: '12px', fontWeight: 700 }}>
+                        <i className="ri-checkbox-circle-fill" style={{ fontSize: '13px' }}></i>
                         Current Plan
                       </div>
                     )}
@@ -379,8 +379,8 @@ export default function PricingPage() {
                     </ul>
 
                     {isCurrentPlan ? (
-                      <div className="w-full py-2.5 rounded-xl font-bold text-sm text-center bg-emerald-600 text-white flex items-center justify-center gap-1.5 cursor-default">
-                        <i className="ri-checkbox-circle-fill text-base"></i> Active Plan
+                      <div className="w-full py-2.5 rounded-xl text-sm text-center flex items-center justify-center gap-1.5 cursor-not-allowed select-none" style={{ backgroundColor: '#d1fae5', color: '#065f46', fontWeight: 700, border: '1.5px solid #6ee7b7' }}>
+                        <i className="ri-checkbox-circle-fill" style={{ fontSize: '15px', color: '#059669' }}></i> Current Plan
                       </div>
                     ) : (
                       <button
@@ -442,12 +442,21 @@ export default function PricingPage() {
                       ))}
                     </ul>
 
-                    <a
-                      href="mailto:hello@testably.app?subject=Enterprise%20Plan%20Inquiry"
-                      className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap block text-center border-2 border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-white"
-                    >
-                      {tier.cta}
-                    </a>
+                    {tier.cta === 'Contact Us' ? (
+                      <a
+                        href="mailto:hello@testably.app?subject=Enterprise%20Plan%20Inquiry"
+                        className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap block text-center border-2 border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-white"
+                      >
+                        {tier.cta}
+                      </a>
+                    ) : (
+                      <button
+                        onClick={() => handlePlanCta(tier.name)}
+                        className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap bg-amber-600 text-white hover:bg-amber-700"
+                      >
+                        {tier.cta}
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
