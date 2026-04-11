@@ -318,14 +318,17 @@ export default function PricingPage() {
                     key={plan.name}
                     className={`rounded-2xl p-6 border flex flex-col transition-all relative ${
                       isCurrentPlan
-                        ? 'ring-2 ring-emerald-500 border-emerald-400 shadow-lg shadow-emerald-100'
+                        ? 'bg-white ring-2 ring-emerald-500 border-emerald-400 shadow-lg shadow-emerald-100'
                         : plan.highlighted
                         ? 'bg-indigo-500 border-indigo-500 shadow-xl shadow-indigo-200 scale-[1.02]'
                         : 'bg-white border-gray-200 hover:border-indigo-200 hover:shadow-md'
-                    } ${!plan.highlighted && !isCurrentPlan ? 'bg-white' : ''}`}
+                    }`}
                   >
                     {isCurrentPlan && (
-                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-emerald-600 text-white font-bold text-sm px-3 py-1 rounded-full whitespace-nowrap flex items-center gap-1.5 shadow-md">
+                      <div
+                        className="absolute -top-4 left-1/2 -translate-x-1/2 text-white font-bold text-sm px-3 py-1 rounded-full whitespace-nowrap flex items-center gap-1.5 shadow-md"
+                        style={{ backgroundColor: '#059669' }}
+                      >
                         <i className="ri-checkbox-circle-fill"></i>
                         Current Plan
                       </div>
