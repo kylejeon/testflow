@@ -38,10 +38,9 @@ export default function AuthPage() {
   const [consentDelegate, setConsentDelegate] = useState(false);
   const [consentMarketing, setConsentMarketing] = useState(false);
   const [consentAnalytics, setConsentAnalytics] = useState(false);
-  const [consentPromo, setConsentPromo] = useState(false);
 
   const requiredConsentsChecked = consentAge && consentTerms && consentPrivacy && consentDelegate;
-  const allConsentsChecked = requiredConsentsChecked && consentMarketing && consentAnalytics && consentPromo;
+  const allConsentsChecked = requiredConsentsChecked && consentMarketing && consentAnalytics;
 
   const handleAgreeAll = (checked: boolean) => {
     setConsentAge(checked);
@@ -50,7 +49,6 @@ export default function AuthPage() {
     setConsentDelegate(checked);
     setConsentMarketing(checked);
     setConsentAnalytics(checked);
-    setConsentPromo(checked);
   };
 
   const navigateToDefaultOrProjects = async (userId: string) => {
@@ -343,7 +341,6 @@ export default function AuthPage() {
             age14: consentAge,
             marketingEmail: consentMarketing,
             analytics: consentAnalytics,
-            sms: consentPromo,
           },
         });
         sendLoopsEvent(email, 'user_signup', {
@@ -861,7 +858,6 @@ export default function AuthPage() {
                         {([
                           { label: '[Optional] I agree to receive marketing communications', checked: consentMarketing, set: setConsentMarketing },
                           { label: '[Optional] I consent to data collection for service analytics & improvement', checked: consentAnalytics, set: setConsentAnalytics },
-                          { label: '[Optional] I agree to receive promotions & discounts via SMS', checked: consentPromo, set: setConsentPromo },
                         ] as { label: string; checked: boolean; set: (v: boolean) => void }[]).map(({ label, checked, set }) => (
                           <label key={label} className="flex items-center gap-2.5 cursor-pointer">
                             <input
