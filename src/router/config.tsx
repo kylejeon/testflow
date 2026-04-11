@@ -80,6 +80,9 @@ const AboutPage = lazy(() => import('../pages/about/page'));
 const ComparePage = lazy(() => import('../pages/compare/page'));
 const CompareIndexPage = lazy(() => import('../pages/compare/index'));
 const ContactPage = lazy(() => import('../pages/contact/page'));
+const TestCaseManagementPage = lazyWithRetry(() => import('../pages/use-cases/test-case-management/page'));
+const TestManagementToolPage = lazyWithRetry(() => import('../pages/use-cases/test-management-tool/page'));
+const BlogChoosingToolPage = lazyWithRetry(() => import('../pages/blog/choosing-test-management-tool/page'));
 const DocsPage = lazy(() => import('../pages/docs/page'));
 const ApiReferencePage = lazy(() => import('../pages/docs/api/page'));
 const DocsGettingStartedPage = lazy(() => import('../pages/docs/getting-started/page'));
@@ -260,6 +263,18 @@ const routes: RouteObject[] = [
   {
     path: '/contact',
     element: <ContactPage />,
+  },
+  {
+    path: '/use-cases/test-case-management',
+    element: <TestCaseManagementPage />,
+  },
+  {
+    path: '/use-cases/test-management-tool',
+    element: <TestManagementToolPage />,
+  },
+  {
+    path: '/blog/choosing-test-management-tool',
+    element: <BlogChoosingToolPage />,
   },
   {
     path: '/docs',
