@@ -94,6 +94,10 @@ const content = {
         contactEmail: 'support@testably.app',
         contactLabel: 'For inquiries regarding these Terms, please contact:',
       },
+      {
+        heading: 'Company Information',
+        companyInfo: true,
+      },
     ],
   },
   ko: {
@@ -300,6 +304,14 @@ export default function TermsPage() {
                     <div className="text-sm">
                       <p><span className="font-semibold text-gray-800">{lang === 'ko' ? '이메일' : 'Email'}:</span> <span className="text-gray-600">{section.contactEmail}</span></p>
                     </div>
+                  </div>
+                )}
+                {'companyInfo' in section && section.companyInfo && (
+                  <div className="text-sm text-gray-600 space-y-1">
+                    <p><span className="font-semibold text-gray-800">Company:</span> Testably</p>
+                    <p><span className="font-semibold text-gray-800">CEO:</span> Yonghyuk Jeon</p>
+                    <p><span className="font-semibold text-gray-800">Business Registration Number:</span> 866-19-02720</p>
+                    <p><span className="font-semibold text-gray-800">Contact:</span> support@testably.app</p>
                   </div>
                 )}
               </section>
