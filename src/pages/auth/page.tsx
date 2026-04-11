@@ -169,17 +169,15 @@ export default function AuthPage() {
         .from('profiles').select('id').eq('id', user.id).maybeSingle();
 
       if (!existingProfile) {
-        const now = new Date();
-        const trialEnds = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
         const { error } = await supabase.from('profiles').insert({
           id: user.id,
           email: user.email,
           full_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || null,
           role: 'member',
-          subscription_tier: 3,
-          trial_started_at: now.toISOString(),
-          trial_ends_at: trialEnds.toISOString(),
-          is_trial: true,
+          subscription_tier: 1,
+          trial_started_at: null,
+          trial_ends_at: null,
+          is_trial: false,
         });
         if (error && error.code !== '23505') throw error;
         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -323,11 +321,10 @@ export default function AuthPage() {
       if (error) throw error;
       if (data.user) {
         const now = new Date();
-        const trialEnds = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
         const { error: profileError } = await supabase.from('profiles').upsert({
           id: data.user.id, email, full_name: fullName, role: 'member',
-          subscription_tier: 3, trial_started_at: now.toISOString(),
-          trial_ends_at: trialEnds.toISOString(), is_trial: true,
+          subscription_tier: 1, trial_started_at: null,
+          trial_ends_at: null, is_trial: false,
         });
         if (profileError && profileError.code !== '23505') console.error('Profile creation error:', profileError);
         // 개인정보보호법 입증책임 대응: 동의 이력 서버 저장
@@ -345,12 +342,8 @@ export default function AuthPage() {
         });
         sendLoopsEvent(email, 'user_signup', {
           firstName: fullName?.split(' ')[0] || 'there',
-          planType: 'trial',
+          planType: 'free',
           signupDate: now.toISOString().split('T')[0],
-          trialStartDate: now.toISOString().split('T')[0],
-          trialEndDate: trialEnds.toISOString().split('T')[0],
-          trialEndsAt: trialEnds.toISOString(),
-          trialDaysLeft: '14',
           testCaseCount: '0',
           testRunCount: '0',
           teamMemberCount: '1',
@@ -362,10 +355,10 @@ export default function AuthPage() {
           setSuccess('Account created! Log in to join the project automatically.');
           setMode('login'); setPassword('');
         } else if (data.session) {
-          setSuccess('Account created! Your 14-day free trial has started 🎉');
+          setSuccess('Account created! Start your free 14-day Starter trial any time from Pricing.');
           setTimeout(() => navigate('/projects'), 1000);
         } else {
-          setSuccess('Account created! Please check your email to confirm. Your 14-day free trial starts after verification.');
+          setSuccess('Account created! Please check your email to confirm your account.');
           setMode('login'); setPassword('');
         }
       }
