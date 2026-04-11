@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import DocsLayout from '../../components/docs/DocsLayout';
 
@@ -177,7 +177,43 @@ const troubleshooting: FaqItem[] = [
   },
 ];
 
+// Flatten all FAQ items to plain text for JSON-LD (strip JSX)
+const allFaqsForSchema = [
+  { q: 'What is Testably?', a: 'Testably is a test management platform for software QA teams. You can write test cases, run tests, track milestones, record exploratory testing with Exploratory, integrate with Jira, connect CI/CD pipelines, and automate test case generation with AI — all in one place.' },
+  { q: 'Can I use Testably for free?', a: "Yes. The Free plan is permanently free and supports 1 project, up to 2 team members, and 3 AI-generated test cases per month. It's ideal for small teams or personal projects. Upgrade to Hobby ($19/mo) or higher when you need more." },
+  { q: 'How many team members can I invite?', a: 'It depends on your plan: Free (2), Hobby (5), Starter (5), Professional (20), Enterprise S (50), Enterprise M (100), Enterprise L (100+). Viewer role members do not count toward the seat limit and can be invited for free with no cap.' },
+  { q: 'Is there a discount for annual billing?', a: 'Yes. Choosing Annual billing saves 15% compared to monthly pricing. For example, Professional is ~$84/mo (billed $1,009/yr) instead of $99/mo.' },
+  { q: 'Can I import data from another test management tool?', a: 'Yes. Testably supports importing from TestRail, Zephyr, Qase, and other tools. Click the "Import" button on the Test Cases list page to upload a CSV or XML file.' },
+  { q: 'How do I use AI test case generation?', a: 'Click "AI Generate" on the Test Cases list page. Choose Text-based mode to describe a feature in plain text, or Session-based mode (Professional+) to generate from a Discovery Log session.' },
+  { q: 'What is Focus Mode?', a: 'Focus Mode is a dedicated execution UI for rapidly recording test results. Open it from a Test Run detail page. Use keyboard shortcuts: P = Passed, F = Failed, B = Blocked, R = Retest, S = Skip.' },
+  { q: 'How do I set up Jira integration?', a: 'Go to Settings > Integrations and find the Jira Integration section. Enter your Jira domain, email, and API token, then click Connect. Jira integration requires the Starter plan or higher.' },
+  { q: 'Can I integrate with CI/CD pipelines?', a: 'Yes, on Professional and higher plans. Go to Settings > CI/CD Pipelines to generate an API token. YAML code snippets are provided for GitHub Actions, GitLab CI, and Python scripts.' },
+];
+
 export default function DocsFaqPage() {
+  useEffect(() => {
+    const schema = {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: allFaqsForSchema.map((item) => ({
+        '@type': 'Question',
+        name: item.q,
+        acceptedAnswer: { '@type': 'Answer', text: item.a },
+      })),
+    };
+    const existing = document.getElementById('docs-faq-schema');
+    if (existing) existing.remove();
+    const script = document.createElement('script');
+    script.id = 'docs-faq-schema';
+    script.type = 'application/ld+json';
+    script.textContent = JSON.stringify(schema);
+    document.head.appendChild(script);
+    return () => {
+      const s = document.getElementById('docs-faq-schema');
+      if (s) s.remove();
+    };
+  }, []);
+
   return (
     <DocsLayout
       title="FAQ & Troubleshooting | Testably Docs"
