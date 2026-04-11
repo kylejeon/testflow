@@ -317,12 +317,10 @@ export default function PricingPage() {
                   <article
                     key={plan.name}
                     className={`rounded-2xl p-6 border flex flex-col transition-all relative ${
-                      isCurrentPlan
-                        ? 'bg-white ring-2 ring-emerald-500 border-emerald-400 shadow-lg shadow-emerald-100'
-                        : plan.highlighted
+                      plan.highlighted
                         ? 'bg-indigo-500 border-indigo-500 shadow-xl shadow-indigo-200 scale-[1.02]'
                         : 'bg-white border-gray-200 hover:border-indigo-200 hover:shadow-md'
-                    }`}
+                    } ${isCurrentPlan ? 'ring-2 ring-emerald-400 ring-offset-2' : ''}`}
                   >
                     {isCurrentPlan && (
                       <div
