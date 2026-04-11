@@ -1473,6 +1473,28 @@ export default function HomePage() {
                 </article>
               ))}
             </div>
+
+            {/* Internal links to use-case pages */}
+            <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                to="/use-cases/test-case-management"
+                className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-indigo-300 hover:text-white transition-colors"
+                style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)' }}
+              >
+                <i className="ri-folder-3-line"></i>
+                Learn more about test case management features
+                <i className="ri-arrow-right-line text-xs"></i>
+              </Link>
+              <Link
+                to="/use-cases/test-management-tool"
+                className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-indigo-300 hover:text-white transition-colors"
+                style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)' }}
+              >
+                <i className="ri-tools-line"></i>
+                Compare test management tools
+                <i className="ri-arrow-right-line text-xs"></i>
+              </Link>
+            </div>
           </div>
         </section>
 

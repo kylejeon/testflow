@@ -735,6 +735,32 @@ export default function PricingPage() {
           </div>
         </section>
 
+        {/* Internal link to use-cases */}
+        <section className="py-10 bg-gray-50 border-t border-gray-100">
+          <div className="max-w-2xl mx-auto px-4 text-center">
+            <p className="text-gray-500 text-sm mb-4">Want to learn more about what's included?</p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link
+                to="/use-cases/test-case-management"
+                className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+              >
+                <i className="ri-folder-3-line"></i>
+                Learn more about our test case management features
+                <i className="ri-arrow-right-line text-xs"></i>
+              </Link>
+              <span className="text-gray-300 hidden sm:block">·</span>
+              <Link
+                to="/use-cases/test-management-tool"
+                className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+              >
+                <i className="ri-tools-line"></i>
+                Compare with TestRail &amp; Zephyr
+                <i className="ri-arrow-right-line text-xs"></i>
+              </Link>
+            </div>
+          </div>
+        </section>
+
     </MarketingLayout>
   );
 }

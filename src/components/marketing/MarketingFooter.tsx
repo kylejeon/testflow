@@ -8,6 +8,11 @@ const footerLinks = {
     { label: 'Changelog', to: '/changelog' },
     { label: 'Roadmap', to: '/roadmap' },
   ],
+  'Use Cases': [
+    { label: 'Test Case Management', to: '/use-cases/test-case-management' },
+    { label: 'Test Management Tool', to: '/use-cases/test-management-tool' },
+    { label: 'Blog', to: '/blog/choosing-test-management-tool' },
+  ],
   Compare: [
     { label: 'vs TestRail', to: '/compare/testrail' },
     { label: 'vs Qase', to: '/compare/qase' },
@@ -34,7 +39,7 @@ export default function MarketingFooter() {
     <footer className="bg-gray-50 border-t border-gray-100" role="contentinfo">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* 4-column grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 mb-10">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 mb-10">
           {Object.entries(footerLinks).map(([col, links]) => (
             <div key={col}>
               <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider mb-3">
