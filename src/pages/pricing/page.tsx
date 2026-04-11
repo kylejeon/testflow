@@ -318,7 +318,7 @@ export default function PricingPage() {
                     key={plan.name}
                     className={`rounded-2xl p-6 border flex flex-col transition-all relative h-full ${
                       plan.highlighted
-                        ? 'bg-indigo-500 border-indigo-500 shadow-xl shadow-indigo-200 scale-[1.02]'
+                        ? 'bg-indigo-500 border-indigo-500 shadow-2xl shadow-indigo-300'
                         : 'bg-white border-gray-200 hover:border-indigo-200 hover:shadow-md'
                     } ${isCurrentPlan ? 'ring-2 ring-emerald-400 ring-offset-2' : ''}`}
                   >
