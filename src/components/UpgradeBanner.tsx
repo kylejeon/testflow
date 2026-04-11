@@ -6,6 +6,8 @@ interface UpgradeBannerProps {
   message: string;
   /** Call-to-action label, defaults to "Upgrade to unlock" */
   ctaLabel?: string;
+  /** If provided, CTA renders as a button calling this instead of linking to /pricing */
+  onCtaClick?: () => void;
   /** Inline mode renders as a compact bar; default is a card */
   inline?: boolean;
   /** Hide the dismiss button */
@@ -28,6 +30,7 @@ interface UpgradeBannerProps {
 export default function UpgradeBanner({
   message,
   ctaLabel = 'Upgrade to unlock',
+  onCtaClick,
   inline = false,
   hideDismiss = false,
   dismissKey,
@@ -47,17 +50,46 @@ export default function UpgradeBanner({
     onDismiss?.();
   };
 
+  const ctaInline = onCtaClick ? (
+    <button
+      onClick={onCtaClick}
+      className="text-indigo-600 font-semibold hover:text-indigo-800 whitespace-nowrap text-xs underline cursor-pointer"
+    >
+      {ctaLabel} →
+    </button>
+  ) : (
+    <Link
+      to="/pricing"
+      className="text-indigo-600 font-semibold hover:text-indigo-800 whitespace-nowrap text-xs underline"
+    >
+      {ctaLabel} →
+    </Link>
+  );
+
+  const ctaCard = onCtaClick ? (
+    <button
+      onClick={onCtaClick}
+      className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+    >
+      <i className="ri-rocket-line text-xs"></i>
+      {ctaLabel}
+    </button>
+  ) : (
+    <Link
+      to="/pricing"
+      className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-semibold rounded-lg transition-colors"
+    >
+      <i className="ri-vip-crown-line text-xs"></i>
+      {ctaLabel}
+    </Link>
+  );
+
   if (inline) {
     return (
       <div className={`flex items-center gap-3 px-3.5 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-sm ${className}`}>
         <i className="ri-information-line text-amber-500 shrink-0 text-base"></i>
         <span className="text-amber-800 flex-1">{message}</span>
-        <Link
-          to="/pricing"
-          className="text-indigo-600 font-semibold hover:text-indigo-800 whitespace-nowrap text-xs underline"
-        >
-          {ctaLabel} →
-        </Link>
+        {ctaInline}
         {!hideDismiss && (
           <button
             onClick={handleDismiss}
@@ -80,17 +112,13 @@ export default function UpgradeBanner({
         <div className="flex-1 min-w-0">
           <p className="text-sm text-amber-800 font-medium">{message}</p>
           <p className="text-xs text-amber-600 mt-0.5">
-            Upgrade your plan to continue growing your workspace.
+            {onCtaClick
+              ? 'Try it free — no credit card required.'
+              : 'Upgrade your plan to continue growing your workspace.'}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Link
-            to="/pricing"
-            className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-semibold rounded-lg transition-colors"
-          >
-            <i className="ri-vip-crown-line text-xs"></i>
-            {ctaLabel}
-          </Link>
+          {ctaCard}
           {!hideDismiss && (
             <button
               onClick={handleDismiss}
