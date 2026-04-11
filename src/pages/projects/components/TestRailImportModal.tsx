@@ -92,11 +92,6 @@ export default function TestRailImportModal({ onClose, onOpenCSV }: TestRailImpo
   });
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
-  const normalizeUrl = (raw: string) => {
-    let u = raw.trim();
-    if (u && !u.startsWith('http')) u = `https://${u}`;
-    return u.replace(/\/$/, '');
-  };
 
   const handleConnect = async () => {
     setConnError('');
@@ -106,54 +101,34 @@ export default function TestRailImportModal({ onClose, onOpenCSV }: TestRailImpo
 
     setConnecting(true);
     try {
-      // Attempt to call TestRail API (will fail if CORS-blocked)
-      const base = normalizeUrl(creds.url);
-      const resp = await fetch(`${base}/index.php?/api/v2/get_current_user`, {
-        headers: {
-          Authorization: `Basic ${btoa(`${creds.email}:${creds.apiKey}`)}`,
-          'Content-Type': 'application/json',
-        },
+      const { data, error } = await supabase.functions.invoke('import-testrail', {
+        body: { action: 'connect', credentials: { url: creds.url, email: creds.email, apiKey: creds.apiKey } },
       });
-      if (resp.status === 401) throw new Error('401');
-      if (resp.status === 404) throw new Error('404');
-      if (!resp.ok) throw new Error(String(resp.status));
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
 
-      // Success — fetch project list
-      const projectsResp = await fetch(`${base}/index.php?/api/v2/get_projects`, {
-        headers: { Authorization: `Basic ${btoa(`${creds.email}:${creds.apiKey}`)}` },
-      });
-      const projectsJson = await projectsResp.json();
-      const list: TRProject[] = (projectsJson.projects ?? projectsJson ?? []).map((p: any) => ({
+      const list: TRProject[] = (data.projects ?? []).map((p: any) => ({
         id: p.id,
         name: p.name,
         caseCount: 0,
         runCount: 0,
         selected: true,
       }));
-      setTrProjects(list.length > 0 ? list : getMockProjects());
+      setTrProjects(list);
       setStep(3);
     } catch (e: any) {
-      if (e.name === 'TypeError') {
-        // CORS / network error — use mock data to let CEO see the full flow
-        setTrProjects(getMockProjects());
-        setStep(3);
-      } else if (e.message === '401') {
+      const msg: string = e?.message ?? '';
+      if (msg.includes('Invalid credentials') || msg.includes('401')) {
         setConnError('Invalid credentials. Please check your email and API key.');
-      } else if (e.message === '404') {
+      } else if (msg.includes('not found') || msg.includes('404')) {
         setConnError('TestRail instance not found. Please verify the URL.');
       } else {
-        setConnError('Unable to connect. Check the URL and your network.');
+        setConnError('Could not connect to TestRail. Please check your URL and credentials.');
       }
     } finally {
       setConnecting(false);
     }
   };
-
-  const getMockProjects = (): TRProject[] => [
-    { id: 1, name: 'E-commerce Platform', caseCount: 142, runCount: 8, selected: true },
-    { id: 2, name: 'Mobile App', caseCount: 87, runCount: 5, selected: false },
-    { id: 3, name: 'API Tests', caseCount: 56, runCount: 3, selected: false },
-  ];
 
   const toggleProject = (id: number) => {
     setTrProjects(prev => prev.map(p => p.id === id ? { ...p, selected: !p.selected } : p));
@@ -168,12 +143,6 @@ export default function TestRailImportModal({ onClose, onOpenCSV }: TestRailImpo
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
-
-      let prog = 0;
-      const tick = setInterval(() => {
-        prog = Math.min(prog + Math.random() * 12 + 3, 95);
-        setProgress(Math.round(prog));
-      }, 400);
 
       let lastProjectId: string | undefined;
       let totalCases = 0;
@@ -228,7 +197,12 @@ export default function TestRailImportModal({ onClose, onOpenCSV }: TestRailImpo
         const selected = trProjects.filter(p => p.selected);
         if (selected.length === 0) { setImporting(false); return; }
 
-        for (const trp of selected) {
+        const totalProjects = selected.length;
+
+        for (let pi = 0; pi < selected.length; pi++) {
+          const trp = selected[pi];
+
+          // Create Testably project
           const { data: proj, error: projErr } = await supabase.from('projects').insert([{
             name: trp.name,
             description: 'Imported from TestRail',
@@ -243,13 +217,65 @@ export default function TestRailImportModal({ onClose, onOpenCSV }: TestRailImpo
             project_id: proj.id, user_id: user.id, role: 'owner', invited_by: user.id,
           }], { onConflict: 'project_id,user_id' });
 
-          totalCases += trp.caseCount || 0;
-          totalRuns += trp.runCount || 0;
+          // Fetch sections (folders)
+          const { data: sectData, error: sectErr } = await supabase.functions.invoke('import-testrail', {
+            body: { action: 'get_sections', credentials: { url: creds.url, email: creds.email, apiKey: creds.apiKey }, project_id: trp.id },
+          });
+          if (sectErr) throw new Error(sectErr.message);
+          const sections: Array<{ id: number; name: string; parent_id: number | null }> = sectData?.sections ?? [];
+          const sectionNames = new Map<number, string>(sections.map(s => [s.id, s.name]));
+          totalFolders += sections.length;
+
+          // Fetch test cases
+          const { data: casesData, error: casesErr } = await supabase.functions.invoke('import-testrail', {
+            body: { action: 'get_cases', credentials: { url: creds.url, email: creds.email, apiKey: creds.apiKey }, project_id: trp.id },
+          });
+          if (casesErr) throw new Error(casesErr.message);
+          const trCases: Array<{
+            id: number;
+            section_id: number | null;
+            title: string;
+            priority: string;
+            preconditions: string;
+            steps: string;
+            expected_result: string;
+            is_automated: boolean;
+          }> = casesData?.cases ?? [];
+
+          // Build description from preconditions + steps + expected_result
+          const buildDescription = (tc: typeof trCases[0]): string => {
+            const parts: string[] = [];
+            if (tc.preconditions) parts.push(`**Preconditions**\n${tc.preconditions}`);
+            if (tc.steps) parts.push(`**Steps**\n${tc.steps}`);
+            if (tc.expected_result) parts.push(`**Expected Result**\n${tc.expected_result}`);
+            return parts.join('\n\n');
+          };
+
+          const tcs = trCases.map(tc => ({
+            project_id: proj.id,
+            title: tc.title,
+            description: buildDescription(tc) || null,
+            priority: tc.priority as 'critical' | 'high' | 'medium' | 'low',
+            folder: tc.section_id != null ? (sectionNames.get(tc.section_id) ?? null) : null,
+            status: 'untested',
+            lifecycle_status: 'draft',
+            is_automated: tc.is_automated,
+            created_by: user.id,
+          }));
+
+          // Batch insert 50 at a time
+          for (let i = 0; i < tcs.length; i += 50) {
+            const { error: tcErr } = await supabase.from('test_cases').insert(tcs.slice(i, i + 50));
+            if (tcErr) console.error('TC insert error:', tcErr);
+            // Update progress proportionally
+            const pct = Math.round(((pi + (i + 50) / Math.max(tcs.length, 1)) / totalProjects) * 90);
+            setProgress(Math.min(pct, 90));
+          }
+
+          totalCases += trCases.length;
         }
-        totalFolders = Math.ceil(totalCases / 10);
       }
 
-      clearInterval(tick);
       setProgress(100);
       setSummary({
         cases: totalCases,
