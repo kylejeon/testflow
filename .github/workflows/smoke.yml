@@ -48,7 +48,7 @@ jobs:
           SMOKE_BASE_URL: ${{ vars.SMOKE_BASE_URL || 'https://testably.app' }}
           SMOKE_TEST_EMAIL: ${{ secrets.SMOKE_TEST_EMAIL }}
           SMOKE_TEST_PASSWORD: ${{ secrets.SMOKE_TEST_PASSWORD }}
-          SMOKE_PROJECT_ID: ${{ secrets.SMOKE_PROJECT_ID }}
+          SMOKE_PROJECT_ID: ${{ secrets.SMOKE_TEST_PROJECT_ID }}
         run: npx playwright test --reporter=github
 
       - name: Ping BetterStack heartbeat on success
