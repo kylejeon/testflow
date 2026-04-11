@@ -17,7 +17,7 @@ test('login with test account succeeds', async ({ page }) => {
   await page.getByLabel(/password/i).fill(PASSWORD!);
 
   // Submit
-  await page.getByRole('button', { name: /log in|sign in/i }).click();
+  await page.locator('form').getByRole('button', { name: /log in|sign in/i }).click();
 
   // Should land on /projects after successful login
   await expect(page).toHaveURL(/\/projects/, { timeout: 20_000 });
