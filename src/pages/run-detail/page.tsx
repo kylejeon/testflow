@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { ErrorBoundary } from '../../components/ErrorBoundary';
 import { LogoMark } from '../../components/Logo';
 import { supabase } from '../../lib/supabase';
 import ProjectHeader from '../../components/ProjectHeader';
@@ -2381,9 +2382,10 @@ export default function RunDetail() {
           </button>
         </div>
       )}
+      <ErrorBoundary section sectionName="Run Detail">
       <div className="flex-1 flex flex-col overflow-hidden">
         <ProjectHeader projectId={projectId || ''} projectName={project?.name || ''} />
-        
+
         <main className="flex-1 overflow-hidden bg-gray-50/30 flex">
           {/* 폴더 사이드바 */}
           <div className={`flex-shrink-0 bg-white border-r border-slate-200 flex flex-col overflow-y-auto transition-all duration-200 ${isFolderSidebarOpen ? 'w-[200px]' : 'w-12'}`}>
@@ -4362,6 +4364,7 @@ export default function RunDetail() {
           )}
         </main>
       </div>
+      </ErrorBoundary>
     </div>
     </>
   );

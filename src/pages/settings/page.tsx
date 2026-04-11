@@ -15,7 +15,8 @@ import { getPaymentProvider, openCheckout } from '../../lib/payment';
 import { Skeleton } from '../../components/Skeleton';
 import { sendLoopsEvent } from '../../lib/loops';
 import { registerPaddleErrorHandler, registerPaddleSuccessHandler } from '../../lib/paddle';
-import { useToast } from '../../components/Toast';
+import { useToast, getApiErrorMessage } from '../../components/Toast';
+import { ErrorBoundary } from '../../components/ErrorBoundary';
 
 interface JiraSettings {
   domain: string;
@@ -1273,7 +1274,7 @@ export default function SettingsPage() {
       fetchCITokens();
     } catch (error) {
       console.error('Token creation error:', error);
-      showToast("Couldn't create the token. Please try again.", 'error');
+      showToast(getApiErrorMessage(error), 'error');
     } finally {
       setCreatingToken(false);
     }
@@ -1332,7 +1333,7 @@ export default function SettingsPage() {
       fetchCITokens();
     } catch (error) {
       console.error('Token deletion error:', error);
-      showToast("Couldn't delete the token. Please try again.", 'error');
+      showToast(getApiErrorMessage(error), 'error');
     }
   };
 
@@ -1662,7 +1663,7 @@ def pytest_sessionfinish(session, exitstatus):
       URL.revokeObjectURL(url);
     } catch (e) {
       console.error('JSON export error:', e);
-      showToast('Export failed. Please try again.', 'error');
+      showToast(getApiErrorMessage(e), 'error');
     }
   };
 
@@ -1700,7 +1701,7 @@ def pytest_sessionfinish(session, exitstatus):
       URL.revokeObjectURL(url);
     } catch (e) {
       console.error('CSV export error:', e);
-      showToast('Export failed. Please try again.', 'error');
+      showToast(getApiErrorMessage(e), 'error');
     }
   };
 
@@ -1907,6 +1908,7 @@ def pytest_sessionfinish(session, exitstatus):
           </header>
 
           <main className="flex-1 overflow-y-auto bg-slate-50">
+            <ErrorBoundary section sectionName="Settings">
             <div className="max-w-[800px] mx-auto px-4 md:px-8 pt-6 pb-12">
                 <div>
                   {activeTab === 'profile' && userProfile && (
@@ -3937,6 +3939,7 @@ describe('Login', () => {
                   )}
                 </div>
             </div>
+            </ErrorBoundary>
           </main>
         </div>
       </div>
