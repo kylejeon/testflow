@@ -1137,7 +1137,7 @@ export function DetailPanel({
                 <div className="flex items-start gap-2.5">
                   <i className="ri-lock-line text-indigo-600 text-lg mt-0.5" />
                   <div>
-                    <p className="text-xs font-semibold text-gray-800 mb-1">Jira integration requires Professional+</p>
+                    <p className="text-xs font-semibold text-gray-800 mb-1">Jira integration requires Hobby+</p>
                     <p className="text-xs text-gray-500">Upgrade to create and manage Jira issues from test results.</p>
                   </div>
                 </div>

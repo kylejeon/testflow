@@ -1706,7 +1706,7 @@ export default function HomePage() {
             <p className="text-center mt-8 text-sm leading-relaxed" style={{ color: '#64748B' }}>
               <i className="ri-shield-check-line text-indigo-400 mr-1.5"></i>
               {lang === 'en' ? (
-                <>Free forever for up to 3 members · 14-day free trial on all paid plans<br />No per-seat charges</>
+                <>Free forever for up to 2 members · 14-day free trial on all paid plans<br />No per-seat charges</>
               ) : t.pricingSection.note}
             </p>
           </div>
