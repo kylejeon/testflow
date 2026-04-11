@@ -709,6 +709,7 @@ export default function ProjectsContent() {
             onCreateProject={() => setShowCreateModal(true)}
             onTrySample={handleTrySample}
             isSampleLoading={sampleLoading}
+            onImport={() => setShowImportModal(true)}
           />
         </div>
         {showCreateModal && (
