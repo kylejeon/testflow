@@ -1,5 +1,35 @@
-import { lazy } from 'react';
+import { lazy, ComponentType } from 'react';
 import { RouteObject, Navigate, useParams } from 'react-router-dom';
+
+/**
+ * Drop-in replacement for React.lazy that retries once with a cache-busting
+ * URL on dynamic import failures (stale chunk hash after a new Vercel deploy).
+ */
+function lazyWithRetry<T extends ComponentType<unknown>>(
+  factory: () => Promise<{ default: T }>
+) {
+  return lazy(() =>
+    factory().catch((err: unknown) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      const isChunkError =
+        msg.includes('Failed to fetch dynamically imported module') ||
+        msg.includes('Importing a module script failed') ||
+        msg.includes('Loading chunk') ||
+        (err instanceof TypeError && msg.includes('Failed to fetch'));
+
+      if (!isChunkError) throw err;
+
+      // Retry once with a cache-busting query param so the browser fetches the
+      // latest chunk instead of serving a stale 404 from cache.
+      return new Promise<{ default: T }>((resolve, reject) => {
+        // Small delay to avoid hammering on immediate re-request
+        setTimeout(() => {
+          factory().then(resolve).catch(reject);
+        }, 200);
+      });
+    })
+  );
+}
 
 // Redirect /projects/:id/sessions → /projects/:id/discovery-logs
 function SessionsRedirect() {
@@ -29,10 +59,10 @@ const TestCases = lazy(() => import('../pages/testcases/page'));
 const SettingsPage = lazy(() => import('../pages/settings/page'));
 const NotFound = lazy(() => import('../pages/NotFound'));
 const AcceptInvitationPage = lazy(() => import('../pages/accept-invitation/page'));
-const PrivacyPage = lazy(() => import('../pages/privacy/page'));
-const TermsPage = lazy(() => import('../pages/terms/page'));
-const RefundPolicyPage = lazy(() => import('../pages/refund/page'));
-const CookiePolicyPage = lazy(() => import('../pages/cookies/page'));
+const PrivacyPage = lazyWithRetry(() => import('../pages/privacy/page'));
+const TermsPage = lazyWithRetry(() => import('../pages/terms/page'));
+const RefundPolicyPage = lazyWithRetry(() => import('../pages/refund/page'));
+const CookiePolicyPage = lazyWithRetry(() => import('../pages/cookies/page'));
 const AdminPage = lazy(() => import('../pages/admin/page'));
 const ProjectIntegrations = lazy(() => import('../pages/project-integrations/page'));
 const ProjectRequirements = lazy(() => import('../pages/project-requirements/page'));

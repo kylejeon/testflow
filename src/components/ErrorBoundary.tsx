@@ -1,6 +1,20 @@
 import { Component, ReactNode } from 'react';
 import { Sentry } from '../lib/sentry';
 
+/** Returns true if the error is a Vite/webpack dynamic import chunk load failure. */
+function isChunkLoadError(error: Error): boolean {
+  const msg = error.message ?? '';
+  return (
+    msg.includes('Failed to fetch dynamically imported module') ||
+    msg.includes('Importing a module script failed') ||
+    msg.includes('Loading chunk') ||
+    msg.includes('Loading CSS chunk') ||
+    (error.name === 'TypeError' && msg.includes('Failed to fetch'))
+  );
+}
+
+const CHUNK_RELOAD_KEY = 'eb_chunk_reload';
+
 interface Props {
   children: ReactNode;
   /** Custom fallback UI. If not provided, uses the default full-page error view. */
@@ -112,12 +126,24 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error('[ErrorBoundary]', error, info);
 
+    // Auto-reload once on chunk load failures (stale hash after new deploy).
+    // Use sessionStorage to avoid infinite reload loops.
+    if (isChunkLoadError(error) && !this.props.section) {
+      const reloadKey = `${CHUNK_RELOAD_KEY}:${window.location.pathname}`;
+      if (!sessionStorage.getItem(reloadKey)) {
+        sessionStorage.setItem(reloadKey, '1');
+        window.location.href = window.location.href;
+        return;
+      }
+    }
+
     // Report to Sentry with component stack context
     Sentry.withScope((scope) => {
       if (this.props.sectionName) {
         scope.setTag('error_boundary', this.props.sectionName);
       }
       scope.setExtra('componentStack', info.componentStack);
+      scope.setExtra('isChunkLoadError', isChunkLoadError(error));
       Sentry.captureException(error);
     });
   }
