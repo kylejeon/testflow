@@ -21,16 +21,14 @@ const SMOKE_PROJECT_NAME = `__smoke_${Date.now()}`;
 test('project creation appears in list', async ({ page }) => {
   await login(page);
 
-  // Open new project dialog
-  const newProjectBtn = page.getByRole('button', { name: /new project/i });
-  await newProjectBtn.click();
+  // Open new project dialog — button text is "New Project"
+  await page.getByRole('button', { name: 'New Project' }).click();
 
-  // Fill project name
-  const nameInput = page.getByPlaceholder(/project name/i);
-  await nameInput.fill(SMOKE_PROJECT_NAME);
+  // Fill project name — placeholder is "e.g. Mobile App Testing"
+  await page.getByPlaceholder('e.g. Mobile App Testing').fill(SMOKE_PROJECT_NAME);
 
-  // Confirm
-  await page.getByRole('button', { name: /create/i }).click();
+  // Confirm — button text is "Create Project"
+  await page.getByRole('button', { name: 'Create Project' }).click();
 
   // Should navigate to the new project or show it in list
   await expect(page.getByText(SMOKE_PROJECT_NAME)).toBeVisible({ timeout: 10_000 });

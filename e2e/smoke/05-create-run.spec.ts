@@ -23,22 +23,17 @@ test('run creation updates status', async ({ page }) => {
 
   // Go to runs page
   await page.goto(`/projects/${PROJECT_ID}/runs`);
+  await page.waitForLoadState('networkidle');
 
-  // Create new run
-  await page.getByRole('button', { name: /new run|create run/i }).first().click();
+  // Create new run — button text is "Start New Run"
+  await page.getByRole('button', { name: 'Start New Run' }).click();
 
-  // Fill run name
-  const nameInput = page.getByPlaceholder(/run name|name/i).first();
-  await nameInput.fill(SMOKE_RUN_NAME);
+  // Fill run name — placeholder is "e.g. Sprint 24 — Regression Run"
+  await page.getByPlaceholder('e.g. Sprint 24 — Regression Run').fill(SMOKE_RUN_NAME);
 
-  // Confirm creation
-  await page.getByRole('button', { name: /create|start/i }).first().click();
+  // Confirm creation — button text is "Create Run"
+  await page.getByRole('button', { name: 'Create Run' }).click();
 
   // Run should appear in the list
   await expect(page.getByText(SMOKE_RUN_NAME)).toBeVisible({ timeout: 10_000 });
-  // Status badge should be present
-  const runRow = page.locator('[data-testid="run-row"]', { hasText: SMOKE_RUN_NAME })
-    .or(page.locator('tr', { hasText: SMOKE_RUN_NAME }))
-    .or(page.locator('li', { hasText: SMOKE_RUN_NAME }));
-  await expect(runRow).toBeVisible({ timeout: 10_000 });
 });

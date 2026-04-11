@@ -23,16 +23,16 @@ test('test case creation saves successfully', async ({ page }) => {
 
   // Go to test cases for the smoke project
   await page.goto(`/projects/${PROJECT_ID}/testcases`);
+  await page.waitForLoadState('networkidle');
 
-  // Open new test case form
-  await page.getByRole('button', { name: /new test case|add test case/i }).first().click();
+  // Open new test case form — button text is "New Test Case"
+  await page.getByRole('button', { name: 'New Test Case' }).first().click();
 
-  // Fill title
-  const titleInput = page.getByPlaceholder(/title|test case name/i).first();
-  await titleInput.fill(SMOKE_TC_TITLE);
+  // Fill title — placeholder is "e.g., User login functionality test"
+  await page.getByPlaceholder('e.g., User login functionality test').fill(SMOKE_TC_TITLE);
 
-  // Save
-  await page.getByRole('button', { name: /save|create/i }).first().click();
+  // Save — button text is "Create" (or "Update" when editing)
+  await page.getByRole('button', { name: 'Create' }).click();
 
   // Test case should appear in the list
   await expect(page.getByText(SMOKE_TC_TITLE)).toBeVisible({ timeout: 10_000 });
