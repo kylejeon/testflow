@@ -52,7 +52,7 @@ const plans = [
       'Steps Library (10 steps)',
       '15 AI generations / month',
     ],
-    cta: 'Start Free Trial',
+    cta: 'Get Started',
     highlighted: false,
     icon: 'ri-seedling-line',
     popular: '',
@@ -107,7 +107,7 @@ const plans = [
       'Priority support',
       '150 AI generations / month',
     ],
-    cta: 'Start Free Trial',
+    cta: 'Get Started',
     highlighted: true,
     icon: 'ri-vip-crown-line',
     popular: 'Most popular',
@@ -318,14 +318,15 @@ export default function PricingPage() {
                     key={plan.name}
                     className={`rounded-2xl p-6 border flex flex-col transition-all relative ${
                       isCurrentPlan
-                        ? 'ring-2 ring-emerald-400 border-emerald-300'
+                        ? 'ring-2 ring-emerald-500 border-emerald-400 shadow-lg shadow-emerald-100'
                         : plan.highlighted
                         ? 'bg-indigo-500 border-indigo-500 shadow-xl shadow-indigo-200 scale-[1.02]'
                         : 'bg-white border-gray-200 hover:border-indigo-200 hover:shadow-md'
                     } ${!plan.highlighted && !isCurrentPlan ? 'bg-white' : ''}`}
                   >
                     {isCurrentPlan && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap">
+                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-xs font-bold px-4 py-1.5 rounded-full whitespace-nowrap shadow-md flex items-center gap-1.5">
+                        <i className="ri-checkbox-circle-fill text-sm"></i>
                         Current Plan
                       </div>
                     )}
@@ -378,8 +379,8 @@ export default function PricingPage() {
                     </ul>
 
                     {isCurrentPlan ? (
-                      <div className="w-full py-2.5 rounded-xl font-semibold text-sm text-center bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <i className="ri-check-line mr-1"></i> Active Plan
+                      <div className="w-full py-2.5 rounded-xl font-bold text-sm text-center bg-emerald-600 text-white flex items-center justify-center gap-1.5 cursor-default">
+                        <i className="ri-checkbox-circle-fill text-base"></i> Active Plan
                       </div>
                     ) : (
                       <button
