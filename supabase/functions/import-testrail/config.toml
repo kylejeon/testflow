@@ -1,0 +1,2 @@
+[functions.import-testrail]
+verify_jwt = false
