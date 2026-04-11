@@ -325,8 +325,8 @@ export default function PricingPage() {
                     } ${!plan.highlighted && !isCurrentPlan ? 'bg-white' : ''}`}
                   >
                     {isCurrentPlan && (
-                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full whitespace-nowrap flex items-center gap-1.5 px-4 py-1.5 shadow-md" style={{ backgroundColor: '#059669', color: '#ffffff', fontSize: '12px', fontWeight: 700 }}>
-                        <i className="ri-checkbox-circle-fill" style={{ fontSize: '13px' }}></i>
+                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-emerald-600 text-white font-bold text-sm px-3 py-1 rounded-full whitespace-nowrap flex items-center gap-1.5 shadow-md">
+                        <i className="ri-checkbox-circle-fill"></i>
                         Current Plan
                       </div>
                     )}
@@ -379,9 +379,9 @@ export default function PricingPage() {
                     </ul>
 
                     {isCurrentPlan ? (
-                      <div className="w-full py-2.5 rounded-xl text-sm text-center flex items-center justify-center gap-1.5 cursor-not-allowed select-none" style={{ backgroundColor: '#d1fae5', color: '#065f46', fontWeight: 700, border: '1.5px solid #6ee7b7' }}>
-                        <i className="ri-checkbox-circle-fill" style={{ fontSize: '15px', color: '#059669' }}></i> Current Plan
-                      </div>
+                      <button disabled className="w-full py-2.5 rounded-xl text-sm text-center bg-gray-200 text-gray-700 font-semibold cursor-not-allowed">
+                        Current Plan
+                      </button>
                     ) : (
                       <button
                         onClick={() => handlePlanCta(plan.name)}
