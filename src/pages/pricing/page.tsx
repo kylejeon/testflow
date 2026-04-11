@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import MarketingLayout from '../../components/marketing/MarketingLayout';
 import { supabase } from '../../lib/supabase';
 import { getPaymentProvider, openCheckout } from '../../lib/payment';
+import { sendLoopsEvent } from '../../lib/loops';
 
 const plans = [
   {
@@ -228,13 +229,22 @@ export default function PricingPage() {
   const navigate = useNavigate();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
-  const [userSession, setUserSession] = useState<{ id: string; email: string; payment_provider?: string | null; subscription_tier?: number } | null>(null);
+  const [userSession, setUserSession] = useState<{
+    id: string;
+    email: string;
+    payment_provider?: string | null;
+    subscription_tier?: number;
+    is_trial?: boolean;
+    trial_started_at?: string | null;
+    trial_ends_at?: string | null;
+  } | null>(null);
+  const [trialLoading, setTrialLoading] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
       const { data } = await supabase.from('profiles')
-        .select('id, payment_provider, subscription_tier')
+        .select('id, payment_provider, subscription_tier, is_trial, trial_started_at, trial_ends_at')
         .eq('id', user.id)
         .maybeSingle();
       setUserSession({
@@ -242,11 +252,61 @@ export default function PricingPage() {
         email: user.email || '',
         payment_provider: data?.payment_provider ?? null,
         subscription_tier: data?.subscription_tier ?? 1,
+        is_trial: data?.is_trial ?? false,
+        trial_started_at: data?.trial_started_at ?? null,
+        trial_ends_at: data?.trial_ends_at ?? null,
       });
     });
   }, []);
 
   const currentTier = userSession?.subscription_tier ?? null;
+
+  // Trial state helpers
+  const trialUsed = !!(userSession?.trial_started_at);
+  const trialActive = !!(userSession?.is_trial && userSession?.trial_ends_at && new Date(userSession.trial_ends_at) > new Date());
+  const trialDaysLeft = trialActive && userSession?.trial_ends_at
+    ? Math.max(0, Math.ceil((new Date(userSession.trial_ends_at).getTime() - Date.now()) / 86400000))
+    : 0;
+
+  const startTrial = async () => {
+    if (!userSession) { navigate('/auth'); return; }
+    if (trialUsed) return; // 1회 제한
+    setTrialLoading(true);
+    try {
+      const now = new Date();
+      const trialEnds = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+      const { error } = await supabase.from('profiles').update({
+        subscription_tier: 3,
+        is_trial: true,
+        trial_started_at: now.toISOString(),
+        trial_ends_at: trialEnds.toISOString(),
+      }).eq('id', userSession.id);
+      if (error) throw error;
+      // Fire-and-forget Loops event
+      if (userSession.email) {
+        sendLoopsEvent(userSession.email, 'trial_started', {
+          planType: 'trial',
+          planName: 'Starter',
+          trialStartDate: now.toISOString().split('T')[0],
+          trialEndDate: trialEnds.toISOString().split('T')[0],
+          trialEndsAt: trialEnds.toISOString(),
+          trialDaysLeft: '14',
+          trialDaysTotal: '14',
+        });
+      }
+      setUserSession(prev => prev ? {
+        ...prev,
+        subscription_tier: 3,
+        is_trial: true,
+        trial_started_at: now.toISOString(),
+        trial_ends_at: trialEnds.toISOString(),
+      } : prev);
+    } catch (err) {
+      console.error('Failed to start trial:', err);
+    } finally {
+      setTrialLoading(false);
+    }
+  };
 
   const handlePlanCta = async (planName: string) => {
     if (planName === 'Free') { navigate('/auth'); return; }
@@ -328,7 +388,9 @@ export default function PricingPage() {
                         style={{ backgroundColor: '#059669' }}
                       >
                         <i className="ri-checkbox-circle-fill"></i>
-                        Current Plan
+                        {trialActive && plan.tier === 3
+                          ? `Current Plan · Trial — ${trialDaysLeft}d left`
+                          : 'Current Plan'}
                       </div>
                     )}
 
@@ -379,20 +441,67 @@ export default function PricingPage() {
                       ))}
                     </ul>
 
-                    {isCurrentPlan ? (
-                      <button disabled className="w-full py-2.5 rounded-xl text-sm text-center bg-gray-200 text-gray-700 font-semibold cursor-not-allowed">
-                        Current Plan
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handlePlanCta(plan.name)}
-                        className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap ${
-                          plan.highlighted ? 'bg-white text-indigo-600 hover:bg-gray-50' : 'bg-indigo-500 text-white hover:bg-indigo-600'
-                        }`}
-                      >
-                        {plan.cta}
-                      </button>
-                    )}
+                    {(() => {
+                      // Starter card (tier 3) — trial-aware CTAs
+                      if (plan.tier === 3) {
+                        if (isCurrentPlan) {
+                          return (
+                            <button disabled className="w-full py-2.5 rounded-xl text-sm text-center bg-gray-200 text-gray-700 font-semibold cursor-not-allowed">
+                              {trialActive ? `Trial — ${trialDaysLeft}d left` : 'Current Plan'}
+                            </button>
+                          );
+                        }
+                        if (!userSession) {
+                          return (
+                            <button
+                              onClick={() => navigate('/auth')}
+                              className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer bg-indigo-500 text-white hover:bg-indigo-600"
+                            >
+                              Start Free Trial
+                            </button>
+                          );
+                        }
+                        if (currentTier === 1 && !trialUsed) {
+                          return (
+                            <button
+                              onClick={startTrial}
+                              disabled={trialLoading}
+                              className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                              {trialLoading ? 'Starting…' : 'Start 14-day Free Trial'}
+                            </button>
+                          );
+                        }
+                        if (currentTier === 1 && trialUsed) {
+                          return (
+                            <button
+                              onClick={() => handlePlanCta(plan.name)}
+                              className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer bg-indigo-500 text-white hover:bg-indigo-600"
+                            >
+                              Upgrade to Starter
+                            </button>
+                          );
+                        }
+                      }
+                      // Default: current plan or standard CTA
+                      if (isCurrentPlan) {
+                        return (
+                          <button disabled className="w-full py-2.5 rounded-xl text-sm text-center bg-gray-200 text-gray-700 font-semibold cursor-not-allowed">
+                            Current Plan
+                          </button>
+                        );
+                      }
+                      return (
+                        <button
+                          onClick={() => handlePlanCta(plan.name)}
+                          className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap ${
+                            plan.highlighted ? 'bg-white text-indigo-600 hover:bg-gray-50' : 'bg-indigo-500 text-white hover:bg-indigo-600'
+                          }`}
+                        >
+                          {plan.cta}
+                        </button>
+                      );
+                    })()}
                   </article>
                 );
               })}
