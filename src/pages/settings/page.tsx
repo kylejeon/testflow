@@ -252,9 +252,11 @@ function DangerZoneSection({ email }: { email: string }) {
     if (confirmText !== email) return;
     try {
       setDeleting(true);
+      const { error } = await supabase.functions.invoke('delete-account', { body: {} });
+      if (error) throw new Error(error.message);
       await supabase.auth.signOut();
       navigate('/auth');
-    } catch (e) {
+    } catch (e: any) {
       console.error('Account deletion error:', e);
       setDeleting(false);
     }
@@ -1725,62 +1727,36 @@ def pytest_sessionfinish(session, exitstatus):
 
   const handleStartStarterTrial = async () => {
     if (!userProfile) return;
-    // Only Free users who haven't used a trial yet
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
 
     setStartingStarterTrial(true);
     setStarterTrialError(null);
 
     try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('trial_started_at, is_trial, subscription_tier')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (profile?.trial_started_at) {
-        setStarterTrialError('You have already used your free trial.');
+      const { data, error } = await supabase.functions.invoke('start-trial', { body: {} });
+      if (error) throw new Error(error.message);
+      if (data?.error === 'already_used') {
+        setStarterTrialError("You've already used your free trial.");
         return;
       }
-      if (profile?.is_trial) {
-        setStarterTrialError('A trial is already active.');
-        return;
-      }
-
-      const now = new Date();
-      const trialEndsAt = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          subscription_tier: 3, // Starter
-          is_trial: true,
-          trial_started_at: now.toISOString(),
-          trial_ends_at: trialEndsAt.toISOString(),
-        })
-        .eq('id', user.id);
-
-      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       // Emit trial_started event to Loops (fire-and-forget — non-blocking)
-      sendLoopsEvent(
-        user.email!,
-        'trial_started',
-        {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        const trialEndsAt: string = data.trial_ends_at;
+        sendLoopsEvent(user.email, 'trial_started', {
           firstName: userProfile.full_name?.split(' ')[0] ?? '',
           planType: 'trial',
           planName: 'Starter',
-          trialStartDate: now.toISOString().split('T')[0],
-          trialEndDate: trialEndsAt.toISOString().split('T')[0],
-          trialEndsAt: trialEndsAt.toISOString(),
+          trialStartDate: new Date().toISOString().split('T')[0],
+          trialEndDate: trialEndsAt.split('T')[0],
+          trialEndsAt,
           trialDaysLeft: '14',
           trialDaysTotal: '14',
-        },
-      );
+        });
+      }
 
       setStarterTrialStarted(true);
-      // Refresh profile
       setTimeout(() => window.location.reload(), 1200);
     } catch (err: any) {
       setStarterTrialError(err.message || 'Failed to start trial. Please try again.');

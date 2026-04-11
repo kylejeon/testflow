@@ -268,28 +268,32 @@ export default function PricingPage() {
     ? Math.max(0, Math.ceil((new Date(userSession.trial_ends_at).getTime() - Date.now()) / 86400000))
     : 0;
 
+  const [trialError, setTrialError] = useState<string | null>(null);
+
   const startTrial = async () => {
     if (!userSession) { navigate('/auth'); return; }
-    if (trialUsed) return; // 1회 제한
+    if (trialUsed) return;
     setTrialLoading(true);
+    setTrialError(null);
     try {
-      const now = new Date();
-      const trialEnds = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
-      const { error } = await supabase.from('profiles').update({
-        subscription_tier: 3,
-        is_trial: true,
-        trial_started_at: now.toISOString(),
-        trial_ends_at: trialEnds.toISOString(),
-      }).eq('id', userSession.id);
-      if (error) throw error;
+      const { data, error } = await supabase.functions.invoke('start-trial', { body: {} });
+      if (error) throw new Error(error.message);
+      if (data?.error === 'already_used') {
+        setTrialError("You've already used your free trial.");
+        return;
+      }
+      if (data?.error) throw new Error(data.error);
+
+      const trialEndsAt: string = data.trial_ends_at;
+      const now = new Date().toISOString();
       // Fire-and-forget Loops event
       if (userSession.email) {
         sendLoopsEvent(userSession.email, 'trial_started', {
           planType: 'trial',
           planName: 'Starter',
-          trialStartDate: now.toISOString().split('T')[0],
-          trialEndDate: trialEnds.toISOString().split('T')[0],
-          trialEndsAt: trialEnds.toISOString(),
+          trialStartDate: now.split('T')[0],
+          trialEndDate: trialEndsAt.split('T')[0],
+          trialEndsAt,
           trialDaysLeft: '14',
           trialDaysTotal: '14',
         });
@@ -298,10 +302,11 @@ export default function PricingPage() {
         ...prev,
         subscription_tier: 3,
         is_trial: true,
-        trial_started_at: now.toISOString(),
-        trial_ends_at: trialEnds.toISOString(),
+        trial_started_at: now,
+        trial_ends_at: trialEndsAt,
       } : prev);
-    } catch (err) {
+    } catch (err: any) {
+      setTrialError(err?.message ?? 'Failed to start trial. Please try again.');
       console.error('Failed to start trial:', err);
     } finally {
       setTrialLoading(false);
@@ -463,13 +468,18 @@ export default function PricingPage() {
                         }
                         if (currentTier === 1 && !trialUsed) {
                           return (
-                            <button
-                              onClick={startTrial}
-                              disabled={trialLoading}
-                              className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-60 disabled:cursor-not-allowed"
-                            >
-                              {trialLoading ? 'Starting…' : 'Start 14-day Free Trial'}
-                            </button>
+                            <>
+                              <button
+                                onClick={startTrial}
+                                disabled={trialLoading}
+                                className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-60 disabled:cursor-not-allowed"
+                              >
+                                {trialLoading ? 'Starting…' : 'Start 14-day Free Trial'}
+                              </button>
+                              {trialError && (
+                                <p className="text-xs text-red-500 mt-1.5 text-center">{trialError}</p>
+                              )}
+                            </>
                           );
                         }
                         if (currentTier === 1 && trialUsed) {
