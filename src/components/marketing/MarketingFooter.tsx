@@ -56,6 +56,14 @@ export default function MarketingFooter() {
           ))}
         </div>
 
+        {/* Business registration info (Korean e-commerce law requirement) */}
+        <div className="border-t border-gray-200 pt-6 pb-4">
+          <p className="text-xs text-gray-400 text-center leading-relaxed">
+            Testably (테스타블리)&nbsp;&nbsp;|&nbsp;&nbsp;CEO: Yonghyuk Jeon (전용혁)&nbsp;&nbsp;|&nbsp;&nbsp;Business Registration: 866-19-02720
+            {/* TODO: 사업장 주소 추가 */}
+          </p>
+        </div>
+
         {/* Bottom bar */}
         <div className="border-t border-gray-200 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <button onClick={() => navigate('/')} className="cursor-pointer">
