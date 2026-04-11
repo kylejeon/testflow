@@ -85,8 +85,8 @@ const content = {
         ],
       },
       {
-        heading: 'Privacy Officer',
-        contact: { label: 'Officer', value: 'Privacy Protection Team', email: 'privacy@testably.app' },
+        heading: 'Data Protection Officer',
+        contact: { label: 'Data Protection Officer', value: 'Yonghyuk Jeon (전용혁)', email: 'privacy@testably.app' },
       },
       {
         heading: 'Changes to This Privacy Policy',
@@ -176,8 +176,8 @@ const content = {
         ],
       },
       {
-        heading: '개인정보 보호책임자',
-        contact: { label: '담당자', value: '개인정보 보호팀', email: 'privacy@testably.app' },
+        heading: '개인정보보호 책임자',
+        contact: { label: '개인정보보호 책임자', value: '전용혁 (Yonghyuk Jeon)', email: 'privacy@testably.app' },
       },
       {
         heading: '개인정보처리방침 변경',
