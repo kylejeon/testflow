@@ -20,9 +20,9 @@ const content = {
       getStarted: 'Get Started',
     },
     hero: {
-      badge: 'All-in-one test management platform for QA teams',
-      title1: 'Ship quality software',
-      title2: 'faster',
+      badge: 'Test Case Management System for Modern QA Teams',
+      title1: 'The Test Case Management',
+      title2: 'tool your team needs',
       description: 'Testably brings your entire QA workflow together — test cases, runs, milestones, sessions, and team collaboration — all in one place.',
       cta: 'Start for Free',
       demo: 'View Demo',
@@ -36,8 +36,8 @@ const content = {
     ],
     featuresSection: {
       badge: 'Core Features',
-      title: 'Everything your QA team needs',
-      description: 'From writing test cases to analyzing results — Testably covers the full testing lifecycle',
+      title: 'Complete test case management & QA management',
+      description: 'From writing test cases to analyzing results — Testably covers the full testing lifecycle with built-in test tracking and automation',
     },
     differentiators: [
       {
@@ -186,8 +186,8 @@ const content = {
     ],
     workflowSection: {
       badge: 'How It Works',
-      title: 'Your QA process in 4 simple steps',
-      description: 'Start in minutes — no complex setup required',
+      title: 'Test management workflow in 4 simple steps',
+      description: 'Start your test case management in minutes — no complex setup required',
     },
     workflowSteps: [
       { step: '01', title: 'Create a Project', description: 'Set up a project for the product or feature you are testing and invite your team members.', icon: 'ri-add-circle-line' },
@@ -230,8 +230,8 @@ const content = {
     ],
     whySection: {
       badge: 'Why Testably',
-      title: 'Why teams choose Testably',
-      description: 'Everything your QA team needs, none of the complexity you don\'t.',
+      title: 'The test management tool built for speed',
+      description: 'Everything your QA team needs for test tracking and test automation — none of the complexity you don\'t.',
     },
     pricingSection: {
       badge: 'Pricing',
@@ -604,8 +604,8 @@ const content = {
     ],
     workflowSection: {
       badge: '워크플로우',
-      title: '4단계로 완성하는 QA 프로세스',
-      description: '복잡한 설정 없이 몇 분 만에 시작하세요',
+      title: '테스트 관리 워크플로우 4단계',
+      description: '복잡한 설정 없이 몇 분 만에 테스트 케이스 관리를 시작하세요',
     },
     workflowSteps: [
       { step: '01', title: '프로젝트 생성', description: '테스트할 제품이나 기능에 맞는 프로젝트를 생성하고 팀원을 초대하세요.', icon: 'ri-add-circle-line' },
@@ -989,19 +989,32 @@ export default function HomePage() {
   return (
     <>
       <SEOHead
-        title="Testably — Test Case Management for Modern QA Teams"
-        description="Testably brings your entire QA workflow together — test cases, runs, milestones, sessions, and team collaboration in one platform. Jira integration, CI/CD support, AI test generation, 14-day free trial."
-        keywords="test case management, QA test management, test run, test automation, Jira integration, software testing, quality assurance, QA tools, testing platform, modern QA"
+        title="Test Case Management Tool — Testably | Modern QA for Agile Teams"
+        description="Testably is a test case management system built for modern QA teams. Manage test cases, track test runs, integrate with Jira &amp; GitHub, and leverage AI-powered test generation. Free plan available."
+        keywords="test case management, test case management system, test case management tool, test management tool, QA management, test tracking, test automation, Jira integration, software testing, quality assurance"
         ogType="website"
+        canonical="https://testably.app/"
+        ogUrl="https://testably.app/"
         structuredData={{
           '@context': 'https://schema.org',
           '@type': 'SoftwareApplication',
           name: 'Testably',
-          applicationCategory: 'BusinessApplication',
+          applicationCategory: 'DeveloperApplication',
           operatingSystem: 'Web',
+          url: 'https://testably.app',
+          description: 'Test case management system for modern QA teams. Manage test cases, track test runs, integrate with Jira & GitHub, and leverage AI-powered test generation.',
           offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-          aggregateRating: { '@type': 'AggregateRating', ratingValue: '4.8', ratingCount: '127' },
-          description: 'All-in-one QA test management platform. Manage test cases, runs, milestones, and team collaboration in one place.',
+          featureList: [
+            'Test Case Management',
+            'Test Run Execution',
+            'Milestone Tracking',
+            'Jira Integration',
+            'CI/CD Integration',
+            'AI Test Generation',
+            'Advanced Reporting',
+            'Test Case Versioning',
+            'Requirements Traceability Matrix',
+          ],
         }}
       />
 
