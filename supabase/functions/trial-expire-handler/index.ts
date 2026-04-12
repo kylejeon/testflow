@@ -131,7 +131,7 @@ Deno.serve(async (req) => {
             testCaseCount: String(stats.testCaseCount),
             testRunCount: String(stats.testRunCount),
             teamMemberCount: String(stats.teamMemberCount),
-            upgradeUrl: 'https://testably.io/settings?tab=billing',
+            upgradeUrl: 'https://testably.app/settings?tab=billing',
           },
         }),
       });
