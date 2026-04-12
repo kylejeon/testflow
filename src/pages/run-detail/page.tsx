@@ -12,6 +12,7 @@ import { Avatar } from '../../components/Avatar';
 import AIRunSummaryPanel from './components/AIRunSummaryPanel';
 import { type AnyStep, isSharedStepRef } from '../../types/shared-steps';
 import { type FlatStep, type SharedStepCache, expandFlatSteps } from '../../lib/expandSharedSteps';
+import { ExportModal, type ExportFormat } from '../../components/ExportModal';
 
 interface TestCase {
   id: string;
@@ -226,9 +227,7 @@ export default function RunDetail() {
 
   // ── Export modal state ───────────────────────────────────────────────────
   const [showExportModal, setShowExportModal] = useState(false);
-  const [exportType, setExportType] = useState<'pdf' | 'csv'>('pdf');
-  const [exportStatusFilter, setExportStatusFilter] = useState<Set<string>>(new Set(['passed', 'failed', 'blocked', 'retest', 'untested']));
-  const [exportTagFilter, setExportTagFilter] = useState<Set<string>>(new Set());
+  const [exportingFile, setExportingFile] = useState(false);
 
   // ── Shared Step version tracking ─────────────────────────────────────────
   // Map: shared_step_id → { version, custom_id, name, steps (latest) }
@@ -545,6 +544,98 @@ export default function RunDetail() {
       w.focus();
       w.print();
     };
+  };
+
+  const handleExportXLSX = async (filteredCases?: TestCaseWithRunStatus[]) => {
+    const casesToExport = filteredCases ?? testCases;
+
+    const { data: resultsData } = await supabase
+      .from('test_results')
+      .select('test_case_id, status, author, elapsed, created_at, issues')
+      .eq('run_id', runId)
+      .order('created_at', { ascending: false });
+
+    const latestResultMap = new Map<string, any>();
+    (resultsData || []).forEach((r: any) => {
+      if (!latestResultMap.has(r.test_case_id)) latestResultMap.set(r.test_case_id, r);
+    });
+
+    const tcIds = casesToExport.map(tc => tc.id);
+    const { data: commentsData } = await supabase
+      .from('test_case_comments')
+      .select('test_case_id')
+      .in('test_case_id', tcIds);
+    const commentCountMap = new Map<string, number>();
+    (commentsData || []).forEach((c: any) => {
+      commentCountMap.set(c.test_case_id, (commentCountMap.get(c.test_case_id) || 0) + 1);
+    });
+
+    const ExcelJS = await import('exceljs');
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Run Results');
+
+    const headers = ['TC ID', 'Title', 'Priority', 'Status', 'Tester', 'Date', 'Duration', 'Tags', 'Steps Count', 'Comments Count', 'Issues'];
+    ws.columns = headers.map((h, i) => {
+      const widths: Record<number, number> = { 0: 12, 1: 40, 2: 10, 3: 12, 4: 18, 5: 14, 6: 12, 7: 20, 8: 12, 9: 14, 10: 30 };
+      return { header: h, key: String(i), width: widths[i] ?? 16 };
+    });
+
+    const headerRow = ws.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+    headerRow.alignment = { vertical: 'middle' };
+    headerRow.commit();
+
+    casesToExport.forEach(tc => {
+      const r = latestResultMap.get(tc.id);
+      const stepsCount = tc.steps ? tc.steps.split('\n').filter((s: string) => s.trim()).length : 0;
+      const issues = r?.issues && Array.isArray(r.issues) ? r.issues.join(', ') : '';
+      const row = ws.addRow([
+        (tc as any).custom_id || tc.id,
+        tc.title || '',
+        tc.priority || '',
+        tc.runStatus || 'untested',
+        r?.author || '',
+        r?.created_at ? new Date(r.created_at).toLocaleDateString() : '',
+        r?.elapsed || '',
+        tc.tags || '',
+        stepsCount,
+        commentCountMap.get(tc.id) || 0,
+        issues,
+      ]);
+      row.alignment = { wrapText: true, vertical: 'top' };
+      row.commit();
+    });
+
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${run?.name || 'run'}-results.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleRunExport = async (format: ExportFormat, statusFilter: Set<string>, tagFilter: Set<string>) => {
+    setExportingFile(true);
+    try {
+      let filtered = testCases.filter(tc => statusFilter.has(tc.runStatus || 'untested'));
+      if (tagFilter.size > 0) {
+        filtered = filtered.filter(tc => {
+          const tcTags = (tc.tags || '').split(',').map((t: string) => t.trim()).filter(Boolean);
+          return tcTags.some((t: string) => tagFilter.has(t));
+        });
+      }
+      if (format === 'pdf') handleExportPDF(filtered);
+      else if (format === 'csv') await handleExportCSV(filtered);
+      else await handleExportXLSX(filtered);
+      setShowExportModal(false);
+    } finally {
+      setExportingFile(false);
+    }
   };
 
   const fetchCurrentUser = async () => {
@@ -2552,6 +2643,18 @@ export default function RunDetail() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
+                    {/* Export button */}
+                    {testCases.length > 0 && (
+                      <button
+                        onClick={() => setShowExportModal(true)}
+                        className="flex items-center gap-1.5 px-3.5 py-[0.4375rem] rounded-lg text-[0.8125rem] font-medium transition-colors cursor-pointer border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600"
+                        style={{ color: '#475569', background: 'white' }}
+                        title="Export PDF / CSV / Excel"
+                      >
+                        <i className="ri-download-2-line text-base" />
+                        Export
+                      </button>
+                    )}
                     <div ref={moreMenuRef} style={{ position: 'relative' }}>
                       <button
                         onClick={() => setShowMoreMenu(v => !v)}
@@ -2581,24 +2684,6 @@ export default function RunDetail() {
                             padding: '4px 0',
                           }}
                         >
-                          {[
-                            { icon: 'ri-file-pdf-line', label: 'Export Run Report (PDF)', onClick: () => { setShowMoreMenu(false); setExportType('pdf'); setExportStatusFilter(new Set(['passed', 'failed', 'blocked', 'retest', 'untested'])); setExportTagFilter(new Set()); setShowExportModal(true); } },
-                            { icon: 'ri-file-excel-2-line', label: 'Export Results (CSV)', onClick: () => { setShowMoreMenu(false); setExportType('csv'); setExportStatusFilter(new Set(['passed', 'failed', 'blocked', 'retest', 'untested'])); setExportTagFilter(new Set()); setShowExportModal(true); } },
-                          ].map(item => (
-                            <button
-                              key={item.label}
-                              role="menuitem"
-                              onClick={item.onClick}
-                              className="group w-full flex items-center gap-2.5 px-3 py-2.5 text-[0.8125rem] font-medium transition-colors cursor-pointer hover:bg-slate-50"
-                              style={{ color: '#334155', background: 'none', border: 'none', textAlign: 'left' }}
-                            >
-                              <i
-                                className={`${item.icon} text-base flex-shrink-0 group-hover:text-indigo-500 transition-colors`}
-                                style={{ color: '#64748B' }}
-                              />
-                              {item.label}
-                            </button>
-                          ))}
                           {/* Divider */}
                           <div style={{ height: 1, background: '#E2E8F0', margin: '4px 0' }} />
                           {/* AI Summary Menu Item */}
@@ -3243,136 +3328,28 @@ export default function RunDetail() {
             />
           )}
 
-                    {/* Upgrade Modal */}
-          {showExportModal && (() => {
-            const allStatuses = ['passed', 'failed', 'blocked', 'retest', 'untested'];
-            const availableTags = Array.from(new Set(
-              testCases.flatMap(tc => (tc.tags || '').split(',').map((t: string) => t.trim()).filter(Boolean))
-            ));
-            const toggleStatus = (s: string) => {
-              setExportStatusFilter(prev => {
-                const next = new Set(prev);
-                next.has(s) ? next.delete(s) : next.add(s);
-                return next;
-              });
-            };
-            const toggleTag = (t: string) => {
-              setExportTagFilter(prev => {
-                const next = new Set(prev);
-                next.has(t) ? next.delete(t) : next.add(t);
-                return next;
-              });
-            };
-            const handleConfirmExport = () => {
-              let filtered = testCases.filter(tc => exportStatusFilter.has(tc.runStatus || 'untested'));
-              if (exportTagFilter.size > 0) {
-                filtered = filtered.filter(tc => {
-                  const tcTags = (tc.tags || '').split(',').map((t: string) => t.trim()).filter(Boolean);
-                  return tcTags.some((t: string) => exportTagFilter.has(t));
-                });
-              }
-              setShowExportModal(false);
-              if (exportType === 'pdf') {
-                handleExportPDF(filtered);
-              } else {
-                handleExportCSV(filtered);
-              }
-            };
-            return (
-              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
-                <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4">
-                  <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-                    <div className="flex items-center gap-2">
-                      <i className={exportType === 'pdf' ? 'ri-file-pdf-line text-indigo-500' : 'ri-file-excel-2-line text-emerald-500'}></i>
-                      <h3 className="text-[0.9375rem] font-semibold text-slate-900">
-                        Export {exportType === 'pdf' ? 'PDF' : 'CSV'}
-                      </h3>
-                    </div>
-                    <button onClick={() => setShowExportModal(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
-                      <i className="ri-close-line text-lg"></i>
-                    </button>
-                  </div>
-                  <div className="p-5 space-y-4">
-                    <div>
-                      <p className="text-[0.75rem] font-semibold text-slate-500 uppercase tracking-wide mb-2">Status Filter</p>
-                      <div className="flex flex-wrap gap-2">
-                        {allStatuses.map(s => {
-                          const checked = exportStatusFilter.has(s);
-                          const colorMap: Record<string, string> = {
-                            passed: 'bg-green-50 border-green-200 text-green-700',
-                            failed: 'bg-red-50 border-red-200 text-red-700',
-                            blocked: 'bg-amber-50 border-amber-200 text-amber-700',
-                            retest: 'bg-violet-50 border-violet-200 text-violet-700',
-                            untested: 'bg-slate-50 border-slate-200 text-slate-600',
-                          };
-                          return (
-                            <button
-                              key={s}
-                              onClick={() => toggleStatus(s)}
-                              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[0.75rem] font-medium cursor-pointer transition-opacity ${colorMap[s]} ${checked ? 'opacity-100' : 'opacity-40'}`}
-                            >
-                              {checked && <i className="ri-check-line text-xs"></i>}
-                              {s.charAt(0).toUpperCase() + s.slice(1)}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    {availableTags.length > 0 && (
-                      <div>
-                        <p className="text-[0.75rem] font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                          Tag Filter <span className="normal-case font-normal text-slate-400">(leave empty = all tags)</span>
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {availableTags.map(tag => {
-                            const checked = exportTagFilter.has(tag);
-                            return (
-                              <button
-                                key={tag}
-                                onClick={() => toggleTag(tag)}
-                                className={`flex items-center gap-1 px-2.5 py-1 rounded-full border border-slate-200 text-[0.75rem] font-medium cursor-pointer transition-opacity bg-slate-50 text-slate-600 ${checked ? 'opacity-100 !bg-indigo-50 !border-indigo-200 !text-indigo-700' : 'opacity-60 hover:opacity-100'}`}
-                              >
-                                {checked && <i className="ri-price-tag-3-line text-xs"></i>}
-                                {tag}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                    <p className="text-[0.75rem] text-slate-400">
-                      {(() => {
-                        let count = testCases.filter(tc => exportStatusFilter.has(tc.runStatus || 'untested')).length;
-                        if (exportTagFilter.size > 0) {
-                          count = testCases.filter(tc => {
-                            if (!exportStatusFilter.has(tc.runStatus || 'untested')) return false;
-                            const tcTags = (tc.tags || '').split(',').map((t: string) => t.trim()).filter(Boolean);
-                            return tcTags.some((t: string) => exportTagFilter.has(t));
-                          }).length;
-                        }
-                        return `${count} of ${testCases.length} test cases will be exported`;
-                      })()}
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-slate-100">
-                    <button
-                      onClick={() => setShowExportModal(false)}
-                      className="px-4 py-2 text-[0.8125rem] font-medium text-slate-600 hover:bg-slate-50 rounded-lg cursor-pointer border border-slate-200 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleConfirmExport}
-                      disabled={exportStatusFilter.size === 0}
-                      className="px-4 py-2 text-[0.8125rem] font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg cursor-pointer disabled:opacity-50 transition-colors"
-                    >
-                      Export {exportType.toUpperCase()}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
+          {showExportModal && (
+            <ExportModal
+              runName={run?.name || 'Run'}
+              totalCount={testCases.length}
+              availableTags={Array.from(new Set(
+                testCases.flatMap(tc => (tc.tags || '').split(',').map((t: string) => t.trim()).filter(Boolean))
+              ))}
+              onExport={handleRunExport}
+              onClose={() => setShowExportModal(false)}
+              exporting={exportingFile}
+              getFilteredCount={(sf, tf) => {
+                let filtered = testCases.filter(tc => sf.has(tc.runStatus || 'untested'));
+                if (tf.size > 0) {
+                  filtered = filtered.filter(tc => {
+                    const tcTags = (tc.tags || '').split(',').map((t: string) => t.trim()).filter(Boolean);
+                    return tcTags.some((t: string) => tf.has(t));
+                  });
+                }
+                return filtered.length;
+              }}
+            />
+          )}
 
           {showUpgradeModal && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
