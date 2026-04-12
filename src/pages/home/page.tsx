@@ -415,6 +415,8 @@ const content = {
       tagline: 'All-in-one test management platform. Build better software, ship with confidence.',
       product: 'Product',
       productLinks: ['Features', 'Pricing', 'Changelog', 'Roadmap'],
+      useCases: 'Use Cases',
+      useCaseLinks: ['Test Case Management', 'Test Management Tool', 'Blog'],
       compare: 'Compare',
       compareLinks: ['vs TestRail', 'vs Qase', 'vs Zephyr'],
       resources: 'Resources',
@@ -833,6 +835,8 @@ const content = {
       tagline: '올인원 테스트 관리 플랫폼. 더 나은 소프트웨어를 만들고 자신 있게 배포하세요.',
       product: '제품',
       productLinks: ['기능 소개', '요금제', '업데이트 노트', '로드맵'],
+      useCases: 'Use Cases',
+      useCaseLinks: ['Test Case Management', 'Test Management Tool', 'Blog'],
       compare: '비교',
       compareLinks: ['vs TestRail', 'vs Qase', 'vs Zephyr'],
       resources: '리소스',
@@ -1877,8 +1881,8 @@ export default function HomePage() {
         {/* Footer */}
         <footer className="bg-slate-900 border-t border-white/5 py-14">
           <div className="max-w-7xl mx-auto px-6">
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-8 mb-10">
-              <div className="md:col-span-1">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-8 mb-10">
+              <div className="col-span-2 md:col-span-1">
                 <div className="mb-4">
                   <Logo variant="dark" className="h-8" />
                 </div>
@@ -1900,6 +1904,16 @@ export default function HomePage() {
                   {t.footer.productLinks.map((item, i) => (
                     <li key={item}>
                       <Link to={['/features', '/pricing', '/changelog', '/roadmap'][i]} className="text-gray-500 text-sm hover:text-gray-300 transition-colors">{item}</Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+              <nav>
+                <h4 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">{t.footer.useCases}</h4>
+                <ul className="space-y-2.5">
+                  {t.footer.useCaseLinks.map((item, i) => (
+                    <li key={item}>
+                      <Link to={['/use-cases/test-case-management', '/use-cases/test-management-tool', '/blog/choosing-test-management-tool'][i]} className="text-gray-500 text-sm hover:text-gray-300 transition-colors">{item}</Link>
                     </li>
                   ))}
                 </ul>
