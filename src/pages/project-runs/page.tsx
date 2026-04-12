@@ -1062,6 +1062,37 @@ export default function ProjectRunsPage() {
             failed: prevRunData?.failed ?? 0,
             total: (prevRunData?.passed ?? 0) + (prevRunData?.failed ?? 0) + (prevRunData?.blocked ?? 0) + (prevRunData?.retest ?? 0) + (prevRunData?.untested ?? 0),
           });
+
+          // Email notification: run_completed (edit path, fire-and-forget)
+          void (async () => {
+            try {
+              const { data: membersData } = await supabase
+                .from('project_members')
+                .select('user_id, profiles:user_id(email)')
+                .eq('project_id', id!);
+              const recipients = (membersData ?? [])
+                .map((m: any) => ({ user_id: m.user_id as string, email: m.profiles?.email as string }))
+                .filter((r) => r.email);
+              if (recipients.length > 0) {
+                const total = (prevRunData?.passed ?? 0) + (prevRunData?.failed ?? 0) + (prevRunData?.blocked ?? 0) + (prevRunData?.retest ?? 0) + (prevRunData?.untested ?? 0);
+                await supabase.functions.invoke('send-notification', {
+                  body: {
+                    event_type: 'run_completed',
+                    payload: {
+                      project_name: project?.name ?? '',
+                      run_name: formData.name,
+                      pass_rate: total > 0 ? Math.round(((prevRunData?.passed ?? 0) / total) * 100) : 0,
+                      failed_count: prevRunData?.failed ?? 0,
+                      cta_url: `${window.location.origin}/projects/${id}/runs/${editingRunId}`,
+                    },
+                    recipients,
+                  },
+                });
+              }
+            } catch (err) {
+              console.warn('run_completed email notification error (edit):', err);
+            }
+          })();
         }
       } else {
         // Test Run 월 생성 제한 체크 (Free tier=1: 10회/월)
@@ -1206,6 +1237,35 @@ export default function ProjectRunsPage() {
           run_name: formData.name,
         });
 
+        // Email notification: run_created → all project members (fire-and-forget)
+        void (async () => {
+          try {
+            const { data: membersData } = await supabase
+              .from('project_members')
+              .select('user_id, profiles:user_id(email)')
+              .eq('project_id', id!);
+            const recipients = (membersData ?? [])
+              .map((m: any) => ({ user_id: m.user_id as string, email: m.profiles?.email as string }))
+              .filter((r) => r.email);
+            if (recipients.length > 0) {
+              await supabase.functions.invoke('send-notification', {
+                body: {
+                  event_type: 'run_created',
+                  payload: {
+                    project_name: project?.name ?? '',
+                    run_name: formData.name,
+                    tc_count: testCaseIds.length,
+                    cta_url: `${window.location.origin}/projects/${id}/runs${insertedData?.[0]?.id ? `/${insertedData[0].id}` : ''}`,
+                  },
+                  recipients,
+                },
+              });
+            }
+          } catch (err) {
+            console.warn('run_created email notification error:', err);
+          }
+        })();
+
         if (formData.status === 'completed') {
           await notifyProjectMembers({
             projectId: id!,
@@ -1224,6 +1284,36 @@ export default function ProjectRunsPage() {
             failed: 0,
             total: testCaseIds.length,
           });
+
+          // Email notification: run_completed (fire-and-forget)
+          void (async () => {
+            try {
+              const { data: membersData } = await supabase
+                .from('project_members')
+                .select('user_id, profiles:user_id(email)')
+                .eq('project_id', id!);
+              const recipients = (membersData ?? [])
+                .map((m: any) => ({ user_id: m.user_id as string, email: m.profiles?.email as string }))
+                .filter((r) => r.email);
+              if (recipients.length > 0) {
+                await supabase.functions.invoke('send-notification', {
+                  body: {
+                    event_type: 'run_completed',
+                    payload: {
+                      project_name: project?.name ?? '',
+                      run_name: formData.name,
+                      pass_rate: 0,
+                      failed_count: 0,
+                      cta_url: `${window.location.origin}/projects/${id}/runs/${insertedData?.[0]?.id ?? ''}`,
+                    },
+                    recipients,
+                  },
+                });
+              }
+            } catch (err) {
+              console.warn('run_completed email notification error:', err);
+            }
+          })();
         }
       }
 
