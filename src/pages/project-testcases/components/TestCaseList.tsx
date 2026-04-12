@@ -16,6 +16,8 @@ import { useToast } from '../../../components/Toast';
 import UpgradeBanner from '../../../components/UpgradeBanner';
 import SavedViewsDropdown from '../../../components/SavedViewsDropdown';
 import { useSavedViews } from '../../../hooks/useSavedViews';
+import TagChip from '../../../components/TagChip';
+import { useTagColors } from '../../../hooks/useTagColors';
 
 interface TestCase {
   id: string;
@@ -289,6 +291,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
   }, []);
 
   const { views: tcSavedViews, saveView: saveTcView, deleteView: deleteTcView } = useSavedViews(projectId, 'testcase');
+  const { colorMap: tagColorMap, setTagColor } = useTagColors(projectId);
   // ──────────────────────────────────────────────────────────────────────────
   
   const detailPanelRef = useRef<HTMLDivElement>(null);
@@ -3062,10 +3065,14 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-slate-400 mb-[0.1875rem]">Tags</div>
                 {selectedTestCase.tags ? (
                   <div className="flex flex-wrap gap-1">
-                    {selectedTestCase.tags.split(',').map((tag, index) => (
-                      <span key={index} className="inline-flex items-center px-[0.4375rem] py-0.5 bg-indigo-50 text-indigo-700 rounded text-[0.6875rem] font-medium">
-                        {tag.trim()}
-                      </span>
+                    {selectedTestCase.tags.split(',').filter((t: string) => t.trim()).map((tag: string) => (
+                      <TagChip
+                        key={tag.trim()}
+                        tag={tag.trim()}
+                        colorMap={tagColorMap}
+                        onColorChange={setTagColor}
+                        size="sm"
+                      />
                     ))}
                   </div>
                 ) : (
@@ -4038,21 +4045,16 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     />
                     <p className="text-xs text-gray-500 mt-1">Enter를 눌러 태그 추가</p>
                     {getTagsArray().length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {getTagsArray().map((tag, index) => (
-                          <span
-                            key={index}
-                            className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium"
-                          >
-                            {tag}
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveTag(tag)}
-                              className="w-4 h-4 flex items-center justify-center text-indigo-600 hover:text-indigo-800 hover:bg-indigo-200 rounded-full transition-all cursor-pointer"
-                            >
-                              <i className="ri-close-line text-xs"></i>
-                            </button>
-                          </span>
+                      <div className="flex flex-wrap gap-1.5 mt-3">
+                        {getTagsArray().map((tag) => (
+                          <TagChip
+                            key={tag}
+                            tag={tag}
+                            colorMap={tagColorMap}
+                            onColorChange={setTagColor}
+                            onRemove={() => handleRemoveTag(tag)}
+                            size="sm"
+                          />
                         ))}
                       </div>
                     )}
