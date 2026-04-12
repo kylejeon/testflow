@@ -17,6 +17,7 @@ import TestRunsIllustration from '../../components/illustrations/TestRunsIllustr
 import { RunsListSkeleton } from '../../components/Skeleton';
 import SavedViewsDropdown from '../../components/SavedViewsDropdown';
 import { useSavedViews } from '../../hooks/useSavedViews';
+import { ExportModal, type ExportFormat } from '../../components/ExportModal';
 
 interface TestRun {
   id: string;
@@ -149,6 +150,9 @@ export default function ProjectRunsPage() {
   const tagDropdownRef = useRef<HTMLDivElement>(null);
   const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  // Per-run export modal state
+  const [exportModalRun, setExportModalRun] = useState<TestRun | null>(null);
+  const [exportingRun, setExportingRun] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Saved Views
@@ -650,6 +654,131 @@ export default function ProjectRunsPage() {
       setShowUpgradeModal(true);
     } else {
       generateMilestonePdf(milestone, runs);
+    }
+  };
+
+  /** Per-run export: fetches TCs + results, generates PDF/CSV/XLSX for a single run */
+  const handleSingleRunExport = async (
+    run: TestRun,
+    format: ExportFormat,
+    statusFilter: Set<string>,
+    tagFilter: Set<string>
+  ) => {
+    setExportingRun(true);
+    try {
+      // Fetch test cases for this run
+      const { data: testCasesData } = await supabase
+        .from('test_cases')
+        .select('*')
+        .in('id', run.test_case_ids)
+        .order('created_at', { ascending: true });
+
+      const { data: resultsData } = await supabase
+        .from('test_results')
+        .select('test_case_id, status, author, elapsed, created_at, issues')
+        .eq('run_id', run.id)
+        .order('created_at', { ascending: false });
+
+      const statusMap = new Map<string, string>();
+      const latestResultMap = new Map<string, any>();
+      (resultsData || []).forEach((r: any) => {
+        if (!statusMap.has(r.test_case_id)) statusMap.set(r.test_case_id, r.status);
+        if (!latestResultMap.has(r.test_case_id)) latestResultMap.set(r.test_case_id, r);
+      });
+
+      const allCases = (testCasesData || []).map((tc: any) => ({
+        ...tc,
+        runStatus: statusMap.get(tc.id) || 'untested',
+      }));
+
+      // Apply filters
+      let filtered = allCases.filter((tc: any) => statusFilter.has(tc.runStatus));
+      if (tagFilter.size > 0) {
+        filtered = filtered.filter((tc: any) => {
+          const tcTags = (tc.tags || '').split(',').map((t: string) => t.trim()).filter(Boolean);
+          return tcTags.some((t: string) => tagFilter.has(t));
+        });
+      }
+
+      if (format === 'pdf') {
+        // Build same HTML as run-detail PDF
+        const passedCount = filtered.filter((tc: any) => tc.runStatus === 'passed').length;
+        const failedCount = filtered.filter((tc: any) => tc.runStatus === 'failed').length;
+        const blockedCount = filtered.filter((tc: any) => tc.runStatus === 'blocked').length;
+        const retestCount = filtered.filter((tc: any) => tc.runStatus === 'retest').length;
+        const untestedCount = filtered.filter((tc: any) => tc.runStatus === 'untested').length;
+        const totalCount = filtered.length;
+        const completedCount = totalCount - untestedCount;
+        const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+        const statusColors: Record<string, string> = { passed: '#16A34A', failed: '#DC2626', blocked: '#D97706', retest: '#7C3AED', untested: '#64748B' };
+        const statusBg: Record<string, string> = { passed: '#DCFCE7', failed: '#FEE2E2', blocked: '#FEF3C7', retest: '#EDE9FE', untested: '#F1F5F9' };
+        const startDate = run.created_at ? new Date(run.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
+        const exportDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        const tcRows = filtered.map((tc: any, i: number) => {
+          const status = tc.runStatus || 'untested';
+          const color = statusColors[status] || '#64748B';
+          const bg = statusBg[status] || '#F1F5F9';
+          return `<tr style="background:${i % 2 === 0 ? '#fff' : '#F8FAFC'};"><td style="padding:7px 10px;font-size:11px;color:#64748B;font-family:monospace;">${tc.custom_id || ''}</td><td style="padding:7px 10px;font-size:12px;color:#0F172A;">${tc.title || ''}</td><td style="padding:7px 10px;font-size:11px;color:#475569;text-align:center;">${tc.priority || ''}</td><td style="padding:7px 10px;text-align:center;"><span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:10px;font-weight:600;color:${color};background:${bg};">${status.charAt(0).toUpperCase() + status.slice(1)}</span></td></tr>`;
+        }).join('');
+        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${run.name}</title><style>@page{size:A4;margin:18mm 16mm;}*{box-sizing:border-box;margin:0;padding:0;}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#0F172A;background:white;}.header{border-bottom:2px solid #6366F1;padding-bottom:14px;margin-bottom:18px;}.run-name{font-size:20px;font-weight:700;}.summary{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:18px;}.stat{background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:10px;text-align:center;}.stat-value{font-size:22px;font-weight:700;}.stat-label{font-size:10px;color:#64748B;margin-top:2px;text-transform:uppercase;}.progress-bar{height:8px;background:#E2E8F0;border-radius:4px;margin-bottom:4px;overflow:hidden;}.progress-fill{height:100%;background:#6366F1;border-radius:4px;width:${progressPct}%;}.footer{margin-top:14px;font-size:10px;color:#94A3B8;display:flex;justify-content:space-between;border-top:1px solid #E2E8F0;padding-top:8px;}table{width:100%;border-collapse:collapse;}thead tr{background:#6366F1;}thead th{padding:8px 10px;font-size:10px;font-weight:700;color:white;text-transform:uppercase;text-align:left;}tbody tr{border-bottom:1px solid #F1F5F9;}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}tr{page-break-inside:avoid;}}</style></head><body><div class="header"><div class="run-name">${run.name}</div><div style="font-size:11px;color:#94A3B8;">Exported ${exportDate} · Started ${startDate}</div></div><div class="summary"><div class="stat"><div class="stat-value">${totalCount}</div><div class="stat-label">Total</div></div><div class="stat"><div class="stat-value" style="color:#16A34A;">${passedCount}</div><div class="stat-label">Passed</div></div><div class="stat"><div class="stat-value" style="color:#DC2626;">${failedCount}</div><div class="stat-label">Failed</div></div><div class="stat"><div class="stat-value" style="color:#D97706;">${blockedCount}</div><div class="stat-label">Blocked</div></div><div class="stat"><div class="stat-value" style="color:#7C3AED;">${retestCount}</div><div class="stat-label">Retest</div></div><div class="stat"><div class="stat-value" style="color:#64748B;">${untestedCount}</div><div class="stat-label">Untested</div></div></div><div class="progress-bar"><div class="progress-fill"></div></div><p style="font-size:11px;color:#64748B;text-align:right;margin-bottom:18px;">${progressPct}% completed (${completedCount}/${totalCount})</p><table><thead><tr><th style="width:80px;">ID</th><th>Test Case</th><th style="width:72px;">Priority</th><th style="width:82px;">Status</th></tr></thead><tbody>${tcRows}</tbody></table><div class="footer"><span>Testably — Run Report</span><span>${run.name} · ${totalCount} test cases</span></div></body></html>`;
+        const w = window.open('', '_blank', 'width=900,height=700');
+        if (w) { w.document.write(html); w.document.close(); w.onload = () => { w.focus(); w.print(); }; }
+      } else if (format === 'csv') {
+        const headers = ['TC ID', 'Title', 'Priority', 'Status', 'Tester', 'Date', 'Duration', 'Tags', 'Issues'];
+        const rows = filtered.map((tc: any) => {
+          const r = latestResultMap.get(tc.id);
+          const issues = r?.issues && Array.isArray(r.issues) ? r.issues.join('; ') : '';
+          return [
+            `"${(tc.custom_id || tc.id).replace(/"/g, '""')}"`,
+            `"${(tc.title || '').replace(/"/g, '""')}"`,
+            tc.priority || '',
+            tc.runStatus || 'untested',
+            r?.author || '',
+            r?.created_at ? new Date(r.created_at).toLocaleDateString() : '',
+            r?.elapsed || '',
+            `"${(tc.tags || '').replace(/"/g, '""')}"`,
+            `"${issues.replace(/"/g, '""')}"`,
+          ].join(',');
+        });
+        const csv = [headers.join(','), ...rows].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `${run.name}-results.csv`; a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        // XLSX
+        const ExcelJS = await import('exceljs');
+        const wb = new ExcelJS.Workbook();
+        const ws = wb.addWorksheet('Run Results');
+        const headers = ['TC ID', 'Title', 'Priority', 'Status', 'Tester', 'Date', 'Duration', 'Tags', 'Issues'];
+        ws.columns = headers.map((h, i) => {
+          const widths = [12, 40, 10, 12, 18, 14, 12, 20, 30];
+          return { header: h, key: String(i), width: widths[i] ?? 16 };
+        });
+        const headerRow = ws.getRow(1);
+        headerRow.font = { bold: true };
+        headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+        headerRow.alignment = { vertical: 'middle' };
+        headerRow.commit();
+        filtered.forEach((tc: any) => {
+          const r = latestResultMap.get(tc.id);
+          const issues = r?.issues && Array.isArray(r.issues) ? r.issues.join(', ') : '';
+          const row = ws.addRow([tc.custom_id || tc.id, tc.title || '', tc.priority || '', tc.runStatus || 'untested', r?.author || '', r?.created_at ? new Date(r.created_at).toLocaleDateString() : '', r?.elapsed || '', tc.tags || '', issues]);
+          row.alignment = { wrapText: true, vertical: 'top' };
+          row.commit();
+        });
+        const buffer = await wb.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `${run.name}-results.xlsx`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+      setExportModalRun(null);
+    } finally {
+      setExportingRun(false);
     }
   };
 
@@ -1632,12 +1761,22 @@ export default function ProjectRunsPage() {
             )}
           </div>
           {isCompleted ? (
-            <button
-              onClick={(e) => { e.stopPropagation(); handleRunClick(run.id); }}
-              className="text-[0.75rem] font-medium text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
-            >
-              View Report →
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={(e) => { e.stopPropagation(); setExportModalRun(run); }}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-md border border-slate-200 text-[0.75rem] font-medium text-slate-500 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer"
+                title="Export PDF / CSV / Excel"
+              >
+                <i className="ri-download-2-line text-[0.875rem]" />
+                Export
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); handleRunClick(run.id); }}
+                className="text-[0.75rem] font-medium text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
+              >
+                View Report →
+              </button>
+            </div>
           ) : (
             <button
               onClick={(e) => { e.stopPropagation(); handleRunClick(run.id); }}
@@ -2698,6 +2837,18 @@ export default function ProjectRunsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Per-run Export Modal */}
+      {exportModalRun && (
+        <ExportModal
+          runName={exportModalRun.name}
+          totalCount={exportModalRun.passed + exportModalRun.failed + exportModalRun.blocked + exportModalRun.retest + exportModalRun.untested}
+          availableTags={exportModalRun.tags || []}
+          onExport={(fmt, sf, tf) => handleSingleRunExport(exportModalRun, fmt, sf, tf)}
+          onClose={() => setExportModalRun(null)}
+          exporting={exportingRun}
+        />
       )}
 
       {/* Upgrade Modal */}
