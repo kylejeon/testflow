@@ -980,6 +980,22 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
     overscan: 10,
   });
   const virtualItems = rowVirtualizer.getVirtualItems();
+
+  // Scroll to newly created TC after it appears in the sorted/filtered list
+  const justCreatedRef = useRef(false);
+  const prevFilteredLengthRef = useRef(filteredTestCases.length);
+  useEffect(() => {
+    const prev = prevFilteredLengthRef.current;
+    prevFilteredLengthRef.current = filteredTestCases.length;
+    if (!justCreatedRef.current || filteredTestCases.length <= prev) return;
+    justCreatedRef.current = false;
+    // testCases[0] is the prepended TC from setQueryData
+    const newTc = testCases[0];
+    if (!newTc) return;
+    const idx = filteredTestCases.findIndex(tc => tc.id === newTc.id);
+    if (idx < 0) return;
+    setTimeout(() => rowVirtualizer.scrollToIndex(idx, { align: 'start' }), 50);
+  }, [filteredTestCases.length]);
   const paddingTop = virtualItems.length > 0 ? virtualItems[0].start : 0;
   const paddingBottom = virtualItems.length > 0 ? rowVirtualizer.getTotalSize() - virtualItems[virtualItems.length - 1].end : 0;
 
@@ -1369,6 +1385,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       setEditingTestCase(null);
     } else {
       const { data: { user } } = await supabase.auth.getUser();
+      justCreatedRef.current = true;
       onAdd({
         ...updatedTestCaseData,
         status: 'untested',
