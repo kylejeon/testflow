@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 
 interface Insight {
@@ -52,12 +53,12 @@ function InsightCard({ insight }: { insight: Insight }) {
         <span className={`text-[11px] ${style.timeColor}`}>{insight.timestamp}</span>
       </div>
       <p className="text-[12px] leading-relaxed text-gray-700 mb-2">{insight.body}</p>
-      <a
-        href={insight.actionHref}
+      <Link
+        to={insight.actionHref}
         className={`text-[11px] font-semibold ${style.linkColor} underline underline-offset-2 transition-colors`}
       >
         {insight.actionLabel} →
-      </a>
+      </Link>
     </div>
   );
 }
@@ -120,7 +121,7 @@ export default function AIInsightsPanel({ projectId, milestones = [] }: { projec
           ? `${totalToday} test(s) executed today — ${passCount} passed (${passRate}%), ${failCount} failed. ${passRate >= 80 ? 'Overall looking stable.' : 'Failure rate is high. Review recommended.'}`
           : 'No tests have been executed today yet. Start a test run to get started.',
         actionLabel: 'View run details',
-        actionHref: '#runs',
+        actionHref: `/projects/${projectId}/runs`,
         timestamp: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
       });
 
@@ -131,7 +132,7 @@ export default function AIInsightsPanel({ projectId, milestones = [] }: { projec
           tag: 'Risk Alert',
           body: `${failCount} failure(s) detected today. Please review the failed TCs and re-run them.`,
           actionLabel: 'View failed TCs',
-          actionHref: '#failed',
+          actionHref: `/projects/${projectId}/runs`,
           timestamp: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
         });
       } else {
@@ -140,7 +141,7 @@ export default function AIInsightsPanel({ projectId, milestones = [] }: { projec
           tag: 'Risk Alert',
           body: 'No risk signals detected. All tests are passing stably.',
           actionLabel: 'View detailed analysis',
-          actionHref: '#analytics',
+          actionHref: `/projects/${projectId}/runs`,
           timestamp: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
         });
       }
@@ -154,7 +155,7 @@ export default function AIInsightsPanel({ projectId, milestones = [] }: { projec
           tag: 'Completion Forecast',
           body: `Milestone "${milestone.name}" — ${daysLeft > 0 ? `${daysLeft} day(s) remaining` : 'past due'}. ${onTrack ? 'On track to complete within schedule at current pace.' : 'Schedule is tight. Consider reprioritizing.'}`,
           actionLabel: 'View milestones',
-          actionHref: '#milestones',
+          actionHref: `/projects/${projectId}/milestones`,
           timestamp: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
         });
       } else {
@@ -163,7 +164,7 @@ export default function AIInsightsPanel({ projectId, milestones = [] }: { projec
           tag: 'Completion Forecast',
           body: 'No active milestones. Set up a milestone to see completion forecasts.',
           actionLabel: 'Add milestone',
-          actionHref: '#milestones',
+          actionHref: `/projects/${projectId}/milestones`,
           timestamp: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
         });
       }
