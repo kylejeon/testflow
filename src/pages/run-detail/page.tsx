@@ -337,24 +337,55 @@ export default function RunDetail() {
     return () => document.removeEventListener('mousedown', handler);
   }, [showAssigneeSuggest]);
 
-  const handleExportCSV = () => {
+  const handleExportCSV = async (filteredCases?: TestCaseWithRunStatus[]) => {
     setShowMoreMenu(false);
-    const headers = ['TC ID', 'Title', 'Priority', 'Folder', 'Status', 'Author', 'Note', 'Elapsed', 'Date'];
-    const rows = testCases.map(tc => {
-      const result = testResults.find(r => r.run?.id === runId);
-      const latestResult = [...(testResults || [])]
-        .filter(r => (r as any).test_case_id === tc.id || r.run?.id === runId)
-        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
+    const casesToExport = filteredCases ?? testCases;
+
+    // Fetch latest result per TC for this run
+    const { data: resultsData } = await supabase
+      .from('test_results')
+      .select('test_case_id, status, author, elapsed, created_at, issues')
+      .eq('run_id', runId)
+      .order('created_at', { ascending: false });
+
+    const latestResultMap = new Map<string, any>();
+    (resultsData || []).forEach((r: any) => {
+      if (!latestResultMap.has(r.test_case_id)) {
+        latestResultMap.set(r.test_case_id, r);
+      }
+    });
+
+    // Fetch comment counts per TC
+    const tcIds = casesToExport.map(tc => tc.id);
+    const { data: commentsData } = await supabase
+      .from('test_case_comments')
+      .select('test_case_id')
+      .in('test_case_id', tcIds);
+
+    const commentCountMap = new Map<string, number>();
+    (commentsData || []).forEach((c: any) => {
+      commentCountMap.set(c.test_case_id, (commentCountMap.get(c.test_case_id) || 0) + 1);
+    });
+
+    const headers = ['TC ID', 'Title', 'Priority', 'Status', 'Tester', 'Date', 'Duration', 'Tags', 'Steps Count', 'Comments Count', 'Issues'];
+    const rows = casesToExport.map(tc => {
+      const r = latestResultMap.get(tc.id);
+      const stepsCount = tc.steps
+        ? tc.steps.split('\n').filter((s: string) => s.trim()).length
+        : 0;
+      const issues = r?.issues && Array.isArray(r.issues) ? r.issues.join('; ') : '';
       return [
-        (tc as any).custom_id || tc.id,
+        `"${((tc as any).custom_id || tc.id).replace(/"/g, '""')}"`,
         `"${(tc.title || '').replace(/"/g, '""')}"`,
         tc.priority || '',
-        tc.folder || '',
         tc.runStatus || 'untested',
-        latestResult?.author || '',
-        `"${(latestResult?.note || '').replace(/"/g, '""')}"`,
-        latestResult?.elapsed || '',
-        latestResult?.timestamp ? latestResult.timestamp.toLocaleDateString() : '',
+        r?.author || '',
+        r?.created_at ? new Date(r.created_at).toLocaleDateString() : '',
+        r?.elapsed || '',
+        `"${(tc.tags || '').replace(/"/g, '""')}"`,
+        stepsCount,
+        commentCountMap.get(tc.id) || 0,
+        `"${issues.replace(/"/g, '""')}"`,
       ].join(',');
     });
     const csv = [headers.join(','), ...rows].join('\n');
