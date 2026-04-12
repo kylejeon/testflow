@@ -36,7 +36,7 @@ const content = {
     ],
     featuresSection: {
       badge: 'Core Features',
-      title: 'Complete test case management & QA management',
+      title: 'Complete test case management & QA test management platform',
       description: 'From writing test cases to analyzing results — Testably covers the full testing lifecycle with built-in test tracking and automation',
     },
     differentiators: [
@@ -989,9 +989,9 @@ export default function HomePage() {
   return (
     <>
       <SEOHead
-        title="Test Case Management Tool — Testably | Modern QA for Agile Teams"
-        description="Testably is a test case management system built for modern QA teams. Manage test cases, track test runs, integrate with Jira &amp; GitHub, and leverage AI-powered test generation. Free plan available."
-        keywords="test case management, test case management system, test case management tool, test management tool, QA management, test tracking, test automation, Jira integration, software testing, quality assurance"
+        title="Test Case Management Tool — Testably | QA Test Management Platform"
+        description="Testably is a test case management tool and QA test management platform. Manage test cases, track runs, sync Jira & GitHub, and generate tests with AI. Free."
+        keywords="test case management, test case management system, test case management tool, QA test management platform, test management tool, QA management, test tracking, test automation, Jira integration, software testing, quality assurance"
         ogType="website"
         canonical="https://testably.app/"
         ogUrl="https://testably.app/"
@@ -1002,7 +1002,7 @@ export default function HomePage() {
           applicationCategory: 'DeveloperApplication',
           operatingSystem: 'Web',
           url: 'https://testably.app',
-          description: 'Test case management system for modern QA teams. Manage test cases, track test runs, integrate with Jira & GitHub, and leverage AI-powered test generation.',
+          description: 'Test case management tool and QA test management platform for modern QA teams.',
           offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
           featureList: [
             'Test Case Management',
