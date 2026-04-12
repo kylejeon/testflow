@@ -63,7 +63,7 @@ export default function SavedViewsDropdown({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-1 w-64 bg-white border border-gray-200 rounded-xl shadow-lg z-30">
+        <div className="absolute right-0 top-full mt-1 w-64 bg-white border border-gray-200 rounded-xl shadow-lg z-50">
           {/* Save current view */}
           {!showSaveInput ? (
             <button

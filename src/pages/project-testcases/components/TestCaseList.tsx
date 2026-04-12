@@ -2700,8 +2700,8 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             />
           );
         })()}
-        {/* 필터 바 */}
-        <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-100 bg-gray-50 flex-shrink-0 flex-wrap">
+        {/* 통합 툴바: 왼쪽 필터 / 오른쪽 액션 */}
+        <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-100 bg-white flex-shrink-0 flex-wrap">
           {/* Search */}
           <div className="relative">
             <i className="ri-search-line absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
@@ -2710,11 +2710,11 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
               value={tcSearchQuery}
               onChange={e => setTcSearchQuery(e.target.value)}
               placeholder="Search test cases…"
-              className="pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400 bg-white w-44"
+              className="pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400 bg-white w-40"
             />
           </div>
 
-          {/* Priority filter */}
+          {/* Priority / Tag filter */}
           <div className="relative" ref={tcFilterDropdownRef}>
             <button
               onClick={() => setTcShowFilterDropdown(o => !o)}
@@ -2778,6 +2778,11 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             </span>
           ))}
 
+          {/* result count */}
+          {(tcSearchQuery || tcPriorityFilters.length > 0 || tcTagFilters.length > 0) && (
+            <span className="text-xs text-gray-400">{filteredTestCases.length} result{filteredTestCases.length !== 1 ? 's' : ''}</span>
+          )}
+
           <div className="flex-1" />
 
           {/* Saved Views */}
@@ -2789,14 +2794,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             onDeleteView={deleteTcView}
           />
 
-          {/* result count */}
-          {(tcSearchQuery || tcPriorityFilters.length > 0 || tcTagFilters.length > 0) && (
-            <span className="text-xs text-gray-400">{filteredTestCases.length} result{filteredTestCases.length !== 1 ? 's' : ''}</span>
-          )}
-        </div>
-
-        {/* 액션 바 */}
-        <div className="flex items-center justify-end gap-2 px-4 py-[0.6875rem] border-b border-gray-100 bg-white flex-shrink-0">
+          {/* Action buttons */}
           <button
             onClick={() => {
               setEditingTestCase(null);
