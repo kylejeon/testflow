@@ -215,14 +215,12 @@ export default function RunDetail() {
   const [bulkAssignee, setBulkAssignee] = useState('');
   const [runAssignees, setRunAssignees] = useState<Map<string, string>>(new Map());
   const [openAssigneeDropdown, setOpenAssigneeDropdown] = useState<string | null>(null);
-  const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [showAISummary, setShowAISummary] = useState(false);
   const [showUpgradeNudge, setShowUpgradeNudge] = useState(false);
   const [showAINewBadge] = useState(() => {
     const launchDate = new Date('2026-05-01');
     return new Date() < new Date(launchDate.getTime() + 30 * 24 * 60 * 60 * 1000);
   });
-  const moreMenuRef = useRef<HTMLDivElement>(null);
   const assigneeSuggestRef = useRef<HTMLDivElement>(null);
 
   // ── Export modal state ───────────────────────────────────────────────────
@@ -318,18 +316,6 @@ export default function RunDetail() {
       setSharedStepsCache(cache);
     })();
   }, [selectedTestCase?.id, stepsSnapshot]);
-
-  // Close more menu on outside click
-  useEffect(() => {
-    if (!showMoreMenu) return;
-    const handler = (e: MouseEvent) => {
-      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target as Node)) {
-        setShowMoreMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [showMoreMenu]);
 
   useEffect(() => {
     if (!showAssigneeSuggest) return;
@@ -2655,91 +2641,34 @@ export default function RunDetail() {
                         Export
                       </button>
                     )}
-                    <div ref={moreMenuRef} style={{ position: 'relative' }}>
+                    {/* AI Summary standalone button */}
+                    {(userProfile?.subscription_tier ?? 1) >= 2 ? (
                       <button
-                        onClick={() => setShowMoreMenu(v => !v)}
-                        className="w-9 h-9 flex items-center justify-center rounded-lg cursor-pointer border transition-colors"
-                        style={{
-                          background: showMoreMenu ? '#F1F5F9' : 'white',
-                          borderColor: showMoreMenu ? '#CBD5E1' : '#E2E8F0',
-                        }}
-                        aria-haspopup="menu"
-                        aria-expanded={showMoreMenu}
+                        onClick={() => { setShowAISummary(true); setShowUpgradeNudge(false); }}
+                        className="flex items-center gap-1.5 px-3.5 py-[0.4375rem] rounded-lg text-[0.8125rem] font-medium transition-colors cursor-pointer border border-violet-200 hover:border-violet-400 hover:bg-violet-50"
+                        style={{ color: '#4338CA', background: 'white' }}
                       >
-                        <i className="ri-more-2-fill text-lg" style={{ color: '#64748B' }} />
+                        <i className="ri-sparkling-2-fill text-base" style={{ color: '#8B5CF6' }} />
+                        AI Summary
+                        {showAINewBadge && (
+                          <span style={{ fontSize: '10px', background: '#EDE9FE', color: '#6D28D9', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                            NEW
+                          </span>
+                        )}
                       </button>
-                      {showMoreMenu && (
-                        <div
-                          role="menu"
-                          style={{
-                            position: 'absolute',
-                            top: 'calc(100% + 4px)',
-                            right: 0,
-                            width: '224px',
-                            background: 'white',
-                            border: '1px solid #E2E8F0',
-                            borderRadius: '8px',
-                            boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)',
-                            zIndex: 100,
-                            padding: '4px 0',
-                          }}
-                        >
-                          {/* Divider */}
-                          <div style={{ height: 1, background: '#E2E8F0', margin: '4px 0' }} />
-                          {/* AI Summary Menu Item */}
-                          {(userProfile?.subscription_tier ?? 1) >= 2 ? (
-                            <button
-                              role="menuitem"
-                              onClick={() => { setShowMoreMenu(false); setShowAISummary(true); setShowUpgradeNudge(false); }}
-                              className="group w-full flex items-center gap-2.5 px-3 py-2.5 text-[0.8125rem] font-medium transition-colors cursor-pointer hover:bg-violet-50"
-                              style={{ color: '#4338CA', background: 'none', border: 'none', textAlign: 'left' }}
-                            >
-                              <i className="ri-sparkling-2-fill text-base flex-shrink-0" style={{ color: '#8B5CF6' }} />
-                              AI Summary
-                              {showAINewBadge && (
-                                <span
-                                  style={{
-                                    marginLeft: 'auto',
-                                    fontSize: '10px',
-                                    background: '#EDE9FE',
-                                    color: '#6D28D9',
-                                    padding: '1px 6px',
-                                    borderRadius: '4px',
-                                    fontWeight: 700,
-                                  }}
-                                >
-                                  NEW
-                                </span>
-                              )}
-                            </button>
-                          ) : (
-                            <button
-                              role="menuitem"
-                              onClick={() => { setShowMoreMenu(false); setShowUpgradeNudge(true); setShowAISummary(false); }}
-                              className="w-full flex items-center gap-2.5 px-3 py-2.5 text-[0.8125rem] font-medium cursor-pointer"
-                              style={{ color: '#94A3B8', background: 'none', border: 'none', textAlign: 'left', opacity: 0.6 }}
-                            >
-                              <i className="ri-lock-line text-base flex-shrink-0" style={{ color: '#94A3B8' }} />
-                              AI Summary
-                              <span
-                                style={{
-                                  marginLeft: 'auto',
-                                  fontSize: '10px',
-                                  background: '#F1F5F9',
-                                  color: '#94A3B8',
-                                  border: '1px solid #E2E8F0',
-                                  padding: '1px 6px',
-                                  borderRadius: '4px',
-                                  fontWeight: 700,
-                                }}
-                              >
-                                STARTER
-                              </span>
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                    ) : (
+                      <button
+                        onClick={() => { setShowUpgradeNudge(true); setShowAISummary(false); }}
+                        className="flex items-center gap-1.5 px-3.5 py-[0.4375rem] rounded-lg text-[0.8125rem] font-medium cursor-pointer border border-slate-200 opacity-60 hover:opacity-80 transition-opacity"
+                        style={{ color: '#94A3B8', background: 'white' }}
+                      >
+                        <i className="ri-lock-line text-base" style={{ color: '#94A3B8' }} />
+                        AI Summary
+                        <span style={{ fontSize: '10px', background: '#F1F5F9', color: '#94A3B8', border: '1px solid #E2E8F0', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                          STARTER
+                        </span>
+                      </button>
+                    )}
                     {testCases.length > 0 && (
                       <button
                         onClick={() => setFocusModeOpen(true)}
