@@ -1,5 +1,5 @@
 import { LogoMark } from '../../components/Logo';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { markOnboardingStep } from '../../lib/onboardingMarker';
@@ -15,6 +15,8 @@ import { type SharedStepCache, expandFlatSteps } from '../../lib/expandSharedSte
 import EmptyState from '../../components/EmptyState';
 import TestRunsIllustration from '../../components/illustrations/TestRunsIllustration';
 import { RunsListSkeleton } from '../../components/Skeleton';
+import SavedViewsDropdown from '../../components/SavedViewsDropdown';
+import { useSavedViews } from '../../hooks/useSavedViews';
 
 interface TestRun {
   id: string;
@@ -148,6 +150,16 @@ export default function ProjectRunsPage() {
   const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Saved Views
+  const { views: runSavedViews, saveView: saveRunView, deleteView: deleteRunView } = useSavedViews(id || '', 'run');
+  const runCurrentFilters = { tab: activeTab, resultFilter, searchQuery, milestoneFilter };
+  const applyRunViewFilters = useCallback((filters: Record<string, any>) => {
+    if (filters.tab) setActiveTab(filters.tab);
+    if (filters.resultFilter) setResultFilter(filters.resultFilter);
+    if (filters.searchQuery !== undefined) setSearchQuery(filters.searchQuery);
+    if (filters.milestoneFilter !== undefined) setMilestoneFilter(filters.milestoneFilter);
+  }, []);
 
   useEffect(() => {
     if (searchParams.get('action') === 'create') {
@@ -1814,6 +1826,14 @@ export default function ProjectRunsPage() {
                 </div>
               )}
             </div>
+            {/* Saved Views */}
+            <SavedViewsDropdown
+              views={runSavedViews}
+              currentFilters={runCurrentFilters}
+              onApplyView={applyRunViewFilters}
+              onSaveView={(name) => saveRunView(name, runCurrentFilters)}
+              onDeleteView={deleteRunView}
+            />
             <div className="relative" ref={sortMenuRef}>
               <button
                 onClick={() => setShowSortMenu(p => !p)}
