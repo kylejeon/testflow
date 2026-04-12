@@ -3726,16 +3726,6 @@ describe('Login', () => {
                   {activeTab === 'notifications' && (
                     <div>
                       <NotificationSettingsPanel />
-                      {/* ── Coming Soon: Email Notifications ── */}
-                      <div className="relative mt-4">
-                        <div className="absolute top-3 right-3 px-2.5 py-0.5 bg-amber-500 text-white text-[0.625rem] font-bold rounded-full z-10">COMING SOON</div>
-                        <div className="bg-white border border-slate-200 rounded-[0.625rem] p-6 opacity-60">
-                          <h3 className="text-[0.9375rem] font-bold text-slate-900 mb-0.5 flex items-center gap-2">
-                            <i className="ri-mail-line text-indigo-500"></i> Email Notifications
-                          </h3>
-                          <p className="text-[0.8125rem] text-slate-500">Email notification delivery — planned for a future release.</p>
-                        </div>
-                      </div>
                       {/* ── Coming Soon: Desktop Push Notifications ── */}
                       <div className="relative mt-4">
                         <div className="absolute top-3 right-3 px-2.5 py-0.5 bg-amber-500 text-white text-[0.625rem] font-bold rounded-full z-10">COMING SOON</div>
