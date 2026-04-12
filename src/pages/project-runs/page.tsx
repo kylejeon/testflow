@@ -160,8 +160,9 @@ export default function ProjectRunsPage() {
     navigate(`/projects/${id}/runs/${runId}`);
   };
 
-  const generateMilestonePdf = async (milestone: Milestone, runs: TestRun[]) => {
-    setGeneratingPdf(milestone.id);
+  const generateMilestonePdf = async (milestone: Milestone | null, runs: TestRun[]) => {
+    const pdfKey = milestone ? milestone.id : '__unassigned__';
+    setGeneratingPdf(pdfKey);
 
     const fmtDate = (dateString: string) => {
       const date = new Date(dateString);
@@ -455,12 +456,13 @@ export default function ProjectRunsPage() {
           </div>`;
       }).join('');
 
+      const reportTitle = milestone ? milestone.name : 'Unassigned Runs';
       const pdfContent = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Test Report - ${milestone.name}</title>
+  <title>Test Report - ${reportTitle}</title>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
     body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto','Helvetica','Arial',sans-serif; padding:40px; color:#333; background:#fff; font-size:12px; line-height:1.5; }
@@ -521,12 +523,13 @@ export default function ProjectRunsPage() {
 <body>
   <div class="header">
     <h1>${project?.name || 'Test Report'}</h1>
-    <div class="subtitle">${milestone.name} — Generated on ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+    <div class="subtitle">${reportTitle} — Generated on ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
   </div>
 
   <div class="section">
-    <div class="section-title">Milestone Information</div>
+    <div class="section-title">${milestone ? 'Milestone Information' : 'Run Information'}</div>
     <div class="info-grid">
+      ${milestone ? `
       <div class="info-item">
         <div class="info-label">Milestone Name</div>
         <div class="info-value">${milestone.name}</div>
@@ -543,6 +546,24 @@ export default function ProjectRunsPage() {
         <div class="info-label">Status</div>
         <div class="info-value">${milestone.status === 'completed' ? 'Completed' : 'Active'}</div>
       </div>
+      ` : `
+      <div class="info-item">
+        <div class="info-label">Run Count</div>
+        <div class="info-value">${runs.length} run${runs.length !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Project</div>
+        <div class="info-value">${project?.name || 'N/A'}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Created</div>
+        <div class="info-value">${runs.length > 0 ? fmtDate(runs[runs.length - 1].created_at) : 'N/A'} — ${runs.length > 0 ? fmtDate(runs[0].created_at) : 'N/A'}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Milestone</div>
+        <div class="info-value">Unassigned</div>
+      </div>
+      `}
     </div>
   </div>
 
@@ -610,7 +631,7 @@ export default function ProjectRunsPage() {
     }
   };
 
-  const handleExportPdfClick = (e: React.MouseEvent, milestone: Milestone, runs: TestRun[]) => {
+  const handleExportPdfClick = (e: React.MouseEvent, milestone: Milestone | null, runs: TestRun[]) => {
     e.stopPropagation();
     const tier = userProfile?.subscription_tier || 1;
     if (tier < 2) {
@@ -1884,6 +1905,16 @@ export default function ProjectRunsPage() {
                     ))}
                     {unassigned.length > 0 && (
                       <div className="space-y-3">
+                        <div className="flex items-center justify-between px-1 pb-1">
+                          <span className="text-[0.8125rem] font-medium text-slate-500">Unassigned Runs ({unassigned.length})</span>
+                          <button
+                            onClick={(e) => handleExportPdfClick(e, null, unassigned)}
+                            disabled={generatingPdf === '__unassigned__'}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-[0.75rem] font-medium cursor-pointer disabled:opacity-50 transition-colors"
+                          >
+                            {generatingPdf === '__unassigned__' ? <><i className="ri-loader-4-line animate-spin"></i> Generating...</> : <><i className="ri-file-pdf-line"></i> Export PDF</>}
+                          </button>
+                        </div>
                         {unassigned.map(run => renderRunCard(run, getRunPriority(run)))}
                       </div>
                     )}
