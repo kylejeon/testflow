@@ -1579,6 +1579,19 @@ export default function ProjectRunsPage() {
           {run.retest > 0 && <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-yellow-400 inline-block"></span>{run.retest} retest</span>}
           <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-slate-200 inline-block"></span>{run.untested} untested</span>
         </div>
+        {/* Row 4b: Tags */}
+        {run.tags && run.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-2.5">
+            {run.tags.slice(0, 5).map(tag => (
+              <span key={tag} className="inline-flex items-center px-1.5 py-0.5 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-[0.625rem] font-medium">
+                <i className="ri-price-tag-3-line mr-0.5 text-[0.5625rem]"></i>{tag}
+              </span>
+            ))}
+            {run.tags.length > 5 && (
+              <span className="inline-flex items-center px-1.5 py-0.5 bg-slate-50 text-slate-400 border border-slate-100 rounded text-[0.625rem]">+{run.tags.length - 5}</span>
+            )}
+          </div>
+        )}
         {/* Row 5: Assignees + Continue/Start button */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-[0.75rem] text-slate-500">
