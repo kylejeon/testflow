@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { supabase } from '../../../lib/supabase';
 import ExportImportModal from './ExportImportModal';
@@ -14,6 +14,10 @@ import { LifecycleBadge, type LifecycleStatus } from '../../../components/Lifecy
 import { Avatar } from '../../../components/Avatar';
 import { useToast } from '../../../components/Toast';
 import UpgradeBanner from '../../../components/UpgradeBanner';
+import SavedViewsDropdown from '../../../components/SavedViewsDropdown';
+import { useSavedViews } from '../../../hooks/useSavedViews';
+import TagChip from '../../../components/TagChip';
+import { useTagColors } from '../../../hooks/useTagColors';
 
 interface TestCase {
   id: string;
@@ -266,6 +270,31 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
   const [isComposing, setIsComposing] = useState(false);
   const [selectedTestCaseIds, setSelectedTestCaseIds] = useState<Set<string>>(new Set());
   const [showBulkFolderModal, setShowBulkFolderModal] = useState(false);
+  const [showBulkTagModal, setShowBulkTagModal] = useState(false);
+  const [bulkTagInput, setBulkTagInput] = useState('');
+
+  // ── TC list filters ────────────────────────────────────────────────────────
+  const [tcSearchQuery, setTcSearchQuery] = useState('');
+  const [tcPriorityFilters, setTcPriorityFilters] = useState<string[]>([]);
+  const [tcTagFilters, setTcTagFilters] = useState<string[]>([]);
+  const [tcShowFilterDropdown, setTcShowFilterDropdown] = useState(false);
+  const tcFilterDropdownRef = useRef<HTMLDivElement>(null);
+
+  const allTcTags = Array.from(new Set(
+    testCases.flatMap(tc => tc.tags ? tc.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : [])
+  )).sort();
+
+  const tcCurrentFilters = { search: tcSearchQuery, priorities: tcPriorityFilters, tags: tcTagFilters };
+
+  const applyTcViewFilters = useCallback((filters: Record<string, any>) => {
+    setTcSearchQuery(filters.search || '');
+    setTcPriorityFilters(filters.priorities || []);
+    setTcTagFilters(filters.tags || []);
+  }, []);
+
+  const { views: tcSavedViews, saveView: saveTcView, deleteView: deleteTcView } = useSavedViews(projectId, 'testcase');
+  const { colorMap: tagColorMap, setTagColor } = useTagColors(projectId);
+  // ──────────────────────────────────────────────────────────────────────────
   
   const detailPanelRef = useRef<HTMLDivElement>(null);
 
@@ -889,13 +918,24 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
     })),
   ];
 
-  const filteredTestCases = (selectedFolder === 'all' 
-    ? testCases 
+  const filteredTestCases = (selectedFolder === 'all'
+    ? testCases
     : testCases.filter(tc => {
         const folder = folders.find(f => f.id === selectedFolder);
         return folder && tc.folder === folder.name;
       })
-  ).slice().sort((a, b) => {
+  ).filter(tc => {
+    if (tcSearchQuery) {
+      const q = tcSearchQuery.toLowerCase();
+      if (!tc.title.toLowerCase().includes(q) && !(tc.custom_id || '').toLowerCase().includes(q)) return false;
+    }
+    if (tcPriorityFilters.length > 0 && !tcPriorityFilters.includes(tc.priority)) return false;
+    if (tcTagFilters.length > 0) {
+      const tcTags = tc.tags ? tc.tags.split(',').map((t: string) => t.trim()) : [];
+      if (!tcTagFilters.some(f => tcTags.includes(f))) return false;
+    }
+    return true;
+  }).slice().sort((a, b) => {
     const idA = a.custom_id || '';
     const idB = b.custom_id || '';
     // 숫자 부분 추출하여 숫자 정렬, 없으면 문자열 정렬
@@ -2643,6 +2683,101 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             />
           );
         })()}
+        {/* 필터 바 */}
+        <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-100 bg-gray-50 flex-shrink-0 flex-wrap">
+          {/* Search */}
+          <div className="relative">
+            <i className="ri-search-line absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+            <input
+              type="text"
+              value={tcSearchQuery}
+              onChange={e => setTcSearchQuery(e.target.value)}
+              placeholder="Search test cases…"
+              className="pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400 bg-white w-44"
+            />
+          </div>
+
+          {/* Priority filter */}
+          <div className="relative" ref={tcFilterDropdownRef}>
+            <button
+              onClick={() => setTcShowFilterDropdown(o => !o)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-lg text-xs font-medium cursor-pointer transition-colors ${tcPriorityFilters.length > 0 || tcTagFilters.length > 0 ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}
+            >
+              <i className="ri-filter-line" />
+              Filters
+              {(tcPriorityFilters.length + tcTagFilters.length) > 0 && (
+                <span className="px-1 bg-indigo-600 text-white rounded text-[0.5625rem] font-bold">{tcPriorityFilters.length + tcTagFilters.length}</span>
+              )}
+            </button>
+            {tcShowFilterDropdown && (
+              <div className="absolute left-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-lg z-30 p-3">
+                <div className="mb-2.5">
+                  <p className="text-[0.6875rem] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Priority</p>
+                  <div className="flex flex-wrap gap-1">
+                    {['critical', 'high', 'medium', 'low'].map(p => (
+                      <button
+                        key={p}
+                        onClick={() => setTcPriorityFilters(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p])}
+                        className={`px-2 py-0.5 rounded-full text-xs capitalize font-medium cursor-pointer border transition-colors ${tcPriorityFilters.includes(p) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-indigo-300'}`}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {allTcTags.length > 0 && (
+                  <div>
+                    <p className="text-[0.6875rem] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Tags</p>
+                    <div className="flex flex-wrap gap-1 max-h-28 overflow-y-auto">
+                      {allTcTags.map(tag => (
+                        <button
+                          key={tag}
+                          onClick={() => setTcTagFilters(prev => prev.includes(tag) ? prev.filter(x => x !== tag) : [...prev, tag])}
+                          className={`px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer border transition-colors ${tcTagFilters.includes(tag) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-indigo-300'}`}
+                        >
+                          {tag}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {(tcPriorityFilters.length + tcTagFilters.length) > 0 && (
+                  <button
+                    onClick={() => { setTcPriorityFilters([]); setTcTagFilters([]); }}
+                    className="mt-2 w-full text-xs text-gray-500 hover:text-red-500 cursor-pointer text-center"
+                  >
+                    Clear all filters
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Active filter chips */}
+          {tcTagFilters.map(tag => (
+            <span key={tag} className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-full text-xs font-medium">
+              {tag}
+              <button onClick={() => setTcTagFilters(prev => prev.filter(t => t !== tag))} className="text-indigo-400 hover:text-indigo-700 cursor-pointer leading-none">×</button>
+            </span>
+          ))}
+
+          <div className="flex-1" />
+
+          {/* Saved Views */}
+          <SavedViewsDropdown
+            views={tcSavedViews}
+            currentFilters={tcCurrentFilters}
+            onApplyView={applyTcViewFilters}
+            onSaveView={(name) => saveTcView(name, tcCurrentFilters)}
+            onDeleteView={deleteTcView}
+          />
+
+          {/* result count */}
+          {(tcSearchQuery || tcPriorityFilters.length > 0 || tcTagFilters.length > 0) && (
+            <span className="text-xs text-gray-400">{filteredTestCases.length} result{filteredTestCases.length !== 1 ? 's' : ''}</span>
+          )}
+        </div>
+
         {/* 액션 바 */}
         <div className="flex items-center justify-end gap-2 px-4 py-[0.6875rem] border-b border-gray-100 bg-white flex-shrink-0">
           <button
@@ -2932,10 +3067,14 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-slate-400 mb-[0.1875rem]">Tags</div>
                 {selectedTestCase.tags ? (
                   <div className="flex flex-wrap gap-1">
-                    {selectedTestCase.tags.split(',').map((tag, index) => (
-                      <span key={index} className="inline-flex items-center px-[0.4375rem] py-0.5 bg-indigo-50 text-indigo-700 rounded text-[0.6875rem] font-medium">
-                        {tag.trim()}
-                      </span>
+                    {selectedTestCase.tags.split(',').filter((t: string) => t.trim()).map((tag: string) => (
+                      <TagChip
+                        key={tag.trim()}
+                        tag={tag.trim()}
+                        colorMap={tagColorMap}
+                        onColorChange={setTagColor}
+                        size="sm"
+                      />
                     ))}
                   </div>
                 ) : (
@@ -3908,21 +4047,16 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     />
                     <p className="text-xs text-gray-500 mt-1">Enter를 눌러 태그 추가</p>
                     {getTagsArray().length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {getTagsArray().map((tag, index) => (
-                          <span
-                            key={index}
-                            className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium"
-                          >
-                            {tag}
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveTag(tag)}
-                              className="w-4 h-4 flex items-center justify-center text-indigo-600 hover:text-indigo-800 hover:bg-indigo-200 rounded-full transition-all cursor-pointer"
-                            >
-                              <i className="ri-close-line text-xs"></i>
-                            </button>
-                          </span>
+                      <div className="flex flex-wrap gap-1.5 mt-3">
+                        {getTagsArray().map((tag) => (
+                          <TagChip
+                            key={tag}
+                            tag={tag}
+                            colorMap={tagColorMap}
+                            onColorChange={setTagColor}
+                            onRemove={() => handleRemoveTag(tag)}
+                            size="sm"
+                          />
                         ))}
                       </div>
                     )}
@@ -4827,10 +4961,109 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       onClear={() => setSelectedTestCaseIds(new Set())}
       onAssign={handleBulkAssign}
       assignees={projectMembers.map(m => ({ id: m.user_id, name: m.profile.full_name || m.profile.email }))}
+      onTag={() => setShowBulkTagModal(true)}
       onMove={() => setShowBulkFolderModal(true)}
       onDelete={() => setShowBulkDeleteModal(true)}
       onSetLifecycleStatus={handleBulkLifecycleChange}
     />
+
+    {/* ── Bulk Tag Modal ── */}
+    {showBulkTagModal && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+            <h3 className="text-[0.9375rem] font-bold text-gray-900 flex items-center gap-2">
+              <i className="ri-price-tag-3-line text-indigo-500" />
+              Add Tag to {selectedTestCaseIds.size} TC{selectedTestCaseIds.size !== 1 ? 's' : ''}
+            </h3>
+            <button onClick={() => { setShowBulkTagModal(false); setBulkTagInput(''); }} className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-600 rounded cursor-pointer border-none bg-transparent">
+              <i className="ri-close-line" />
+            </button>
+          </div>
+          <div className="px-5 py-4">
+            <p className="text-xs text-gray-500 mb-3">Enter a tag to append to all selected test cases:</p>
+            {allTcTags.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-3">
+                {allTcTags.slice(0, 12).map(tag => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => setBulkTagInput(tag)}
+                    className={`px-2 py-0.5 rounded-full text-xs font-medium border cursor-pointer transition-colors ${bulkTagInput === tag ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-indigo-300'}`}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            )}
+            <input
+              type="text"
+              autoFocus
+              value={bulkTagInput}
+              onChange={e => setBulkTagInput(e.target.value)}
+              onKeyDown={async e => {
+                if (e.key === 'Enter' && bulkTagInput.trim()) {
+                  e.preventDefault();
+                  const tag = bulkTagInput.trim();
+                  const ids = Array.from(selectedTestCaseIds);
+                  // Fetch current tags for selected TCs
+                  const { data: tcs } = await supabase.from('test_cases').select('id, tags').in('id', ids);
+                  if (tcs) {
+                    const updates = tcs.map((tc: { id: string; tags?: string }) => {
+                      const existing = tc.tags ? tc.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : [];
+                      if (!existing.includes(tag)) {
+                        return supabase.from('test_cases').update({ tags: [...existing, tag].join(', ') }).eq('id', tc.id);
+                      }
+                      return Promise.resolve();
+                    });
+                    await Promise.all(updates);
+                    onRefresh?.();
+                    showToast(`Tag "${tag}" added to ${ids.length} test case${ids.length !== 1 ? 's' : ''}`, 'success');
+                  }
+                  setShowBulkTagModal(false);
+                  setBulkTagInput('');
+                  setSelectedTestCaseIds(new Set());
+                }
+              }}
+              placeholder="Type tag name + press Enter to apply"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            />
+          </div>
+          <div className="flex gap-3 px-5 py-4 border-t border-gray-100">
+            <button onClick={() => { setShowBulkTagModal(false); setBulkTagInput(''); }} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 cursor-pointer">
+              Cancel
+            </button>
+            <button
+              disabled={!bulkTagInput.trim()}
+              onClick={async () => {
+                const tag = bulkTagInput.trim();
+                if (!tag) return;
+                const ids = Array.from(selectedTestCaseIds);
+                const { data: tcs } = await supabase.from('test_cases').select('id, tags').in('id', ids);
+                if (tcs) {
+                  const updates = tcs.map((tc: { id: string; tags?: string }) => {
+                    const existing = tc.tags ? tc.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : [];
+                    if (!existing.includes(tag)) {
+                      return supabase.from('test_cases').update({ tags: [...existing, tag].join(', ') }).eq('id', tc.id);
+                    }
+                    return Promise.resolve();
+                  });
+                  await Promise.all(updates);
+                  onRefresh?.();
+                  showToast(`Tag "${tag}" added to ${ids.length} test case${ids.length !== 1 ? 's' : ''}`, 'success');
+                }
+                setShowBulkTagModal(false);
+                setBulkTagInput('');
+                setSelectedTestCaseIds(new Set());
+              }}
+              className="flex-1 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 cursor-pointer disabled:opacity-40"
+            >
+              Add Tag
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     </>
   );
 }

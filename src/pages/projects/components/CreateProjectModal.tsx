@@ -65,7 +65,9 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
     status: 'active',
     prefix: '',
     jiraProjectKey: '',
+    tags: [] as string[],
   });
+  const [tagInput, setTagInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [canCreate, setCanCreate] = useState(true);
   const [currentProjectCount, setCurrentProjectCount] = useState(0);
@@ -352,6 +354,38 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-mono uppercase"
                 />
                 <p className="mt-1 text-xs text-gray-500">Enter the Jira project key to link with this project (optional)</p>
+              </div>
+
+              {/* Tags */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Tags <span className="text-gray-400 font-normal">(optional)</span></label>
+                {formData.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {formData.tags.map(tag => (
+                      <span key={tag} className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-full text-xs font-medium">
+                        {tag}
+                        <button type="button" onClick={() => setFormData(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tag) }))} className="ml-0.5 text-indigo-400 hover:text-indigo-700 cursor-pointer leading-none">×</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <input
+                  type="text"
+                  value={tagInput}
+                  onChange={e => setTagInput(e.target.value)}
+                  onKeyDown={e => {
+                    if ((e.key === 'Enter' || e.key === ',') && tagInput.trim()) {
+                      e.preventDefault();
+                      const tag = tagInput.trim();
+                      if (!formData.tags.includes(tag)) {
+                        setFormData(prev => ({ ...prev, tags: [...prev.tags, tag] }));
+                      }
+                      setTagInput('');
+                    }
+                  }}
+                  placeholder="Type a tag and press Enter"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                />
               </div>
 
               <div>

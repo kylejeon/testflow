@@ -1,5 +1,5 @@
 import { LogoMark } from '../../components/Logo';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { markOnboardingStep } from '../../lib/onboardingMarker';
@@ -15,6 +15,8 @@ import { type SharedStepCache, expandFlatSteps } from '../../lib/expandSharedSte
 import EmptyState from '../../components/EmptyState';
 import TestRunsIllustration from '../../components/illustrations/TestRunsIllustration';
 import { RunsListSkeleton } from '../../components/Skeleton';
+import SavedViewsDropdown from '../../components/SavedViewsDropdown';
+import { useSavedViews } from '../../hooks/useSavedViews';
 
 interface TestRun {
   id: string;
@@ -148,6 +150,16 @@ export default function ProjectRunsPage() {
   const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Saved Views
+  const { views: runSavedViews, saveView: saveRunView, deleteView: deleteRunView } = useSavedViews(id || '', 'run');
+  const runCurrentFilters = { tab: activeTab, resultFilter, searchQuery, milestoneFilter };
+  const applyRunViewFilters = useCallback((filters: Record<string, any>) => {
+    if (filters.tab) setActiveTab(filters.tab);
+    if (filters.resultFilter) setResultFilter(filters.resultFilter);
+    if (filters.searchQuery !== undefined) setSearchQuery(filters.searchQuery);
+    if (filters.milestoneFilter !== undefined) setMilestoneFilter(filters.milestoneFilter);
+  }, []);
 
   useEffect(() => {
     if (searchParams.get('action') === 'create') {
@@ -1579,6 +1591,19 @@ export default function ProjectRunsPage() {
           {run.retest > 0 && <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-yellow-400 inline-block"></span>{run.retest} retest</span>}
           <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-slate-200 inline-block"></span>{run.untested} untested</span>
         </div>
+        {/* Row 4b: Tags */}
+        {run.tags && run.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-2.5">
+            {run.tags.slice(0, 5).map(tag => (
+              <span key={tag} className="inline-flex items-center px-1.5 py-0.5 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-[0.625rem] font-medium">
+                <i className="ri-price-tag-3-line mr-0.5 text-[0.5625rem]"></i>{tag}
+              </span>
+            ))}
+            {run.tags.length > 5 && (
+              <span className="inline-flex items-center px-1.5 py-0.5 bg-slate-50 text-slate-400 border border-slate-100 rounded text-[0.625rem]">+{run.tags.length - 5}</span>
+            )}
+          </div>
+        )}
         {/* Row 5: Assignees + Continue/Start button */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-[0.75rem] text-slate-500">
@@ -1801,6 +1826,14 @@ export default function ProjectRunsPage() {
                 </div>
               )}
             </div>
+            {/* Saved Views */}
+            <SavedViewsDropdown
+              views={runSavedViews}
+              currentFilters={runCurrentFilters}
+              onApplyView={applyRunViewFilters}
+              onSaveView={(name) => saveRunView(name, runCurrentFilters)}
+              onDeleteView={deleteRunView}
+            />
             <div className="relative" ref={sortMenuRef}>
               <button
                 onClick={() => setShowSortMenu(p => !p)}

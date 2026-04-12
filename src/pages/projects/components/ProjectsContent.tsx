@@ -434,7 +434,7 @@ export default function ProjectsContent() {
     }
   };
 
-  const handleCreateProject = async (data: { name: string; description: string; status: string; prefix: string; jiraProjectKey: string }) => {
+  const handleCreateProject = async (data: { name: string; description: string; status: string; prefix: string; tags?: string[]; jiraProjectKey: string }) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
@@ -447,6 +447,7 @@ export default function ProjectsContent() {
           status: data.status,
           prefix: data.prefix,
           jira_project_key: data.jiraProjectKey || null,
+          tags: data.tags ?? [],
           owner_id: user.id,
         }]);
       if (insertError) throw insertError;
@@ -486,7 +487,7 @@ export default function ProjectsContent() {
     }
   };
 
-  const handleUpdateProject = async (id: string, data: { name: string; description: string; status: string; prefix: string; jiraProjectKey: string }) => {
+  const handleUpdateProject = async (id: string, data: { name: string; description: string; status: string; prefix: string; tags?: string[]; jiraProjectKey: string }) => {
     try {
       const { error } = await supabase
         .from('projects')
@@ -496,6 +497,7 @@ export default function ProjectsContent() {
           status: data.status,
           prefix: data.prefix,
           jira_project_key: data.jiraProjectKey || null,
+          tags: data.tags ?? [],
           updated_at: new Date().toISOString(),
         })
         .eq('id', id);
@@ -979,12 +981,33 @@ export default function ProjectsContent() {
                       style={{
                         fontSize: '0.8125rem',
                         color: '#64748B',
-                        margin: '0.375rem 0 1rem 0',
+                        margin: '0.375rem 0',
                         lineHeight: 1.4,
                       }}
                     >
                       {project.description || t('projects:noDescription')}
                     </p>
+
+                    {/* Tags */}
+                    {(project as any).tags && (project as any).tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2 mb-1">
+                        {((project as any).tags as string[]).slice(0, 4).map((tag: string) => (
+                          <span
+                            key={tag}
+                            className="inline-flex items-center px-1.5 py-0.5 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-[0.625rem] font-medium"
+                            style={{ lineHeight: 1.4 }}
+                          >
+                            <i className="ri-price-tag-3-line mr-0.5" style={{ fontSize: '0.5rem' }} />
+                            {tag}
+                          </span>
+                        ))}
+                        {(project as any).tags.length > 4 && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 bg-slate-50 text-slate-400 border border-slate-100 rounded text-[0.625rem]">
+                            +{(project as any).tags.length - 4}
+                          </span>
+                        )}
+                      </div>
+                    )}
 
                     {/* Stats row */}
                     <div
