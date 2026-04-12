@@ -20,10 +20,15 @@ export async function sendLoopsEvent(
   contactProperties: Record<string, string>,
 ): Promise<void> {
   try {
-    await supabase.functions.invoke('send-loops-event', {
+    const { data, error } = await supabase.functions.invoke('send-loops-event', {
       body: { email, eventName, contactProperties },
     });
+    if (error) {
+      console.error('[loops] invoke error for', eventName, error);
+    } else if (data && !data.ok) {
+      console.warn('[loops] Loops API non-ok for', eventName, data.status);
+    }
   } catch (err) {
-    console.warn('Loops event error:', err);
+    console.error('[loops] sendLoopsEvent failed for', eventName, err);
   }
 }
