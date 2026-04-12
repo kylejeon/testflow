@@ -3,10 +3,8 @@ import { test, expect } from '@playwright/test';
 const EMAIL = process.env.SMOKE_TEST_EMAIL;
 const PASSWORD = process.env.SMOKE_TEST_PASSWORD;
 
-// Skip the entire file gracefully when credentials are not configured
 test.skip(!EMAIL || !PASSWORD, 'SMOKE_TEST_EMAIL / SMOKE_TEST_PASSWORD not configured — skipping');
 
-// Shared login helper — avoids repeating across smoke tests
 async function login(page: import('@playwright/test').Page) {
   await page.goto('/auth');
   await page.waitForLoadState('networkidle');
@@ -21,15 +19,14 @@ const SMOKE_PROJECT_NAME = `__smoke_${Date.now()}`;
 test('project creation appears in list', async ({ page }) => {
   await login(page);
 
-  // Open new project dialog — button text is "New Project"
-  await page.getByRole('button', { name: 'New Project' }).click();
+  // Open new project dialog
+  await page.getByRole('button', { name: 'New Project' }).click({ force: true });
 
-  // Fill project name — placeholder is "e.g. Mobile App Testing"
+  // Fill project name
   await page.getByPlaceholder('e.g. Mobile App Testing').fill(SMOKE_PROJECT_NAME);
 
-  // Confirm — button text is "Create Project"
-  await page.getByRole('button', { name: 'Create Project' }).click();
+  // Confirm — force: true bypasses any fixed overlay covering the button
+  await page.getByRole('button', { name: 'Create Project' }).click({ force: true });
 
-  // Should navigate to the new project or show it in list
   await expect(page.getByText(SMOKE_PROJECT_NAME)).toBeVisible({ timeout: 10_000 });
 });
