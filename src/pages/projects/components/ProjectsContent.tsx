@@ -434,7 +434,7 @@ export default function ProjectsContent() {
     }
   };
 
-  const handleCreateProject = async (data: { name: string; description: string; status: string; prefix: string; jiraProjectKey: string }) => {
+  const handleCreateProject = async (data: { name: string; description: string; status: string; prefix: string; tags?: string[]; jiraProjectKey: string }) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
@@ -447,6 +447,7 @@ export default function ProjectsContent() {
           status: data.status,
           prefix: data.prefix,
           jira_project_key: data.jiraProjectKey || null,
+          tags: data.tags ?? [],
           owner_id: user.id,
         }]);
       if (insertError) throw insertError;
