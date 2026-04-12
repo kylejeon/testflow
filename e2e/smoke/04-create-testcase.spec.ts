@@ -6,10 +6,10 @@ const PROJECT_ID = process.env.SMOKE_PROJECT_ID;
 
 test.skip(
   !EMAIL || !PASSWORD || !PROJECT_ID,
-  'SMOKE_TEST_EMAIL / SMOKE_TEST_PASSWORD / SMOKE_PROJECT_ID not configured — skipping'
+  'SMOKE_TEST_EMAIL / SMOKE_TEST_PASSWORD / SMOKE_PROJECT_ID not configured — skipping',
 );
 
-const SMOKE_TC_TITLE = `__smoke_tc_${Date.now()}`;
+const SMOKE_TC_TITLE = `SmokeTC${Date.now()}`;
 
 test('test case creation saves successfully', async ({ page }) => {
   await page.goto('/auth');
@@ -22,14 +22,23 @@ test('test case creation saves successfully', async ({ page }) => {
   await page.goto(`/projects/${PROJECT_ID}/testcases`);
   await page.waitForLoadState('networkidle');
 
-  // Open new test case form — force: true bypasses fixed Jira widget overlay
-  await page.getByRole('button', { name: 'New Test Case' }).first().click({ force: true });
+  // Open new test case modal — button is in the toolbar, not covered by the
+  // Jira widget (top-right area vs bottom-right widget). No force needed.
+  await page.getByRole('button', { name: 'New Test Case' }).first().click();
 
-  // Fill title
-  await page.getByPlaceholder('e.g., User login functionality test').fill(SMOKE_TC_TITLE);
+  // Wait for the modal to appear (fixed inset-0 overlay containing "New Test Case" header)
+  const modal = page.locator('div.fixed.inset-0').filter({ hasText: 'New Test Case' });
+  await expect(modal).toBeVisible({ timeout: 5_000 });
 
-  // Save — force: true bypasses fixed overlays
-  await page.getByRole('button', { name: 'Create' }).click({ force: true });
+  // Fill title — exact placeholder from TestCaseList.tsx line 3792
+  await modal.getByPlaceholder('e.g., User login functionality test').fill(SMOKE_TC_TITLE);
 
+  // Scroll the Create button into view (modal is max-h-[90vh] overflow-y-auto)
+  const createBtn = modal.getByRole('button', { name: 'Create' });
+  await createBtn.scrollIntoViewIfNeeded();
+  await createBtn.click();
+
+  // Modal should close and the new TC title should appear in the list
+  await expect(modal).not.toBeVisible({ timeout: 5_000 });
   await expect(page.getByText(SMOKE_TC_TITLE)).toBeVisible({ timeout: 10_000 });
 });
