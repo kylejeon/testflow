@@ -270,6 +270,8 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
   const [isComposing, setIsComposing] = useState(false);
   const [selectedTestCaseIds, setSelectedTestCaseIds] = useState<Set<string>>(new Set());
   const [showBulkFolderModal, setShowBulkFolderModal] = useState(false);
+  const [showBulkTagModal, setShowBulkTagModal] = useState(false);
+  const [bulkTagInput, setBulkTagInput] = useState('');
 
   // ── TC list filters ────────────────────────────────────────────────────────
   const [tcSearchQuery, setTcSearchQuery] = useState('');
@@ -4959,10 +4961,109 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       onClear={() => setSelectedTestCaseIds(new Set())}
       onAssign={handleBulkAssign}
       assignees={projectMembers.map(m => ({ id: m.user_id, name: m.profile.full_name || m.profile.email }))}
+      onTag={() => setShowBulkTagModal(true)}
       onMove={() => setShowBulkFolderModal(true)}
       onDelete={() => setShowBulkDeleteModal(true)}
       onSetLifecycleStatus={handleBulkLifecycleChange}
     />
+
+    {/* ── Bulk Tag Modal ── */}
+    {showBulkTagModal && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+            <h3 className="text-[0.9375rem] font-bold text-gray-900 flex items-center gap-2">
+              <i className="ri-price-tag-3-line text-indigo-500" />
+              Add Tag to {selectedTestCaseIds.size} TC{selectedTestCaseIds.size !== 1 ? 's' : ''}
+            </h3>
+            <button onClick={() => { setShowBulkTagModal(false); setBulkTagInput(''); }} className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-600 rounded cursor-pointer border-none bg-transparent">
+              <i className="ri-close-line" />
+            </button>
+          </div>
+          <div className="px-5 py-4">
+            <p className="text-xs text-gray-500 mb-3">Enter a tag to append to all selected test cases:</p>
+            {allTcTags.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-3">
+                {allTcTags.slice(0, 12).map(tag => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => setBulkTagInput(tag)}
+                    className={`px-2 py-0.5 rounded-full text-xs font-medium border cursor-pointer transition-colors ${bulkTagInput === tag ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-indigo-300'}`}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            )}
+            <input
+              type="text"
+              autoFocus
+              value={bulkTagInput}
+              onChange={e => setBulkTagInput(e.target.value)}
+              onKeyDown={async e => {
+                if (e.key === 'Enter' && bulkTagInput.trim()) {
+                  e.preventDefault();
+                  const tag = bulkTagInput.trim();
+                  const ids = Array.from(selectedTestCaseIds);
+                  // Fetch current tags for selected TCs
+                  const { data: tcs } = await supabase.from('test_cases').select('id, tags').in('id', ids);
+                  if (tcs) {
+                    const updates = tcs.map((tc: { id: string; tags?: string }) => {
+                      const existing = tc.tags ? tc.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : [];
+                      if (!existing.includes(tag)) {
+                        return supabase.from('test_cases').update({ tags: [...existing, tag].join(', ') }).eq('id', tc.id);
+                      }
+                      return Promise.resolve();
+                    });
+                    await Promise.all(updates);
+                    onRefresh?.();
+                    showToast(`Tag "${tag}" added to ${ids.length} test case${ids.length !== 1 ? 's' : ''}`, 'success');
+                  }
+                  setShowBulkTagModal(false);
+                  setBulkTagInput('');
+                  setSelectedTestCaseIds(new Set());
+                }
+              }}
+              placeholder="Type tag name + press Enter to apply"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            />
+          </div>
+          <div className="flex gap-3 px-5 py-4 border-t border-gray-100">
+            <button onClick={() => { setShowBulkTagModal(false); setBulkTagInput(''); }} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 cursor-pointer">
+              Cancel
+            </button>
+            <button
+              disabled={!bulkTagInput.trim()}
+              onClick={async () => {
+                const tag = bulkTagInput.trim();
+                if (!tag) return;
+                const ids = Array.from(selectedTestCaseIds);
+                const { data: tcs } = await supabase.from('test_cases').select('id, tags').in('id', ids);
+                if (tcs) {
+                  const updates = tcs.map((tc: { id: string; tags?: string }) => {
+                    const existing = tc.tags ? tc.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : [];
+                    if (!existing.includes(tag)) {
+                      return supabase.from('test_cases').update({ tags: [...existing, tag].join(', ') }).eq('id', tc.id);
+                    }
+                    return Promise.resolve();
+                  });
+                  await Promise.all(updates);
+                  onRefresh?.();
+                  showToast(`Tag "${tag}" added to ${ids.length} test case${ids.length !== 1 ? 's' : ''}`, 'success');
+                }
+                setShowBulkTagModal(false);
+                setBulkTagInput('');
+                setSelectedTestCaseIds(new Set());
+              }}
+              className="flex-1 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 cursor-pointer disabled:opacity-40"
+            >
+              Add Tag
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     </>
   );
 }
