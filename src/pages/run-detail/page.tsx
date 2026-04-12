@@ -224,6 +224,12 @@ export default function RunDetail() {
   const moreMenuRef = useRef<HTMLDivElement>(null);
   const assigneeSuggestRef = useRef<HTMLDivElement>(null);
 
+  // ── Export modal state ───────────────────────────────────────────────────
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportType, setExportType] = useState<'pdf' | 'csv'>('pdf');
+  const [exportStatusFilter, setExportStatusFilter] = useState<Set<string>>(new Set(['passed', 'failed', 'blocked', 'retest', 'untested']));
+  const [exportTagFilter, setExportTagFilter] = useState<Set<string>>(new Set());
+
   // ── Shared Step version tracking ─────────────────────────────────────────
   // Map: shared_step_id → { version, custom_id, name, steps (latest) }
   const [ssLatestVersions, setSsLatestVersions] = useState<Record<string, { version: number; custom_id: string; name: string; steps: { step: string; expectedResult: string }[] }>>({});
@@ -398,15 +404,15 @@ export default function RunDetail() {
     URL.revokeObjectURL(url);
   };
 
-  const handleExportPDF = () => {
-    setShowMoreMenu(false);
+  const handleExportPDF = (filteredCases?: TestCaseWithRunStatus[]) => {
+    const casesToRender = filteredCases ?? testCases;
 
-    const passedCount = testCases.filter(tc => tc.runStatus === 'passed').length;
-    const failedCount = testCases.filter(tc => tc.runStatus === 'failed').length;
-    const blockedCount = testCases.filter(tc => tc.runStatus === 'blocked').length;
-    const retestCount = testCases.filter(tc => tc.runStatus === 'retest').length;
-    const untestedCount = testCases.filter(tc => tc.runStatus === 'untested').length;
-    const totalCount = testCases.length;
+    const passedCount = casesToRender.filter(tc => tc.runStatus === 'passed').length;
+    const failedCount = casesToRender.filter(tc => tc.runStatus === 'failed').length;
+    const blockedCount = casesToRender.filter(tc => tc.runStatus === 'blocked').length;
+    const retestCount = casesToRender.filter(tc => tc.runStatus === 'retest').length;
+    const untestedCount = casesToRender.filter(tc => tc.runStatus === 'untested').length;
+    const totalCount = casesToRender.length;
     const completedCount = totalCount - untestedCount;
     const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
@@ -425,7 +431,7 @@ export default function RunDetail() {
       untested: '#F1F5F9',
     };
 
-    const tcRows = testCases.map((tc, i) => {
+    const tcRows = casesToRender.map((tc, i) => {
       const status = tc.runStatus || 'untested';
       const color = statusColors[status] || '#64748B';
       const bg = statusBg[status] || '#F1F5F9';
@@ -2576,8 +2582,8 @@ export default function RunDetail() {
                           }}
                         >
                           {[
-                            { icon: 'ri-file-pdf-line', label: 'Export Run Report (PDF)', onClick: handleExportPDF },
-                            { icon: 'ri-file-excel-2-line', label: 'Export Results (CSV)', onClick: handleExportCSV },
+                            { icon: 'ri-file-pdf-line', label: 'Export Run Report (PDF)', onClick: () => { setShowMoreMenu(false); setExportType('pdf'); setExportStatusFilter(new Set(['passed', 'failed', 'blocked', 'retest', 'untested'])); setExportTagFilter(new Set()); setShowExportModal(true); } },
+                            { icon: 'ri-file-excel-2-line', label: 'Export Results (CSV)', onClick: () => { setShowMoreMenu(false); setExportType('csv'); setExportStatusFilter(new Set(['passed', 'failed', 'blocked', 'retest', 'untested'])); setExportTagFilter(new Set()); setShowExportModal(true); } },
                           ].map(item => (
                             <button
                               key={item.label}
@@ -3238,6 +3244,136 @@ export default function RunDetail() {
           )}
 
                     {/* Upgrade Modal */}
+          {showExportModal && (() => {
+            const allStatuses = ['passed', 'failed', 'blocked', 'retest', 'untested'];
+            const availableTags = Array.from(new Set(
+              testCases.flatMap(tc => (tc.tags || '').split(',').map((t: string) => t.trim()).filter(Boolean))
+            ));
+            const toggleStatus = (s: string) => {
+              setExportStatusFilter(prev => {
+                const next = new Set(prev);
+                next.has(s) ? next.delete(s) : next.add(s);
+                return next;
+              });
+            };
+            const toggleTag = (t: string) => {
+              setExportTagFilter(prev => {
+                const next = new Set(prev);
+                next.has(t) ? next.delete(t) : next.add(t);
+                return next;
+              });
+            };
+            const handleConfirmExport = () => {
+              let filtered = testCases.filter(tc => exportStatusFilter.has(tc.runStatus || 'untested'));
+              if (exportTagFilter.size > 0) {
+                filtered = filtered.filter(tc => {
+                  const tcTags = (tc.tags || '').split(',').map((t: string) => t.trim()).filter(Boolean);
+                  return tcTags.some((t: string) => exportTagFilter.has(t));
+                });
+              }
+              setShowExportModal(false);
+              if (exportType === 'pdf') {
+                handleExportPDF(filtered);
+              } else {
+                handleExportCSV(filtered);
+              }
+            };
+            return (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
+                <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4">
+                  <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <i className={exportType === 'pdf' ? 'ri-file-pdf-line text-indigo-500' : 'ri-file-excel-2-line text-emerald-500'}></i>
+                      <h3 className="text-[0.9375rem] font-semibold text-slate-900">
+                        Export {exportType === 'pdf' ? 'PDF' : 'CSV'}
+                      </h3>
+                    </div>
+                    <button onClick={() => setShowExportModal(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                      <i className="ri-close-line text-lg"></i>
+                    </button>
+                  </div>
+                  <div className="p-5 space-y-4">
+                    <div>
+                      <p className="text-[0.75rem] font-semibold text-slate-500 uppercase tracking-wide mb-2">Status Filter</p>
+                      <div className="flex flex-wrap gap-2">
+                        {allStatuses.map(s => {
+                          const checked = exportStatusFilter.has(s);
+                          const colorMap: Record<string, string> = {
+                            passed: 'bg-green-50 border-green-200 text-green-700',
+                            failed: 'bg-red-50 border-red-200 text-red-700',
+                            blocked: 'bg-amber-50 border-amber-200 text-amber-700',
+                            retest: 'bg-violet-50 border-violet-200 text-violet-700',
+                            untested: 'bg-slate-50 border-slate-200 text-slate-600',
+                          };
+                          return (
+                            <button
+                              key={s}
+                              onClick={() => toggleStatus(s)}
+                              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[0.75rem] font-medium cursor-pointer transition-opacity ${colorMap[s]} ${checked ? 'opacity-100' : 'opacity-40'}`}
+                            >
+                              {checked && <i className="ri-check-line text-xs"></i>}
+                              {s.charAt(0).toUpperCase() + s.slice(1)}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    {availableTags.length > 0 && (
+                      <div>
+                        <p className="text-[0.75rem] font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                          Tag Filter <span className="normal-case font-normal text-slate-400">(leave empty = all tags)</span>
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {availableTags.map(tag => {
+                            const checked = exportTagFilter.has(tag);
+                            return (
+                              <button
+                                key={tag}
+                                onClick={() => toggleTag(tag)}
+                                className={`flex items-center gap-1 px-2.5 py-1 rounded-full border border-slate-200 text-[0.75rem] font-medium cursor-pointer transition-opacity bg-slate-50 text-slate-600 ${checked ? 'opacity-100 !bg-indigo-50 !border-indigo-200 !text-indigo-700' : 'opacity-60 hover:opacity-100'}`}
+                              >
+                                {checked && <i className="ri-price-tag-3-line text-xs"></i>}
+                                {tag}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    <p className="text-[0.75rem] text-slate-400">
+                      {(() => {
+                        let count = testCases.filter(tc => exportStatusFilter.has(tc.runStatus || 'untested')).length;
+                        if (exportTagFilter.size > 0) {
+                          count = testCases.filter(tc => {
+                            if (!exportStatusFilter.has(tc.runStatus || 'untested')) return false;
+                            const tcTags = (tc.tags || '').split(',').map((t: string) => t.trim()).filter(Boolean);
+                            return tcTags.some((t: string) => exportTagFilter.has(t));
+                          }).length;
+                        }
+                        return `${count} of ${testCases.length} test cases will be exported`;
+                      })()}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-slate-100">
+                    <button
+                      onClick={() => setShowExportModal(false)}
+                      className="px-4 py-2 text-[0.8125rem] font-medium text-slate-600 hover:bg-slate-50 rounded-lg cursor-pointer border border-slate-200 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleConfirmExport}
+                      disabled={exportStatusFilter.size === 0}
+                      className="px-4 py-2 text-[0.8125rem] font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg cursor-pointer disabled:opacity-50 transition-colors"
+                    >
+                      Export {exportType.toUpperCase()}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {showUpgradeModal && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
               <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
