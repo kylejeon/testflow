@@ -59,6 +59,13 @@ export default function AIRunSummaryPanel({
     setLoading(true);
     setError(null);
     try {
+      // getUser() validates the token server-side and triggers a refresh if the
+      // access token is expired. getSession() alone can return a stale cached token.
+      const { error: userErr } = await supabase.auth.getUser();
+      if (userErr) {
+        setError('Please log in again');
+        return;
+      }
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
         setError('Please log in again');
@@ -93,6 +100,7 @@ export default function AIRunSummaryPanel({
         } else if (res.status === 422) {
           errMsg = 'No test results to analyze';
         } else if (res.status === 401) {
+          console.error('[AIRunSummary] 401 Unauthorized:', data);
           errMsg = 'Please log in again';
         } else if (data?.error) {
           errMsg = data.error;
