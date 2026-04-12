@@ -3,7 +3,6 @@ import { supabase } from '../../../lib/supabase';
 import { ModalShell } from '../../../components/ModalShell';
 import { notifyProjectMembers } from '../../../hooks/useNotifications';
 import { triggerWebhook } from '../../../hooks/useWebhooks';
-import { sendLoopsEvent } from '../../../lib/loops';
 import { markOnboardingStep } from '../../../lib/onboardingMarker';
 import UpgradeBanner from '../../../components/UpgradeBanner';
 
@@ -165,13 +164,19 @@ export default function InviteMemberModal({
           role,
         });
 
-        // Send invitation email via Loops
-        sendLoopsEvent(email, 'team_invitation', {
-          projectName: projectData?.name ?? '',
-          role,
-          inviterName: inviterProfile?.full_name || inviterProfile?.email || 'Someone',
-          projectUrl: `${window.location.origin}/projects/${projectId}`,
-        });
+        // Email notification: project_invited → the invited user (transactional)
+        void supabase.functions.invoke('send-notification', {
+          body: {
+            event_type: 'project_invited',
+            payload: {
+              project_name: projectData?.name ?? '',
+              role,
+              inviter_name: inviterProfile?.full_name || inviterProfile?.email || 'Someone',
+              cta_url: `${window.location.origin}/projects/${projectId}`,
+            },
+            recipients: [{ user_id: existingUser.id, email }],
+          },
+        }).catch((err) => console.warn('project_invited email notification error:', err));
 
         setInvitationType('existing');
         setSuccess(`${email} has been added to the project and notified by email.`);
@@ -213,14 +218,19 @@ export default function InviteMemberModal({
           throw new Error(result.error || 'Failed to create invitation.');
         }
 
-        // Send invitation email with invite link via Loops
-        sendLoopsEvent(email, 'team_invitation', {
-          projectName: result.projectName ?? '',
-          role,
-          inviterName: result.inviterName ?? 'Someone',
-          inviteUrl: result.inviteUrl,
-          projectUrl: `${window.location.origin}/projects/${projectId}`,
-        });
+        // Email notification: project_invited → new user (no account yet, user_id null)
+        void supabase.functions.invoke('send-notification', {
+          body: {
+            event_type: 'project_invited',
+            payload: {
+              project_name: result.projectName ?? '',
+              role,
+              inviter_name: result.inviterName ?? 'Someone',
+              cta_url: result.inviteUrl,
+            },
+            recipients: [{ user_id: null, email }],
+          },
+        }).catch((err) => console.warn('project_invited email notification error:', err));
 
         setInvitationType('new');
         setInviteLink(result.inviteUrl);
