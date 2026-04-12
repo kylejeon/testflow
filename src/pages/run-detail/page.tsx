@@ -1679,17 +1679,95 @@ export default function RunDetail() {
         setSelectedTestCase({ ...selectedTestCase, runStatus: resultFormData.status as any });
       }
       
+      // Email notification: test_failed → TC author + run assignee (fire-and-forget)
+      if (resultFormData.status === 'failed') {
+        void (async () => {
+          try {
+            const recipientMap = new Map<string, { user_id: string; email: string }>();
+
+            // TC author (created_by is a UUID)
+            const authorId = (selectedTestCase as any).created_by as string | undefined;
+            if (authorId) {
+              const authorMember = projectMembers.find((m) => m.user_id === authorId);
+              if (authorMember?.email) {
+                recipientMap.set(authorMember.email, { user_id: authorMember.user_id, email: authorMember.email });
+              }
+            }
+
+            // Run assignee (stored as display name string)
+            const assigneeName = runAssignees.get(selectedTestCase.id);
+            if (assigneeName) {
+              const assigneeMember = projectMembers.find(
+                (m) => m.full_name === assigneeName || m.email === assigneeName,
+              );
+              if (assigneeMember?.email) {
+                recipientMap.set(assigneeMember.email, { user_id: assigneeMember.user_id, email: assigneeMember.email });
+              }
+            }
+
+            const recipients = Array.from(recipientMap.values());
+            if (recipients.length > 0) {
+              await supabase.functions.invoke('send-notification', {
+                body: {
+                  event_type: 'test_failed',
+                  payload: {
+                    project_name: project?.name ?? '',
+                    run_name: run?.name ?? '',
+                    test_case_name: selectedTestCase.title,
+                    cta_url: `${window.location.origin}/projects/${projectId}/runs/${runId}`,
+                  },
+                  recipients,
+                },
+              });
+            }
+          } catch (err) {
+            console.warn('test_failed email notification error:', err);
+          }
+        })();
+      }
+
       // Calculate untested count
       const untestedCount = updatedTestCases.filter(tc => tc.runStatus === 'untested').length;
-      
+
       // Update run status based on untested count
       await updateRunStatus(runId!, {
         untested: untestedCount
       });
-      
+
+      // Email notification: run_completed when all TCs are done (fire-and-forget)
+      if (untestedCount === 0) {
+        void (async () => {
+          try {
+            const recipients = projectMembers
+              .filter((m) => m.email)
+              .map((m) => ({ user_id: m.user_id, email: m.email }));
+            if (recipients.length > 0) {
+              const passedCount = updatedTestCases.filter((tc) => tc.runStatus === 'passed').length;
+              const failedCount = updatedTestCases.filter((tc) => tc.runStatus === 'failed').length;
+              const total = updatedTestCases.length;
+              await supabase.functions.invoke('send-notification', {
+                body: {
+                  event_type: 'run_completed',
+                  payload: {
+                    project_name: project?.name ?? '',
+                    run_name: run?.name ?? '',
+                    pass_rate: total > 0 ? Math.round((passedCount / total) * 100) : 0,
+                    failed_count: failedCount,
+                    cta_url: `${window.location.origin}/projects/${projectId}/runs/${runId}`,
+                  },
+                  recipients,
+                },
+              });
+            }
+          } catch (err) {
+            console.warn('run_completed email notification error:', err);
+          }
+        })();
+      }
+
       resetResultForm();
       setShowAddResultModal(false);
-      
+
       // Switch to Results tab
       setActiveTab('results');
     } catch (error: any) {
@@ -2365,6 +2443,35 @@ export default function RunDetail() {
         updatedMap.delete(testCaseId);
       }
       setRunAssignees(updatedMap);
+
+      // Email notification: tc_assigned → the newly assigned member (fire-and-forget)
+      if (assigneeName) {
+        void (async () => {
+          try {
+            const tc = testCases.find((t) => t.id === testCaseId);
+            const assigneeMember = projectMembers.find(
+              (m) => m.full_name === assigneeName || m.email === assigneeName,
+            );
+            if (assigneeMember?.email && tc) {
+              await supabase.functions.invoke('send-notification', {
+                body: {
+                  event_type: 'tc_assigned',
+                  payload: {
+                    project_name: project?.name ?? '',
+                    run_name: run?.name ?? '',
+                    test_case_name: tc.title,
+                    user_name: assigneeMember.full_name || assigneeName,
+                    cta_url: `${window.location.origin}/projects/${projectId}/runs/${runId}`,
+                  },
+                  recipients: [{ user_id: assigneeMember.user_id, email: assigneeMember.email }],
+                },
+              });
+            }
+          } catch (err) {
+            console.warn('tc_assigned email notification error:', err);
+          }
+        })();
+      }
     } catch (error) {
       console.error('Assignee 업데이트 오류:', error);
     }
