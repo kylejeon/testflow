@@ -20,12 +20,15 @@ interface ExportModalProps {
   onExport: (
     format: ExportFormat,
     statusFilter: Set<string>,
-    tagFilter: Set<string>
+    tagFilter: Set<string>,
+    includeAiSummary?: boolean
   ) => void | Promise<void>;
   onClose: () => void;
   exporting?: boolean;
   /** Optional live count: receives current filters, returns how many TCs will export */
   getFilteredCount?: (statusFilter: Set<string>, tagFilter: Set<string>) => number;
+  /** When true, shows "Include AI Summary" checkbox (PDF format only) */
+  hasSummary?: boolean;
 }
 
 export function ExportModal({
@@ -36,10 +39,12 @@ export function ExportModal({
   onClose,
   exporting = false,
   getFilteredCount,
+  hasSummary = false,
 }: ExportModalProps) {
   const [format, setFormat] = useState<ExportFormat>('pdf');
   const [statusFilter, setStatusFilter] = useState<Set<string>>(new Set(ALL_STATUSES));
   const [tagFilter, setTagFilter] = useState<Set<string>>(new Set());
+  const [includeAiSummary, setIncludeAiSummary] = useState(false);
 
   const toggle = <T,>(set: Set<T>, val: T, setter: (s: Set<T>) => void) => {
     const next = new Set(set);
@@ -154,6 +159,38 @@ export function ExportModal({
             </div>
           )}
 
+          {/* ── AI Summary option (PDF only) ── */}
+          {hasSummary && format === 'pdf' && (
+            <div>
+              <button
+                type="button"
+                onClick={() => setIncludeAiSummary(prev => !prev)}
+                className={`flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg border text-left cursor-pointer transition-all ${
+                  includeAiSummary
+                    ? 'border-indigo-300 bg-indigo-50'
+                    : 'border-slate-200 bg-white hover:border-slate-300'
+                }`}
+              >
+                <div className={`w-4 h-4 rounded flex items-center justify-center border-2 flex-shrink-0 transition-colors ${
+                  includeAiSummary ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300'
+                }`}>
+                  {includeAiSummary && <i className="ri-check-line text-white text-[9px]" />}
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <i className="ri-sparkling-2-fill text-violet-500 text-sm" />
+                    <span className={`text-[0.8125rem] font-semibold ${includeAiSummary ? 'text-indigo-700' : 'text-slate-700'}`}>
+                      Include AI Summary
+                    </span>
+                  </div>
+                  <p className="text-[0.6875rem] text-slate-400 mt-0.5">
+                    Prepends risk level, metrics, failure patterns &amp; recommendations
+                  </p>
+                </div>
+              </button>
+            </div>
+          )}
+
           {/* ── Count preview ── */}
           <p className="text-[0.75rem] text-slate-400">
             <span className="font-semibold text-slate-600">{displayCount}</span>
@@ -170,7 +207,7 @@ export function ExportModal({
             Cancel
           </button>
           <button
-            onClick={() => onExport(format, statusFilter, tagFilter)}
+            onClick={() => onExport(format, statusFilter, tagFilter, includeAiSummary && format === 'pdf')}
             disabled={statusFilter.size === 0 || exporting}
             className="flex items-center gap-1.5 px-4 py-2 text-[0.8125rem] font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg cursor-pointer disabled:opacity-50 transition-colors"
           >

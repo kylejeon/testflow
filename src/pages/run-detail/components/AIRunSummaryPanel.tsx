@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 
 
-interface AISummaryCluster {
+export interface AISummaryCluster {
   name: string;
   count: number;
   rootCause: string;
@@ -11,7 +11,7 @@ interface AISummaryCluster {
   testIds: string[];
 }
 
-interface AISummaryResult {
+export interface AISummaryResult {
   riskLevel: 'HIGH' | 'MEDIUM' | 'LOW';
   riskReason: string;
   narrative: string;
@@ -47,6 +47,11 @@ interface AIRunSummaryPanelProps {
   blockedCount?: number;
   onClose: () => void;
   onToast: (msg: string, type: 'success' | 'error') => void;
+  /** Called once summary data is available (so parent can use it for PDF export) */
+  onSummaryReady?: (summary: AISummaryResult) => void;
+  /** Controlled "include in PDF" state from parent (when undefined, uses internal state) */
+  includeInPdf?: boolean;
+  onToggleIncludeInPdf?: (v: boolean) => void;
 }
 
 export default function AIRunSummaryPanel({
@@ -60,6 +65,9 @@ export default function AIRunSummaryPanel({
   blockedCount = 0,
   onClose,
   onToast,
+  onSummaryReady,
+  includeInPdf: controlledIncludeInPdf,
+  onToggleIncludeInPdf,
 }: AIRunSummaryPanelProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -82,7 +90,13 @@ export default function AIRunSummaryPanel({
   const [githubCreating, setGithubCreating] = useState(false);
 
   // Export Actions Bar state
-  const [includedInPdf, setIncludedInPdf] = useState(false);
+  // If parent passes controlled prop, use it; otherwise fall back to local state
+  const [_localIncludeInPdf, _setLocalIncludeInPdf] = useState(false);
+  const includedInPdf = controlledIncludeInPdf !== undefined ? controlledIncludeInPdf : _localIncludeInPdf;
+  const setIncludedInPdf = (v: boolean) => {
+    if (onToggleIncludeInPdf) onToggleIncludeInPdf(v);
+    else _setLocalIncludeInPdf(v);
+  };
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [shareMode, setShareMode] = useState<'slack' | 'email' | null>(null);
   const [shareEmailInput, setShareEmailInput] = useState('');
@@ -169,9 +183,10 @@ export default function AIRunSummaryPanel({
         return;
       }
 
-      if (data?.cached) { setSummary(data.summary); return; }
+      if (data?.cached) { setSummary(data.summary); onSummaryReady?.(data.summary); return; }
       if (!data?.success || !data?.summary) { setError(data?.error || 'Analysis couldn\'t be completed'); return; }
       setSummary(data.summary);
+      onSummaryReady?.(data.summary);
     } catch {
       setError('Connection error. Please try again.');
     } finally {

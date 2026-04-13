@@ -9,7 +9,7 @@ import { FocusMode, type FocusTestCase, type TestStatus } from '../../components
 import { StatusBadge } from '../../components/StatusBadge';
 import { DetailPanel } from '../../components/DetailPanel';
 import { Avatar } from '../../components/Avatar';
-import AIRunSummaryPanel from './components/AIRunSummaryPanel';
+import AIRunSummaryPanel, { type AISummaryResult } from './components/AIRunSummaryPanel';
 import { type AnyStep, isSharedStepRef } from '../../types/shared-steps';
 import { type FlatStep, type SharedStepCache, expandFlatSteps } from '../../lib/expandSharedSteps';
 import { ExportModal, type ExportFormat } from '../../components/ExportModal';
@@ -216,6 +216,8 @@ export default function RunDetail() {
   const [runAssignees, setRunAssignees] = useState<Map<string, string>>(new Map());
   const [openAssigneeDropdown, setOpenAssigneeDropdown] = useState<string | null>(null);
   const [showAISummary, setShowAISummary] = useState(false);
+  const [aiSummaryData, setAiSummaryData] = useState<AISummaryResult | null>(null);
+  const [includeAiInPdf, setIncludeAiInPdf] = useState(false);
   const [showUpgradeNudge, setShowUpgradeNudge] = useState(false);
   const [showAINewBadge] = useState(() => {
     const launchDate = new Date('2026-05-01');
@@ -389,7 +391,7 @@ export default function RunDetail() {
     URL.revokeObjectURL(url);
   };
 
-  const handleExportPDF = (filteredCases?: TestCaseWithRunStatus[]) => {
+  const handleExportPDF = (filteredCases?: TestCaseWithRunStatus[], summaryToInclude?: AISummaryResult | null) => {
     const casesToRender = filteredCases ?? testCases;
 
     const passedCount = casesToRender.filter(tc => tc.runStatus === 'passed').length;
@@ -438,6 +440,97 @@ export default function RunDetail() {
       ? new Date(run.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
       : '';
     const exportDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    // Build optional AI Summary section
+    const aiSectionHtml = summaryToInclude ? (() => {
+      const s = summaryToInclude;
+      const pr = totalCount > 0 ? Math.round((passedCount / totalCount) * 100) : 0;
+      const riskColors: Record<string, string> = { HIGH: '#DC2626', MEDIUM: '#D97706', LOW: '#16A34A' };
+      const riskBg: Record<string, string>    = { HIGH: '#FEE2E2', MEDIUM: '#FEF3C7', LOW: '#DCFCE7' };
+      const gngColors: Record<string, string> = { 'GO': '#166534', 'NO-GO': '#991B1B', 'CONDITIONAL': '#92400E' };
+      const gngBg: Record<string, string>     = { 'GO': '#DCFCE7', 'NO-GO': '#FEE2E2', 'CONDITIONAL': '#FEF3C7' };
+      const gngIcon: Record<string, string>   = { 'GO': '✅', 'NO-GO': '❌', 'CONDITIONAL': '⚠️' };
+      const gngLabel: Record<string, string>  = { 'GO': 'GO', 'NO-GO': 'NO-GO', 'CONDITIONAL': 'CONDITIONAL GO' };
+
+      const skipped = Math.max(0, totalCount - passedCount - failedCount - blockedCount);
+      const metricRows = [
+        { label: 'Total',     val: totalCount,    color: '#0F172A' },
+        { label: 'Passed',    val: passedCount,   color: '#16A34A' },
+        { label: 'Failed',    val: failedCount,   color: '#DC2626' },
+        { label: 'Blocked',   val: blockedCount,  color: '#D97706' },
+        { label: 'Skipped',   val: skipped,       color: '#64748B' },
+        { label: 'Pass Rate', val: `${pr}%`,      color: pr >= 90 ? '#16A34A' : pr >= 70 ? '#CA8A04' : '#DC2626' },
+      ].map(m => `<tr><td style="padding:4px 10px; font-size:11px; color:#475569; border-bottom:1px solid #F1F5F9;">${m.label}</td><td style="padding:4px 10px; font-size:12px; font-weight:700; color:${m.color}; border-bottom:1px solid #F1F5F9;">${m.val}</td></tr>`).join('');
+
+      const maxCount = Math.max(...s.clusters.map(c => c.count), 1);
+      const barColors = ['#DC2626', '#EA580C', '#CA8A04', '#64748B'];
+      const clusterRows = s.clusters.map((c, i) => {
+        const pct = Math.round((c.count / totalCount) * 100);
+        const barW = Math.round((c.count / maxCount) * 100);
+        const col = barColors[i] ?? '#64748B';
+        return `
+          <div style="margin-bottom:8px; padding:8px 10px; border:1px solid #E2E8F0; border-radius:6px; border-left:3px solid ${col};">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <span style="font-size:12px; font-weight:600; color:#0F172A;">${c.name}</span>
+              <span style="font-size:11px; font-weight:700; color:${col};">${c.count} (${pct}%)</span>
+            </div>
+            <div style="height:5px; background:#E2E8F0; border-radius:3px; margin-bottom:4px;">
+              <div style="height:100%; width:${barW}%; background:${col}; border-radius:3px;"></div>
+            </div>
+            <div style="font-size:11px; color:#64748B;">${c.rootCause}</div>
+          </div>`;
+      }).join('');
+
+      const recItems = s.recommendations.slice(0, 3)
+        .map((r, i) => `<li style="font-size:12px; color:#334155; margin-bottom:4px; line-height:1.5;"><strong style="color:#4F46E5;">${i + 1}.</strong> ${r}</li>`)
+        .join('');
+
+      return `
+      <div style="margin-bottom:20px; border:1px solid #C7D2FE; border-radius:8px; overflow:hidden; page-break-inside:avoid;">
+        <!-- AI Section Header -->
+        <div style="background:linear-gradient(135deg,#4338CA,#3730A3); padding:10px 14px; display:flex; align-items:center; gap:8px;">
+          <span style="font-size:14px; color:#A5B4FC;">✦</span>
+          <span style="font-size:13px; font-weight:700; color:#E0E7FF;">AI Run Summary</span>
+          <span style="margin-left:auto; padding:3px 10px; border-radius:9999px; font-size:10px; font-weight:700; background:${riskBg[s.riskLevel]}; color:${riskColors[s.riskLevel]};">${s.riskLevel} RISK</span>
+        </div>
+        <div style="padding:14px; background:white;">
+
+          <!-- Go/No-Go Banner -->
+          <div style="display:flex; align-items:flex-start; gap:10px; padding:10px 12px; border-radius:6px; margin-bottom:12px; background:${gngBg[s.goNoGo]}; border:1px solid ${gngColors[s.goNoGo]}40;">
+            <span style="font-size:18px; line-height:1;">${gngIcon[s.goNoGo] ?? '—'}</span>
+            <div>
+              <div style="font-size:13px; font-weight:800; color:${gngColors[s.goNoGo]};">${gngLabel[s.goNoGo] ?? s.goNoGo}</div>
+              ${s.goNoGoCondition ? `<div style="font-size:11px; color:${gngColors[s.goNoGo]}; opacity:0.85; margin-top:2px;">${s.goNoGoCondition}</div>` : ''}
+            </div>
+          </div>
+
+          <!-- Executive Summary -->
+          <div style="font-size:11px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:5px;">Executive Summary</div>
+          <p style="font-size:12px; color:#334155; line-height:1.6; margin-bottom:12px; padding:8px 10px; background:#F8FAFC; border-radius:5px; border-left:3px solid #6366F1;">${s.narrative}</p>
+
+          <!-- Key Metrics -->
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;">
+            <div>
+              <div style="font-size:11px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:5px;">Key Metrics</div>
+              <table style="width:100%; border-collapse:collapse; border:1px solid #E2E8F0; border-radius:5px; overflow:hidden;">
+                <thead><tr style="background:#F8FAFC;"><th style="padding:5px 10px; font-size:10px; font-weight:700; color:#64748B; text-align:left; border-bottom:1px solid #E2E8F0;">Metric</th><th style="padding:5px 10px; font-size:10px; font-weight:700; color:#64748B; text-align:right; border-bottom:1px solid #E2E8F0;">Value</th></tr></thead>
+                <tbody>${metricRows}</tbody>
+              </table>
+            </div>
+            <div>
+              <div style="font-size:11px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:5px;">Recommendations</div>
+              <ol style="margin:0; padding-left:0; list-style:none;">${recItems}</ol>
+            </div>
+          </div>
+
+          <!-- Failure Patterns -->
+          ${s.clusters.length > 0 ? `
+          <div style="font-size:11px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:5px;">Failure Patterns</div>
+          ${clusterRows}` : ''}
+
+        </div>
+      </div>`;
+    })() : '';
 
     const html = `<!DOCTYPE html>
 <html>
@@ -498,6 +591,8 @@ export default function RunDetail() {
   <div class="progress-bar"><div class="progress-fill"></div></div>
   <div class="progress-label">${progressPct}% completed (${completedCount} / ${totalCount})</div>
   <br>
+
+  ${aiSectionHtml}
 
   <table>
     <thead>
@@ -605,7 +700,7 @@ export default function RunDetail() {
     URL.revokeObjectURL(url);
   };
 
-  const handleRunExport = async (format: ExportFormat, statusFilter: Set<string>, tagFilter: Set<string>) => {
+  const handleRunExport = async (format: ExportFormat, statusFilter: Set<string>, tagFilter: Set<string>, includeAiSummary?: boolean) => {
     setExportingFile(true);
     try {
       let filtered = testCases.filter(tc => statusFilter.has(tc.runStatus || 'untested'));
@@ -615,7 +710,7 @@ export default function RunDetail() {
           return tcTags.some((t: string) => tagFilter.has(t));
         });
       }
-      if (format === 'pdf') handleExportPDF(filtered);
+      if (format === 'pdf') handleExportPDF(filtered, includeAiSummary ? aiSummaryData : null);
       else if (format === 'csv') await handleExportCSV(filtered);
       else await handleExportXLSX(filtered);
       setShowExportModal(false);
@@ -2905,6 +3000,9 @@ export default function RunDetail() {
                     blockedCount={_blocked}
                     onClose={() => setShowAISummary(false)}
                     onToast={(msg, type) => showToast(type, msg)}
+                    onSummaryReady={(s) => setAiSummaryData(s)}
+                    includeInPdf={includeAiInPdf}
+                    onToggleIncludeInPdf={setIncludeAiInPdf}
                   />
                 );
               })()}
@@ -3374,6 +3472,7 @@ export default function RunDetail() {
               onExport={handleRunExport}
               onClose={() => setShowExportModal(false)}
               exporting={exportingFile}
+              hasSummary={aiSummaryData !== null}
               getFilteredCount={(sf, tf) => {
                 let filtered = testCases.filter(tc => sf.has(tc.runStatus || 'untested'));
                 if (tf.size > 0) {
