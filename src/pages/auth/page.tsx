@@ -215,7 +215,12 @@ export default function AuthPage() {
             await supabase.from('profiles').update(updates).eq('id', user.id);
           }
         }
+        // Pass firstName/lastName so deleted contacts get re-created with proper name
+        const returningFullName: string = oauthName || '';
+        const returningNameParts = returningFullName.split(' ').filter(Boolean);
         sendLoopsEvent(user.email, 'user_login', {
+          firstName: returningNameParts[0] || user.email?.split('@')[0] || '',
+          lastName: returningNameParts.slice(1).join(' '),
           plan: 'unknown',
           loginDate: new Date().toISOString().split('T')[0],
         });
