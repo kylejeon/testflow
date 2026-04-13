@@ -12,6 +12,7 @@ interface UserRow {
   updated_at: string;
   trial_ends_at: string | null;
   subscription_ends_at: string | null;
+  last_sign_in_at: string | null;
 }
 
 interface AdminRecentUsersTableProps {
@@ -45,7 +46,8 @@ const formatExpiryDate = (dateStr: string | null) => {
   return { label, daysLeft: diff };
 };
 
-const formatActivity = (dateStr: string) => {
+const formatActivity = (dateStr: string | null) => {
+  if (!dateStr) return '없음';
   const diff = Date.now() - new Date(dateStr).getTime();
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
   if (days === 0) return '오늘';
@@ -165,7 +167,9 @@ export default function AdminRecentUsersTable({
                         )}
                       </td>
                       <td className="py-3 pr-4">
-                        <span className="text-sm text-gray-500">{formatActivity(user.updated_at)}</span>
+                        <span className={`text-sm ${user.last_sign_in_at ? 'text-gray-500' : 'text-gray-300'}`}>
+                          {formatActivity(user.last_sign_in_at)}
+                        </span>
                       </td>
                       <td className="py-3 pr-4">
                         <span className="text-sm text-gray-500">{formatDate(user.created_at)}</span>

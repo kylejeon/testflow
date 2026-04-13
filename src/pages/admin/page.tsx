@@ -50,6 +50,7 @@ interface UserRow {
   updated_at: string;
   trial_ends_at: string | null;
   subscription_ends_at: string | null;
+  last_sign_in_at: string | null;
 }
 
 export default function AdminPage() {
@@ -111,11 +112,7 @@ export default function AdminPage() {
         supabase
           .from('profiles')
           .select('subscription_tier'),
-        supabase
-          .from('profiles')
-          .select('id, email, full_name, subscription_tier, is_trial, is_superadmin, created_at, updated_at, trial_ends_at, subscription_ends_at')
-          .order('created_at', { ascending: false })
-          .limit(50),
+        supabase.rpc('admin_get_recent_users', { limit_count: 50 }),
       ]);
 
       if (overviewData && overviewData.length > 0) {
