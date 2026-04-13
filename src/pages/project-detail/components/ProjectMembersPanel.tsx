@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { ROLE_BADGE, getRoleLabel, getAvailableRoles, ROLE_LEVEL } from '../../../lib/rbac';
 
 interface Member {
   id: string;
@@ -19,6 +20,7 @@ interface ProjectMembersPanelProps {
   refreshTrigger: number;
   compact?: boolean;
   ownerId?: string;
+  subscriptionTier?: number;
 }
 
 const AVATAR_COLORS = ['#6366F1', '#EC4899', '#F59E0B', '#22C55E', '#3B82F6', '#8B5CF6', '#EF4444', '#14B8A6'];
@@ -29,6 +31,7 @@ export default function ProjectMembersPanel({
   refreshTrigger,
   compact = false,
   ownerId,
+  subscriptionTier = 1,
 }: ProjectMembersPanelProps) {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
@@ -115,8 +118,8 @@ export default function ProjectMembersPanel({
         };
       });
 
-      const ROLE_ORDER: Record<string, number> = { owner: 0, admin: 1, member: 2, viewer: 3 };
-      formattedMembers.sort((a, b) => (ROLE_ORDER[a.role] ?? 4) - (ROLE_ORDER[b.role] ?? 4));
+      const ROLE_ORDER: Record<string, number> = { owner: 0, admin: 1, manager: 2, tester: 3, member: 3, viewer: 4, guest: 5 };
+      formattedMembers.sort((a, b) => (ROLE_ORDER[a.role] ?? 6) - (ROLE_ORDER[b.role] ?? 6));
       setMembers(formattedMembers);
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -192,16 +195,11 @@ export default function ProjectMembersPanel({
   };
 
   const getRoleBadge = (role: string) => {
-    switch (role) {
-      case 'owner': return { label: 'Owner', className: 'bg-violet-50 text-violet-600' };
-      case 'admin': return { label: 'Admin', className: 'bg-orange-50 text-orange-700' };
-      case 'member': return { label: 'Member', className: 'bg-indigo-50 text-indigo-700' };
-      case 'viewer': return { label: 'Viewer', className: 'bg-slate-100 text-slate-500' };
-      default: return { label: role, className: 'bg-slate-100 text-slate-500' };
-    }
+    return ROLE_BADGE[role] ?? { label: getRoleLabel(role, subscriptionTier), className: 'bg-slate-100 text-slate-500' };
   };
 
-  const isAdminOrOwner = currentUserRole === 'admin' || currentUserRole === 'owner';
+  const currentLevel = ROLE_LEVEL[currentUserRole ?? ''] ?? 0;
+  const isAdminOrOwner = currentLevel >= 5; // admin+
 
   // ── LOADING ─────────────────────────────────────────────────────
   if (loading) {
@@ -385,13 +383,15 @@ export default function ProjectMembersPanel({
                           fontFamily: 'inherit',
                         }}
                       >
-                        <option value="admin">Admin</option>
-                        <option value="member">Member</option>
-                        <option value="viewer">Viewer</option>
+                        {getAvailableRoles(subscriptionTier)
+                          .filter((r) => r !== 'owner' && (ROLE_LEVEL[r] ?? 0) < currentLevel)
+                          .map((r) => (
+                            <option key={r} value={r}>{getRoleLabel(r, subscriptionTier)}</option>
+                          ))}
                       </select>
                     ) : (
                       <span style={{ fontSize: '0.75rem', color: '#64748B' }}>
-                        {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
+                        {getRoleLabel(member.role, subscriptionTier)}
                       </span>
                     )}
                   </td>

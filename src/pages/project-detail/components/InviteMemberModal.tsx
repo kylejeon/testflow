@@ -5,12 +5,14 @@ import { notifyProjectMembers } from '../../../hooks/useNotifications';
 import { triggerWebhook } from '../../../hooks/useWebhooks';
 import { markOnboardingStep } from '../../../lib/onboardingMarker';
 import UpgradeBanner from '../../../components/UpgradeBanner';
+import { getAvailableRoles, getRoleLabel, ROLE_DESCRIPTIONS, ROLE_BADGE } from '../../../lib/rbac';
 
 interface InviteMemberModalProps {
   isOpen: boolean;
   onClose: () => void;
   projectId: string;
   onInvited: () => void;
+  subscriptionTier?: number;
 }
 
 const TIER_LIMITS = {
@@ -26,10 +28,11 @@ export default function InviteMemberModal({
   onClose,
   projectId,
   onInvited,
+  subscriptionTier: propTier,
 }: InviteMemberModalProps) {
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
-  const [role, setRole] = useState<'admin' | 'member' | 'viewer'>('member');
+  const [role, setRole] = useState('tester');
   const [loading, setLoading] = useState(false);
   const [checkingLimit, setCheckingLimit] = useState(true);
   const [error, setError] = useState('');
@@ -55,14 +58,16 @@ export default function InviteMemberModal({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get user's subscription tier
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('subscription_tier')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      const tier = profile?.subscription_tier || 1;
+      // Get user's subscription tier (prefer prop if already loaded)
+      let tier = propTier;
+      if (!tier) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('subscription_tier')
+          .eq('id', user.id)
+          .maybeSingle();
+        tier = profile?.subscription_tier || 1;
+      }
       setSubscriptionTier(tier);
       const limits = TIER_LIMITS[tier as keyof typeof TIER_LIMITS];
       setMaxMembers(limits.maxMembers);
@@ -183,7 +188,7 @@ export default function InviteMemberModal({
         
         setEmail('');
         setFullName('');
-        setRole('member');
+        setRole('tester');
 
         void markOnboardingStep('inviteMember');
         setTimeout(() => {
@@ -254,7 +259,7 @@ export default function InviteMemberModal({
   const resetForm = () => {
     setEmail('');
     setFullName('');
-    setRole('member');
+    setRole('tester');
     setError('');
     setSuccess('');
     setInviteLink(null);
@@ -418,57 +423,32 @@ export default function InviteMemberModal({
                     Role
                   </label>
                   <div className="space-y-2">
-                    <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                      <input
-                        type="radio"
-                        name="role"
-                        value="admin"
-                        checked={role === 'admin'}
-                        onChange={() => setRole('admin')}
-                        className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <div className="flex-1">
-                        <div className="font-semibold text-gray-900 text-sm">Admin</div>
-                        <div className="text-xs text-gray-500">
-                          Full access (manage members, change settings)
-                        </div>
-                      </div>
-                      <i className="ri-shield-star-line text-orange-500"></i>
-                    </label>
-
-                    <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                      <input
-                        type="radio"
-                        name="role"
-                        value="member"
-                        checked={role === 'member'}
-                        onChange={() => setRole('member')}
-                        className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <div className="flex-1">
-                        <div className="font-semibold text-gray-900 text-sm">Member</div>
-                        <div className="text-xs text-gray-500">
-                          Create and edit test cases and sessions
-                        </div>
-                      </div>
-                      <i className="ri-user-line text-indigo-500"></i>
-                    </label>
-
-                    <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                      <input
-                        type="radio"
-                        name="role"
-                        value="viewer"
-                        checked={role === 'viewer'}
-                        onChange={() => setRole('viewer')}
-                        className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <div className="flex-1">
-                        <div className="font-semibold text-gray-900 text-sm">Viewer</div>
-                        <div className="text-xs text-gray-500">Read-only access</div>
-                      </div>
-                      <i className="ri-eye-line text-gray-500"></i>
-                    </label>
+                    {getAvailableRoles(subscriptionTier)
+                      .filter((r) => r !== 'owner')
+                      .map((r) => {
+                        const badge = ROLE_BADGE[r];
+                        const desc = ROLE_DESCRIPTIONS[r] ?? '';
+                        const label = getRoleLabel(r, subscriptionTier);
+                        return (
+                          <label key={r} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                            <input
+                              type="radio"
+                              name="role"
+                              value={r}
+                              checked={role === r}
+                              onChange={() => setRole(r)}
+                              className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            <div className="flex-1">
+                              <div className="font-semibold text-gray-900 text-sm">{label}</div>
+                              <div className="text-xs text-gray-500">{desc}</div>
+                            </div>
+                            <span className={`text-[0.625rem] font-bold px-1.5 py-0.5 rounded-full ${badge?.className ?? 'bg-slate-100 text-slate-500'}`}>
+                              {label}
+                            </span>
+                          </label>
+                        );
+                      })}
                   </div>
                 </div>
 

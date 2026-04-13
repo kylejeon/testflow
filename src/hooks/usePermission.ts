@@ -1,15 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-
-// 역할 계층 (숫자가 클수록 높은 권한)
-const ROLE_LEVEL: Record<string, number> = {
-  owner:   6,
-  admin:   5,
-  manager: 4,
-  tester:  3,
-  viewer:  2,
-  guest:   1,
-};
+import { ROLE_LEVEL, getRoleLabel, getAvailableRoles } from '../lib/rbac';
 
 // 액션별 최소 요구 레벨
 const PERMISSION_LEVEL: Record<string, number> = {
@@ -87,31 +78,13 @@ export function usePermission(): UsePermissionResult {
     return currentLevel > targetLevel;
   };
 
-  /**
-   * 플랜별 사용 가능한 역할 목록
-   * - Starter(tier=3): owner, admin, tester(UI: Member)
-   * - Professional+(tier≥4): 전체 6가지
-   * - Free/Hobby(tier≤2): owner, admin (구분 없음, 전원 admin)
-   */
-  const getAvailableRoles = (subscriptionTier: number): string[] => {
-    if (subscriptionTier >= 4) {
-      return ['owner', 'admin', 'manager', 'tester', 'viewer', 'guest'];
-    }
-    if (subscriptionTier === 3) {
-      return ['owner', 'admin', 'tester']; // tester는 UI에서 "Member"로 표시
-    }
-    return ['owner', 'admin'];
+  return {
+    role,
+    orgId,
+    loading,
+    can,
+    canManageRole,
+    getAvailableRoles,
+    getRoleLabel,
   };
-
-  /**
-   * 역할 표시명 반환 (플랜별)
-   * - Starter: 'tester' → 'Member'
-   * - Pro+: 역할명 그대로 Title-case
-   */
-  const getRoleLabel = (r: string, subscriptionTier: number): string => {
-    if (subscriptionTier === 3 && r === 'tester') return 'Member';
-    return r.charAt(0).toUpperCase() + r.slice(1);
-  };
-
-  return { role, orgId, loading, can, canManageRole, getAvailableRoles, getRoleLabel };
 }

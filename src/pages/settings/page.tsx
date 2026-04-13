@@ -9,6 +9,7 @@ import { WEBHOOK_EVENTS, WebhookEventType } from '../../hooks/useWebhooks';
 import SEOHead from '../../components/SEOHead';
 import NotificationSettingsPanel from './components/NotificationSettingsPanel';
 import ProfileSettingsPanel from './components/ProfileSettingsPanel';
+import OrgMembersPanel from './components/OrgMembersPanel';
 import ProjectMembersPanel from '../project-detail/components/ProjectMembersPanel';
 import InviteMemberModal from '../project-detail/components/InviteMemberModal';
 import { getPaymentProvider, openCheckout } from '../../lib/payment';
@@ -154,6 +155,8 @@ async function loadSettingsData(): Promise<{
   userProfile: UserProfile | null;
   jiraSettings: JiraSettings;
   userProjects: Array<{ id: string; name: string }>;
+  orgId: string | null;
+  currentUserOrgRole: string | null;
 }> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -161,16 +164,24 @@ async function loadSettingsData(): Promise<{
       userProfile: null,
       jiraSettings: { domain: '', email: '', apiToken: '', issueType: 'Bug' },
       userProjects: [],
+      orgId: null,
+      currentUserOrgRole: null,
     };
   }
 
-  const [profileResult, jiraResult, memberResult] = await Promise.all([
+  const [profileResult, jiraResult, memberResult, orgMemberResult] = await Promise.all([
     supabase.from('profiles')
       .select('id, email, full_name, subscription_tier, payment_provider, provider_customer_id, trial_started_at, trial_ends_at, is_trial, subscription_ends_at, avatar_emoji')
       .eq('id', user.id)
       .maybeSingle(),
     supabase.from('jira_settings').select('*').eq('user_id', user.id).maybeSingle(),
     supabase.from('project_members').select('project_id, projects!inner(id, name)').eq('user_id', user.id),
+    supabase.from('organization_members')
+      .select('organization_id, role')
+      .eq('user_id', user.id)
+      .order('joined_at', { ascending: true })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   // Build userProfile
@@ -239,7 +250,10 @@ async function loadSettingsData(): Promise<{
     ? memberResult.data.map((row: any) => ({ id: row.projects.id, name: row.projects.name }))
     : [];
 
-  return { userProfile, jiraSettings, userProjects };
+  const orgId = orgMemberResult.data?.organization_id ?? null;
+  const currentUserOrgRole = orgMemberResult.data?.role ?? null;
+
+  return { userProfile, jiraSettings, userProjects, orgId, currentUserOrgRole };
 }
 
 function DangerZoneSection({ email }: { email: string }) {
@@ -335,6 +349,9 @@ export default function SettingsPage() {
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [showMembersInviteModal, setShowMembersInviteModal] = useState(false);
   const [memberRefreshTrigger, setMemberRefreshTrigger] = useState(0);
+  const [orgId, setOrgId] = useState<string | null>(null);
+  const [currentUserOrgRole, setCurrentUserOrgRole] = useState<string | null>(null);
+  const [orgMemberRefreshTrigger, setOrgMemberRefreshTrigger] = useState(0);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const DEFAULT_SUMMARY_TEMPLATE = '[Auto] Test Failed: {tc_id} - {tc_title}';
   const DEFAULT_DESCRIPTION_TEMPLATE = '*Auto-created by Testably*\n\nTest Case: {tc_title}\nRun: {run_name}\nPriority: {priority}\n\n--- Precondition ---\n{precondition}\n\n--- Steps ---\n{steps}\n\n--- Expected Result ---\n{expected_result}';
@@ -479,6 +496,8 @@ export default function SettingsPage() {
       setJiraSettings(settingsData.jiraSettings);
       if (settingsData.jiraSettings.domain) setJiraSavedDomain(settingsData.jiraSettings.domain);
       setUserProjects(settingsData.userProjects);
+      setOrgId(settingsData.orgId);
+      setCurrentUserOrgRole(settingsData.currentUserOrgRole);
       setLoading(false);
       if (!selectedProjectId && settingsData.userProjects.length > 0) {
         const paramProjectId = searchParams.get('projectId');
@@ -1944,12 +1963,34 @@ def pytest_sessionfinish(session, exitstatus):
                   )}
 
                   {activeTab === 'members' && (
-                    <div>
+                    <div className="space-y-4">
+                      {/* ── Organization Members (RBAC) ── */}
+                      <div className="bg-white border border-slate-200 rounded-[0.625rem] p-6">
+                        {orgId && currentUserOrgRole ? (
+                          <OrgMembersPanel
+                            orgId={orgId}
+                            currentUserRole={currentUserOrgRole}
+                            subscriptionTier={userProfile?.subscription_tier ?? 1}
+                            refreshTrigger={orgMemberRefreshTrigger}
+                            onInvited={() => setOrgMemberRefreshTrigger(prev => prev + 1)}
+                          />
+                        ) : (
+                          <div className="text-center py-12 text-[0.8125rem] text-slate-400">
+                            <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                              <i className="ri-team-line text-2xl text-slate-400"></i>
+                            </div>
+                            <div className="text-[0.9375rem] font-semibold text-slate-900 mb-1">No organization found</div>
+                            <div>You are not a member of any organization.</div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ── Project-level Members (per-project invite) ── */}
                       <div className="bg-white border border-slate-200 rounded-[0.625rem] p-6">
                         <div className="flex items-start justify-between mb-4">
                           <div>
-                            <h3 className="text-[0.9375rem] font-bold text-slate-900 mb-0.5">Project Members</h3>
-                            <p className="text-[0.8125rem] text-slate-500">Manage team members and their roles for each project.</p>
+                            <h3 className="text-[0.9375rem] font-bold text-slate-900 mb-0.5">Project Access</h3>
+                            <p className="text-[0.8125rem] text-slate-500">Invite external collaborators to specific projects.</p>
                           </div>
                           <button
                             onClick={() => setShowMembersInviteModal(true)}
@@ -1957,7 +1998,7 @@ def pytest_sessionfinish(session, exitstatus):
                             className="flex items-center gap-1.5 px-4 py-[0.4375rem] bg-indigo-500 text-white text-[0.8125rem] font-semibold rounded-lg hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer flex-shrink-0 ml-4"
                           >
                             <i className="ri-user-add-line"></i>
-                            Invite Member
+                            Invite to Project
                           </button>
                         </div>
                         <div className="mb-5">
