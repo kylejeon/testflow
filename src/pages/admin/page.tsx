@@ -104,7 +104,6 @@ export default function AdminPage() {
         { data: monthlyUserData },
         { data: monthlyProjectData },
         { data: subscriptionRaw },
-        { data: usersData },
       ] = await Promise.all([
         supabase.rpc('admin_overview_stats'),
         supabase.rpc('admin_monthly_user_stats', { months_back: 12 }),
@@ -112,8 +111,23 @@ export default function AdminPage() {
         supabase
           .from('profiles')
           .select('subscription_tier'),
-        supabase.rpc('admin_get_recent_users', { limit_count: 50 }),
       ]);
+
+      // Fetch recent users with last_sign_in_at via RPC (requires admin_get_recent_users migration).
+      // Falls back to direct profiles query if the function doesn't exist yet.
+      let usersData: any[] | null = null;
+      try {
+        const { data, error } = await supabase.rpc('admin_get_recent_users', { limit_count: 50 });
+        if (error) throw error;
+        usersData = data;
+      } catch {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id, email, full_name, subscription_tier, is_trial, is_superadmin, created_at, updated_at, trial_ends_at, subscription_ends_at')
+          .order('created_at', { ascending: false })
+          .limit(50);
+        usersData = (data || []).map((u: any) => ({ ...u, last_sign_in_at: null }));
+      }
 
       if (overviewData && overviewData.length > 0) {
         const raw = overviewData[0];
