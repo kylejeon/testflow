@@ -218,6 +218,7 @@ export default function RunDetail() {
   const [showAISummary, setShowAISummary] = useState(false);
   const [aiSummaryData, setAiSummaryData] = useState<AISummaryResult | null>(null);
   const [includeAiInPdf, setIncludeAiInPdf] = useState(false);
+  const [aiSummaryState, setAiSummaryState] = useState<'none' | 'fresh' | 'stale'>('none');
   const [showUpgradeNudge, setShowUpgradeNudge] = useState(false);
   const [showAINewBadge] = useState(() => {
     const launchDate = new Date('2026-05-01');
@@ -991,6 +992,16 @@ export default function RunDetail() {
 
       if (runError) throw runError;
       setRun(runData);
+
+      // Determine AI summary state from stored snapshot vs current run aggregate counts
+      if (runData.ai_summary?.result) {
+        const snap = runData.ai_summary.snapshot as { total: number; passed: number; failed: number; blocked: number } | undefined;
+        const totalNow = (runData.test_case_ids as string[] | null)?.length ?? 0;
+        const stale = !snap || snap.total !== totalNow || snap.passed !== (runData.passed ?? 0) || snap.failed !== (runData.failed ?? 0) || snap.blocked !== (runData.blocked ?? 0);
+        setAiSummaryState(stale ? 'stale' : 'fresh');
+      } else {
+        setAiSummaryState('none');
+      }
 
       // Load steps snapshot captured at run creation time (if present)
       if (runData.steps_snapshot && typeof runData.steps_snapshot === 'object') {
@@ -2852,7 +2863,13 @@ export default function RunDetail() {
                       >
                         <i className="ri-sparkling-2-fill text-base" style={{ color: '#8B5CF6' }} />
                         AI Summary
-                        {showAINewBadge && (
+                        {aiSummaryState === 'fresh' && (
+                          <span style={{ fontSize: '11px', color: '#16A34A', fontWeight: 700 }}>✓</span>
+                        )}
+                        {aiSummaryState === 'stale' && (
+                          <span style={{ fontSize: '11px', color: '#D97706', fontWeight: 700 }}>⚠️</span>
+                        )}
+                        {aiSummaryState === 'none' && showAINewBadge && (
                           <span style={{ fontSize: '10px', background: '#EDE9FE', color: '#6D28D9', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>
                             NEW
                           </span>
@@ -3003,6 +3020,7 @@ export default function RunDetail() {
                     onSummaryReady={(s) => setAiSummaryData(s)}
                     includeInPdf={includeAiInPdf}
                     onToggleIncludeInPdf={setIncludeAiInPdf}
+                    onSummaryStateChange={setAiSummaryState}
                   />
                 );
               })()}

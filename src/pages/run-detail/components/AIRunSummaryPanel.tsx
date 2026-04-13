@@ -52,6 +52,8 @@ interface AIRunSummaryPanelProps {
   /** Controlled "include in PDF" state from parent (when undefined, uses internal state) */
   includeInPdf?: boolean;
   onToggleIncludeInPdf?: (v: boolean) => void;
+  /** Called when summary state changes (none → fresh → stale) so parent can update button */
+  onSummaryStateChange?: (state: 'none' | 'fresh' | 'stale') => void;
 }
 
 export default function AIRunSummaryPanel({
@@ -68,10 +70,13 @@ export default function AIRunSummaryPanel({
   onSummaryReady,
   includeInPdf: controlledIncludeInPdf,
   onToggleIncludeInPdf,
+  onSummaryStateChange,
 }: AIRunSummaryPanelProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<AISummaryResult | null>(null);
+  const [isStale, setIsStale] = useState(false);
+  const [updatingSummary, setUpdatingSummary] = useState(false);
   const [copied, setCopied] = useState(false);
   const [reRunning, setReRunning] = useState(false);
 
@@ -104,7 +109,6 @@ export default function AIRunSummaryPanel({
   const [slackIntegrations, setSlackIntegrations] = useState<{ id: string; channel_name: string; webhook_url?: string }[]>([]);
   const [selectedSlackId, setSelectedSlackId] = useState('');
   const [shareSending, setShareSending] = useState(false);
-  const [showRegenConfirm, setShowRegenConfirm] = useState(false);
 
   const shareMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -145,12 +149,44 @@ export default function AIRunSummaryPanel({
     loadSettings();
   }, [projectId]);
 
-  const fetchSummary = async () => {
+  // Save summary + count snapshot to test_runs.ai_summary
+  const saveToDb = async (result: AISummaryResult) => {
+    const snapshot = { total: totalCount, passed: passedCount, failed: failedCount, blocked: blockedCount };
+    await supabase
+      .from('test_runs')
+      .update({ ai_summary: { result, snapshot }, ai_summary_generated_at: new Date().toISOString() })
+      .eq('id', runId);
+  };
+
+  const fetchSummary = async (forceRefresh = false) => {
     setLoading(true);
     setError(null);
+    setIsStale(false);
     try {
-      const { error: userErr } = await supabase.auth.getUser();
-      if (userErr) { setError('Please log in again'); return; }
+      // Step 1: Try loading from DB (unless forced refresh)
+      if (!forceRefresh) {
+        const { data: runRow } = await supabase
+          .from('test_runs')
+          .select('ai_summary')
+          .eq('id', runId)
+          .maybeSingle();
+
+        if (runRow?.ai_summary?.result) {
+          const saved = runRow.ai_summary as { result: AISummaryResult; snapshot: { total: number; passed: number; failed: number; blocked: number } };
+          setSummary(saved.result);
+          onSummaryReady?.(saved.result);
+
+          // Check staleness by comparing snapshot against current counts
+          const snap = saved.snapshot;
+          const stale = !snap || snap.total !== totalCount || snap.passed !== passedCount || snap.failed !== failedCount || snap.blocked !== blockedCount;
+          setIsStale(stale);
+          onSummaryStateChange?.(stale ? 'stale' : 'fresh');
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Step 2: No DB cache — call edge function
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) { setError('Please log in again'); return; }
 
@@ -183,15 +219,42 @@ export default function AIRunSummaryPanel({
         return;
       }
 
-      if (data?.cached) { setSummary(data.summary); onSummaryReady?.(data.summary); return; }
-      if (!data?.success || !data?.summary) { setError(data?.error || 'Analysis couldn\'t be completed'); return; }
-      setSummary(data.summary);
-      onSummaryReady?.(data.summary);
+      const result: AISummaryResult = data?.summary;
+      if (!result) { setError(data?.error || 'Analysis couldn\'t be completed'); return; }
+
+      setSummary(result);
+      onSummaryReady?.(result);
+      onSummaryStateChange?.('fresh');
+
+      // Step 3: Persist to DB
+      await saveToDb(result);
     } catch {
       setError('Connection error. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Force-regenerate: clear edge-function cache + DB entry, then re-fetch from API
+  const handleUpdateSummary = async () => {
+    setUpdatingSummary(true);
+    setIsStale(false);
+    setSummary(null);
+    try {
+      // Delete edge-function server-side cache entry for this run
+      await supabase
+        .from('ai_generation_logs')
+        .delete()
+        .filter('input_data->>run_id', 'eq', runId);
+      // Clear DB summary so fetchSummary falls through to API
+      await supabase
+        .from('test_runs')
+        .update({ ai_summary: null, ai_summary_generated_at: null })
+        .eq('id', runId);
+    } finally {
+      setUpdatingSummary(false);
+    }
+    fetchSummary(true);
   };
 
   useEffect(() => { fetchSummary(); }, [runId]);
@@ -511,22 +574,6 @@ export default function AIRunSummaryPanel({
     whiteSpace: 'nowrap' as const,
   });
 
-  const ghostBtn: React.CSSProperties = {
-    background: 'transparent',
-    border: '1px solid #334155',
-    color: '#64748B',
-    borderRadius: '6px',
-    padding: '6px 10px',
-    fontSize: '11px',
-    fontWeight: 600,
-    cursor: 'pointer',
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '5px',
-    transition: 'all 0.15s',
-    whiteSpace: 'nowrap' as const,
-  };
-
   return (
     <div
       style={{
@@ -611,6 +658,39 @@ export default function AIRunSummaryPanel({
         {/* Summary content */}
         {!loading && summary && (
           <>
+            {/* Stale banner */}
+            {isStale && (
+              <div
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  gap: '10px', padding: '10px 14px', marginBottom: '14px',
+                  background: '#451A03', border: '1px solid #92400E', borderRadius: '8px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#FDE68A' }}>
+                  <span style={{ fontSize: '14px' }}>⚠️</span>
+                  Test results have been updated since this summary was generated.
+                </div>
+                <button
+                  onClick={handleUpdateSummary}
+                  disabled={updatingSummary}
+                  style={{
+                    background: '#78350F', border: '1px solid #92400E', color: '#FDE68A',
+                    borderRadius: '6px', padding: '5px 12px', fontSize: '12px', fontWeight: 700,
+                    cursor: updatingSummary ? 'not-allowed' : 'pointer', flexShrink: 0,
+                    display: 'inline-flex', alignItems: 'center', gap: '5px',
+                    opacity: updatingSummary ? 0.7 : 1,
+                  }}
+                >
+                  {updatingSummary ? (
+                    <><span style={{ width: 10, height: 10, borderRadius: '50%', border: '2px solid #92400E', borderTopColor: '#FDE68A', display: 'inline-block', animation: 'aiPanelSpin 0.8s linear infinite' }} />Updating…</>
+                  ) : (
+                    <><i className="ri-sparkling-2-fill" />Update Summary</>
+                  )}
+                </button>
+              </div>
+            )}
+
             {/* Risk badge */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
               <span
@@ -763,7 +843,7 @@ export default function AIRunSummaryPanel({
               {/* Include in PDF Export */}
               <button
                 onClick={() => {
-                  setIncludedInPdf(prev => !prev);
+                  setIncludedInPdf(!includedInPdf);
                   onToast(includedInPdf ? 'Removed from PDF export' : 'AI summary will be included in PDF export', 'success');
                 }}
                 style={actionBtn(includedInPdf)}
@@ -852,14 +932,6 @@ export default function AIRunSummaryPanel({
                 )}
               </button>
 
-              {/* Spacer */}
-              <div style={{ flex: 1 }} />
-
-              {/* Re-generate (ghost, right-aligned) */}
-              <button onClick={() => setShowRegenConfirm(true)} style={ghostBtn}>
-                <i className="ri-sparkling-2-fill" style={{ color: '#8B5CF6' }} />
-                Re-generate
-              </button>
             </div>
 
             {/* ── Inline sub-panels ─────────────────────────────────── */}
@@ -1012,29 +1084,6 @@ export default function AIRunSummaryPanel({
               </div>
             )}
 
-            {/* Re-generate confirmation */}
-            {showRegenConfirm && (
-              <div style={{ background: '#1E293B', border: '1px solid #4338CA', borderRadius: '10px', padding: '16px', marginTop: '12px' }}>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '14px' }}>
-                  <span style={{ fontSize: '20px', lineHeight: 1, flexShrink: 0 }}>⚡</span>
-                  <div>
-                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#C7D2FE', marginBottom: 4 }}>Re-generate AI Summary?</div>
-                    <div style={{ fontSize: '12px', color: '#94A3B8', lineHeight: 1.6 }}>
-                      This will use <strong style={{ color: '#A5B4FC' }}>1 additional AI credit</strong> from your monthly quota. The existing summary will be replaced.
-                    </div>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                  <button onClick={() => setShowRegenConfirm(false)} style={actionBtn()}>Cancel</button>
-                  <button
-                    onClick={() => { setShowRegenConfirm(false); setSummary(null); fetchSummary(); }}
-                    style={{ background: '#6366F1', color: '#fff', border: 'none', borderRadius: '6px', padding: '6px 14px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <i className="ri-sparkling-2-fill" /> Yes, Re-generate
-                  </button>
-                </div>
-              </div>
-            )}
           </>
         )}
       </div>
