@@ -1,0 +1,2 @@
+[functions.send-loops-event]
+verify_jwt = false
