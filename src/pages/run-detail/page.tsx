@@ -994,7 +994,10 @@ export default function RunDetail() {
       setRun(runData);
 
       // Determine AI summary state from stored snapshot vs current run aggregate counts
+      // Also eagerly load aiSummaryData so ExportModal's "Include AI Summary" checkbox is available
+      // without requiring the user to open the AI Summary panel first
       if (runData.ai_summary?.result) {
+        setAiSummaryData(runData.ai_summary.result);
         const snap = runData.ai_summary.snapshot as { total: number; passed: number; failed: number; blocked: number } | undefined;
         const totalNow = (runData.test_case_ids as string[] | null)?.length ?? 0;
         const stale = !snap || snap.total !== totalNow || snap.passed !== (runData.passed ?? 0) || snap.failed !== (runData.failed ?? 0) || snap.blocked !== (runData.blocked ?? 0);
@@ -3491,6 +3494,7 @@ export default function RunDetail() {
               onClose={() => setShowExportModal(false)}
               exporting={exportingFile}
               hasSummary={aiSummaryData !== null}
+              defaultIncludeAiSummary={includeAiInPdf}
               getFilteredCount={(sf, tf) => {
                 let filtered = testCases.filter(tc => sf.has(tc.runStatus || 'untested'));
                 if (tf.size > 0) {

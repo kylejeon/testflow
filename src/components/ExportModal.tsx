@@ -29,6 +29,8 @@ interface ExportModalProps {
   getFilteredCount?: (statusFilter: Set<string>, tagFilter: Set<string>) => number;
   /** When true, shows "Include AI Summary" checkbox (PDF format only) */
   hasSummary?: boolean;
+  /** Pre-check the "Include AI Summary" checkbox when modal opens */
+  defaultIncludeAiSummary?: boolean;
 }
 
 export function ExportModal({
@@ -40,11 +42,12 @@ export function ExportModal({
   exporting = false,
   getFilteredCount,
   hasSummary = false,
+  defaultIncludeAiSummary = false,
 }: ExportModalProps) {
   const [format, setFormat] = useState<ExportFormat>('pdf');
   const [statusFilter, setStatusFilter] = useState<Set<string>>(new Set(ALL_STATUSES));
   const [tagFilter, setTagFilter] = useState<Set<string>>(new Set());
-  const [includeAiSummary, setIncludeAiSummary] = useState(false);
+  const [includeAiSummary, setIncludeAiSummary] = useState(defaultIncludeAiSummary);
 
   const toggle = <T,>(set: Set<T>, val: T, setter: (s: Set<T>) => void) => {
     const next = new Set(set);
