@@ -8,6 +8,7 @@ import { supabase } from '../../lib/supabase';
 import { loadProjectDetailData } from './queryFns';
 import ProjectMembersPanel from './components/ProjectMembersPanel';
 import InviteMemberModal from './components/InviteMemberModal';
+import AddMembersToProjectModal from './components/AddMembersToProjectModal';
 import SEOHead from '../../components/SEOHead';
 import NotificationBell from '../../components/feature/NotificationBell';
 import ProjectHeader from '../../components/ProjectHeader';
@@ -51,6 +52,7 @@ export default function ProjectDetail() {
   const [dashboardTab, setDashboardTab] = useState<'overview' | 'analytics' | 'activity' | 'settings'>('overview');
   const [projectSettingsMemberRefresh, setProjectSettingsMemberRefresh] = useState(0);
   const [showProjectSettingsInvite, setShowProjectSettingsInvite] = useState(false);
+  const [projectOrgId, setProjectOrgId] = useState<string | null>(null);
   const [trendPeriod, setTrendPeriod] = useState<'7d' | '14d' | '30d'>('7d');
   const [expandedPriorityGroups, setExpandedPriorityGroups] = useState<Set<string>>(new Set(['critical', 'high']));
   const [activityFilter, setActivityFilter] = useState<string>('all');
@@ -213,12 +215,16 @@ export default function ProjectDetail() {
   const fetchIntegrationStatus = async () => {
     if (!id) return;
     const { data: { user } } = await supabase.auth.getUser();
-    const [intRes, jiraRes] = await Promise.all([
+    const [intRes, jiraRes, orgMemberRes] = await Promise.all([
       supabase.from('integrations').select('id, type, channel_name, is_active').eq('project_id', id),
       supabase.from('jira_settings').select('id, domain').eq('user_id', user?.id ?? '').maybeSingle(),
+      user
+        ? supabase.from('organization_members').select('organization_id').eq('user_id', user.id).limit(1).maybeSingle()
+        : Promise.resolve({ data: null }),
     ]);
     setProjectIntegrations(intRes.data ?? []);
     setJiraConfigured(!!(jiraRes.data?.domain));
+    setProjectOrgId((orgMemberRes as any).data?.organization_id ?? null);
   };
 
   const toggleExpanded = (milestoneId: string) => {
@@ -1407,11 +1413,12 @@ export default function ProjectDetail() {
                         className="flex items-center gap-1.5 px-4 py-[0.4375rem] bg-indigo-500 text-white text-[0.8125rem] font-semibold rounded-lg hover:bg-indigo-600 transition-colors cursor-pointer flex-shrink-0 ml-4"
                       >
                         <i className="ri-user-add-line" />
-                        Invite to Project
+                        Add Members
                       </button>
                     </div>
                     <ProjectMembersPanel
                       projectId={project!.id}
+                      orgId={projectOrgId ?? undefined}
                       onInviteClick={() => setShowProjectSettingsInvite(true)}
                       refreshTrigger={projectSettingsMemberRefresh}
                       subscriptionTier={userProfile?.subscription_tier ?? 1}
@@ -1419,14 +1426,25 @@ export default function ProjectDetail() {
                   </div>
                 </div>
 
-                {/* Invite modal for project settings */}
-                <InviteMemberModal
-                  isOpen={showProjectSettingsInvite}
-                  onClose={() => setShowProjectSettingsInvite(false)}
-                  projectId={project!.id}
-                  onInvited={() => setProjectSettingsMemberRefresh(prev => prev + 1)}
-                  subscriptionTier={userProfile?.subscription_tier ?? 1}
-                />
+                {/* Add Members modal for project settings */}
+                {projectOrgId ? (
+                  <AddMembersToProjectModal
+                    isOpen={showProjectSettingsInvite}
+                    onClose={() => setShowProjectSettingsInvite(false)}
+                    projectId={project!.id}
+                    orgId={projectOrgId}
+                    subscriptionTier={userProfile?.subscription_tier ?? 1}
+                    onAdded={() => setProjectSettingsMemberRefresh(prev => prev + 1)}
+                  />
+                ) : (
+                  <InviteMemberModal
+                    isOpen={showProjectSettingsInvite}
+                    onClose={() => setShowProjectSettingsInvite(false)}
+                    projectId={project!.id}
+                    onInvited={() => setProjectSettingsMemberRefresh(prev => prev + 1)}
+                    subscriptionTier={userProfile?.subscription_tier ?? 1}
+                  />
+                )}
               </div>
             )}
           </main>

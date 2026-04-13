@@ -5,7 +5,9 @@ import { ROLE_BADGE, getRoleLabel, getAvailableRoles, ROLE_LEVEL } from '../../.
 interface Member {
   id: string;
   user_id: string;
-  role: string;
+  role: string; // legacy effective-role field
+  role_override: string | null; // per-project override
+  org_role: string | null; // base org role (null if orgId not provided)
   joined_at: string | null;
   last_active_at: string | null;
   profile: {
@@ -16,6 +18,7 @@ interface Member {
 
 interface ProjectMembersPanelProps {
   projectId: string;
+  orgId?: string; // when provided, enables hybrid role mode
   onInviteClick: () => void;
   refreshTrigger: number;
   compact?: boolean;
@@ -27,6 +30,7 @@ const AVATAR_COLORS = ['#6366F1', '#EC4899', '#F59E0B', '#22C55E', '#3B82F6', '#
 
 export default function ProjectMembersPanel({
   projectId,
+  orgId,
   onInviteClick,
   refreshTrigger,
   compact = false,
@@ -45,7 +49,7 @@ export default function ProjectMembersPanel({
       console.error('Initial data loading failed:', e);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId, refreshTrigger]);
+  }, [projectId, orgId, refreshTrigger]);
 
   const getCurrentUser = async () => {
     try {
@@ -64,7 +68,7 @@ export default function ProjectMembersPanel({
     try {
       const { data: membersData, error: membersError } = await supabase
         .from('project_members')
-        .select('id, user_id, role, created_at')
+        .select('id, user_id, role, role_override, created_at')
         .eq('project_id', projectId);
 
       if (membersError) throw membersError;
@@ -84,7 +88,7 @@ export default function ProjectMembersPanel({
           }, { onConflict: 'project_id,user_id' });
           if (!upsertErr) {
             const { data: reloaded } = await supabase
-              .from('project_members').select('id, user_id, role, created_at').eq('project_id', projectId);
+              .from('project_members').select('id, user_id, role, role_override, created_at').eq('project_id', projectId);
             if (reloaded && reloaded.length > 0) membersData.push(...reloaded);
           }
         }
@@ -96,6 +100,7 @@ export default function ProjectMembersPanel({
 
       const userIds = membersData.map((m) => m.user_id);
 
+      // Fetch profiles
       const { data: profilesData } = await supabase
         .from('profiles')
         .select('id, email, full_name, updated_at')
@@ -103,12 +108,28 @@ export default function ProjectMembersPanel({
 
       const profilesMap = new Map((profilesData || []).map((p) => [p.id, p]));
 
-      const formattedMembers = membersData.map((m) => {
+      // Fetch org roles if orgId is provided (hybrid mode)
+      let orgRoleMap = new Map<string, string>();
+      if (orgId) {
+        const { data: orgMembers } = await supabase
+          .from('organization_members')
+          .select('user_id, role')
+          .eq('organization_id', orgId)
+          .in('user_id', userIds);
+        if (orgMembers) {
+          orgRoleMap = new Map(orgMembers.map((om) => [om.user_id, om.role]));
+        }
+      }
+
+      const formattedMembers: Member[] = membersData.map((m) => {
         const profile = profilesMap.get(m.user_id);
+        const orgRole = orgRoleMap.get(m.user_id) ?? null;
         return {
           id: m.id,
           user_id: m.user_id,
           role: m.role,
+          role_override: m.role_override ?? null,
+          org_role: orgRole,
           joined_at: m.created_at ?? null,
           last_active_at: profile?.updated_at ?? null,
           profile: {
@@ -118,14 +139,18 @@ export default function ProjectMembersPanel({
         };
       });
 
+      const effectiveRoleOf = (m: Member) => m.role_override ?? m.org_role ?? m.role;
       const ROLE_ORDER: Record<string, number> = { owner: 0, admin: 1, manager: 2, tester: 3, member: 3, viewer: 4, guest: 5 };
-      formattedMembers.sort((a, b) => (ROLE_ORDER[a.role] ?? 6) - (ROLE_ORDER[b.role] ?? 6));
+      formattedMembers.sort((a, b) => (ROLE_ORDER[effectiveRoleOf(a)] ?? 6) - (ROLE_ORDER[effectiveRoleOf(b)] ?? 6));
       setMembers(formattedMembers);
 
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const currentMember = formattedMembers.find((m) => m.user_id === user.id);
-        setCurrentUserRole(currentMember?.role ?? null);
+        const effectiveRole = currentMember
+          ? (currentMember.role_override ?? currentMember.org_role ?? currentMember.role)
+          : null;
+        setCurrentUserRole(effectiveRole);
       }
     } catch (e) {
       console.error('멤버 로딩 오류:', e);
@@ -160,11 +185,33 @@ export default function ProjectMembersPanel({
     }
   };
 
-  const handleRoleChange = async (memberId: string, newRole: string) => {
+  // newRole: null = reset to org role; string = set project override
+  const handleRoleChange = async (memberId: string, newRole: string | null) => {
+    const member = members.find((m) => m.id === memberId);
+    if (!member) return;
     try {
-      const { error } = await supabase.from('project_members').update({ role: newRole }).eq('id', memberId);
-      if (error) throw error;
-      setMembers((prev) => prev.map((m) => (m.id === memberId ? { ...m, role: newRole } : m)));
+      if (orgId && member.org_role !== null) {
+        // Hybrid mode: update role_override + keep legacy role in sync
+        const effectiveRole = newRole ?? member.org_role;
+        const { error } = await supabase
+          .from('project_members')
+          .update({ role_override: newRole, role: effectiveRole })
+          .eq('id', memberId);
+        if (error) throw error;
+        setMembers((prev) =>
+          prev.map((m) =>
+            m.id === memberId ? { ...m, role_override: newRole, role: effectiveRole } : m
+          )
+        );
+      } else {
+        // Legacy mode: update role directly
+        const { error } = await supabase
+          .from('project_members')
+          .update({ role: newRole! })
+          .eq('id', memberId);
+        if (error) throw error;
+        setMembers((prev) => prev.map((m) => (m.id === memberId ? { ...m, role: newRole! } : m)));
+      }
     } catch (e) {
       console.error('역할 변경 오류:', e);
     }
@@ -198,6 +245,17 @@ export default function ProjectMembersPanel({
     return ROLE_BADGE[role] ?? { label: getRoleLabel(role, subscriptionTier), className: 'bg-slate-100 text-slate-500' };
   };
 
+  // Returns display label + source tag for a member
+  const getRoleDisplay = (member: Member): { label: string; source: '(org)' | '(project)' | '' } => {
+    if (orgId && member.org_role !== null) {
+      if (member.role_override) {
+        return { label: getRoleLabel(member.role_override, subscriptionTier), source: '(project)' };
+      }
+      return { label: getRoleLabel(member.org_role, subscriptionTier), source: '(org)' };
+    }
+    return { label: getRoleLabel(member.role, subscriptionTier), source: '' };
+  };
+
   const currentLevel = ROLE_LEVEL[currentUserRole ?? ''] ?? 0;
   const isAdminOrOwner = currentLevel >= 5; // admin+
 
@@ -224,7 +282,8 @@ export default function ProjectMembersPanel({
     return (
       <div>
         {members.map((member, index) => {
-          const badge = getRoleBadge(member.role);
+          const { label, source } = getRoleDisplay(member);
+          const badge = getRoleBadge(member.role_override ?? member.org_role ?? member.role);
           return (
             <div key={member.id} className="flex items-center gap-2.5 py-2 border-b border-slate-100 last:border-0">
               <div
@@ -240,7 +299,7 @@ export default function ProjectMembersPanel({
                 <div className="text-[0.6875rem] text-slate-400 truncate">{member.profile.email}</div>
               </div>
               <span className={`text-[0.625rem] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap flex-shrink-0 ${badge.className}`}>
-                {badge.label}
+                {label}{source && <span className="opacity-60 ml-0.5">{source}</span>}
               </span>
             </div>
           );
@@ -299,7 +358,7 @@ export default function ProjectMembersPanel({
             onClick={onInviteClick}
             className="inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-[0.375rem] bg-indigo-500 text-white hover:bg-indigo-600 transition-colors cursor-pointer"
           >
-            <i className="ri-user-add-line"></i> Invite Member
+            <i className="ri-user-add-line"></i> Add Member
           </button>
         </div>
       ) : (
@@ -308,10 +367,10 @@ export default function ProjectMembersPanel({
             <tr>
               {[
                 { label: 'Member', width: '36%' },
-                { label: 'Role', width: '13%' },
+                { label: 'Role', width: '18%' },
                 { label: 'Joined', width: '17%' },
-                { label: 'Last Active', width: '18%' },
-                { label: 'Actions', width: '16%', right: true },
+                { label: 'Last Active', width: '15%' },
+                { label: 'Actions', width: '14%', right: true },
               ].map(col => (
                 <th
                   key={col.label}
@@ -335,10 +394,13 @@ export default function ProjectMembersPanel({
           </thead>
           <tbody>
             {members.map((member, index) => {
-              const isOwner = member.role === 'owner';
+              const isOwner = (member.role_override ?? member.org_role ?? member.role) === 'owner';
               const isSelf = member.user_id === currentUserId;
-              const canEdit = isAdminOrOwner && !isOwner;
+              const memberEffectiveLevel = ROLE_LEVEL[member.role_override ?? member.org_role ?? member.role] ?? 0;
+              const canEdit = isAdminOrOwner && !isOwner && currentLevel > memberEffectiveLevel;
               const isLast = index === members.length - 1;
+              const { label: roleLabel, source: roleSource } = getRoleDisplay(member);
+              const isHybrid = orgId && member.org_role !== null;
 
               return (
                 <tr
@@ -374,24 +436,52 @@ export default function ProjectMembersPanel({
                   <td style={{ padding: '0.625rem 0.75rem', borderBottom: isLast ? 'none' : '1px solid #F1F5F9', verticalAlign: 'middle' }}>
                     {canEdit ? (
                       <select
-                        value={member.role}
-                        onChange={(e) => handleRoleChange(member.id, e.target.value)}
+                        value={isHybrid ? (member.role_override ?? '__org__') : member.role}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (isHybrid) {
+                            handleRoleChange(member.id, val === '__org__' ? null : val);
+                          } else {
+                            handleRoleChange(member.id, val);
+                          }
+                        }}
                         style={{
                           fontSize: '0.75rem', fontWeight: 500, padding: '0.25rem 0.5rem',
-                          border: '1px solid #E2E8F0', borderRadius: '0.375rem',
-                          background: '#fff', color: '#475569', cursor: 'pointer', outline: 'none',
+                          border: isHybrid && member.role_override ? '1px solid #A5B4FC' : '1px solid #E2E8F0',
+                          borderRadius: '0.375rem',
+                          background: isHybrid && member.role_override ? '#EEF2FF' : '#fff',
+                          color: isHybrid && member.role_override ? '#4338CA' : '#475569',
+                          cursor: 'pointer', outline: 'none',
                           fontFamily: 'inherit',
                         }}
                       >
+                        {isHybrid && (
+                          <option value="__org__">
+                            ↩ Org role ({getRoleLabel(member.org_role!, subscriptionTier)})
+                          </option>
+                        )}
                         {getAvailableRoles(subscriptionTier)
                           .filter((r) => r !== 'owner' && (ROLE_LEVEL[r] ?? 0) < currentLevel)
                           .map((r) => (
-                            <option key={r} value={r}>{getRoleLabel(r, subscriptionTier)}</option>
+                            <option key={r} value={r}>
+                              {getRoleLabel(r, subscriptionTier)}
+                              {isHybrid && r === member.org_role ? ' (org)' : ''}
+                            </option>
                           ))}
                       </select>
                     ) : (
                       <span style={{ fontSize: '0.75rem', color: '#64748B' }}>
-                        {getRoleLabel(member.role, subscriptionTier)}
+                        {roleLabel}
+                        {roleSource && (
+                          <span style={{
+                            marginLeft: '0.25rem',
+                            fontSize: '0.625rem',
+                            color: roleSource === '(project)' ? '#6366F1' : '#94A3B8',
+                            fontWeight: 500,
+                          }}>
+                            {roleSource}
+                          </span>
+                        )}
                       </span>
                     )}
                   </td>

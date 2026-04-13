@@ -31,7 +31,7 @@ export interface UsePermissionResult {
   getRoleLabel: (role: string, subscriptionTier: number) => string;
 }
 
-export function usePermission(): UsePermissionResult {
+export function usePermission(projectId?: string): UsePermissionResult {
   const [role, setRole] = useState<string | null>(null);
   const [orgId, setOrgId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,7 +43,8 @@ export function usePermission(): UsePermissionResult {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        const { data } = await supabase
+        // Fetch org role
+        const { data: orgMember } = await supabase
           .from('organization_members')
           .select('role, organization_id')
           .eq('user_id', user.id)
@@ -51,9 +52,25 @@ export function usePermission(): UsePermissionResult {
           .limit(1)
           .maybeSingle();
 
+        let effectiveRole = orgMember?.role ?? null;
+
+        // If projectId provided, check for a per-project role_override
+        if (projectId && effectiveRole !== null) {
+          const { data: projectMember } = await supabase
+            .from('project_members')
+            .select('role_override')
+            .eq('project_id', projectId)
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          if (projectMember?.role_override) {
+            effectiveRole = projectMember.role_override;
+          }
+        }
+
         if (!cancelled) {
-          setRole(data?.role ?? null);
-          setOrgId(data?.organization_id ?? null);
+          setRole(effectiveRole);
+          setOrgId(orgMember?.organization_id ?? null);
         }
       } catch (e) {
         console.error('[usePermission] Failed to load role:', e);
@@ -63,7 +80,7 @@ export function usePermission(): UsePermissionResult {
     }
     loadRole();
     return () => { cancelled = true; };
-  }, []);
+  }, [projectId]);
 
   const currentLevel = ROLE_LEVEL[role ?? ''] ?? 0;
 

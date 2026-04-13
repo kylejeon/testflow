@@ -12,6 +12,7 @@ import ProfileSettingsPanel from './components/ProfileSettingsPanel';
 import OrgMembersPanel from './components/OrgMembersPanel';
 import ProjectMembersPanel from '../project-detail/components/ProjectMembersPanel';
 import InviteMemberModal from '../project-detail/components/InviteMemberModal';
+import AddMembersToProjectModal from '../project-detail/components/AddMembersToProjectModal';
 import { getPaymentProvider, openCheckout } from '../../lib/payment';
 import { Skeleton } from '../../components/Skeleton';
 import { sendLoopsEvent } from '../../lib/loops';
@@ -1991,8 +1992,8 @@ def pytest_sessionfinish(session, exitstatus):
                           <div>
                             <h3 className="text-[0.9375rem] font-bold text-slate-900 mb-0.5">Project Access</h3>
                             <p className="text-[0.8125rem] text-slate-500">
-                              Invite external collaborators to specific projects.{' '}
-                              <span className="text-slate-400 text-[0.75rem]">(Project members are not counted toward your plan limit)</span>
+                              Manage per-project access for organization members.{' '}
+                              <span className="text-slate-400 text-[0.75rem]">(Project members are selected from your organization. They don't count separately.)</span>
                             </p>
                           </div>
                           <button
@@ -2001,7 +2002,7 @@ def pytest_sessionfinish(session, exitstatus):
                             className="flex items-center gap-1.5 px-4 py-[0.4375rem] bg-indigo-500 text-white text-[0.8125rem] font-semibold rounded-lg hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer flex-shrink-0 ml-4"
                           >
                             <i className="ri-user-add-line"></i>
-                            Invite to Project
+                            Add Members
                           </button>
                         </div>
                         <div className="mb-5">
@@ -2019,6 +2020,7 @@ def pytest_sessionfinish(session, exitstatus):
                         {selectedProjectId ? (
                           <ProjectMembersPanel
                             projectId={selectedProjectId}
+                            orgId={orgId ?? undefined}
                             onInviteClick={() => setShowMembersInviteModal(true)}
                             refreshTrigger={memberRefreshTrigger}
                             subscriptionTier={userProfile?.subscription_tier ?? 1}
@@ -2033,13 +2035,24 @@ def pytest_sessionfinish(session, exitstatus):
                           </div>
                         )}
                       </div>
-                      <InviteMemberModal
-                        isOpen={showMembersInviteModal}
-                        onClose={() => setShowMembersInviteModal(false)}
-                        projectId={selectedProjectId}
-                        onInvited={() => setMemberRefreshTrigger(prev => prev + 1)}
-                        subscriptionTier={userProfile?.subscription_tier ?? 1}
-                      />
+                      {orgId && selectedProjectId ? (
+                        <AddMembersToProjectModal
+                          isOpen={showMembersInviteModal}
+                          onClose={() => setShowMembersInviteModal(false)}
+                          projectId={selectedProjectId}
+                          orgId={orgId}
+                          subscriptionTier={userProfile?.subscription_tier ?? 1}
+                          onAdded={() => setMemberRefreshTrigger(prev => prev + 1)}
+                        />
+                      ) : (
+                        <InviteMemberModal
+                          isOpen={showMembersInviteModal}
+                          onClose={() => setShowMembersInviteModal(false)}
+                          projectId={selectedProjectId}
+                          onInvited={() => setMemberRefreshTrigger(prev => prev + 1)}
+                          subscriptionTier={userProfile?.subscription_tier ?? 1}
+                        />
+                      )}
                     </div>
                   )}
 
