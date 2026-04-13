@@ -191,8 +191,10 @@ export default function AuthPage() {
         if (verifyError || !verifyProfile) throw new Error('Failed to create profile. Please try again.');
 
         // New OAuth user → send user_signup event to Loops (same as email signup path)
+        const oauthNameParts = (fullName ?? '').split(' ').filter(Boolean);
         sendLoopsEvent(user.email, 'user_signup', {
-          firstName: fullName?.split(' ')[0] || user.email?.split('@')[0] || 'there',
+          firstName: oauthNameParts[0] || user.email?.split('@')[0] || 'there',
+          lastName: oauthNameParts.slice(1).join(' '),
           planType: 'free',
           signupDate: new Date().toISOString().split('T')[0],
           testCaseCount: '0',
@@ -363,6 +365,7 @@ export default function AuthPage() {
         });
         sendLoopsEvent(email, 'user_signup', {
           firstName: fullName?.split(' ')[0] || 'there',
+          lastName: fullName?.split(' ').slice(1).join(' ') || '',
           planType: 'free',
           signupDate: now.toISOString().split('T')[0],
           testCaseCount: '0',
