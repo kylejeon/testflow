@@ -199,7 +199,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ userId, onComplete, onSki
                       : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                   }`}
                 >
-                  <i className={`ri-box-line text-3xl ${workspace === 'sample' ? 'text-indigo-600' : 'text-gray-400'}`} />
+                  <i className={`ri-flask-line text-3xl ${workspace === 'sample' ? 'text-indigo-600' : 'text-gray-400'}`} />
                   <span className={`text-sm font-semibold ${workspace === 'sample' ? 'text-indigo-700' : 'text-gray-700'}`}>
                     {t('welcome.trySample.label')}
                   </span>
