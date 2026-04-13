@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { ROLE_LEVEL, ROLE_BADGE, ROLE_DESCRIPTIONS, getRoleLabel, getAvailableRoles } from '../../../lib/rbac';
+import { ROLE_LEVEL, ROLE_BADGE, ROLE_DESCRIPTIONS, getRoleLabel, getAvailableRoles, TIER_MAX_MEMBERS, TIER_NAME } from '../../../lib/rbac';
+import { Link } from 'react-router-dom';
 
 interface OrgMember {
   id: string;
@@ -241,7 +242,7 @@ export default function OrgMembersPanel({
       )}
 
       {/* Header */}
-      <div className="flex items-start justify-between mb-4">
+      <div className="flex items-start justify-between mb-3">
         <div>
           <h3 className="text-[0.9375rem] font-bold text-slate-900 mb-0.5">Organization Members</h3>
           <p className="text-[0.8125rem] text-slate-500">Manage team members and their roles across all projects.</p>
@@ -256,6 +257,37 @@ export default function OrgMembersPanel({
           </button>
         )}
       </div>
+
+      {/* Usage Banner */}
+      {(() => {
+        const maxMembers = TIER_MAX_MEMBERS[subscriptionTier] ?? 5;
+        const used = members.length;
+        const planName = TIER_NAME[subscriptionTier] ?? 'Free';
+        const isNearLimit = isFinite(maxMembers) && used >= maxMembers - 1;
+        const isAtLimit = isFinite(maxMembers) && used >= maxMembers;
+        const bannerClass = isAtLimit
+          ? 'bg-rose-50 border-rose-200 text-rose-800'
+          : isNearLimit
+          ? 'bg-amber-50 border-amber-200 text-amber-800'
+          : 'bg-slate-50 border-slate-200 text-slate-600';
+        return (
+          <div className={`flex items-center justify-between px-3 py-2 rounded-md border text-[0.75rem] mb-4 ${bannerClass}`}>
+            <span>
+              <i className="ri-group-line mr-1.5" />
+              <strong>{used}</strong> of <strong>{isFinite(maxMembers) ? maxMembers : '∞'}</strong> members used
+              <span className="ml-1.5 text-[0.6875rem] opacity-70">· {planName} plan</span>
+            </span>
+            {isAtLimit && (
+              <Link
+                to="/settings?tab=billing"
+                className="ml-3 px-2.5 py-0.5 rounded-md bg-indigo-500 text-white text-[0.6875rem] font-semibold hover:bg-indigo-600 transition-colors whitespace-nowrap"
+              >
+                Upgrade
+              </Link>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Table */}
       {members.length === 0 ? (

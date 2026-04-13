@@ -1990,7 +1990,10 @@ def pytest_sessionfinish(session, exitstatus):
                         <div className="flex items-start justify-between mb-4">
                           <div>
                             <h3 className="text-[0.9375rem] font-bold text-slate-900 mb-0.5">Project Access</h3>
-                            <p className="text-[0.8125rem] text-slate-500">Invite external collaborators to specific projects.</p>
+                            <p className="text-[0.8125rem] text-slate-500">
+                              Invite external collaborators to specific projects.{' '}
+                              <span className="text-slate-400 text-[0.75rem]">(Project members are not counted toward your plan limit)</span>
+                            </p>
                           </div>
                           <button
                             onClick={() => setShowMembersInviteModal(true)}

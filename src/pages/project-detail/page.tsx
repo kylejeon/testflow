@@ -48,7 +48,9 @@ export default function ProjectDetail() {
   const [showContinueRun, setShowContinueRun] = useState(false);
   const [showAIAssist, setShowAIAssist] = useState(false);
   const [showAIGenerate, setShowAIGenerate] = useState(false);
-  const [dashboardTab, setDashboardTab] = useState<'overview' | 'analytics' | 'activity'>('overview');
+  const [dashboardTab, setDashboardTab] = useState<'overview' | 'analytics' | 'activity' | 'settings'>('overview');
+  const [projectSettingsMemberRefresh, setProjectSettingsMemberRefresh] = useState(0);
+  const [showProjectSettingsInvite, setShowProjectSettingsInvite] = useState(false);
   const [trendPeriod, setTrendPeriod] = useState<'7d' | '14d' | '30d'>('7d');
   const [expandedPriorityGroups, setExpandedPriorityGroups] = useState<Set<string>>(new Set(['critical', 'high']));
   const [activityFilter, setActivityFilter] = useState<string>('all');
@@ -678,9 +680,10 @@ export default function ProjectDetail() {
             {/* Subtab row */}
             <div className="flex items-center border-b border-slate-200 bg-white flex-shrink-0 h-[2.625rem] px-4 overflow-x-auto" style={{ scrollbarWidth: 'none' } as React.CSSProperties}>
               {[
-                { key: 'overview',  label: 'Overview',      icon: 'ri-eye-line',          iconColor: '#6366F1' },
-                { key: 'analytics', label: 'Analytics',     icon: 'ri-bar-chart-2-fill',  iconColor: '#8B5CF6' },
-                { key: 'activity',  label: 'Activity Feed', icon: 'ri-time-fill',         iconColor: '#F59E0B' },
+                { key: 'overview',  label: 'Overview',      icon: 'ri-eye-line',             iconColor: '#6366F1' },
+                { key: 'analytics', label: 'Analytics',     icon: 'ri-bar-chart-2-fill',     iconColor: '#8B5CF6' },
+                { key: 'activity',  label: 'Activity Feed', icon: 'ri-time-fill',            iconColor: '#F59E0B' },
+                { key: 'settings',  label: 'Settings',      icon: 'ri-settings-3-fill',      iconColor: '#64748B' },
               ].map(tab => (
                 <button
                   key={tab.key}
@@ -1383,6 +1386,48 @@ export default function ProjectDetail() {
                 projectId={project!.id}
                 subscriptionTier={userProfile?.subscription_tier ?? 1}
               />
+            )}
+
+            {/* Settings tab */}
+            {dashboardTab === 'settings' && (
+              <div className="flex-1 overflow-y-auto bg-slate-50">
+                <div className="max-w-[800px] mx-auto px-4 md:px-8 pt-6 pb-12">
+                  {/* Project Access section */}
+                  <div className="bg-white border border-slate-200 rounded-[0.625rem] p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-[0.9375rem] font-bold text-slate-900 mb-0.5">Project Access</h3>
+                        <p className="text-[0.8125rem] text-slate-500">
+                          Manage members for this project.{' '}
+                          <span className="text-slate-400 text-[0.75rem]">(Not counted toward your plan limit)</span>
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setShowProjectSettingsInvite(true)}
+                        className="flex items-center gap-1.5 px-4 py-[0.4375rem] bg-indigo-500 text-white text-[0.8125rem] font-semibold rounded-lg hover:bg-indigo-600 transition-colors cursor-pointer flex-shrink-0 ml-4"
+                      >
+                        <i className="ri-user-add-line" />
+                        Invite to Project
+                      </button>
+                    </div>
+                    <ProjectMembersPanel
+                      projectId={project!.id}
+                      onInviteClick={() => setShowProjectSettingsInvite(true)}
+                      refreshTrigger={projectSettingsMemberRefresh}
+                      subscriptionTier={userProfile?.subscription_tier ?? 1}
+                    />
+                  </div>
+                </div>
+
+                {/* Invite modal for project settings */}
+                <InviteMemberModal
+                  isOpen={showProjectSettingsInvite}
+                  onClose={() => setShowProjectSettingsInvite(false)}
+                  projectId={project!.id}
+                  onInvited={() => setProjectSettingsMemberRefresh(prev => prev + 1)}
+                  subscriptionTier={userProfile?.subscription_tier ?? 1}
+                />
+              </div>
             )}
           </main>
 

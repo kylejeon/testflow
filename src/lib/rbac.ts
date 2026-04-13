@@ -1,3 +1,25 @@
+/** 플랜별 최대 멤버 수 (organization_members 기준) */
+export const TIER_MAX_MEMBERS: Record<number, number> = {
+  1: 2,        // Free
+  2: 5,        // Hobby
+  3: 5,        // Starter
+  4: 20,       // Professional
+  5: 50,       // Enterprise S
+  6: 100,      // Enterprise M
+  7: Infinity, // Enterprise L
+};
+
+/** 플랜 이름 */
+export const TIER_NAME: Record<number, string> = {
+  1: 'Free',
+  2: 'Hobby',
+  3: 'Starter',
+  4: 'Professional',
+  5: 'Enterprise S',
+  6: 'Enterprise M',
+  7: 'Enterprise L',
+};
+
 /** 역할 계층: 숫자가 클수록 높은 권한 */
 export const ROLE_LEVEL: Record<string, number> = {
   owner:   6,
