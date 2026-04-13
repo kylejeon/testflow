@@ -202,7 +202,19 @@ export default function AuthPage() {
           teamMemberCount: '1',
         });
       } else {
-        // Returning OAuth user → send user_login event (same as email login path)
+        // Returning OAuth user — backfill avatar_url/full_name if missing
+        const oauthAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture || null;
+        const oauthName = user.user_metadata?.full_name || user.user_metadata?.name || null;
+        if (oauthAvatar || oauthName) {
+          const { data: existingFull } = await supabase
+            .from('profiles').select('avatar_url, full_name').eq('id', user.id).maybeSingle();
+          const updates: Record<string, string> = {};
+          if (oauthAvatar && !existingFull?.avatar_url) updates.avatar_url = oauthAvatar;
+          if (oauthName && !existingFull?.full_name) updates.full_name = oauthName;
+          if (Object.keys(updates).length > 0) {
+            await supabase.from('profiles').update(updates).eq('id', user.id);
+          }
+        }
         sendLoopsEvent(user.email, 'user_login', {
           plan: 'unknown',
           loginDate: new Date().toISOString().split('T')[0],

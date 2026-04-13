@@ -172,7 +172,7 @@ async function loadSettingsData(): Promise<{
 
   const [profileResult, jiraResult, memberResult, orgMemberResult] = await Promise.all([
     supabase.from('profiles')
-      .select('id, email, full_name, subscription_tier, payment_provider, provider_customer_id, trial_started_at, trial_ends_at, is_trial, subscription_ends_at, avatar_emoji')
+      .select('id, email, full_name, subscription_tier, payment_provider, provider_customer_id, trial_started_at, trial_ends_at, is_trial, subscription_ends_at, avatar_emoji, avatar_url')
       .eq('id', user.id)
       .maybeSingle(),
     supabase.from('jira_settings').select('*').eq('user_id', user.id).maybeSingle(),
@@ -220,7 +220,7 @@ async function loadSettingsData(): Promise<{
       is_trial: isTrial,
       subscription_ends_at: subscriptionEndsAt,
       avatar_emoji: data.avatar_emoji || '🐶',
-      avatar_url: null,
+      avatar_url: (data as any).avatar_url || null,
     };
   } else {
     userProfile = {
