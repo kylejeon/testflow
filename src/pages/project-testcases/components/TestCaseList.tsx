@@ -18,6 +18,7 @@ import SavedViewsDropdown from '../../../components/SavedViewsDropdown';
 import { useSavedViews } from '../../../hooks/useSavedViews';
 import TagChip from '../../../components/TagChip';
 import { useTagColors } from '../../../hooks/useTagColors';
+import { usePermission } from '../../../hooks/usePermission';
 
 interface TestCase {
   id: string;
@@ -186,6 +187,7 @@ const PRIORITY_DOT_COLORS: Record<string, string> = {
 // ────────────────────────────────────────────────────────────────────────────
 
 export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onRefresh, projectId, projectName: propProjectName, initialTcId }: TestCaseListProps) {
+  const { can } = usePermission();
   const [projectPrefix, setProjectPrefix] = useState<string>('');
   const [selectedFolder, setSelectedFolder] = useState<string>('all');
   const [showNewCaseModal, setShowNewCaseModal] = useState(false);
@@ -2794,36 +2796,42 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             onDeleteView={deleteTcView}
           />
 
-          {/* Action buttons */}
-          <button
-            onClick={() => {
-              setEditingTestCase(null);
-              const currentFolder = selectedFolder !== 'all'
-                ? folders.find(f => f.id === selectedFolder)?.name || ''
-                : '';
-              setNewTestCase({ title: '', description: '', precondition: '', folder: currentFolder, priority: 'medium', assignee: '', is_automated: false, steps: '', expected_result: '', tags: '', attachments: [] });
-              setTestSteps([{ id: '1', step: '', expectedResult: '' }]);
-              setShowNewCaseModal(true);
-            }}
-            className="px-[0.875rem] py-[0.4375rem] bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all font-semibold text-[0.8125rem] flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-          >
-            <i className="ri-add-line text-base"></i>
-            New Test Case
-          </button>
-          <button
-            onClick={handleOpenExportImport}
-            className="px-[0.875rem] py-[0.4375rem] border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-all text-[0.8125rem] flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-          >
-            <i className="ri-file-transfer-line text-base"></i>
-            Export / Import
-          </button>
-          <button
-            onClick={() => setShowCloneModal(true)}
-            className="px-[0.875rem] py-[0.4375rem] border border-violet-200 text-violet-600 bg-violet-50 rounded-lg hover:bg-violet-100 transition-all text-[0.8125rem] flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-          >
-            <i className="ri-file-copy-line text-base"></i>
-            Clone from Project
-          </button>
+          {/* Action buttons — permission-gated */}
+          {can('create_testcase') && (
+            <button
+              onClick={() => {
+                setEditingTestCase(null);
+                const currentFolder = selectedFolder !== 'all'
+                  ? folders.find(f => f.id === selectedFolder)?.name || ''
+                  : '';
+                setNewTestCase({ title: '', description: '', precondition: '', folder: currentFolder, priority: 'medium', assignee: '', is_automated: false, steps: '', expected_result: '', tags: '', attachments: [] });
+                setTestSteps([{ id: '1', step: '', expectedResult: '' }]);
+                setShowNewCaseModal(true);
+              }}
+              className="px-[0.875rem] py-[0.4375rem] bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all font-semibold text-[0.8125rem] flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+            >
+              <i className="ri-add-line text-base"></i>
+              New Test Case
+            </button>
+          )}
+          {can('export') && (
+            <button
+              onClick={handleOpenExportImport}
+              className="px-[0.875rem] py-[0.4375rem] border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-all text-[0.8125rem] flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+            >
+              <i className="ri-file-transfer-line text-base"></i>
+              Export / Import
+            </button>
+          )}
+          {can('create_testcase') && (
+            <button
+              onClick={() => setShowCloneModal(true)}
+              className="px-[0.875rem] py-[0.4375rem] border border-violet-200 text-violet-600 bg-violet-50 rounded-lg hover:bg-violet-100 transition-all text-[0.8125rem] flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+            >
+              <i className="ri-file-copy-line text-base"></i>
+              Clone from Project
+            </button>
+          )}
         </div>
 
         <div className="flex-1 min-h-0 overflow-hidden">

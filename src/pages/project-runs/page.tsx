@@ -18,6 +18,7 @@ import { RunsListSkeleton } from '../../components/Skeleton';
 import SavedViewsDropdown from '../../components/SavedViewsDropdown';
 import { useSavedViews } from '../../hooks/useSavedViews';
 import { ExportModal, type ExportFormat } from '../../components/ExportModal';
+import { usePermission } from '../../hooks/usePermission';
 
 interface TestRun {
   id: string;
@@ -93,6 +94,7 @@ export default function ProjectRunsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { can } = usePermission();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'completed'>('all');
   const [resultFilter, setResultFilter] = useState<'all' | 'has_failures' | 'all_passed' | 'has_blocked'>('all');
@@ -1943,28 +1945,30 @@ export default function ProjectRunsPage() {
               </button>
             ))}
             <div className="flex-1" />
-            <button
-              onClick={() => {
-                setEditingRunId(null);
-                setFormData({
-                  name: '',
-                  configuration: '',
-                  milestone_id: '',
-                  status: 'new',
-                  issues: '',
-                  tags: '',
-                  include_all_cases: true,
-                  is_ci_cd_run: false,
-                });
-                setSelectedTestCases([]);
-                setShowAddRunModal(true);
-              }}
-              className="flex items-center gap-[0.3125rem] px-[0.875rem] py-[0.375rem] bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-[0.375rem] hover:opacity-90 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all font-semibold text-[0.8125rem] cursor-pointer whitespace-nowrap"
-              style={{ boxShadow: '0 1px 3px rgba(99,102,241,0.3)' }}
-            >
-              <i className="ri-play-circle-line text-sm" />
-              Start New Run
-            </button>
+            {can('create_run') && (
+              <button
+                onClick={() => {
+                  setEditingRunId(null);
+                  setFormData({
+                    name: '',
+                    configuration: '',
+                    milestone_id: '',
+                    status: 'new',
+                    issues: '',
+                    tags: '',
+                    include_all_cases: true,
+                    is_ci_cd_run: false,
+                  });
+                  setSelectedTestCases([]);
+                  setShowAddRunModal(true);
+                }}
+                className="flex items-center gap-[0.3125rem] px-[0.875rem] py-[0.375rem] bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-[0.375rem] hover:opacity-90 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all font-semibold text-[0.8125rem] cursor-pointer whitespace-nowrap"
+                style={{ boxShadow: '0 1px 3px rgba(99,102,241,0.3)' }}
+              >
+                <i className="ri-play-circle-line text-sm" />
+                Start New Run
+              </button>
+            )}
           </div>
 
           {/* ── Compact Stats Bar (40px, fixed) ── */}

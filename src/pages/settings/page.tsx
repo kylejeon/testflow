@@ -2018,6 +2018,7 @@ def pytest_sessionfinish(session, exitstatus):
                             projectId={selectedProjectId}
                             onInviteClick={() => setShowMembersInviteModal(true)}
                             refreshTrigger={memberRefreshTrigger}
+                            subscriptionTier={userProfile?.subscription_tier ?? 1}
                           />
                         ) : (
                           <div className="text-center py-12 text-[0.8125rem] text-slate-400">
@@ -2034,12 +2035,20 @@ def pytest_sessionfinish(session, exitstatus):
                         onClose={() => setShowMembersInviteModal(false)}
                         projectId={selectedProjectId}
                         onInvited={() => setMemberRefreshTrigger(prev => prev + 1)}
+                        subscriptionTier={userProfile?.subscription_tier ?? 1}
                       />
                     </div>
                   )}
 
                   {activeTab === 'billing' && (
                     <div className="space-y-4">
+                      {/* ── Owner-only notice for non-owners ── */}
+                      {currentUserOrgRole && currentUserOrgRole !== 'owner' && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-[0.625rem] p-4 flex items-center gap-3 text-[0.8125rem] text-amber-800">
+                          <i className="ri-lock-line text-amber-500 text-base flex-shrink-0"></i>
+                          <span>Billing & subscription management is restricted to the <strong>Organization Owner</strong>. Contact your owner to make changes.</span>
+                        </div>
+                      )}
                       {/* ── Current Plan ── */}
                       <div className="bg-white border border-slate-200 rounded-[0.625rem] p-6">
                         <h3 className="text-[0.9375rem] font-bold text-slate-900 mb-1">Current Plan</h3>

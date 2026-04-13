@@ -9,11 +9,13 @@ import { markOnboardingStep } from '../../lib/onboardingMarker';
 import ProjectHeader from '../../components/ProjectHeader';
 import { useToast } from '../../components/Toast';
 import { TestCasesListSkeleton } from '../../components/Skeleton';
+import { usePermission } from '../../hooks/usePermission';
 
 export default function ProjectTestCases() {
   const { id } = useParams();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const { can } = usePermission();
 
   const { data: project } = useQuery({
     queryKey: ['project', id],
@@ -484,14 +486,16 @@ export default function ProjectTestCases() {
                       ID 없는 케이스에 ID 부여
                     </button>
                   )}
-                  <button
-                    onClick={() => setShowAIModal(true)}
-                    className="flex items-center gap-[0.3125rem] px-[0.875rem] py-[0.375rem] bg-gradient-to-r from-violet-500 to-indigo-500 text-white rounded-[0.375rem] hover:opacity-90 transition-opacity font-semibold text-[0.8125rem] cursor-pointer whitespace-nowrap"
-                    style={{ boxShadow: '0 1px 3px rgba(99,102,241,0.3)' }}
-                  >
-                    <i className="ri-sparkling-2-fill text-sm" />
-                    Generate with AI
-                  </button>
+                  {can('use_ai') && (
+                    <button
+                      onClick={() => setShowAIModal(true)}
+                      className="flex items-center gap-[0.3125rem] px-[0.875rem] py-[0.375rem] bg-gradient-to-r from-violet-500 to-indigo-500 text-white rounded-[0.375rem] hover:opacity-90 transition-opacity font-semibold text-[0.8125rem] cursor-pointer whitespace-nowrap"
+                      style={{ boxShadow: '0 1px 3px rgba(99,102,241,0.3)' }}
+                    >
+                      <i className="ri-sparkling-2-fill text-sm" />
+                      Generate with AI
+                    </button>
+                  )}
                 </div>
               </div>
             );

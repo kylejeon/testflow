@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { useSampleProject } from '../../../hooks/useSampleProject';
 import { useToast } from '../../../components/Toast';
 import UpgradeBanner from '../../../components/UpgradeBanner';
+import { usePermission } from '../../../hooks/usePermission';
 
 // ── Health score helpers ────────────────────────────────────────────────────
 function getProjectHealth(passRate: number | null): { color: 'green' | 'yellow' | 'red' | 'gray'; label: string } {
@@ -281,6 +282,7 @@ export default function ProjectsContent() {
   const { t } = useTranslation(['projects', 'common']);
   const navigate = useNavigate();
   const { createSampleProject } = useSampleProject();
+  const { can } = usePermission();
   const [sampleLoading, setSampleLoading] = useState(false);
   const [tipsSampleLoading, setTipsSampleLoading] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -652,30 +654,32 @@ export default function ProjectsContent() {
           <option value="created">Created Date</option>
         </select>
       </div>
-      {/* New Project */}
-      <button
-        onClick={() => setShowCreateModal(true)}
-        style={{
-          fontSize: '0.75rem',
-          padding: '0.375rem 0.75rem',
-          borderRadius: '9999px',
-          border: '1px solid #6366F1',
-          background: '#6366F1',
-          color: '#fff',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.375rem',
-          fontWeight: 600,
-          fontFamily: 'inherit',
-          transition: 'background 0.15s',
-          whiteSpace: 'nowrap',
-        }}
-        onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = '#4F46E5')}
-        onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = '#6366F1')}
-      >
-        <i className="ri-add-line" /> New Project
-      </button>
+      {/* New Project — Admin+ only */}
+      {can('create_project') && (
+        <button
+          onClick={() => setShowCreateModal(true)}
+          style={{
+            fontSize: '0.75rem',
+            padding: '0.375rem 0.75rem',
+            borderRadius: '9999px',
+            border: '1px solid #6366F1',
+            background: '#6366F1',
+            color: '#fff',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.375rem',
+            fontWeight: 600,
+            fontFamily: 'inherit',
+            transition: 'background 0.15s',
+            whiteSpace: 'nowrap',
+          }}
+          onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = '#4F46E5')}
+          onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = '#6366F1')}
+        >
+          <i className="ri-add-line" /> New Project
+        </button>
+      )}
     </div>
   );
 
