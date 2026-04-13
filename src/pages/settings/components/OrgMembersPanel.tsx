@@ -554,7 +554,11 @@ function OrgInviteModal({ orgId, subscriptionTier, availableRoles, currentLevel,
               </div>
 
               <div className="mb-6">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Role</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Default Role</label>
+                <p className="text-xs text-gray-400 mb-2">
+                  <i className="ri-information-line mr-1" />
+                  This role applies to all projects by default. Can be overridden per project.
+                </p>
                 <div className="space-y-2">
                   {invitableRoles.map((r) => {
                     const desc = ROLE_DESCRIPTIONS[r] ?? '';
