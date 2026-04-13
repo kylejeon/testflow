@@ -35,20 +35,17 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const serviceKey  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const anonKey     = Deno.env.get('SUPABASE_ANON_KEY')!;
 
   // Identify caller via JWT
   const authHeader = req.headers.get('Authorization') ?? '';
-  const userClient = createClient(supabaseUrl, anonKey, {
-    global: { headers: { Authorization: authHeader } },
-    auth:   { persistSession: false, autoRefreshToken: false },
-  });
-  const { data: { user }, error: authErr } = await userClient.auth.getUser();
-  if (authErr || !user) return json({ error: 'Unauthorized' }, 401);
+  const jwt = authHeader.replace(/^Bearer\s+/i, '');
+  if (!jwt) return json({ error: 'Unauthorized' }, 401);
 
   const admin = createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+  const { data: { user }, error: authErr } = await admin.auth.getUser(jwt);
+  if (authErr || !user) return json({ error: 'Unauthorized' }, 401);
 
   try {
     const uid = user.id;
