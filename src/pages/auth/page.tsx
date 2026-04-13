@@ -169,10 +169,12 @@ export default function AuthPage() {
         .from('profiles').select('id').eq('id', user.id).maybeSingle();
 
       if (!existingProfile) {
+        const fullName: string | null =
+          user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || null;
         const { error } = await supabase.from('profiles').insert({
           id: user.id,
           email: user.email,
-          full_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || null,
+          full_name: fullName,
           role: 'member',
           subscription_tier: 1,
           trial_started_at: null,
@@ -184,6 +186,22 @@ export default function AuthPage() {
         const { data: verifyProfile, error: verifyError } = await supabase
           .from('profiles').select('id').eq('id', user.id).maybeSingle();
         if (verifyError || !verifyProfile) throw new Error('Failed to create profile. Please try again.');
+
+        // New OAuth user → send user_signup event to Loops (same as email signup path)
+        sendLoopsEvent(user.email, 'user_signup', {
+          firstName: fullName?.split(' ')[0] || user.email?.split('@')[0] || 'there',
+          planType: 'free',
+          signupDate: new Date().toISOString().split('T')[0],
+          testCaseCount: '0',
+          testRunCount: '0',
+          teamMemberCount: '1',
+        });
+      } else {
+        // Returning OAuth user → send user_login event (same as email login path)
+        sendLoopsEvent(user.email, 'user_login', {
+          plan: 'unknown',
+          loginDate: new Date().toISOString().split('T')[0],
+        });
       }
     } catch (err) {
       console.error('Failed to ensure profile exists:', err);
