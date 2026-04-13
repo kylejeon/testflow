@@ -269,8 +269,12 @@ function DangerZoneSection({ email }: { email: string }) {
       setDeleting(true);
       const { error } = await supabase.functions.invoke('delete-account', { body: {} });
       if (error) throw new Error(error.message);
-      await supabase.auth.signOut();
-      navigate('/auth');
+      try {
+        await supabase.auth.signOut();
+      } catch (_e) {
+        // already deleted — signOut failure is expected
+      }
+      window.location.href = '/auth';
     } catch (e: any) {
       console.error('Account deletion error:', e);
       setDeleting(false);

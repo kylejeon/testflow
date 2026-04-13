@@ -171,10 +171,13 @@ export default function AuthPage() {
       if (!existingProfile) {
         const fullName: string | null =
           user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || null;
+        const avatarUrl: string | null =
+          user.user_metadata?.avatar_url || user.user_metadata?.picture || null;
         const { error } = await supabase.from('profiles').insert({
           id: user.id,
           email: user.email,
           full_name: fullName,
+          avatar_url: avatarUrl,
           role: 'member',
           subscription_tier: 1,
           trial_started_at: null,
