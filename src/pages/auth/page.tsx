@@ -201,29 +201,28 @@ export default function AuthPage() {
       const { data: existingProfile } = await supabase
         .from('profiles').select('id').eq('id', user.id).maybeSingle();
 
-      if (!existingProfile) {
-        const fullName: string | null =
-          user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || null;
-        const avatarUrl: string | null =
-          user.user_metadata?.avatar_url || user.user_metadata?.picture || null;
-        const { error } = await supabase.from('profiles').insert({
-          id: user.id,
-          email: user.email,
-          full_name: fullName,
-          avatar_url: avatarUrl,
-          role: 'member',
-          subscription_tier: 1,
-          trial_started_at: null,
-          trial_ends_at: null,
-          is_trial: false,
-        });
-        if (error && error.code !== '23505') throw error;
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        const { data: verifyProfile, error: verifyError } = await supabase
-          .from('profiles').select('id').eq('id', user.id).maybeSingle();
-        if (verifyError || !verifyProfile) throw new Error('Failed to create profile. Please try again.');
+      const fullName: string | null =
+        user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || null;
+      const avatarUrl: string | null =
+        user.user_metadata?.avatar_url || user.user_metadata?.picture || null;
 
-        // New OAuth user → send user_signup event to Loops (same as email signup path)
+      // Upsert: DB trigger may have already created the row; this ensures
+      // avatar_url / full_name from OAuth metadata are always applied.
+      const { error: upsertError } = await supabase.from('profiles').upsert({
+        id: user.id,
+        email: user.email,
+        full_name: fullName,
+        avatar_url: avatarUrl,
+        role: 'member',
+        subscription_tier: 1,
+        trial_started_at: null,
+        trial_ends_at: null,
+        is_trial: false,
+      }, { onConflict: 'id', ignoreDuplicates: false });
+      if (upsertError) throw upsertError;
+
+      if (!existingProfile) {
+        // New user signup
         const oauthNameParts = (fullName ?? '').split(' ').filter(Boolean);
         await sendLoopsEvent(user.email, 'user_signup', {
           firstName: oauthNameParts[0] || user.email?.split('@')[0] || 'there',
@@ -235,22 +234,8 @@ export default function AuthPage() {
           teamMemberCount: '1',
         });
       } else {
-        // Returning OAuth user — backfill avatar_url/full_name if missing
-        const oauthAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture || null;
-        const oauthName = user.user_metadata?.full_name || user.user_metadata?.name || null;
-        if (oauthAvatar || oauthName) {
-          const { data: existingFull } = await supabase
-            .from('profiles').select('avatar_url, full_name').eq('id', user.id).maybeSingle();
-          const updates: Record<string, string> = {};
-          if (oauthAvatar && !existingFull?.avatar_url) updates.avatar_url = oauthAvatar;
-          if (oauthName && !existingFull?.full_name) updates.full_name = oauthName;
-          if (Object.keys(updates).length > 0) {
-            await supabase.from('profiles').update(updates).eq('id', user.id);
-          }
-        }
-        // Pass firstName/lastName so deleted contacts get re-created with proper name
-        const returningFullName: string = oauthName || '';
-        const returningNameParts = returningFullName.split(' ').filter(Boolean);
+        // Returning OAuth user
+        const returningNameParts = (fullName ?? '').split(' ').filter(Boolean);
         sendLoopsEvent(user.email, 'user_login', {
           firstName: returningNameParts[0] || user.email?.split('@')[0] || '',
           lastName: returningNameParts.slice(1).join(' '),
