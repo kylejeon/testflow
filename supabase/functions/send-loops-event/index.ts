@@ -58,22 +58,27 @@ serve(async (req) => {
     // Try create first; if the contact already exists (409), fall back to update.
     const contactBody: Record<string, unknown> = {
       email,
+      subscribed: true,  // ensure contact is subscribed even if previously deleted/unsubscribed
       ...(contactProperties && typeof contactProperties === 'object' ? contactProperties : {}),
     }
 
     const createRes = await loopsRequest(apiKey, 'POST', '/contacts/create', contactBody)
+    let contactAction = 'created'
 
     if (!createRes.ok && createRes.status !== 409) {
       // 409 = contact already exists → fall through to update
       // anything else is a real error; log and continue (don't block event send)
-      console.error('[send-loops-event] contacts/create failed for', email, createRes.status)
+      console.error('[send-loops-event] contacts/create failed for', email, createRes.status, JSON.stringify(createRes.data))
+      contactAction = 'create_failed'
     }
 
     if (createRes.status === 409) {
-      // Contact exists → update properties
+      // Contact exists → update properties (including subscribed: true to re-subscribe if needed)
+      contactAction = 'updated'
       const updateRes = await loopsRequest(apiKey, 'PUT', '/contacts/update', contactBody)
       if (!updateRes.ok) {
-        console.error('[send-loops-event] contacts/update failed for', email, updateRes.status)
+        console.error('[send-loops-event] contacts/update failed for', email, updateRes.status, JSON.stringify(updateRes.data))
+        contactAction = 'update_failed'
       }
     }
 
@@ -84,7 +89,11 @@ serve(async (req) => {
     })
 
     return new Response(
-      JSON.stringify({ ok: eventRes.ok, status: eventRes.status }),
+      JSON.stringify({
+        ok: eventRes.ok,
+        status: eventRes.status,
+        contact: { action: contactAction, createStatus: createRes.status },
+      }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
   } catch (err) {
