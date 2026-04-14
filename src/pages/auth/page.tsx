@@ -90,6 +90,35 @@ export default function AuthPage() {
 
     const handleOAuthCallback = async () => {
       const hash = window.location.hash;
+
+      // ── PKCE flow: ?code= in query string (Supabase default since v2) ──
+      // Supabase SDK with detectSessionInUrl:true exchanges the code automatically.
+      // We just need to wait for the session and then run ensureProfileExists.
+      if (searchParams.has('code')) {
+        setIsOAuthRedirect(true);
+        sessionStorage.removeItem('oauth_in_progress');
+        // Poll until Supabase has finished exchanging the code for a session
+        let session = null;
+        for (let i = 0; i < 20; i++) {
+          const { data } = await supabase.auth.getSession();
+          session = data.session;
+          if (session) break;
+          await new Promise(r => setTimeout(r, 250));
+        }
+        if (session) {
+          await ensureProfileExists(session.user);
+          window.history.replaceState(null, '', window.location.pathname);
+          const invite = searchParams.get('invite');
+          if (invite) {
+            await acceptInvitation(invite);
+          } else {
+            navigate('/projects');
+          }
+        }
+        return;
+      }
+
+      // ── Implicit flow: #access_token= in hash (legacy / older Supabase) ──
       if (!hash || hash.length <= 1) return;
 
       const params = new URLSearchParams(hash.substring(1));
@@ -122,7 +151,7 @@ export default function AuthPage() {
         return;
       }
 
-      // ── OAuth 콜백 ──
+      // ── OAuth 콜백 (implicit) ──
       if (accessToken) {
         setIsOAuthRedirect(true);
         const { data: { session } } = await supabase.auth.getSession();
@@ -149,7 +178,11 @@ export default function AuthPage() {
         return;
       }
 
-      if (event === 'SIGNED_IN' && session && isOAuthRedirect) {
+      // isOAuthRedirect: set by implicit flow handler above
+      // oauth_in_progress: set before signInWithOAuth, survives the redirect, cleared by PKCE handler
+      const isPendingOAuth = sessionStorage.getItem('oauth_in_progress') === '1';
+      if (event === 'SIGNED_IN' && session && (isOAuthRedirect || isPendingOAuth)) {
+        sessionStorage.removeItem('oauth_in_progress');
         await ensureProfileExists(session.user);
         const invite = searchParams.get('invite');
         if (invite) {
@@ -934,6 +967,7 @@ export default function AuthPage() {
                       const redirectUrl = inviteToken
                         ? `${window.location.origin}/auth?invite=${inviteToken}`
                         : `${window.location.origin}/auth`;
+                      sessionStorage.setItem('oauth_in_progress', '1');
                       await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: redirectUrl } });
                     } catch (err: any) {
                       setError(err.message || 'Social login failed. Please try again.');
