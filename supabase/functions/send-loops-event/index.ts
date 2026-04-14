@@ -88,11 +88,14 @@ serve(async (req) => {
       eventName,
     })
 
+    if (!eventRes.ok) {
+      console.error('[send-loops-event] events/send failed for', email, eventName, eventRes.status, JSON.stringify(eventRes.data))
+    }
+
     return new Response(
       JSON.stringify({
-        ok: eventRes.ok,
-        status: eventRes.status,
         contact: { action: contactAction, createStatus: createRes.status },
+        event: { ok: eventRes.ok, status: eventRes.status, data: eventRes.data },
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
