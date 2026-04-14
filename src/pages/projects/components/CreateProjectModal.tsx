@@ -365,7 +365,9 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
               {/* Active toggle */}
               <div className="flex items-center justify-between py-1">
                 <div>
-                  <p className="text-sm font-medium text-gray-700">Active</p>
+                  <p className={`text-sm font-medium ${formData.status === 'active' ? 'text-gray-700' : 'text-gray-400'}`}>
+                    {formData.status === 'active' ? 'Active' : 'Inactive'}
+                  </p>
                   <p className="text-xs text-gray-400">Inactive projects are hidden from the main list</p>
                 </div>
                 <button
@@ -377,7 +379,7 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
                 >
                   <span
                     className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
-                      formData.status === 'active' ? 'translate-x-4.5' : 'translate-x-0.5'
+                      formData.status === 'active' ? 'translate-x-5' : 'translate-x-0.5'
                     }`}
                   />
                 </button>

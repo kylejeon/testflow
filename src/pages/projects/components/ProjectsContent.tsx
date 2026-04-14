@@ -527,6 +527,7 @@ export default function ProjectsContent() {
   const isSearchActive = searchQuery !== '';
 
   const sortedFilteredProjects = [...projects]
+    .filter(p => (p as any).status !== 'archived')
     .filter(p => {
       if (!searchQuery.trim()) return true;
       return p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
