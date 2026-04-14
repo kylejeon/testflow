@@ -66,8 +66,6 @@ serve(async (req) => {
     let contactAction = 'created'
 
     if (!createRes.ok && createRes.status !== 409) {
-      // 409 = contact already exists → fall through to update
-      // anything else is a real error; log and continue (don't block event send)
       console.error('[send-loops-event] contacts/create failed for', email, createRes.status, JSON.stringify(createRes.data))
       contactAction = 'create_failed'
     }
@@ -82,7 +80,7 @@ serve(async (req) => {
       }
     }
 
-    // ── 2. Send event ────────────────────────────────────────
+    // ── 2. Send event (triggers Loops Sequences / drip) ──────
     const eventRes = await loopsRequest(apiKey, 'POST', '/events/send', {
       email,
       eventName,
@@ -92,10 +90,41 @@ serve(async (req) => {
       console.error('[send-loops-event] events/send failed for', email, eventName, eventRes.status, JSON.stringify(eventRes.data))
     }
 
+    // ── 3. Welcome transactional email (user_signup only) ────
+    // Sends the Welcome email immediately via Transactional API,
+    // independent of Loops Sequence status. Drip emails (day 3/7/14)
+    // continue to be handled by the Loops Sequence triggered in step 2.
+    let transactionalRes: { ok: boolean; status: number; data: unknown } | null = null
+
+    if (eventName === 'user_signup') {
+      const welcomeTemplateId = Deno.env.get('LOOPS_TEMPLATE_WELCOME')
+      if (welcomeTemplateId) {
+        const props = (contactProperties && typeof contactProperties === 'object')
+          ? contactProperties as Record<string, unknown>
+          : {}
+        transactionalRes = await loopsRequest(apiKey, 'POST', '/transactional', {
+          transactionalId: welcomeTemplateId,
+          email,
+          dataVariables: {
+            firstName: props.firstName ?? email.split('@')[0],
+            ctaUrl: 'https://testably.app/projects',
+          },
+        })
+        if (!transactionalRes.ok) {
+          console.error('[send-loops-event] transactional welcome failed for', email, transactionalRes.status, JSON.stringify(transactionalRes.data))
+        }
+      } else {
+        console.warn('[send-loops-event] LOOPS_TEMPLATE_WELCOME not set — skipping transactional welcome')
+      }
+    }
+
     return new Response(
       JSON.stringify({
         contact: { action: contactAction, createStatus: createRes.status },
         event: { ok: eventRes.ok, status: eventRes.status, data: eventRes.data },
+        ...(transactionalRes !== null && {
+          transactional: { ok: transactionalRes.ok, status: transactionalRes.status, data: transactionalRes.data },
+        }),
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
