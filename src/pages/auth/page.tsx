@@ -192,7 +192,7 @@ export default function AuthPage() {
 
         // New OAuth user → send user_signup event to Loops (same as email signup path)
         const oauthNameParts = (fullName ?? '').split(' ').filter(Boolean);
-        sendLoopsEvent(user.email, 'user_signup', {
+        await sendLoopsEvent(user.email, 'user_signup', {
           firstName: oauthNameParts[0] || user.email?.split('@')[0] || 'there',
           lastName: oauthNameParts.slice(1).join(' '),
           planType: 'free',
@@ -380,7 +380,7 @@ export default function AuthPage() {
             analytics: consentAnalytics,
           },
         });
-        sendLoopsEvent(email, 'user_signup', {
+        await sendLoopsEvent(email, 'user_signup', {
           firstName: fullName?.split(' ')[0] || 'there',
           lastName: fullName?.split(' ').slice(1).join(' ') || '',
           planType: 'free',
@@ -389,7 +389,6 @@ export default function AuthPage() {
           testRunCount: '0',
           teamMemberCount: '1',
         });
-        await new Promise(resolve => setTimeout(resolve, 1000));
         if (invitation?.token && data.session) {
           await acceptInvitation(invitation.token);
         } else if (invitation?.token) {
