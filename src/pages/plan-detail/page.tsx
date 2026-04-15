@@ -19,6 +19,8 @@ interface TestPlan {
   owner_id: string | null;
   started_at: string | null;
   completed_at: string | null;
+  start_date: string | null;
+  end_date: string | null;
   target_date: string | null;
   entry_criteria: string[];
   exit_criteria: string[];
@@ -1041,6 +1043,8 @@ function SettingsTab({
     status: plan.status,
     priority: plan.priority,
     milestone_id: plan.milestone_id ?? '',
+    start_date: plan.start_date ?? '',
+    end_date: plan.end_date ?? '',
     target_date: plan.target_date ?? '',
   });
   const [entryCriteria, setEntryCriteria] = useState<string[]>(Array.isArray(plan.entry_criteria) ? plan.entry_criteria : []);
@@ -1063,6 +1067,8 @@ function SettingsTab({
         status: form.status,
         priority: form.priority,
         milestone_id: form.milestone_id || null,
+        start_date: form.start_date || null,
+        end_date: form.end_date || null,
         target_date: form.target_date || null,
         entry_criteria: entryCriteria,
         exit_criteria: exitCriteria,
@@ -1150,6 +1156,14 @@ function SettingsTab({
           <div>
             <label className="form-label">Target Date</label>
             <input type="date" className="form-input" value={form.target_date} onChange={e=>setFormField('target_date',e.target.value)} />
+          </div>
+          <div>
+            <label className="form-label">Start Date</label>
+            <input type="date" className="form-input" value={form.start_date} onChange={e=>setFormField('start_date',e.target.value)} />
+          </div>
+          <div>
+            <label className="form-label">End Date</label>
+            <input type="date" className="form-input" value={form.end_date} onChange={e=>setFormField('end_date',e.target.value)} />
           </div>
         </div>
       </div>
@@ -1251,7 +1265,11 @@ function SettingsTab({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function PlanDetailPage() {
-  const { id: projectId, milestoneId, planId } = useParams<{ id: string; milestoneId: string; planId: string }>();
+  // Support both /projects/:id/milestones/:milestoneId/plans/:planId
+  // and /projects/:id/plans/:planId (standalone plan without milestone)
+  const params = useParams<{ id: string; milestoneId?: string; planId: string }>();
+  const projectId = params.id;
+  const planId = params.planId;
   const navigate = useNavigate();
   const { showToast } = useToast();
 
@@ -1266,6 +1284,7 @@ export default function PlanDetailPage() {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [profiles, setProfiles] = useState<Map<string, Profile>>(new Map());
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>('testcases');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showAIModal, setShowAIModal] = useState(false);
@@ -1277,12 +1296,15 @@ export default function PlanDetailPage() {
 
   const load = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
-      const [projectRes, planRes, planTcsRes, allTcsRes, runsRes, milestonesRes] = await Promise.all([
+      const [projectRes, planRes, planTcIdsRes, allTcsRes, runsRes, milestonesRes] = await Promise.all([
         supabase.from('projects').select('*').eq('id', projectId!).single(),
         supabase.from('test_plans').select('*').eq('id', planId!).single(),
+        // Two-step approach: first get IDs, then join with test_cases
+        // (avoids PostgREST FK-ambiguity errors with embedded joins)
         supabase.from('test_plan_test_cases')
-          .select('test_plan_id, test_case_id, added_at, test_case:test_cases(id, title, priority, lifecycle_status, folder, tags)')
+          .select('test_plan_id, test_case_id, added_at')
           .eq('test_plan_id', planId!),
         supabase.from('test_cases')
           .select('id, title, priority, lifecycle_status, folder, tags')
@@ -1293,13 +1315,28 @@ export default function PlanDetailPage() {
         supabase.from('milestones').select('id, name, parent_milestone_id').eq('project_id', projectId!).order('created_at'),
       ]);
 
-      if (planRes.error) throw planRes.error;
+      if (planRes.error) {
+        setLoadError(true);
+        return;
+      }
       setProject(projectRes.data);
       setPlan(planRes.data);
-      setPlanTcs((planTcsRes.data as any) || []);
       setAllTcs(allTcsRes.data || []);
       setRuns(runsRes.data || []);
       setMilestones(milestonesRes.data || []);
+
+      // Build planTcs by joining planTcIds with allTcs
+      const tcMap = new Map<string, TestCaseRow>((allTcsRes.data || []).map((tc: TestCaseRow) => [tc.id, tc]));
+      const planTcRows: PlanTestCase[] = (planTcIdsRes.data || []).map((row: any) => ({
+        test_plan_id: row.test_plan_id,
+        test_case_id: row.test_case_id,
+        added_at: row.added_at,
+        test_case: tcMap.get(row.test_case_id) ?? {
+          id: row.test_case_id, title: '(unknown)', priority: 'medium' as const,
+          lifecycle_status: 'untested', folder: null, tags: null,
+        },
+      }));
+      setPlanTcs(planTcRows);
 
       // Find direct milestone and parent milestone
       if (planRes.data?.milestone_id) {
@@ -1329,7 +1366,7 @@ export default function PlanDetailPage() {
         setProfiles(new Map((profileData || []).map((p: any) => [p.id, p])));
       }
     } catch (err: any) {
-      showToast('Failed to load plan', 'error');
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -1372,11 +1409,31 @@ export default function PlanDetailPage() {
   };
 
   if (loading) return <PageLoader />;
-  if (!plan) return (
+  if (!plan || loadError) return (
     <div style={{ display:'flex', flexDirection:'column', height:'100vh' }}>
       <ProjectHeader projectId={projectId!} projectName={project?.name ?? ''} />
-      <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-muted)' }}>
-        Plan not found.
+      <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16, color:'var(--text-muted)' }}>
+        <svg style={{width:48,height:48,color:'#CBD5E1'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <div style={{textAlign:'center'}}>
+          <p style={{fontSize:15,fontWeight:600,color:'var(--text)',margin:'0 0 4px'}}>
+            {loadError ? 'Failed to load plan' : 'Plan not found'}
+          </p>
+          <p style={{fontSize:13,margin:0}}>
+            {loadError ? 'The plan may have been deleted or you may not have access.' : 'This plan does not exist or has been deleted.'}
+          </p>
+        </div>
+        <div style={{display:'flex',gap:8}}>
+          <button onClick={() => navigate(`/projects/${projectId}/milestones`)}
+            style={{padding:'8px 16px',border:'1px solid var(--border)',borderRadius:8,fontSize:13,fontWeight:500,cursor:'pointer',background:'#fff',color:'var(--text)'}}>
+            ← Back to Milestones
+          </button>
+          {loadError && (
+            <button onClick={() => load()}
+              style={{padding:'8px 16px',border:'1px solid var(--primary)',borderRadius:8,fontSize:13,fontWeight:500,cursor:'pointer',background:'var(--primary-50)',color:'var(--primary)'}}>
+              Retry
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

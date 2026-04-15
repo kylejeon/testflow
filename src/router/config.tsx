@@ -189,6 +189,11 @@ const routes: RouteObject[] = [
     path: '/projects/:id/milestones/:milestoneId/plans/:planId',
     element: <PlanDetail />,
   },
+  // Standalone plan (no milestone) — milestoneId = "standalone" sentinel
+  {
+    path: '/projects/:id/plans/:planId',
+    element: <PlanDetail />,
+  },
   {
     path: '/testcases',
     element: <TestCases />,
