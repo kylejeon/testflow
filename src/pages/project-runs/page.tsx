@@ -2398,10 +2398,10 @@ export default function ProjectRunsPage() {
                       const hp = !!((formData as any).test_plan_id);
                       const lkType = hm&&hp?'planned': hm&&!hp?'mdirect': !hm&&hp?'plan-only':'adhoc';
                       const lkConfig: Record<string,{label:string;bg:string;color:string;dot:string;desc:string}> = {
-                        planned:    {label:'Planned',          bg:'#eef2ff',color:'#4f46e5',dot:'#6366f1',desc:'M + Plan — 가장 일반적 케이스'},
-                        mdirect:    {label:'Milestone-direct', bg:'#f0f9ff',color:'#0369a1',dot:'#0ea5e9',desc:'Milestone만 · plan 없음'},
-                        'plan-only':{label:'Plan-only',        bg:'#f5f3ff',color:'#6d28d9',dot:'#7c3aed',desc:'Plan만 · milestone 없음'},
-                        adhoc:      {label:'Ad-hoc',           bg:'#fff7ed',color:'#c2410c',dot:'#f97316',desc:'아무 곳에도 없음'},
+                        planned:    {label:'Planned',          bg:'#eef2ff',color:'#4f46e5',dot:'#6366f1',desc:'Milestone + Plan linked — most structured'},
+                        mdirect:    {label:'Milestone-direct', bg:'#f0f9ff',color:'#0369a1',dot:'#0ea5e9',desc:'Milestone only, no test plan attached'},
+                        'plan-only':{label:'Plan-only',        bg:'#f5f3ff',color:'#6d28d9',dot:'#7c3aed',desc:'Plan linked, no milestone assigned'},
+                        adhoc:      {label:'Ad-hoc',           bg:'#fff7ed',color:'#c2410c',dot:'#f97316',desc:'No milestone or plan — fully ad-hoc'},
                       };
                       const lk = lkConfig[lkType];
                       return (

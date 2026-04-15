@@ -88,6 +88,7 @@ interface TestCaseRow {
   lifecycle_status: string;
   folder: string | null;
   tags: string[] | null;
+  custom_id: string | null;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -233,10 +234,12 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, onOpenAI }:
 // ─── Tab: Test Cases ──────────────────────────────────────────────────────────
 
 function TestCasesTab({
-  plan, planTcs, allTcs, onAddTc, onRemoveTc, onLock, milestone, parentMilestone, profiles,
+  plan, planTcs, allTcs, onAddTc, onAddTcs, onRemoveTc, onLock, milestone, parentMilestone, profiles,
 }: {
   plan: TestPlan; planTcs: PlanTestCase[]; allTcs: TestCaseRow[];
-  onAddTc: (id: string) => Promise<void>; onRemoveTc: (id: string) => Promise<void>;
+  onAddTc: (id: string) => Promise<void>;
+  onAddTcs: (ids: string[]) => Promise<void>;
+  onRemoveTc: (id: string) => Promise<void>;
   onLock: () => Promise<void>;
   milestone: Milestone | null; parentMilestone: Milestone | null; profiles: Map<string, Profile>;
 }) {
@@ -245,6 +248,9 @@ function TestCasesTab({
   const [pickerSearch, setPickerSearch] = useState('');
   const [filterPri, setFilterPri] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [pickerSelectedIds, setPickerSelectedIds] = useState<Set<string>>(new Set());
+  const [pickerFolder, setPickerFolder] = useState('');
+  const [pickerIncludeDraft, setPickerIncludeDraft] = useState(false);
 
   const includedIds = new Set(planTcs.map(p => p.test_case_id));
   const filtered = planTcs.filter(p => {
@@ -423,42 +429,156 @@ function TestCasesTab({
 
       <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles} onOpenAI={() => setShowAIModal(true)} />
 
-      {/* TC Picker Modal */}
-      {showPicker && (
-        <div style={{position:'fixed',inset:0,zIndex:2000,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(15,23,42,0.5)'}}
-          onClick={e=>{if(e.target===e.currentTarget)setShowPicker(false);}}>
-          <div style={{background:'#fff',borderRadius:12,width:'100%',maxWidth:'30rem',maxHeight:'80vh',display:'flex',flexDirection:'column',overflow:'hidden',boxShadow:'0 20px 60px rgba(0,0,0,0.2)'}}>
-            <div style={{padding:'1rem 1.25rem',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-              <h3 style={{fontSize:15,fontWeight:600,margin:0}}>Add Test Cases</h3>
-              <button onClick={()=>setShowPicker(false)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-subtle)',fontSize:18}}>×</button>
-            </div>
-            <div style={{padding:'0.75rem 1.25rem',borderBottom:'1px solid var(--border)'}}>
-              <input type="text" value={pickerSearch} onChange={e=>setPickerSearch(e.target.value)}
-                placeholder="Search test cases..." autoFocus
-                style={{width:'100%',padding:'6px 12px',border:'1px solid var(--border)',borderRadius:8,fontSize:13,outline:'none',boxSizing:'border-box'}} />
-            </div>
-            <div style={{flex:1,overflow:'auto'}}>
-              {available.length === 0 ? (
-                <div style={{textAlign:'center',padding:'2rem',color:'var(--text-muted)',fontSize:13}}>
-                  {pickerSearch ? 'No match.' : 'All test cases already added.'}
-                </div>
-              ) : available.map(tc => {
-                const p = tc.priority;
-                return (
-                  <div key={tc.id} onClick={()=>onAddTc(tc.id)}
-                    style={{display:'flex',alignItems:'center',gap:10,padding:'0.75rem 1.25rem',cursor:'pointer',borderBottom:'1px solid #f8fafc',fontSize:13}}>
-                    <span className={p==='critical'?'pri-badge pri-p1':p==='high'?'pri-badge pri-p2':'pri-badge pri-p3'}>{priMap[p]||'P3'}</span>
-                    <span style={{flex:1}}>{tc.title}</span>
+      {/* TC Picker Modal — runs-style */}
+      {showPicker && (() => {
+        const closePicker = () => { setShowPicker(false); setPickerSearch(''); setPickerFolder(''); setPickerIncludeDraft(false); setPickerSelectedIds(new Set()); };
+        const notAdded = allTcs.filter(tc => !includedIds.has(tc.id));
+        const draftCount = notAdded.filter(tc => tc.lifecycle_status === 'draft').length;
+        const baseTcs = pickerIncludeDraft ? notAdded : notAdded.filter(tc => tc.lifecycle_status !== 'draft');
+        const folderFiltered = pickerFolder
+          ? baseTcs.filter(tc => pickerFolder === '__none__' ? !tc.folder : tc.folder === pickerFolder)
+          : baseTcs;
+        const visibleTcs = folderFiltered.filter(tc =>
+          !pickerSearch || tc.title.toLowerCase().includes(pickerSearch.toLowerCase())
+        );
+        const uniqueFolders = [...new Set(notAdded.map(tc => tc.folder).filter(Boolean))] as string[];
+        const allVisibleSelected = visibleTcs.length > 0 && visibleTcs.every(tc => pickerSelectedIds.has(tc.id));
+        return (
+          <div className="fixed inset-0 z-[2000] flex items-start justify-center bg-black/50 backdrop-blur-sm py-[3vh] overflow-y-auto"
+            onClick={e => { if (e.target === e.currentTarget) closePicker(); }}>
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center">
+                    <svg style={{width:14,height:14,color:'#6366f1'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
                   </div>
-                );
-              })}
-            </div>
-            <div style={{padding:'0.75rem 1.25rem',borderTop:'1px solid var(--border)',display:'flex',justifyContent:'flex-end'}}>
-              <button onClick={()=>setShowPicker(false)} className="pd-btn pd-btn-sm">Done</button>
+                  <span className="text-[0.9375rem] font-bold text-gray-900">Add Test Cases</span>
+                </div>
+                <button onClick={closePicker} className="text-gray-400 hover:text-gray-600 cursor-pointer p-1 rounded-lg hover:bg-gray-100">
+                  <svg style={{width:18,height:18}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+              {/* Filter bar */}
+              <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100 bg-gray-50 flex-wrap">
+                <div className="relative flex-1 min-w-[140px]">
+                  <svg style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',width:13,height:13,color:'#94a3b8'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input type="text" value={pickerSearch} onChange={e=>setPickerSearch(e.target.value)}
+                    placeholder="Search test cases..." autoFocus
+                    className="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+                </div>
+                {uniqueFolders.length > 0 && (
+                  <select value={pickerFolder} onChange={e=>setPickerFolder(e.target.value)}
+                    className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-400 cursor-pointer bg-white">
+                    <option value="">All Folders</option>
+                    {uniqueFolders.map(f => <option key={f} value={f}>{f}</option>)}
+                    <option value="__none__">No Folder</option>
+                  </select>
+                )}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button type="button" onClick={() => setPickerIncludeDraft(p => !p)}
+                    className={`relative flex-shrink-0 cursor-pointer transition-colors duration-200 rounded-full overflow-hidden ${pickerIncludeDraft ? 'bg-indigo-600' : 'bg-gray-300'}`}
+                    style={{width:42,height:24}}>
+                    <span className="absolute top-[3px] left-0 w-[18px] h-[18px] bg-white rounded-full shadow transition-transform duration-200"
+                      style={{transform: pickerIncludeDraft ? 'translateX(21px)' : 'translateX(3px)'}} />
+                  </button>
+                  <span className="text-xs text-gray-600 font-medium whitespace-nowrap">Include Draft TCs</span>
+                  {!pickerIncludeDraft && draftCount > 0 && (
+                    <span className="text-[10px] text-gray-400">{draftCount} hidden</span>
+                  )}
+                </div>
+              </div>
+              {/* Summary row */}
+              <div className="px-5 py-2 bg-gray-50 border-b border-gray-100 text-xs text-gray-500">
+                {visibleTcs.length} test case{visibleTcs.length !== 1 ? 's' : ''} available
+              </div>
+              {/* TC table */}
+              <div className="max-h-[42vh] overflow-y-auto">
+                <table className="w-full">
+                  <thead className="sticky top-0 bg-gray-50 border-b border-gray-100 z-10">
+                    <tr>
+                      <th className="px-5 py-2.5 w-9">
+                        <input type="checkbox" className="w-3.5 h-3.5 accent-indigo-500 cursor-pointer"
+                          checked={allVisibleSelected}
+                          onChange={() => {
+                            if (allVisibleSelected) {
+                              setPickerSelectedIds(prev => { const n = new Set(prev); visibleTcs.forEach(tc => n.delete(tc.id)); return n; });
+                            } else {
+                              setPickerSelectedIds(prev => { const n = new Set(prev); visibleTcs.forEach(tc => n.add(tc.id)); return n; });
+                            }
+                          }} />
+                      </th>
+                      <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">ID</th>
+                      <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Title</th>
+                      <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Status</th>
+                      <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Priority</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {visibleTcs.map(tc => {
+                      const selected = pickerSelectedIds.has(tc.id);
+                      const isDraft = tc.lifecycle_status === 'draft';
+                      return (
+                        <tr key={tc.id}
+                          onClick={() => setPickerSelectedIds(prev => { const n = new Set(prev); if (n.has(tc.id)) n.delete(tc.id); else n.add(tc.id); return n; })}
+                          className={`cursor-pointer transition-colors ${isDraft ? 'bg-amber-50 hover:bg-amber-100' : 'hover:bg-indigo-50/40'}`}>
+                          <td className="px-5 py-2.5">
+                            <input type="checkbox" className="w-3.5 h-3.5 accent-indigo-500 cursor-pointer"
+                              checked={selected} onChange={() => {}} />
+                          </td>
+                          <td className="px-3 py-2.5 font-mono text-[0.8125rem] text-indigo-600 font-semibold whitespace-nowrap">
+                            {tc.custom_id || '-'}
+                          </td>
+                          <td className="px-3 py-2.5 text-xs font-medium text-gray-800">
+                            <div>{tc.title}</div>
+                            {tc.folder && <div className="text-[10px] text-gray-400 mt-0.5">{tc.folder}</div>}
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <span className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${
+                              isDraft ? 'bg-yellow-50 text-yellow-800 border-yellow-200' : 'bg-green-50 text-green-800 border-green-200'
+                            }`}>
+                              {isDraft ? 'Draft' : 'Active'}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                              tc.priority === 'critical' ? 'bg-red-100 text-red-700'
+                              : tc.priority === 'high' ? 'bg-amber-100 text-amber-700'
+                              : tc.priority === 'medium' ? 'bg-indigo-100 text-indigo-700'
+                              : 'bg-gray-100 text-gray-600'
+                            }`}>{tc.priority?.toUpperCase()}</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {visibleTcs.length === 0 && (
+                      <tr><td colSpan={5} className="px-5 py-8 text-center text-xs text-gray-400">
+                        {pickerSearch ? 'No test cases match your search.' : 'All test cases already added.'}
+                      </td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              {/* Footer */}
+              <div className="flex items-center justify-between px-5 py-3.5 border-t border-gray-100 bg-gray-50">
+                <span className="text-xs text-gray-500">
+                  <strong className="text-gray-900 text-sm">{pickerSelectedIds.size}</strong> selected
+                </span>
+                <div className="flex gap-2">
+                  <button onClick={closePicker}
+                    className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer">Cancel</button>
+                  <button
+                    onClick={() => { onAddTcs([...pickerSelectedIds]); closePicker(); }}
+                    disabled={pickerSelectedIds.size === 0}
+                    className="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-semibold cursor-pointer disabled:opacity-50">
+                    Add {pickerSelectedIds.size > 0 ? `${pickerSelectedIds.size} TC${pickerSelectedIds.size > 1 ? 's' : ''}` : 'TCs'}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
@@ -1301,7 +1421,7 @@ export default function PlanDetailPage() {
           .select('test_plan_id, test_case_id, added_at')
           .eq('test_plan_id', planId!),
         supabase.from('test_cases')
-          .select('id, title, priority, lifecycle_status, folder, tags')
+          .select('id, title, priority, lifecycle_status, folder, tags, custom_id')
           .eq('project_id', projectId!)
           .neq('lifecycle_status', 'deprecated')
           .order('title'),
@@ -1372,6 +1492,19 @@ export default function PlanDetailPage() {
     const tc = allTcs.find(t => t.id === tcId);
     if (tc) setPlanTcs(prev => [...prev, { test_plan_id: planId!, test_case_id: tcId, added_at: new Date().toISOString(), test_case: tc } as PlanTestCase]);
     showToast('Test case added', 'success');
+  };
+
+  const handleAddTcs = async (ids: string[]) => {
+    if (!ids.length) return;
+    const inserts = ids.map(tcId => ({ test_plan_id: planId!, test_case_id: tcId }));
+    const { error } = await supabase.from('test_plan_test_cases').insert(inserts);
+    if (error) { showToast('Failed to add test cases', 'error'); return; }
+    const addedTcs = allTcs.filter(t => ids.includes(t.id));
+    setPlanTcs(prev => [...prev, ...addedTcs.map(tc => ({
+      test_plan_id: planId!, test_case_id: tc.id,
+      added_at: new Date().toISOString(), test_case: tc,
+    } as PlanTestCase))]);
+    showToast(`Added ${ids.length} test case${ids.length > 1 ? 's' : ''}`, 'success');
   };
 
   const handleRemoveTc = async (tcId: string) => {
@@ -1475,7 +1608,9 @@ export default function PlanDetailPage() {
             </>
           )}
           <span className="sep">›</span>
-          <span style={{color:'var(--text-muted)'}}>Plans</span>
+          <Link to={milestone
+            ? `/projects/${projectId}/milestones/${milestone.id}`
+            : `/projects/${projectId}/milestones`}>Plans</Link>
           <span className="sep">›</span>
           <span style={{color:'var(--text)', fontWeight:500}}>{plan.name}</span>
         </div>
@@ -1566,7 +1701,7 @@ export default function PlanDetailPage() {
         {activeTab === 'testcases' && (
           <TestCasesTab
             plan={plan} planTcs={planTcs} allTcs={allTcs}
-            onAddTc={handleAddTc} onRemoveTc={handleRemoveTc} onLock={handleLock}
+            onAddTc={handleAddTc} onAddTcs={handleAddTcs} onRemoveTc={handleRemoveTc} onLock={handleLock}
             milestone={milestone} parentMilestone={parentMilestone} profiles={profiles}
           />
         )}
