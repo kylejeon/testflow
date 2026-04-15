@@ -98,7 +98,7 @@ const TIER_INFO = {
     annualPrice: 194,
     priceDesc: '/ mo',
     basePlan: 'Free',
-    features: ['3 projects · 5 members', 'Up to 200 test cases / project · unlimited runs', 'Export/Import CSV', 'Jira Integration (full)', 'Requirements & Traceability', 'Steps Library (10 steps)', '15 AI generations / month'],
+    features: ['3 projects · 5 members', 'Up to 200 test cases / project · unlimited runs', 'Export/Import CSV', 'Jira Integration (full)', 'Requirements & Traceability', 'Steps Library (10 steps)', 'AI Run Summary', '15 AI generations / month'],
   },
   3: {
     name: 'Starter',
@@ -108,7 +108,7 @@ const TIER_INFO = {
     annualPrice: 499,
     priceDesc: '/ mo',
     basePlan: 'Hobby',
-    features: ['10 projects · 5 members', 'Unlimited test cases', 'Slack & Teams Integration', 'Requirements & Traceability · Steps Library (20 steps)', 'AI Run Summary · Flaky Detection AI', 'Coverage Gap Analysis · AI Insights Panel', 'Basic reporting · email support', '30 AI generations / month'],
+    features: ['10 projects · 5 members', 'Unlimited test cases', 'Slack & Teams Integration', 'Requirements & Traceability · Steps Library (20 steps)', 'Flaky Detection AI · Coverage Gap Analysis', 'Basic reporting · email support', '30 AI generations / month'],
   },
   4: {
     name: 'Professional',

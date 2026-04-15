@@ -103,14 +103,12 @@ export default function AnalyticsTab({ projectId, milestones, subscriptionTier }
         {/* Row 5: Tag Analytics (full width) */}
         <TagAnalytics projectId={projectId} />
 
-        {/* Row 6: Flaky TC Detector (50%, Pro+) + AI Insights (50%, Starter+) */}
+        {/* Row 6: Flaky TC Detector (50%, Starter+) + AI Insights (50%, Free+) */}
         <div className="grid grid-cols-2 gap-5">
           <TierGate requiredTier={3} currentTier={subscriptionTier} featureName="Flaky TC Detection">
             <FlakyDetector projectId={projectId} subscriptionTier={subscriptionTier} />
           </TierGate>
-          <TierGate requiredTier={2} currentTier={subscriptionTier} featureName="AI Insights">
-            <AIInsightsPanel projectId={projectId} milestones={milestones} />
-          </TierGate>
+          <AIInsightsPanel projectId={projectId} milestones={milestones} />
         </div>
       </div>
 

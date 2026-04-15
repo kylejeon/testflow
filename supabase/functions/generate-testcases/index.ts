@@ -7,16 +7,19 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-// 플랜별 월 사용 한도
+// 플랜별 월 사용 한도 (5-tier 체계 기준)
 const PLAN_LIMITS: Record<number, number> = {
   1: 3,    // Free
   2: 15,   // Hobby
-  3: 150,  // Professional
-  4: -1,   // Enterprise (무제한)
+  3: 30,   // Starter
+  4: 150,  // Professional
+  5: -1,   // Enterprise S (무제한)
+  6: -1,   // Enterprise M (무제한)
+  7: -1,   // Enterprise L (무제한)
 };
 
-const SESSION_MIN_TIER = 3;  // Professional+
-const JIRA_MIN_TIER = 2;     // Starter+
+const SESSION_MIN_TIER = 4;  // Professional+
+const JIRA_MIN_TIER = 2;     // Hobby+
 
 interface GenerateRequest {
   project_id?: string;
@@ -458,11 +461,11 @@ Deno.serve(async (req) => {
 
       const { tier, ownerId } = await getEffectiveTier(adminClient, user.id);
       if (tier < 2) {
-        return jsonResponse({ error: 'Starter plan required', requiredTier: 2, upgradeUrl: '/settings/billing' }, 403);
+        return jsonResponse({ error: 'Hobby plan required', requiredTier: 2, upgradeUrl: '/settings/billing' }, 403);
       }
 
       // Monthly quota check (shared with TC generation)
-      const limit = PLAN_LIMITS[tier] ?? 5;
+      const limit = PLAN_LIMITS[tier] ?? -1;
       if (limit !== -1) {
         const usage = await getMonthlyUsage(adminClient, ownerId);
         if (usage >= limit) {
@@ -700,7 +703,7 @@ Quality Gates: Pass Rate ≥90%, Critical Failures = 0, Coverage ≥80%, Blocked
       }
 
       // Monthly quota check
-      const limit = PLAN_LIMITS[tier] ?? 5;
+      const limit = PLAN_LIMITS[tier] ?? -1;
       if (limit !== -1) {
         const usage = await getMonthlyUsage(adminClient, ownerId);
         if (usage >= limit) {
@@ -944,10 +947,10 @@ Respond in valid JSON:
 
       const { tier, ownerId } = await getEffectiveTier(adminClient, user.id);
       if (tier < 2) {
-        return jsonResponse({ error: 'Starter plan required', requiredTier: 2, upgradeUrl: '/settings/billing' }, 403);
+        return jsonResponse({ error: 'Hobby plan required', requiredTier: 2, upgradeUrl: '/settings/billing' }, 403);
       }
 
-      const limit = PLAN_LIMITS[tier] ?? 5;
+      const limit = PLAN_LIMITS[tier] ?? -1;
       if (limit !== -1) {
         const usage = await getMonthlyUsage(adminClient, ownerId);
         if (usage >= limit) {
@@ -1058,7 +1061,7 @@ Suggest test cases not yet covered.`;
         return jsonResponse({ error: 'Professional plan required', requiredTier: 3 }, 403);
       }
 
-      const limit = PLAN_LIMITS[tier] ?? 5;
+      const limit = PLAN_LIMITS[tier] ?? -1;
       if (limit !== -1) {
         const usage = await getMonthlyUsage(adminClient, ownerId);
         if (usage >= limit) {
@@ -1191,7 +1194,7 @@ Respond in valid JSON:
     // ── JIRA PREVIEW (action: 'preview') ──────────────────────
     if (action === 'preview' && mode === 'jira') {
       if (tier < JIRA_MIN_TIER) {
-        return jsonResponse({ error: 'Jira mode requires Starter plan or higher.', current_tier: tier, required_tier: JIRA_MIN_TIER }, 403);
+        return jsonResponse({ error: 'Jira mode requires Hobby plan or higher.', current_tier: tier, required_tier: JIRA_MIN_TIER }, 403);
       }
       if (!jira_issue_keys?.length) {
         return jsonResponse({ error: 'jira_issue_keys is required for preview' }, 400);
@@ -1243,7 +1246,7 @@ Respond in valid JSON:
       return jsonResponse({ error: 'Session mode requires Professional plan or higher.', current_tier: tier, required_tier: SESSION_MIN_TIER }, 403);
     }
     if (mode === 'jira' && tier < JIRA_MIN_TIER) {
-      return jsonResponse({ error: 'Jira mode requires Starter plan or higher.', current_tier: tier, required_tier: JIRA_MIN_TIER }, 403);
+      return jsonResponse({ error: 'Jira mode requires Hobby plan or higher.', current_tier: tier, required_tier: JIRA_MIN_TIER }, 403);
     }
 
     // TC 개수 제한 체크 (프로젝트당 Free: 100, Hobby: 200, Starter+: 무제한)
@@ -1263,7 +1266,7 @@ Respond in valid JSON:
 
     // Monthly limit check (step 1 only — each flow counts as 1 usage)
     if (step === 1) {
-      const limit = PLAN_LIMITS[tier] ?? 5;
+      const limit = PLAN_LIMITS[tier] ?? -1;
       if (limit !== -1) {
         const usage = await getMonthlyUsage(adminClient, ownerId);
         if (usage >= limit) {

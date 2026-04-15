@@ -2896,7 +2896,7 @@ export default function RunDetail() {
                         <i className="ri-lock-line text-base" style={{ color: '#94A3B8' }} />
                         AI Summary
                         <span style={{ fontSize: '10px', background: '#F1F5F9', color: '#94A3B8', border: '1px solid #E2E8F0', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>
-                          STARTER
+                          HOBBY
                         </span>
                       </button>
                     )}
@@ -3097,10 +3097,10 @@ export default function RunDetail() {
                       gap: '6px',
                     }}
                   >
-                    <i className="ri-vip-crown-fill" /> Upgrade to Starter — $49/mo
+                    <i className="ri-vip-crown-fill" /> Upgrade to Hobby — $19/mo
                   </button>
                   <div style={{ fontSize: '11px', color: '#475569', marginTop: '8px' }}>
-                    30 AI credits/month · All AI features
+                    15 AI credits/month · AI Run Summary included
                   </div>
                 </div>
               )}
