@@ -112,7 +112,7 @@ export default function ProjectMilestones() {
   const [adHocRuns, setAdHocRuns] = useState<any[]>([]);
   const [showCreatePlanModal, setShowCreatePlanModal] = useState(false);
   const [createPlanMilestoneId, setCreatePlanMilestoneId] = useState<string | null>(null);
-  const [planFormData, setPlanFormData] = useState({ name: '', priority: 'medium', target_date: '' });
+  const [planFormData, setPlanFormData] = useState({ name: '', priority: 'medium', start_date: '', end_date: '', target_date: '' });
   const { showToast } = useToast();
   const [showAIAssistModal, setShowAIAssistModal] = useState(false);
   const [aiAssistMilestoneId, setAiAssistMilestoneId] = useState<string | null>(null);
@@ -347,11 +347,17 @@ export default function ProjectMilestones() {
         };
       });
 
-      const initialExpanded = new Set<string>();
-      organizedMilestones.forEach(milestone => {
-        if (milestone.subMilestones && milestone.subMilestones.length > 0) initialExpanded.add(milestone.id);
+      // Keep existing expanded set, only add milestones newly eligible for expansion
+      setExpandedMilestones(prev => {
+        const next = new Set(prev);
+        organizedMilestones.forEach(milestone => {
+          const hasSubMilestones = (milestone.subMilestones?.length ?? 0) > 0;
+          // Also count plans that belong to this milestone
+          // (testPlans state may not be loaded yet on first render, so we check plans fetched above)
+          if (hasSubMilestones) next.add(milestone.id);
+        });
+        return next;
       });
-      setExpandedMilestones(initialExpanded);
       setMilestones(organizedMilestones);
       setAdHocRuns((allRunsData || []).filter((r: any) => !r.milestone_id));
 
@@ -522,19 +528,25 @@ export default function ProjectMilestones() {
         milestone_id: createPlanMilestoneId || null,
         name: planFormData.name,
         priority: planFormData.priority,
+        start_date: planFormData.start_date || null,
+        end_date: planFormData.end_date || null,
         target_date: planFormData.target_date || null,
         status: 'planning',
         owner_id: user?.id || null,
       }]).select().single();
       if (error) throw error;
-      const milestoneId = createPlanMilestoneId;
+      const milestoneIdSnap = createPlanMilestoneId;
+      const planIdSnap = data?.id;
       setShowCreatePlanModal(false);
       setCreatePlanMilestoneId(null);
-      setPlanFormData({ name: '', priority: 'medium', target_date: '' });
+      setPlanFormData({ name: '', priority: 'medium', start_date: '', end_date: '', target_date: '' });
       showToast('Test plan created.', 'success');
       fetchData();
-      if (data?.id && milestoneId) {
-        navigate(`/projects/${id}/milestones/${milestoneId}/plans/${data.id}`);
+      if (planIdSnap && milestoneIdSnap) {
+        navigate(`/projects/${id}/milestones/${milestoneIdSnap}/plans/${planIdSnap}`);
+      } else if (planIdSnap) {
+        // standalone plan — navigate via direct plan route
+        navigate(`/projects/${id}/plans/${planIdSnap}`);
       }
     } catch (err) {
       console.error('Create plan error:', err);
@@ -670,17 +682,17 @@ export default function ProjectMilestones() {
           </div>
         </div>
 
-        {/* 200px progress bar */}
-        <div style={{ width: '200px', flexShrink: 0 }}>
+        {/* Progress bar — flex fills space between name and status badge */}
+        <div style={{ flex: '0 0 200px', minWidth: '140px' }}>
           <div style={{ height: '5px', background: '#F1F5F9', borderRadius: '3px', overflow: 'hidden', display: 'flex' }}>
             <div style={{ width: `${passedPct}%`, background: '#22C55E', height: '100%' }} />
             <div style={{ width: `${failedPct}%`, background: '#EF4444', height: '100%' }} />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '3px', fontSize: '11px', color: '#94A3B8' }}>
+          <div style={{ display: 'flex', gap: '8px', marginTop: '3px', fontSize: '11px', color: '#94A3B8', whiteSpace: 'nowrap' }}>
             {totalTc > 0 ? (
               <>
-                <span>{plan.total_passed || 0} passed · {plan.total_failed || 0} failed</span>
-                <span style={{ fontWeight: 600, color: passRate >= 70 ? '#16A34A' : '#EF4444' }}>{passRate}%</span>
+                <span>{plan.total_passed || 0}P · {plan.total_failed || 0}F</span>
+                <span style={{ marginLeft: 'auto', fontWeight: 600, color: passRate >= 70 ? '#16A34A' : '#EF4444' }}>{passRate}%</span>
               </>
             ) : (
               <>
@@ -738,16 +750,16 @@ export default function ProjectMilestones() {
           </div>
         </div>
 
-        {/* 200px progress bar */}
-        <div style={{ width: '200px', flexShrink: 0 }}>
+        {/* Progress bar — flex-grow fills available space */}
+        <div style={{ flex: '0 0 240px', minWidth: '160px' }}>
           <div style={{ height: '5px', background: '#F1F5F9', borderRadius: '3px', overflow: 'hidden', display: 'flex' }}>
             <div style={{ width: `${passedPct}%`, background: '#22C55E', height: '100%' }} />
             <div style={{ width: `${failedPct}%`, background: '#EF4444', height: '100%' }} />
           </div>
           {sub.totalTests > 0 ? (
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '3px', fontSize: '11px', color: '#94A3B8' }}>
-              <span>{sub.passedTests} passed · {sub.failedTests} failed · {remaining} remaining</span>
-              <span style={{ fontWeight: 600, color: '#64748B' }}>{sub.actualProgress}%</span>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '3px', fontSize: '11px', color: '#94A3B8', flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
+              <span>{sub.passedTests}P · {sub.failedTests}F · {remaining}R</span>
+              <span style={{ marginLeft: 'auto', fontWeight: 600, color: '#64748B' }}>{sub.actualProgress}%</span>
             </div>
           ) : (
             <div style={{ fontSize: '11px', color: '#CBD5E1', marginTop: '3px' }}>No runs yet</div>
@@ -801,16 +813,18 @@ export default function ProjectMilestones() {
         <div style={{ background: isExpanded ? '#FAFAFA' : undefined }}>
 
           {/* ── Main row ── */}
+          {/* BUG5 fix: entire row → navigate to milestone detail; only chevron → fold/unfold */}
           <div
-            className="flex items-center gap-3 px-4 cursor-pointer"
+            className="flex items-center gap-3 px-4 cursor-pointer hover:bg-slate-50/80 transition-colors"
             style={{ minHeight: '60px', paddingTop: '10px', paddingBottom: '10px' }}
-            onClick={() => canExpand ? toggleExpanded(milestone.id) : navigate(`/projects/${id}/milestones/${milestone.id}`)}
+            onClick={() => navigate(`/projects/${id}/milestones/${milestone.id}`)}
           >
-            {/* Chevron */}
+            {/* Chevron — stops propagation so the card doesn't navigate */}
             <button
-              className="flex items-center justify-center flex-shrink-0 transition-transform text-slate-400 hover:text-slate-600"
-              style={{ width: '20px', height: '20px', transform: isExpanded ? 'rotate(90deg)' : undefined, visibility: canExpand ? 'visible' : 'hidden', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              className="flex items-center justify-center flex-shrink-0 transition-transform text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded"
+              style={{ width: '24px', height: '24px', transform: isExpanded ? 'rotate(90deg)' : undefined, visibility: canExpand ? 'visible' : 'hidden', background: 'none', border: 'none', cursor: 'pointer', padding: 2, flexShrink: 0 }}
               onClick={e => { e.stopPropagation(); if (canExpand) toggleExpanded(milestone.id); }}
+              title={isExpanded ? 'Collapse' : 'Expand'}
             >
               <i className="ri-arrow-right-s-line" style={{ fontSize: '18px' }} />
             </button>
@@ -823,14 +837,12 @@ export default function ProjectMilestones() {
             {/* Name + date + compact progress (collapsed only) */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <Link
-                  to={`/projects/${id}/milestones/${milestone.id}`}
-                  onClick={e => e.stopPropagation()}
-                  className={`font-semibold truncate hover:text-indigo-600 transition-colors ${isDone ? 'text-slate-400' : 'text-slate-900'}`}
-                  style={{ fontSize: '15px', textDecoration: 'none' }}
+                <span
+                  className={`font-semibold truncate ${isDone ? 'text-slate-400' : 'text-slate-900'}`}
+                  style={{ fontSize: '15px' }}
                 >
                   {milestone.name}
-                </Link>
+                </span>
                 {milestone.isAggregated && (
                   <span style={{ fontSize: '10px', color: '#94A3B8', flexShrink: 0 }}>
                     {milestone.date_mode === 'manual' ? '✏️ manual' : '🔄 auto'}
@@ -849,7 +861,7 @@ export default function ProjectMilestones() {
               </div>
               {/* Compact inline progress bar — collapsed state only */}
               {!isExpanded && milestone.totalTests > 0 && (
-                <div style={{ marginTop: '6px', height: '5px', background: '#F1F5F9', borderRadius: '3px', overflow: 'hidden', display: 'flex', maxWidth: '160px' }}>
+                <div style={{ marginTop: '6px', height: '5px', background: '#F1F5F9', borderRadius: '3px', overflow: 'hidden', display: 'flex' }}>
                   <div style={{ width: `${passedPct}%`, background: '#22C55E', height: '100%' }} />
                   <div style={{ width: `${failedPct}%`, background: '#EF4444', height: '100%' }} />
                 </div>
@@ -1179,17 +1191,17 @@ export default function ProjectMilestones() {
                           </div>
                         </div>
 
-                        {/* 200px progress bar */}
-                        <div style={{ width: '200px', flexShrink: 0 }}>
+                        {/* Progress bar — flex grows to fill available space */}
+                        <div style={{ flex: '0 0 240px', minWidth: '160px' }}>
                           <div style={{ height: '5px', background: '#F1F5F9', borderRadius: '3px', overflow: 'hidden', display: 'flex' }}>
                             <div style={{ width: `${passedPct}%`, background: '#22C55E', height: '100%' }} />
                             <div style={{ width: `${failedPct}%`, background: '#EF4444', height: '100%' }} />
                           </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '3px', fontSize: '11px', color: '#94A3B8' }}>
+                          <div style={{ display: 'flex', gap: '8px', marginTop: '3px', fontSize: '11px', color: '#94A3B8', whiteSpace: 'nowrap' }}>
                             {totalTcs > 0 ? (
                               <>
-                                <span>{passed} passed · {failed} failed · {untested} untested</span>
-                                <span style={{ fontWeight: 600, color: passRate >= 70 ? '#16A34A' : '#EF4444' }}>{passRate}%</span>
+                                <span>{passed}P · {failed}F · {untested}R</span>
+                                <span style={{ marginLeft: 'auto', fontWeight: 600, color: passRate >= 70 ? '#16A34A' : '#EF4444' }}>{passRate}%</span>
                               </>
                             ) : (
                               <span>No test cases</span>
@@ -1346,12 +1358,30 @@ export default function ProjectMilestones() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-[0.875rem]"
                     />
                   </div>
+                  <div>
+                    <label className="block text-[0.8125rem] font-medium text-gray-700 mb-1">Start Date</label>
+                    <input
+                      type="date"
+                      value={planFormData.start_date}
+                      onChange={e => setPlanFormData(f => ({ ...f, start_date: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-[0.875rem]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[0.8125rem] font-medium text-gray-700 mb-1">End Date</label>
+                    <input
+                      type="date"
+                      value={planFormData.end_date}
+                      onChange={e => setPlanFormData(f => ({ ...f, end_date: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-[0.875rem]"
+                    />
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-3 mt-6">
                 <button
                   type="button"
-                  onClick={() => { setShowCreatePlanModal(false); setCreatePlanMilestoneId(null); setPlanFormData({ name: '', priority: 'medium', target_date: '' }); }}
+                  onClick={() => { setShowCreatePlanModal(false); setCreatePlanMilestoneId(null); setPlanFormData({ name: '', priority: 'medium', start_date: '', end_date: '', target_date: '' }); }}
                   className="flex-1 px-[0.875rem] py-[0.4375rem] text-[0.875rem] text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all cursor-pointer"
                 >
                   Cancel
@@ -1390,12 +1420,16 @@ export default function ProjectMilestones() {
                   tcIds.map(tcId => ({ test_plan_id: planData.id, test_case_id: tcId }))
                 );
               }
+              const milestoneSnap = aiAssistMilestoneId;
+              const planIdAi = planData.id;
               setShowAIAssistModal(false);
               setAiAssistMilestoneId(null);
               showToast(`Plan "${planName}" created with ${tcIds.length} TCs`, 'success');
               fetchData();
-              if (aiAssistMilestoneId) {
-                navigate(`/projects/${id}/milestones/${aiAssistMilestoneId}/plans/${planData.id}`);
+              if (milestoneSnap && planIdAi) {
+                navigate(`/projects/${id}/milestones/${milestoneSnap}/plans/${planIdAi}`);
+              } else if (planIdAi) {
+                navigate(`/projects/${id}/plans/${planIdAi}`);
               }
             } catch (err: any) {
               showToast('Failed to create AI plan: ' + err.message, 'error');
