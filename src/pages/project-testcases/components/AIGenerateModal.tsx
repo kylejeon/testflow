@@ -134,13 +134,18 @@ export default function AIGenerateModal({
       const startOfMonth = new Date();
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
-      const { count } = await supabase
+      // credits_used SUM — 기능별 가중치(1 또는 2) 반영 (NULL은 1로 처리)
+      const { data } = await supabase
         .from('ai_generation_logs')
-        .select('id', { count: 'exact', head: true })
+        .select('credits_used')
         .eq('user_id', user.id)
         .eq('step', 1)
         .gte('created_at', startOfMonth.toISOString());
-      setMonthlyUsage(count || 0);
+      const total = (data ?? []).reduce(
+        (acc, row) => acc + ((row as any).credits_used ?? 1),
+        0,
+      );
+      setMonthlyUsage(total);
     } catch {
       // silent
     } finally {

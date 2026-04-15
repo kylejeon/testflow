@@ -1,5 +1,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { checkRateLimit, rateLimitResponse, RATE_CONFIGS } from '../_shared/rate-limit.ts';
+import {
+  AI_FEATURES,
+  PLAN_LIMITS,
+  TIER_NAMES,
+  type AiFeatureKey,
+  type AiAccessResult,
+} from '../_shared/ai-config.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,17 +14,7 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-// 플랜별 월 사용 한도 (5-tier 체계 기준)
-const PLAN_LIMITS: Record<number, number> = {
-  1: 3,    // Free
-  2: 15,   // Hobby
-  3: 30,   // Starter
-  4: 150,  // Professional
-  5: -1,   // Enterprise S (무제한)
-  6: -1,   // Enterprise M (무제한)
-  7: -1,   // Enterprise L (무제한)
-};
-
+// PLAN_LIMITS는 _shared/ai-config.ts에서 import
 const SESSION_MIN_TIER = 4;  // Professional+
 const JIRA_MIN_TIER = 2;     // Hobby+
 
@@ -127,14 +124,20 @@ async function getEffectiveTier(
   return { tier: bestTier, ownerId: bestOwnerId };
 }
 
-/** 당월 팀 전체 사용 횟수 조회 (owner 기준) */
-async function getMonthlyUsage(
+/** 당월 팀 전체 사용 credit 합계 조회 (owner 기준)
+ *  credits_used 컬럼을 SUM — 기능별 가중치(1 또는 2) 반영.
+ *  NULL은 DEFAULT 1로 처리 (마이그레이션 이전 기존 행 호환).
+ */
+async function getMonthlyCredits(
   supabase: ReturnType<typeof createClient>,
   ownerId: string,
 ): Promise<number> {
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
+
+  const sumRows = (rows: any[]): number =>
+    rows.reduce((acc, r) => acc + (r.credits_used ?? 1), 0);
 
   // owner가 소유한 프로젝트의 모든 멤버 ID 조회
   const { data: ownerProjects } = await supabase
@@ -144,13 +147,13 @@ async function getMonthlyUsage(
 
   if (!ownerProjects || ownerProjects.length === 0) {
     // owner 본인 사용량만 조회 (프로젝트 없는 경우)
-    const { count } = await supabase
+    const { data } = await supabase
       .from('ai_generation_logs')
-      .select('id', { count: 'exact', head: true })
+      .select('credits_used')
       .eq('user_id', ownerId)
       .eq('step', 1)
       .gte('created_at', startOfMonth.toISOString());
-    return count || 0;
+    return sumRows(data ?? []);
   }
 
   const projectIds = (ownerProjects as any[]).map((p: any) => p.id);
@@ -163,15 +166,60 @@ async function getMonthlyUsage(
 
   const memberIds = [...new Set([ownerId, ...((members ?? []) as any[]).map((m: any) => m.user_id)])];
 
-  // 팀 전체 사용량 합산
-  const { count } = await supabase
+  // 팀 전체 credit 합산
+  const { data } = await supabase
     .from('ai_generation_logs')
-    .select('id', { count: 'exact', head: true })
+    .select('credits_used')
     .in('user_id', memberIds)
     .eq('step', 1)
     .gte('created_at', startOfMonth.toISOString());
 
-  return count || 0;
+  return sumRows(data ?? []);
+}
+
+/** AI 기능 접근 통합 체크 — tier gate + credit quota 동시 검사 */
+async function checkAiAccess(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  featureKey: AiFeatureKey,
+): Promise<AiAccessResult> {
+  const config = AI_FEATURES[featureKey];
+  const { tier, ownerId } = await getEffectiveTier(supabase, userId);
+
+  // Tier gate
+  if (tier < config.minTier) {
+    const tierName = TIER_NAMES[config.minTier] ?? 'Professional';
+    return {
+      allowed: false,
+      tier, ownerId,
+      usage: 0, limit: 0,
+      creditCost: config.creditCost,
+      error: `${tierName} plan required`,
+      requiredTier: config.minTier,
+      upgradeUrl: '/settings?tab=billing',
+    };
+  }
+
+  // Unlimited plan — skip quota check
+  const limit = PLAN_LIMITS[tier] ?? -1;
+  if (limit === -1) {
+    return { allowed: true, tier, ownerId, usage: 0, limit: -1, creditCost: config.creditCost };
+  }
+
+  // Credit quota check
+  const usage = await getMonthlyCredits(supabase, ownerId);
+  if (limit - usage < config.creditCost) {
+    return {
+      allowed: false,
+      tier, ownerId,
+      usage, limit,
+      creditCost: config.creditCost,
+      error: 'Monthly AI credit limit reached.',
+      upgradeUrl: '/settings?tab=billing',
+    };
+  }
+
+  return { allowed: true, tier, ownerId, usage, limit, creditCost: config.creditCost };
 }
 
 /** Atlassian Document Format → plain text */
@@ -459,19 +507,11 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: 'run_id is required for summarize-run' }, 400);
       }
 
-      const { tier, ownerId } = await getEffectiveTier(adminClient, user.id);
-      if (tier < 2) {
-        return jsonResponse({ error: 'Hobby plan required', requiredTier: 2, upgradeUrl: '/settings/billing' }, 403);
+      const access = await checkAiAccess(adminClient, user.id, 'run_summary');
+      if (!access.allowed) {
+        return jsonResponse({ error: access.error, requiredTier: access.requiredTier, upgradeUrl: access.upgradeUrl, usage: access.usage, limit: access.limit, current_tier: access.tier }, access.requiredTier ? 403 : 429);
       }
-
-      // Monthly quota check (shared with TC generation)
-      const limit = PLAN_LIMITS[tier] ?? -1;
-      if (limit !== -1) {
-        const usage = await getMonthlyUsage(adminClient, ownerId);
-        if (usage >= limit) {
-          return jsonResponse({ error: 'Monthly AI generation limit reached.', usage, limit, current_tier: tier }, 429);
-        }
-      }
+      const { tier, ownerId } = access;
 
       // Check cache: same run_id with prior summary (skip if force_reanalyze)
       if (!body.force_reanalyze) {
@@ -680,9 +720,10 @@ Quality Gates: Pass Rate ≥90%, Critical Failures = 0, Coverage ≥80%, Blocked
         output_data: aiSummary,
         tokens_used: tokensUsed,
         latency_ms: latencyMs,
+        credits_used: AI_FEATURES.run_summary.creditCost,
       });
 
-      const usage = await getMonthlyUsage(adminClient, ownerId);
+      const usage = await getMonthlyCredits(adminClient, ownerId);
       return jsonResponse({
         success: true,
         summary: aiSummary,
@@ -696,20 +737,11 @@ Quality Gates: Pass Rate ≥90%, Critical Failures = 0, Coverage ≥80%, Blocked
         return jsonResponse({ error: 'project_id is required for coverage-gap' }, 400);
       }
 
-      const { tier, ownerId } = await getEffectiveTier(adminClient, user.id);
-      const COV_MIN_TIER = 3; // Professional+
-      if (tier < COV_MIN_TIER) {
-        return jsonResponse({ error: 'Professional plan required', requiredTier: COV_MIN_TIER }, 403);
+      const access = await checkAiAccess(adminClient, user.id, 'coverage_gap');
+      if (!access.allowed) {
+        return jsonResponse({ error: access.error, requiredTier: access.requiredTier, upgradeUrl: access.upgradeUrl, usage: access.usage, limit: access.limit, current_tier: access.tier }, access.requiredTier ? 403 : 429);
       }
-
-      // Monthly quota check
-      const limit = PLAN_LIMITS[tier] ?? -1;
-      if (limit !== -1) {
-        const usage = await getMonthlyUsage(adminClient, ownerId);
-        if (usage >= limit) {
-          return jsonResponse({ error: 'Monthly AI generation limit reached.', usage, limit, current_tier: tier }, 429);
-        }
-      }
+      const { tier, ownerId } = access;
 
       // Project access check
       const { data: projectData } = await adminClient
@@ -927,9 +959,10 @@ Respond in valid JSON:
         output_data: gapResult,
         tokens_used: tokensUsed,
         latency_ms: latencyMs,
+        credits_used: AI_FEATURES.coverage_gap.creditCost,
       });
 
-      const usage = await getMonthlyUsage(adminClient, ownerId);
+      const usage = await getMonthlyCredits(adminClient, ownerId);
       return jsonResponse({
         success: true,
         result: gapResult,
@@ -945,18 +978,11 @@ Respond in valid JSON:
         return jsonResponse({ error: 'requirement_id and requirement_title are required' }, 400);
       }
 
-      const { tier, ownerId } = await getEffectiveTier(adminClient, user.id);
-      if (tier < 2) {
-        return jsonResponse({ error: 'Hobby plan required', requiredTier: 2, upgradeUrl: '/settings/billing' }, 403);
+      const access = await checkAiAccess(adminClient, user.id, 'requirement_suggest');
+      if (!access.allowed) {
+        return jsonResponse({ error: access.error, requiredTier: access.requiredTier, upgradeUrl: access.upgradeUrl, usage: access.usage, limit: access.limit, current_tier: access.tier }, access.requiredTier ? 403 : 429);
       }
-
-      const limit = PLAN_LIMITS[tier] ?? -1;
-      if (limit !== -1) {
-        const usage = await getMonthlyUsage(adminClient, ownerId);
-        if (usage >= limit) {
-          return jsonResponse({ error: 'Monthly AI generation limit reached.', usage, limit, current_tier: tier }, 429);
-        }
-      }
+      const { tier, ownerId } = access;
 
       const existingList = (existing_tcs as { custom_id: string; title: string }[])
         .map(tc => `- ${tc.custom_id}: ${tc.title}`)
@@ -1039,9 +1065,10 @@ Suggest test cases not yet covered.`;
         output_data: { suggestions },
         tokens_used: tokensUsed,
         latency_ms: latencyMs,
+        credits_used: AI_FEATURES.requirement_suggest.creditCost,
       });
 
-      const usage = await getMonthlyUsage(adminClient, ownerId);
+      const usage = await getMonthlyCredits(adminClient, ownerId);
       return jsonResponse({
         success: true,
         suggestions,
@@ -1056,18 +1083,11 @@ Suggest test cases not yet covered.`;
         return jsonResponse({ error: 'project_id is required for analyze-flaky' }, 400);
       }
 
-      const { tier, ownerId } = await getEffectiveTier(adminClient, user.id);
-      if (tier < 3) {
-        return jsonResponse({ error: 'Professional plan required', requiredTier: 3 }, 403);
+      const access = await checkAiAccess(adminClient, user.id, 'flaky_analysis');
+      if (!access.allowed) {
+        return jsonResponse({ error: access.error, requiredTier: access.requiredTier, upgradeUrl: access.upgradeUrl, usage: access.usage, limit: access.limit, current_tier: access.tier }, access.requiredTier ? 403 : 429);
       }
-
-      const limit = PLAN_LIMITS[tier] ?? -1;
-      if (limit !== -1) {
-        const usage = await getMonthlyUsage(adminClient, ownerId);
-        if (usage >= limit) {
-          return jsonResponse({ error: 'Monthly AI generation limit reached.', usage, limit, current_tier: tier }, 429);
-        }
-      }
+      const { tier, ownerId } = access;
 
       const flakyTests: { test_case_id: string; title: string; folder_path: string; recent_statuses: string[]; flaky_score: number }[] = body.flaky_tests ?? [];
       if (!flakyTests.length) {
@@ -1175,9 +1195,10 @@ Respond in valid JSON:
         output_data: analysisResult,
         tokens_used: tokensUsed,
         latency_ms: latencyMs,
+        credits_used: AI_FEATURES.flaky_analysis.creditCost,
       });
 
-      const usage = await getMonthlyUsage(adminClient, ownerId);
+      const usage = await getMonthlyCredits(adminClient, ownerId);
       return jsonResponse({
         success: true,
         result: analysisResult,
@@ -1241,7 +1262,7 @@ Respond in valid JSON:
       return jsonResponse({ error: 'step is required for generate requests' }, 400);
     }
 
-    // Mode-level tier checks
+    // Mode-level tier checks (tier/ownerId already fetched at line above for preview path)
     if (mode === 'session' && tier < SESSION_MIN_TIER) {
       return jsonResponse({ error: 'Session mode requires Professional plan or higher.', current_tier: tier, required_tier: SESSION_MIN_TIER }, 403);
     }
@@ -1264,13 +1285,13 @@ Respond in valid JSON:
       }
     }
 
-    // Monthly limit check (step 1 only — each flow counts as 1 usage)
+    // Monthly credit check (step 1 only — TC generation counts as 1 credit)
     if (step === 1) {
       const limit = PLAN_LIMITS[tier] ?? -1;
       if (limit !== -1) {
-        const usage = await getMonthlyUsage(adminClient, ownerId);
-        if (usage >= limit) {
-          return jsonResponse({ error: 'Monthly AI generation limit reached.', usage, limit, current_tier: tier }, 429);
+        const usage = await getMonthlyCredits(adminClient, ownerId);
+        if (limit - usage < AI_FEATURES.tc_generation_text.creditCost) {
+          return jsonResponse({ error: 'Monthly AI credit limit reached.', usage, limit, current_tier: tier }, 429);
         }
       }
     }
@@ -1378,6 +1399,7 @@ Respond in valid JSON:
         model_used: 'claude-sonnet-4-20250514',
         tokens_used: tokens,
         latency_ms: latency,
+        credits_used: AI_FEATURES.tc_generation_text.creditCost,
       });
 
       responseData = { titles, tokens_used: tokens, latency_ms: latency };
