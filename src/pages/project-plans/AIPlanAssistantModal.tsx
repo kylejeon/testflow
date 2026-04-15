@@ -157,15 +157,17 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
           <div>
             <div style={{ fontSize:16, fontWeight:600, margin:0 }}>AI Plan Assistant</div>
             <div style={{ fontSize:12, color:'#9CA3AF', marginTop:2 }}>
-              현재 Milestone &amp; 최근 코드 변경을 분석해 Plan에 포함할 TC를 추천합니다
+              Analyzes milestones &amp; recent changes to recommend test cases for your plan
             </div>
           </div>
           {!aiFeature.loading && (
             <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:8 }}>
-              <span style={{ fontSize:11, color:'#9CA3AF' }}>
-                {aiFeature.monthlyLimit === -1 ? 'Unlimited credits'
-                  : `${aiFeature.remainingCredits} / ${aiFeature.monthlyLimit} credits`}
-              </span>
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:2 }}>
+                <span style={{ fontSize:11, fontWeight:600, color:'#6366f1' }}>
+                  {aiFeature.monthlyLimit === -1 ? 'Unlimited' : `${aiFeature.usedCredits} / ${aiFeature.monthlyLimit}`}
+                </span>
+                <span style={{ fontSize:10, color:'#9CA3AF' }}>credits used this month</span>
+              </div>
             </div>
           )}
           <button onClick={onClose}

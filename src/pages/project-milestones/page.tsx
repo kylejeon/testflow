@@ -1134,9 +1134,6 @@ export default function ProjectMilestones() {
                   <i className="ri-flashlight-line" style={{ color: '#F97316', fontSize: '14px' }} />
                   Ad-hoc Runs
                   <span style={{ background: '#FFF7ED', color: '#C2410C', border: '1px solid #FDBA74', borderRadius: '20px', padding: '1px 7px', fontSize: '11px', fontWeight: 600, textTransform: 'none', letterSpacing: 0 }}>{adHocRuns.length}</span>
-                  <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, fontSize: '11px', color: '#CBD5E1' }}>
-                    Milestone / Plan 없이 생성된 일회성 실행
-                  </span>
                   <Link
                     to={`/projects/${id}/runs`}
                     style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 500, padding: '3px 9px', borderRadius: '6px', border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', textDecoration: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
@@ -1163,7 +1160,12 @@ export default function ProjectMilestones() {
                       ? { bg: '#FEF3C7', color: '#B45309' }
                       : { bg: '#F1F5F9', color: '#64748B' };
                     return (
-                      <div key={run.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderBottom: runIdx < Math.min(adHocRuns.length, 8) - 1 ? '1px solid #F1F5F9' : undefined }}>
+                      <div key={run.id}
+                        onClick={() => navigate(`/projects/${id}/runs/${run.id}`)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderBottom: runIdx < Math.min(adHocRuns.length, 8) - 1 ? '1px solid #F1F5F9' : undefined, cursor: 'pointer' }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F8FAFC'}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#fff'}
+                      >
                         {/* Orange lightning icon */}
                         <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#FFF7ED', color: '#F97316', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                           <i className="ri-flashlight-line" style={{ fontSize: '15px' }} />
@@ -1172,13 +1174,11 @@ export default function ProjectMilestones() {
                         {/* Name + meta */}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
-                            <Link
-                              to={`/projects/${id}/runs/${run.id}`}
-                              style={{ fontWeight: 600, fontSize: '14px', color: '#1E293B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'none' }}
-                              className="hover:text-indigo-600 transition-colors"
+                            <span
+                              style={{ fontWeight: 600, fontSize: '14px', color: '#1E293B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                             >
                               {run.name}
-                            </Link>
+                            </span>
                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 500, color: '#F97316', background: '#FFF7ED', border: '1px solid #FDBA74', padding: '1px 7px', borderRadius: '20px', flexShrink: 0 }}>
                               <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#F97316', flexShrink: 0 }} />
                               Ad-hoc
@@ -1217,7 +1217,7 @@ export default function ProjectMilestones() {
                         <button
                           style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 500, padding: '3px 9px', borderRadius: '6px', border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
                           className="hover:bg-slate-50 transition-colors"
-                          onClick={() => { setCreatePlanMilestoneId(null); setShowCreatePlanModal(true); }}
+                          onClick={e => { e.stopPropagation(); setCreatePlanMilestoneId(null); setShowCreatePlanModal(true); }}
                           title="Promote to a Test Plan"
                         >
                           <i className="ri-add-line" style={{ fontSize: '12px' }} />Promote to Plan

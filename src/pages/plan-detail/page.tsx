@@ -234,13 +234,14 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, onOpenAI }:
 // ─── Tab: Test Cases ──────────────────────────────────────────────────────────
 
 function TestCasesTab({
-  plan, planTcs, allTcs, onAddTc, onAddTcs, onRemoveTc, onLock, milestone, parentMilestone, profiles,
+  plan, planTcs, allTcs, onAddTc, onAddTcs, onRemoveTc, onLock, onOpenAI, milestone, parentMilestone, profiles,
 }: {
   plan: TestPlan; planTcs: PlanTestCase[]; allTcs: TestCaseRow[];
   onAddTc: (id: string) => Promise<void>;
   onAddTcs: (ids: string[]) => Promise<void>;
   onRemoveTc: (id: string) => Promise<void>;
   onLock: () => Promise<void>;
+  onOpenAI?: () => void;
   milestone: Milestone | null; parentMilestone: Milestone | null; profiles: Map<string, Profile>;
 }) {
   const [search, setSearch] = useState('');
@@ -427,7 +428,7 @@ function TestCasesTab({
         </div>
       </div>
 
-      <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles} onOpenAI={() => setShowAIModal(true)} />
+      <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles} onOpenAI={onOpenAI} />
 
       {/* TC Picker Modal — runs-style */}
       {showPicker && (() => {
@@ -438,13 +439,21 @@ function TestCasesTab({
         const folderFiltered = pickerFolder
           ? baseTcs.filter(tc => pickerFolder === '__none__' ? !tc.folder : tc.folder === pickerFolder)
           : baseTcs;
-        const visibleTcs = folderFiltered.filter(tc =>
-          !pickerSearch || tc.title.toLowerCase().includes(pickerSearch.toLowerCase())
-        );
+        const visibleTcs = folderFiltered
+          .filter(tc => !pickerSearch || tc.title.toLowerCase().includes(pickerSearch.toLowerCase()))
+          .sort((a, b) => {
+            const aId = a.custom_id || '';
+            const bId = b.custom_id || '';
+            // Numeric-aware sort: TC-001 < TC-002 < TC-010
+            const aNum = parseInt(aId.replace(/\D/g, ''), 10);
+            const bNum = parseInt(bId.replace(/\D/g, ''), 10);
+            if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+            return aId.localeCompare(bId);
+          });
         const uniqueFolders = [...new Set(notAdded.map(tc => tc.folder).filter(Boolean))] as string[];
         const allVisibleSelected = visibleTcs.length > 0 && visibleTcs.every(tc => pickerSelectedIds.has(tc.id));
         return (
-          <div className="fixed inset-0 z-[2000] flex items-start justify-center bg-black/50 backdrop-blur-sm py-[3vh] overflow-y-auto"
+          <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto"
             onClick={e => { if (e.target === e.currentTarget) closePicker(); }}>
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden">
               {/* Header */}
@@ -585,8 +594,9 @@ function TestCasesTab({
 
 // ─── Tab: Runs ────────────────────────────────────────────────────────────────
 
-function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilestone, profiles, plan }: {
+function RunsTab({ runs, projectId, planId, planTcCount, onOpenAI, milestone, parentMilestone, profiles, plan }: {
   runs: PlanRun[]; projectId: string; planId: string; planTcCount: number;
+  onOpenAI?: () => void;
   milestone: Milestone | null; parentMilestone: Milestone | null;
   profiles: Map<string, Profile>; plan: TestPlan;
 }) {
@@ -724,7 +734,7 @@ function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilest
             <div style={{textAlign:'center', padding:'2rem', color:'var(--text-muted)', fontSize:13, marginTop:8}}>No runs linked to this plan yet.</div>
           )}
         </div>
-        <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles} onOpenAI={() => setShowAIModal(true)} />
+        <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles} onOpenAI={onOpenAI} />
       </div>
     </div>
   );
@@ -732,9 +742,10 @@ function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilest
 
 // ─── Tab: Activity ────────────────────────────────────────────────────────────
 
-function ActivityTab({ logs, profiles, plan, milestone, parentMilestone }: {
+function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, onOpenAI }: {
   logs: ActivityLog[]; profiles: Map<string, Profile>;
   plan: TestPlan; milestone: Milestone | null; parentMilestone: Milestone | null;
+  onOpenAI?: () => void;
 }) {
   const [activeFilter, setActiveFilter] = useState('all');
 
@@ -831,7 +842,7 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone }: {
           ))
         )}
       </div>
-      <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles} onOpenAI={() => setShowAIModal(true)} />
+      <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles} onOpenAI={onOpenAI} />
     </div>
   );
 }
@@ -1496,15 +1507,20 @@ export default function PlanDetailPage() {
 
   const handleAddTcs = async (ids: string[]) => {
     if (!ids.length) return;
-    const inserts = ids.map(tcId => ({ test_plan_id: planId!, test_case_id: tcId }));
-    const { error } = await supabase.from('test_plan_test_cases').insert(inserts);
-    if (error) { showToast('Failed to add test cases', 'error'); return; }
-    const addedTcs = allTcs.filter(t => ids.includes(t.id));
-    setPlanTcs(prev => [...prev, ...addedTcs.map(tc => ({
-      test_plan_id: planId!, test_case_id: tc.id,
-      added_at: new Date().toISOString(), test_case: tc,
-    } as PlanTestCase))]);
-    showToast(`Added ${ids.length} test case${ids.length > 1 ? 's' : ''}`, 'success');
+    try {
+      const inserts = ids.map(tcId => ({ test_plan_id: planId!, test_case_id: tcId }));
+      const { error } = await supabase.from('test_plan_test_cases').insert(inserts);
+      if (error) { showToast('Failed to add test cases: ' + error.message, 'error'); return; }
+      const addedTcs = allTcs.filter(t => ids.includes(t.id));
+      setPlanTcs(prev => [...prev, ...addedTcs.map(tc => ({
+        test_plan_id: planId!, test_case_id: tc.id,
+        added_at: new Date().toISOString(), test_case: tc,
+      } as PlanTestCase))]);
+      showToast(`Added ${ids.length} test case${ids.length > 1 ? 's' : ''}`, 'success');
+    } catch (err) {
+      console.error('handleAddTcs error:', err);
+      showToast('Failed to add test cases', 'error');
+    }
   };
 
   const handleRemoveTc = async (tcId: string) => {
@@ -1702,17 +1718,19 @@ export default function PlanDetailPage() {
           <TestCasesTab
             plan={plan} planTcs={planTcs} allTcs={allTcs}
             onAddTc={handleAddTc} onAddTcs={handleAddTcs} onRemoveTc={handleRemoveTc} onLock={handleLock}
+            onOpenAI={() => setShowAIModal(true)}
             milestone={milestone} parentMilestone={parentMilestone} profiles={profiles}
           />
         )}
         {activeTab === 'runs' && (
           <RunsTab
             runs={runs} projectId={projectId!} planId={planId!} planTcCount={totalTCs}
+            onOpenAI={() => setShowAIModal(true)}
             milestone={milestone} parentMilestone={parentMilestone} profiles={profiles} plan={plan}
           />
         )}
         {activeTab === 'activity' && (
-          <ActivityTab logs={activityLogs} profiles={profiles} plan={plan} milestone={milestone} parentMilestone={parentMilestone} />
+          <ActivityTab logs={activityLogs} profiles={profiles} plan={plan} milestone={milestone} parentMilestone={parentMilestone} onOpenAI={() => setShowAIModal(true)} />
         )}
         {activeTab === 'issues' && (
           <IssuesTab runs={runs} plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles} />
