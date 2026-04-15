@@ -1470,10 +1470,15 @@ export default function ProjectRunsPage() {
         : resultFilter === 'all_passed' ? run.failed === 0 && run.blocked === 0
         : resultFilter === 'has_blocked' ? run.blocked > 0
         : true;
-      // Linkage filter: all | adhoc | plan_id
+      // Linkage filter: all | planned | mdirect | plan-only | adhoc
+      const hasMilestone = !!run.milestone_id;
+      const hasPlan = !!(run as any).test_plan_id;
       const linkageMatch =
-        planFilter === 'all' ? true
-        : planFilter === 'adhoc' ? !(run as any).test_plan_id
+        planFilter === 'all'       ? true
+        : planFilter === 'planned'  ? hasMilestone && hasPlan
+        : planFilter === 'mdirect'  ? hasMilestone && !hasPlan
+        : planFilter === 'plan-only'? !hasMilestone && hasPlan
+        : planFilter === 'adhoc'    ? !hasMilestone && !hasPlan
         : (run as any).test_plan_id === planFilter;
       return tabMatch && searchMatch && msMatch && resultMatch && linkageMatch;
     });
@@ -1742,6 +1747,14 @@ export default function ProjectRunsPage() {
 
   const allTags = getAllTags();
 
+  const getRunLinkageLabel = (run: TestRun) => {
+    const hm = !!run.milestone_id, hp = !!(run as any).test_plan_id;
+    if (hm && hp)  return { label:'Planned',          bg:'#eef2ff', color:'#4f46e5', dot:'#6366f1' };
+    if (hm && !hp) return { label:'Milestone-direct', bg:'#f0f9ff', color:'#0369a1', dot:'#0ea5e9' };
+    if (!hm && hp) return { label:'Plan-only',        bg:'#f5f3ff', color:'#6d28d9', dot:'#7c3aed' };
+    return              { label:'Ad-hoc',              bg:'#fff7ed', color:'#c2410c', dot:'#f97316' };
+  };
+
   const renderRunCard = (run: TestRun, priority: RunPriority) => {
     const total = run.passed + run.failed + run.blocked + run.retest + run.untested;
     const passedPct = total > 0 ? (run.passed / total) * 100 : 0;
@@ -1776,6 +1789,16 @@ export default function ProjectRunsPage() {
               <i className="ri-robot-line text-[0.6875rem]"></i>Auto
             </span>
           )}
+          {(() => {
+            const lk = getRunLinkageLabel(run);
+            return (
+              <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[0.6875rem] font-medium"
+                style={{background:lk.bg,color:lk.color}}>
+                <span style={{width:6,height:6,borderRadius:'50%',background:lk.dot,flexShrink:0}}/>
+                {lk.label}
+              </span>
+            );
+          })()}
           <div className="ml-auto relative flex-shrink-0" ref={openMenuId === run.id ? menuRef : null}>
             <button
               onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === run.id ? null : run.id); }}
@@ -2050,24 +2073,31 @@ export default function ProjectRunsPage() {
                 </div>
               )}
             </div>
-            {/* Linkage filter chips */}
-            <div className="flex items-center gap-1.5">
-              {(['all', 'adhoc'] as const).map(key => (
-                <button key={key}
-                  onClick={() => setPlanFilter(key)}
-                  className={`flex items-center gap-1 px-2.5 py-[0.3125rem] border rounded-full text-[0.75rem] cursor-pointer whitespace-nowrap transition-colors ${planFilter === key ? 'border-indigo-300 bg-indigo-50 text-indigo-700 font-medium' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}>
-                  {key === 'all' && <><i className="ri-layout-grid-line text-xs" /> All</>}
-                  {key === 'adhoc' && <><i className="ri-flashlight-line text-xs" /> Ad-hoc</>}
-                </button>
-              ))}
-              {testPlans.map(plan => (
-                <button key={plan.id}
-                  onClick={() => setPlanFilter(p => p === plan.id ? 'all' : plan.id)}
-                  className={`flex items-center gap-1 px-2.5 py-[0.3125rem] border rounded-full text-[0.75rem] cursor-pointer whitespace-nowrap transition-colors ${planFilter === plan.id ? 'border-indigo-300 bg-indigo-50 text-indigo-700 font-medium' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}>
-                  <i className="ri-file-list-3-line text-xs" />
-                  {plan.name.length > 16 ? plan.name.slice(0, 14) + '…' : plan.name}
-                </button>
-              ))}
+            {/* Linkage filter chips — mockup_7 style */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-wide mr-1">Linkage</span>
+              {([
+                { key: 'all',       label: 'All',               color: '' },
+                { key: 'planned',   label: 'Planned',           color: '#6366f1' },
+                { key: 'mdirect',   label: 'Milestone-direct',  color: '#0ea5e9' },
+                { key: 'plan-only', label: 'Plan-only',         color: '#7c3aed' },
+                { key: 'adhoc',     label: 'Ad-hoc',            color: '#f97316' },
+              ] as const).map(({ key, label, color }) => {
+                const count = key === 'all' ? testRuns.length : testRuns.filter(r => {
+                  const hm = !!r.milestone_id, hp = !!(r as any).test_plan_id;
+                  return key==='planned'?hm&&hp : key==='mdirect'?hm&&!hp : key==='plan-only'?!hm&&hp : !hm&&!hp;
+                }).length;
+                const active = planFilter === key;
+                return (
+                  <button key={key} onClick={() => setPlanFilter(key)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-[0.3125rem] rounded-full border text-[0.75rem] font-medium cursor-pointer transition-colors whitespace-nowrap
+                      ${active ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400 hover:text-slate-700'}`}>
+                    {color && <span style={{width:8,height:8,borderRadius:'50%',background:color,flexShrink:0,display:'inline-block'}}/>}
+                    {label}
+                    <span className={`px-1.5 py-0.5 rounded-full text-[0.625rem] font-semibold ${active?'bg-white/20 text-white':'bg-black/[0.06]'}`}>{count}</span>
+                  </button>
+                );
+              })}
             </div>
             <div className="relative" ref={resultFilterRef}>
               <button
@@ -2361,6 +2391,51 @@ export default function ProjectRunsPage() {
                         </select>
                       </div>
                     </div>
+
+                    {/* Linkage preview + 4 type cards */}
+                    {(() => {
+                      const hm = !!formData.milestone_id;
+                      const hp = !!((formData as any).test_plan_id);
+                      const lkType = hm&&hp?'planned': hm&&!hp?'mdirect': !hm&&hp?'plan-only':'adhoc';
+                      const lkConfig: Record<string,{label:string;bg:string;color:string;dot:string;desc:string}> = {
+                        planned:    {label:'Planned',          bg:'#eef2ff',color:'#4f46e5',dot:'#6366f1',desc:'M + Plan — 가장 일반적 케이스'},
+                        mdirect:    {label:'Milestone-direct', bg:'#f0f9ff',color:'#0369a1',dot:'#0ea5e9',desc:'Milestone만 · plan 없음'},
+                        'plan-only':{label:'Plan-only',        bg:'#f5f3ff',color:'#6d28d9',dot:'#7c3aed',desc:'Plan만 · milestone 없음'},
+                        adhoc:      {label:'Ad-hoc',           bg:'#fff7ed',color:'#c2410c',dot:'#f97316',desc:'아무 곳에도 없음'},
+                      };
+                      const lk = lkConfig[lkType];
+                      return (
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                          <div className="flex items-center gap-2 text-[0.75rem] font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                            <i className="ri-time-line text-slate-400"/>Run linkage preview
+                          </div>
+                          <div className="flex items-center gap-2 text-[0.8125rem] mb-3">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.75rem] font-semibold"
+                              style={{background:lk.bg,color:lk.color}}>
+                              <span style={{width:7,height:7,borderRadius:'50%',background:lk.dot}}/>
+                              {lk.label}
+                            </span>
+                            {hm && <><span className="text-slate-400">›</span><b>{milestones.find(m=>m.id===formData.milestone_id)?.name}</b></>}
+                            {hp && <><span className="text-slate-400">›</span><b className="text-violet-600">{testPlans.find(p=>p.id===(formData as any).test_plan_id)?.name}</b></>}
+                          </div>
+                          <div className="grid grid-cols-4 gap-1.5">
+                            {(['planned','mdirect','plan-only','adhoc'] as const).map(k => {
+                              const c = lkConfig[k]; const active = lkType===k;
+                              return (
+                                <div key={k} className="rounded-lg border p-2 text-[0.6875rem]"
+                                  style={{background:active?c.bg:'#fff',borderColor:active?c.dot:'#E2E8F0'}}>
+                                  <div className="font-semibold flex items-center gap-1 mb-0.5" style={{color:active?c.color:'#374151'}}>
+                                    <span style={{width:7,height:7,borderRadius:'50%',background:c.dot,flexShrink:0}}/>
+                                    {c.label}
+                                  </div>
+                                  <div className="text-slate-400 leading-tight">{c.desc}</div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {/* Assignees multi-select */}
                     <div>

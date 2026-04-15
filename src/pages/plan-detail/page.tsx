@@ -852,20 +852,172 @@ function IssuesTab({ runs, plan, milestone, parentMilestone, profiles }: {
 
 // ─── Tab: Environments ────────────────────────────────────────────────────────
 
+// Heatmap cell colors
+const HM_COLORS: Record<string, {bg:string;color:string;label:string}> = {
+  perfect: {bg:'#dcfce7',color:'#14532d',label:'100%'},
+  pass:    {bg:'#86efac',color:'#14532d',label:'Pass'},
+  mixed:   {bg:'#fde68a',color:'#78350f',label:'Mixed'},
+  warn:    {bg:'#fca5a5',color:'#7f1d1d',label:'Warn'},
+  fail:    {bg:'#ef4444',color:'#fff',   label:'Fail'},
+  na:      {bg:'#f3f4f6',color:'#9ca3af',label:'N/A'},
+  untested:{bg:'#fafafa',color:'#9ca3af',label:'—'},
+};
+
 function EnvironmentsTab({ plan }: { plan: TestPlan }) {
+  // Static heatmap data (would come from real run results in production)
+  const ENV_COLS = [
+    { group: 'macOS', cols: ['Chrome 124', 'Firefox 125', 'Safari 17'] },
+    { group: 'Windows', cols: ['Chrome 124', 'Edge 124'] },
+    { group: 'Mobile', cols: ['iOS Safari', 'Android Chrome'] },
+  ];
+  const TC_ROWS = [
+    { id: 'TC-001', name: 'Login with valid credentials', pri: 'P1',
+      cells: ['pass','perfect','pass','pass','pass','untested','untested'] },
+    { id: 'TC-002', name: 'Login with invalid password', pri: 'P1',
+      cells: ['perfect','pass','pass','pass','perfect','untested','untested'] },
+    { id: 'TC-003', name: 'Forgot password flow', pri: 'P2',
+      cells: ['pass','pass','mixed','pass','pass','na','na'] },
+    { id: 'TC-004', name: 'OAuth SSO login', pri: 'P1',
+      cells: ['mixed','warn','fail','mixed','mixed','untested','untested'] },
+    { id: 'TC-005', name: 'Remember-me cookie persistence', pri: 'P2',
+      cells: ['pass','pass','warn','pass','pass','na','na'] },
+    { id: 'TC-006', name: 'Session timeout auto-logout', pri: 'P3',
+      cells: ['pass','pass','pass','pass','pass','untested','untested'] },
+    { id: 'TC-007', name: '2FA verification', pri: 'P2',
+      cells: ['untested','untested','untested','untested','untested','untested','untested'] },
+  ];
+
+  const allCols = ENV_COLS.flatMap(g => g.cols);
+  const CELL_PASS_MAP: Record<string,number> = { perfect:100, pass:85, mixed:60, warn:30, fail:0, na:-1, untested:-1 };
+
+  // Column summary: average pass for non-na/untested cells
+  const colSummary = allCols.map((_,ci) => {
+    const values = TC_ROWS.map(r => CELL_PASS_MAP[r.cells[ci]]).filter(v=>v>=0);
+    if (!values.length) return 'untested';
+    const avg = values.reduce((a,b)=>a+b,0)/values.length;
+    if (avg>=95) return 'perfect'; if (avg>=75) return 'pass';
+    if (avg>=50) return 'mixed'; if (avg>=20) return 'warn';
+    return 'fail';
+  });
+
   return (
-    <div style={{padding:'16px 0'}}>
-      <div style={{background:'#fff',border:'1px solid var(--border)',borderRadius:10,padding:'2rem',textAlign:'center'}}>
-        <div style={{width:48,height:48,borderRadius:12,background:'var(--bg-subtle)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 12px'}}>
-          <svg style={{width:24,height:24,color:'var(--text-muted)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+    <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) 280px',gap:14,padding:'16px 0'}}>
+      {/* Heatmap card */}
+      <div style={{background:'#fff',border:'1px solid var(--border)',borderRadius:10,overflow:'hidden',display:'flex',flexDirection:'column'}}>
+        <div style={{padding:'12px 16px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',gap:10}}>
+          <div style={{fontSize:12,fontWeight:600,color:'var(--text-muted)',textTransform:'uppercase',letterSpacing:'0.05em',display:'flex',alignItems:'center',gap:6}}>
+            <svg style={{width:14,height:14,color:'var(--primary)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            Environment Coverage Matrix
+          </div>
+          <span style={{marginLeft:'auto',fontSize:11,color:'var(--text-muted)'}}>
+            {plan.name} · {TC_ROWS.length} TCs × {allCols.length} envs
+          </span>
         </div>
-        <h3 style={{fontSize:15,fontWeight:600,margin:'0 0 8px'}}>Environment Coverage Matrix</h3>
-        <p style={{fontSize:13,color:'var(--text-muted)',margin:'0 0 16px',maxWidth:400,marginLeft:'auto',marginRight:'auto'}}>
-          View pass/fail heatmap across browsers, OS, and environment configurations for this plan's runs.
-        </p>
-        <span style={{display:'inline-block',fontSize:12,background:'var(--violet-50)',color:'var(--violet)',border:'1px solid var(--violet-100)',padding:'4px 12px',borderRadius:20,fontWeight:500}}>
-          Coming soon — requires at least 2 completed runs
-        </span>
+        <div style={{overflowX:'auto',padding:'0 16px 12px'}}>
+          <table style={{borderCollapse:'separate',borderSpacing:4,fontSize:12}}>
+            <thead>
+              <tr>
+                <th style={{position:'sticky',left:0,zIndex:3,background:'#fff',minWidth:240,textAlign:'left',padding:'0 14px 0 6px'}}></th>
+                {ENV_COLS.map(g => (
+                  <th key={g.group} colSpan={g.cols.length}
+                    style={{fontWeight:700,color:'#0F172A',padding:'6px 8px 8px',textTransform:'uppercase',letterSpacing:'0.05em',fontSize:11,background:'#F9FAFB',borderRadius:6,textAlign:'center'}}>
+                    {g.group}
+                  </th>
+                ))}
+              </tr>
+              <tr>
+                <th style={{position:'sticky',left:0,zIndex:3,background:'#fff',padding:'8px 14px 10px 6px'}}></th>
+                {allCols.map(col => (
+                  <th key={col} style={{fontSize:12,fontWeight:600,color:'var(--text-muted)',padding:'8px 4px 10px',textAlign:'center',whiteSpace:'nowrap'}}>
+                    {col}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {TC_ROWS.map(row => (
+                <tr key={row.id}>
+                  <td style={{position:'sticky',left:0,zIndex:2,background:'#fff',textAlign:'left',padding:'0 14px 0 6px',whiteSpace:'nowrap',minWidth:240,boxShadow:'2px 0 4px -2px rgba(0,0,0,0.04)'}}>
+                    <span style={{color:'var(--primary)',fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:600,marginRight:8}}>{row.id}</span>
+                    <span style={{fontSize:13,fontWeight:500,color:'var(--text)'}}>{row.name}</span>
+                    <span style={{fontSize:10,color:'var(--text-muted)',marginLeft:6,background:'var(--bg-subtle)',padding:'1px 5px',borderRadius:3,
+                      ...(row.pri==='P1'?{background:'var(--danger-50)',color:'var(--danger-600)'}:{})}}>{row.pri}</span>
+                  </td>
+                  {row.cells.map((c,ci) => {
+                    const hm = HM_COLORS[c] || HM_COLORS.untested;
+                    return (
+                      <td key={ci}>
+                        <div style={{width:64,height:38,borderRadius:5,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:13,
+                          background:hm.bg,color:hm.color,cursor:'pointer',
+                          border:c==='untested'?'1px dashed #9CA3AF':'none'}}>
+                          {c==='perfect'?'✓':c==='fail'?'✕':c==='untested'?'–':c==='na'?'N/A':
+                           c==='pass'?'✓':c==='mixed'?'~':'?'}
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+              {/* Summary row */}
+              <tr style={{paddingTop:12}}>
+                <td style={{position:'sticky',left:0,zIndex:2,background:'#F9FAFB',fontWeight:700,fontSize:13,color:'var(--text-muted)',padding:'12px 14px 4px 6px',whiteSpace:'nowrap'}}>
+                  Env Summary
+                </td>
+                {colSummary.map((c,ci) => {
+                  const hm = HM_COLORS[c] || HM_COLORS.untested;
+                  return (
+                    <td key={ci} style={{paddingTop:12}}>
+                      <div style={{width:64,height:38,borderRadius:5,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:14,
+                        background:hm.bg,color:hm.color,border:c==='untested'?'1px dashed #9CA3AF':'none'}}>
+                        {c==='perfect'?'✓':c==='fail'?'✕':c==='untested'?'–':c==='pass'?'✓':c==='mixed'?'~':'?'}
+                      </div>
+                    </td>
+                  );
+                })}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        {/* Color scale strip */}
+        <div style={{margin:'0 16px 12px',background:'#fff',border:'1px solid var(--border)',borderRadius:8,padding:'8px 14px',display:'flex',alignItems:'center',gap:14,fontSize:11,color:'var(--text-muted)',flexWrap:'wrap'}}>
+          <b style={{color:'var(--text)'}}>Scale:</b>
+          {(['perfect','pass','mixed','warn','fail','untested'] as const).map(k => (
+            <span key={k} style={{display:'inline-flex',alignItems:'center',gap:4}}>
+              <span style={{width:22,height:14,borderRadius:3,display:'inline-block',background:HM_COLORS[k].bg,border:k==='untested'?'1px dashed #9CA3AF':'none'}}/>
+              {k.charAt(0).toUpperCase()+k.slice(1)}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* AI Insights sidebar */}
+      <div style={{background:'linear-gradient(180deg,#f5f3ff 0%,#eef2ff 100%)',border:'1px solid #ddd6fe',borderRadius:10,padding:12,display:'flex',flexDirection:'column',gap:10}}>
+        <div style={{display:'flex',alignItems:'center',gap:6,fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.05em',color:'var(--violet)'}}>
+          <svg style={{width:14,height:14}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2"/></svg>
+          AI Env Analysis
+          <span style={{marginLeft:'auto',fontSize:'9.5px',fontWeight:500,background:'#fff',border:'1px solid #ddd6fe',padding:'2px 6px',borderRadius:3,textTransform:'none',letterSpacing:0}}>
+            High conf
+          </span>
+        </div>
+        {[
+          { tag:'critical', tagBg:'#fef2f2', tagColor:'#b91c1c',
+            title:'OAuth SSO failing on Firefox & Safari',
+            body: <><b>TC-004</b> consistently fails on Firefox 125 and Safari 17. Likely related to the OAuth SDK 0.14.1 update — check CORS and cookie SameSite settings.</> },
+          { tag:'warn', tagBg:'#fffbeb', tagColor:'#b45309',
+            title:'7 TCs untested on mobile envs',
+            body: <>Mobile coverage is <b>0%</b>. Consider adding mobile runs or mark these TCs as N/A for this milestone cycle.</> },
+          { tag:'info', tagBg:'#eff6ff', tagColor:'#1d4ed8',
+            title:'macOS Chrome is the strongest env',
+            body: <>5/7 TCs pass on macOS Chrome 124. Use it as baseline for cross-browser regression comparison.</> },
+        ].map((c,i) => (
+          <div key={i} style={{background:'#fff',border:'1px solid #ede9fe',borderRadius:8,padding:'10px 11px'}}>
+            <span style={{display:'inline-block',padding:'1px 7px',borderRadius:10,fontSize:'9.5px',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.04em',marginBottom:6,background:c.tagBg,color:c.tagColor}}>
+              {c.tag}
+            </span>
+            <h4 style={{margin:'0 0 4px',fontSize:'12.5px',lineHeight:1.3,fontWeight:600}}>{c.title}</h4>
+            <p style={{margin:0,fontSize:11,color:'var(--text-muted)',lineHeight:1.45}}>{c.body}</p>
+          </div>
+        ))}
       </div>
     </div>
   );

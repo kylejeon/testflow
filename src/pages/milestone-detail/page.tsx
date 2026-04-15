@@ -478,7 +478,7 @@ export default function MilestoneDetail() {
   const { showToast } = useToast();
 
   // ── UI state (user-interactive) ─────────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState<'results' | 'status' | 'activity' | 'issues'>('results');
+  const [activeTab, setActiveTab] = useState<'results' | 'status' | 'activity' | 'issues' | 'burndown'>('results');
   const [showEditModal, setShowEditModal] = useState(false);
   const [editFormData, setEditFormData] = useState({ name: '', start_date: '', end_date: '' });
   const [activityStatusFilter, setActivityStatusFilter] = useState<string>('all');
@@ -823,6 +823,7 @@ export default function MilestoneDetail() {
           { key: 'results',  icon: 'ri-bar-chart-box-fill', iconColor: '#6366F1', label: 'Results',  badge: runs.length > 0 ? runs.length : null },
           { key: 'status',   icon: 'ri-pie-chart-2-fill',   iconColor: '#3B82F6', label: 'Status',   badge: null },
           { key: 'activity', icon: 'ri-history-fill',        iconColor: '#8B5CF6', label: 'Activity', badge: activityLogs.length > 0 ? activityLogs.length : null },
+          { key: 'burndown', icon: 'ri-line-chart-line',     iconColor: '#22C55E', label: 'Burndown', badge: null },
           { key: 'issues',   icon: 'ri-bug-fill',            iconColor: '#EF4444', label: 'Issues',   badge: failedBlockedTcs.length > 0 ? failedBlockedTcs.length : null },
         ] as const).map(tab => {
           const isActive = activeTab === tab.key;
@@ -1315,6 +1316,196 @@ export default function MilestoneDetail() {
             </div>
           </div>
         )}
+
+        {/* ════ ISSUES TAB ════ */}
+        {/* ════ BURNDOWN TAB ════ */}
+        {activeTab === 'burndown' && (() => {
+          const startDate = milestone?.start_date ? new Date(milestone.start_date.split('T')[0]) : null;
+          const endDate   = milestone?.end_date   ? new Date(milestone.end_date.split('T')[0])   : null;
+          const today = new Date(); today.setHours(0,0,0,0);
+          const total = tcStats.total || 1;
+          const remaining = tcStats.untested;
+          const executed = total - remaining;
+          // SVG chart constants
+          const CX1=32,CX2=500,CY1=16,CY2=154,CW=CX2-CX1,CH=CY2-CY1;
+          const scaleX = (d: Date) => {
+            if (!startDate||!endDate) return CX1;
+            const span = endDate.getTime()-startDate.getTime();
+            if (span<=0) return CX1;
+            return CX1+Math.max(0,Math.min(1,(d.getTime()-startDate.getTime())/span))*CW;
+          };
+          const scaleY = (tc: number) => CY2-(tc/total)*CH;
+          const todayX = startDate ? scaleX(today) : CX1+(CW*0.6);
+          const todayY = scaleY(remaining);
+          const idealTodayY = startDate&&endDate ? scaleY(Math.max(0, total*(1-(today.getTime()-startDate.getTime())/(endDate.getTime()-startDate.getTime())))) : scaleY(total/2);
+          const gap = todayY - idealTodayY; // positive = behind ideal
+          // X-axis date labels (5 points)
+          const xLabels: Array<{label:string; x:number}> = [];
+          if (startDate && endDate) {
+            const span = endDate.getTime()-startDate.getTime();
+            for (let i=0;i<=4;i++) {
+              const d = new Date(startDate.getTime() + (span*i/4));
+              xLabels.push({ label: d.toLocaleDateString('en-US',{month:'short',day:'numeric'}), x: CX1+CW*(i/4) });
+            }
+          }
+          // Y-axis labels
+          const yStep = Math.ceil(total/4/10)*10 || 1;
+          const yLabels: Array<{v:number;y:number}> = [];
+          for (let v=0;v<=total;v+=yStep) yLabels.push({v,y:scaleY(v)});
+          // Ideal line
+          const idealStart = startDate ? scaleX(startDate) : CX1;
+          const idealEnd   = endDate   ? scaleX(endDate)   : CX2;
+          // Days elapsed vs total for velocity sparkline
+          const sparkRuns = runs.slice(0,7).reverse();
+          // KPI calculations
+          const daysElapsed = startDate ? Math.max(0,Math.floor((today.getTime()-startDate.getTime())/(1000*60*60*24))) : 0;
+          const daysTotal   = (startDate&&endDate) ? Math.max(1,Math.ceil((endDate.getTime()-startDate.getTime())/(1000*60*60*24))) : 60;
+          const daysLeft    = Math.max(0, daysTotal-daysElapsed);
+          const velocity    = daysElapsed>0 ? (executed/daysElapsed).toFixed(1) : '—';
+          const projDays    = parseFloat(velocity as string)>0 ? Math.ceil(remaining/parseFloat(velocity as string)) : null;
+          const onTrack     = gap<=0;
+          return (
+            <div style={{display:'flex',flexDirection:'column',gap:14}}>
+              {/* Overview row: chart + intel */}
+              <div style={{display:'grid',gridTemplateColumns:'minmax(0,1.55fr) minmax(0,1fr)',gap:14}}>
+                {/* Burndown Chart Card */}
+                <div style={{background:'#fff',border:'1px solid #E2E8F0',borderRadius:10,overflow:'hidden',display:'flex',flexDirection:'column'}}>
+                  <div style={{padding:'9px 12px',display:'flex',alignItems:'center',gap:10,borderBottom:'1px solid #E2E8F0'}}>
+                    <div style={{fontSize:11,fontWeight:600,color:'#64748B',textTransform:'uppercase',letterSpacing:'0.05em',display:'flex',alignItems:'center',gap:6}}>
+                      <i className="ri-line-chart-line" style={{color:'#6366F1'}} />
+                      Burndown
+                    </div>
+                    <div style={{display:'flex',gap:10,fontSize:10,color:'#9CA3AF',marginLeft:8}}>
+                      <span><span style={{display:'inline-block',width:14,height:2,background:'#9CA3AF',borderRadius:1,verticalAlign:'middle',marginRight:4}}/>Ideal</span>
+                      <span><span style={{display:'inline-block',width:14,height:2,background:'#6366F1',borderRadius:1,verticalAlign:'middle',marginRight:4}}/>Actual</span>
+                      <span><span style={{display:'inline-block',width:14,height:2,background:'#a5b4fc',borderRadius:1,verticalAlign:'middle',marginRight:4}}/>Projected</span>
+                    </div>
+                  </div>
+                  <div style={{padding:'4px 8px 4px',flex:1}}>
+                    <svg viewBox="0 0 520 180" style={{width:'100%',height:'auto',display:'block'}}>
+                      {/* Grid lines */}
+                      {yLabels.map(({y},i) => <line key={i} x1={CX1} y1={y} x2={CX2} y2={y} stroke="#F3F4F6" strokeWidth="1"/>)}
+                      {/* Axes */}
+                      <line x1={CX1} y1={CY1} x2={CX1} y2={CY2} stroke="#D1D5DB"/>
+                      <line x1={CX1} y1={CY2} x2={CX2} y2={CY2} stroke="#D1D5DB"/>
+                      {/* Y labels */}
+                      {yLabels.map(({v,y}) => <text key={v} x={CX1-4} y={y+3} fontFamily="Inter,sans-serif" fontSize="8" fill="#9CA3AF" textAnchor="end">{v}</text>)}
+                      {/* X labels */}
+                      {xLabels.map(({label,x}) => <text key={label} x={x} y={CY2+14} fontFamily="Inter,sans-serif" fontSize="8" fill="#9CA3AF" textAnchor="middle">{label}</text>)}
+                      {/* Ideal line */}
+                      <line x1={idealStart} y1={scaleY(total)} x2={idealEnd} y2={scaleY(0)} stroke="#9CA3AF" strokeWidth="1.2" strokeDasharray="4 3"/>
+                      {/* Actual line (start to today) */}
+                      <path d={`M${CX1},${scaleY(total)} L${todayX},${todayY}`} fill="none" stroke="#6366F1" strokeWidth="2" strokeLinecap="round"/>
+                      {/* Today vertical marker */}
+                      <line x1={todayX} y1={CY1} x2={todayX} y2={CY2} stroke="#6366F1" strokeWidth="0.8" strokeDasharray="2 2" opacity="0.4"/>
+                      <rect x={todayX-20} y={CY1-12} width="40" height="12" rx="2.5" fill="#6366F1"/>
+                      <text x={todayX} y={CY1-3} fontFamily="Inter" fontSize="8" fill="#fff" textAnchor="middle" fontWeight="600">Today</text>
+                      {/* Today point + callout */}
+                      <circle cx={todayX} cy={todayY} r="3" fill="#fff" stroke="#6366F1" strokeWidth="2"/>
+                      <rect x={todayX+8} y={todayY-14} width="120" height="28" rx="3" fill="#111827"/>
+                      <text x={todayX+14} y={todayY-2} fontFamily="Inter" fontSize="8.5" fill="#fff" fontWeight="600">{remaining} remaining</text>
+                      <text x={todayX+14} y={todayY+9} fontFamily="Inter" fontSize="7.5" fill={onTrack?'#86efac':'#fca5a5'}>
+                        {onTrack ? `on track · gap ${Math.abs(Math.round((gap/CH)*total))}` : `behind ideal · gap +${Math.abs(Math.round((gap/CH)*total))}`}
+                      </text>
+                      {/* Projected line */}
+                      {projDays != null && <path d={`M${todayX},${todayY} L${Math.min(CX2,todayX+(projDays/daysTotal)*CW)},${scaleY(0)}`} stroke="#a5b4fc" strokeWidth="1.2" strokeDasharray="2 2" fill="none"/>}
+                    </svg>
+                  </div>
+                  {/* KPI strip */}
+                  <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',borderTop:'1px solid #E2E8F0'}}>
+                    {[
+                      { l:'Remaining', v:remaining, sub:`${daysLeft}d left`, color:remaining>0?'#0F172A':'#22C55E' },
+                      { l:'Executed',  v:executed, sub:`of ${total} total`, color:'#6366F1' },
+                      { l:'Velocity',  v:velocity, sub:'TCs / day', color:'#0F172A' },
+                      { l:'Pass Rate', v:`${tcStats.passRate}%`, sub:`${tcStats.passed} passed`, color:tcStats.passRate>=70?'#22C55E':tcStats.passRate>=40?'#F59E0B':'#EF4444' },
+                    ].map((k,i) => (
+                      <div key={i} style={{padding:'8px 10px',borderLeft:i>0?'1px solid #E2E8F0':'none'}}>
+                        <div style={{fontSize:'9.5px',color:'#9CA3AF',textTransform:'uppercase',letterSpacing:'0.04em',fontWeight:500}}>{k.l}</div>
+                        <div style={{fontSize:17,fontWeight:700,lineHeight:1.1,marginTop:2,color:k.color}}>{k.v}</div>
+                        <div style={{fontSize:'10.5px',color:'#9CA3AF',marginTop:1}}>{k.sub}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* Intel column */}
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gridAutoRows:'min-content',gap:10}}>
+                  {/* Blocked/Stuck */}
+                  <div style={{background:'#fff',border:'1px solid #E2E8F0',borderRadius:10,padding:'10px 12px',gridColumn:'span 2'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:6,fontSize:10,fontWeight:600,color:'#64748B',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:8}}>
+                      <i className="ri-error-warning-line" style={{color:'#EF4444'}}/>
+                      Failed &amp; Blocked
+                    </div>
+                    {failedBlockedTcs.length===0 ? (
+                      <div style={{fontSize:12,color:'#94A3B8',textAlign:'center',padding:'8px 0'}}>No blocked items 🎉</div>
+                    ) : (
+                      failedBlockedTcs.slice(0,4).map((tc,i) => (
+                        <div key={i} style={{display:'grid',gridTemplateColumns:'18px 1fr auto',gap:8,alignItems:'center',fontSize:'11.5px',padding:'4px 0'}}>
+                          <div style={{background:tc.status==='failed'?'#FEE2E2':'#FEF3C7',color:tc.status==='failed'?'#991B1B':'#92400E',fontWeight:700,fontSize:10,width:18,height:18,borderRadius:4,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                            {tc.status==='failed'?'F':'B'}
+                          </div>
+                          <span style={{color:'#0F172A',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{tc.tcName}</span>
+                          <span style={{fontWeight:600,color:'#0F172A',fontSize:11}}>{tc.runName?.slice(0,10)}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  {/* Velocity sparkline */}
+                  <div style={{background:'#fff',border:'1px solid #E2E8F0',borderRadius:10,padding:'10px 12px'}}>
+                    <div style={{fontSize:10,fontWeight:600,color:'#64748B',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:8}}>Velocity</div>
+                    <div style={{display:'flex',alignItems:'flex-end',gap:3,height:42}}>
+                      {(sparkRuns.length>0?sparkRuns:[{passed_count:0},{passed_count:0},{passed_count:0}]).map((r,i) => {
+                        const cnt = (r as any).passed_count||0;
+                        const maxCnt = Math.max(...(sparkRuns.length>0?sparkRuns:[{passed_count:1}]).map((x:any)=>x.passed_count||1));
+                        const h = maxCnt>0 ? Math.max(4,(cnt/maxCnt)*36) : 4;
+                        return <div key={i} style={{flex:1,background:i===sparkRuns.length-1?'#6366F1':'#C7D2FE',borderRadius:2,height:`${h}px`}}/>;
+                      })}
+                    </div>
+                    <div style={{display:'flex',gap:3,marginTop:4,fontSize:9,color:'#9CA3AF'}}>
+                      {sparkRuns.map((_,i)=><span key={i} style={{flex:1,textAlign:'center'}}>R{i+1}</span>)}
+                    </div>
+                  </div>
+                  {/* ETA */}
+                  <div style={{background:'#fff',border:'1px solid #E2E8F0',borderRadius:10,padding:'10px 12px'}}>
+                    <div style={{fontSize:10,fontWeight:600,color:'#64748B',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:6}}>ETA</div>
+                    {projDays != null ? (
+                      <>
+                        <div style={{fontSize:22,fontWeight:700,color:projDays<=daysLeft?'#22C55E':'#EF4444'}}>D-{daysLeft}</div>
+                        <div style={{fontSize:'10.5px',color:'#9CA3AF',marginTop:2}}>
+                          {projDays<=daysLeft?'On track':'Behind · +'+Math.ceil(projDays-daysLeft)+'d'}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{fontSize:22,fontWeight:700,color:'#64748B'}}>D-{daysLeft}</div>
+                        <div style={{fontSize:'10.5px',color:'#9CA3AF',marginTop:2}}>No runs yet</div>
+                      </>
+                    )}
+                    <div style={{height:8,background:'#F1F5F9',borderRadius:4,position:'relative',margin:'8px 0 4px'}}>
+                      <div style={{position:'absolute',left:0,top:0,bottom:0,width:`${Math.min(100,(daysElapsed/daysTotal)*100)}%`,background:`linear-gradient(90deg,#22C55E,${onTrack?'#22C55E':'#EF4444'})`,borderRadius:4}}/>
+                    </div>
+                    <div style={{fontSize:'9.5px',color:'#9CA3AF'}}>{daysElapsed}d elapsed of {daysTotal}d</div>
+                  </div>
+                  {/* AI insight */}
+                  <div style={{background:'linear-gradient(180deg,#f5f3ff 0%,#eef2ff 100%)',border:'1px solid #ddd6fe',borderRadius:10,padding:'10px 12px',gridColumn:'span 2'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:6,fontSize:10,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.05em',color:'#6D28D9',marginBottom:8}}>
+                      <i className="ri-sparkling-2-line"/>AI Insight
+                    </div>
+                    {[
+                      onTrack
+                        ? { text: <>Progress is <b>on track</b>. Current velocity suggests completion before the deadline.</> }
+                        : { text: <>You're <b>behind the ideal burndown</b>. Consider increasing run frequency or reducing scope.</> },
+                      { text: tcStats.failed > 0
+                        ? <><b>{tcStats.failed} failing TCs</b> are slowing the burn. Prioritise fixing critical failures first.</>
+                        : <>No failing TCs right now — keep the momentum going!</> },
+                    ].map((b,i) => (
+                      <div key={i} style={{fontSize:'11.5px',color:'#0F172A',lineHeight:1.45,padding:'5px 0',borderTop:i>0?'1px solid #ede9fe':'none'}}>{b.text}</div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ════ ISSUES TAB ════ */}
         {activeTab === 'issues' && (

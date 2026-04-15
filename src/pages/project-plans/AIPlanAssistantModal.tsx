@@ -38,19 +38,28 @@ interface Props {
   onApply: (suggestedTcIds: string[], planName: string) => void;
 }
 
-const RISK_CONFIG = {
-  low:      { bg: 'bg-green-100',  text: 'text-green-700',  label: 'Low Risk' },
-  medium:   { bg: 'bg-amber-100',  text: 'text-amber-700',  label: 'Medium Risk' },
-  high:     { bg: 'bg-orange-100', text: 'text-orange-700', label: 'High Risk' },
-  critical: { bg: 'bg-rose-100',   text: 'text-rose-700',   label: 'Critical Risk' },
+// Risk score helper (0–100 scale from priority)
+const RISK_SCORE: Record<string, number> = { critical: 92, high: 78, medium: 55, low: 32 };
+
+// Rationale tags
+type RatTag = { key: string; cls: string; label: string };
+const RAT_MAP: Record<string, RatTag> = {
+  changed:  { key:'changed',  cls:'bg-orange-50 text-orange-700 border border-orange-200',  label:'● 최근 수정' },
+  failure:  { key:'failure',  cls:'bg-red-50 text-red-700 border border-red-200',            label:'● 실패 이력' },
+  flaky:    { key:'flaky',    cls:'bg-yellow-50 text-yellow-800 border border-yellow-200',   label:'● Flaky' },
+  req:      { key:'req',      cls:'bg-blue-50 text-blue-700 border border-blue-200',         label:'● 요구사항' },
+  ai:       { key:'ai',       cls:'bg-violet-50 text-violet-700 border border-violet-200',   label:'● AI 분석' },
+  critical: { key:'critical', cls:'bg-red-50 text-red-800 border border-red-300 font-semibold', label:'● Critical' },
 };
 
-const PRIORITY_COLOR: Record<string, string> = {
-  critical: '#EF4444',
-  high:     '#F97316',
-  medium:   '#F59E0B',
-  low:      '#94A3B8',
-};
+const SIGNAL_OPTIONS = [
+  { id: 'code', label: 'Recent code changes (7d)' },
+  { id: 'failures', label: 'Failure history' },
+  { id: 'flaky', label: 'Flaky tests' },
+  { id: 'req', label: 'Linked requirements' },
+  { id: 'coverage', label: 'Coverage gaps' },
+  { id: 'stale', label: 'Untested ≥30d' },
+];
 
 export default function AIPlanAssistantModal({ projectId, milestones, onClose, onApply }: Props) {
   const aiFeature = useAiFeature('plan_assistant');
@@ -62,6 +71,7 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
   const [result, setResult] = useState<AssistantResult | null>(null);
   const [error, setError] = useState('');
   const [selectedTcIds, setSelectedTcIds] = useState<Set<string>>(new Set());
+  const [signals, setSignals] = useState<Set<string>>(new Set(['code','failures','flaky','req']));
 
   useEffect(() => {
     if (result) {
@@ -77,21 +87,15 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
         : `AI Plan Assistant requires ${aiFeature.requiresTierName} plan or higher.`);
       return;
     }
-
     setStep('loading');
     setError('');
-
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
-
       const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL;
       const res = await fetch(`${supabaseUrl}/functions/v1/plan-assistant`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
           project_id: projectId,
           affected_areas: affectedAreas.split(',').map(s => s.trim()).filter(Boolean),
@@ -99,10 +103,8 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
           context: context.trim() || undefined,
         }),
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'AI request failed');
-
       setResult(data);
       setStep('result');
     } catch (err: any) {
@@ -114,8 +116,7 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
   const toggleTc = (id: string) => {
     setSelectedTcIds(prev => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
   };
@@ -124,235 +125,385 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
     const mName = milestones.find(m => m.id === selectedMilestone)?.name;
     const planName = mName
       ? `${mName} — AI Plan`
-      : affectedAreas
-        ? `${affectedAreas.split(',')[0].trim()} — AI Plan`
-        : 'AI Generated Plan';
+      : affectedAreas ? `${affectedAreas.split(',')[0].trim()} — AI Plan` : 'AI Generated Plan';
     onApply([...selectedTcIds], planName);
   };
 
+  const selectedMilestoneName = milestones.find(m => m.id === selectedMilestone)?.name;
+  const totalCount = result?.suggested_test_cases.length ?? 0;
+  const selectedCount = selectedTcIds.size;
+  const estimatedHours = result ? Math.round(result.estimated_effort_hours * (selectedCount / Math.max(totalCount, 1) * 10) / 10) : 0;
+
   return (
     <div
-      style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15,23,42,0.6)' }}
+      style={{ position:'fixed', inset:0, zIndex:2000, display:'flex', alignItems:'flex-start', justifyContent:'center',
+        background:'rgba(17,24,39,0.45)', backdropFilter:'blur(2px)', padding:'40px 20px', overflowY:'auto' }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div style={{ background: '#fff', borderRadius: '0.875rem', width: '100%', maxWidth: '38rem', maxHeight: '90vh', overflow: 'auto', boxShadow: '0 24px 80px rgba(0,0,0,0.25)', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background:'#fff', borderRadius:14, width:'100%', maxWidth:980,
+        boxShadow:'0 25px 80px rgba(16,24,40,0.35)', overflow:'hidden' }}>
 
         {/* Header */}
-        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{ width: '2.25rem', height: '2.25rem', borderRadius: '0.625rem', background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <i className="ri-sparkling-2-line" style={{ color: '#fff', fontSize: '1.125rem' }} />
-            </div>
-            <div>
-              <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>AI Plan Assistant</h2>
-              <p style={{ fontSize: '0.75rem', color: '#64748B', margin: 0 }}>Recommends test cases based on your changes</p>
+        <div style={{ padding:'18px 22px', display:'flex', alignItems:'center', gap:10,
+          background:'linear-gradient(135deg,#f5f3ff 0%,#eef2ff 100%)',
+          borderBottom:'1px solid #e0e7ff' }}>
+          <div style={{ width:36, height:36, borderRadius:10,
+            background:'linear-gradient(135deg,#6366f1,#7c3aed)',
+            color:'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <svg style={{width:18,height:18}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2"/>
+            </svg>
+          </div>
+          <div>
+            <div style={{ fontSize:16, fontWeight:600, margin:0 }}>AI Plan Assistant</div>
+            <div style={{ fontSize:12, color:'#9CA3AF', marginTop:2 }}>
+              현재 Milestone &amp; 최근 코드 변경을 분석해 Plan에 포함할 TC를 추천합니다
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', fontSize: '1.25rem' }}>
-            <i className="ri-close-line" />
+          {!aiFeature.loading && (
+            <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:8 }}>
+              <span style={{ fontSize:11, color:'#9CA3AF' }}>
+                {aiFeature.monthlyLimit === -1 ? 'Unlimited credits'
+                  : `${aiFeature.remainingCredits} / ${aiFeature.monthlyLimit} credits`}
+              </span>
+            </div>
+          )}
+          <button onClick={onClose}
+            style={{ width:32, height:32, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center',
+              color:'#9CA3AF', background:'none', border:'none', cursor:'pointer', marginLeft: aiFeature.loading ? 'auto' : undefined }}>
+            <svg style={{width:18,height:18}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
           </button>
         </div>
 
-        {/* Credit badge */}
-        {!aiFeature.loading && (
-          <div style={{ padding: '0.75rem 1.5rem', background: '#F8FAFC', borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem' }}>
-            <i className="ri-copper-coin-line" style={{ color: '#6366F1' }} />
-            <span style={{ color: '#64748B' }}>
-              {aiFeature.monthlyLimit === -1
-                ? 'Unlimited credits'
-                : `${aiFeature.remainingCredits} of ${aiFeature.monthlyLimit} credits remaining`}
-            </span>
-            <span style={{ marginLeft: 'auto', background: '#EEF2FF', color: '#6366F1', padding: '0.125rem 0.5rem', borderRadius: '9999px', fontWeight: 500 }}>
-              1 credit
-            </span>
-          </div>
-        )}
+        {/* Body: 2-column (300px left | 1fr right) */}
+        <div style={{ display:'grid', gridTemplateColumns:'300px 1fr', minHeight:520 }}>
 
-        {/* Body */}
-        <div style={{ padding: '1.5rem', flex: 1, overflow: 'auto' }}>
+          {/* ── LEFT: Context / Prompt panel ── */}
+          <div style={{ padding:18, borderRight:'1px solid #E2E8F0', background:'#F8FAFC', display:'flex', flexDirection:'column', gap:14 }}>
 
-          {/* ── Upgrade gate ── */}
-          {!aiFeature.loading && !aiFeature.tierOk && (
-            <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
-              <i className="ri-vip-crown-2-line" style={{ fontSize: '2.5rem', color: '#6366F1', display: 'block', marginBottom: '0.75rem' }} />
-              <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#1E293B', marginBottom: '0.5rem' }}>Free Feature</h3>
-              <p style={{ fontSize: '0.875rem', color: '#64748B', marginBottom: '1.25rem' }}>
-                AI Plan Assistant is available on all plans. Sign in to use it.
-              </p>
-            </div>
-          )}
-
-          {/* ── Input step ── */}
-          {step === 'input' && (aiFeature.loading || aiFeature.tierOk) && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#374151', marginBottom: '0.375rem' }}>
-                  Affected Areas / Changed Components
-                </label>
-                <input
-                  type="text"
-                  value={affectedAreas}
-                  onChange={e => setAffectedAreas(e.target.value)}
-                  placeholder="e.g. login, payment, checkout"
-                  style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1px solid #D1D5DB', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
-                />
-                <p style={{ fontSize: '0.75rem', color: '#9CA3AF', margin: '0.25rem 0 0' }}>Separate multiple areas with commas</p>
+            {/* Target Plan field */}
+            <div>
+              <div style={{ fontSize:11, color:'#9CA3AF', textTransform:'uppercase', letterSpacing:'0.05em', fontWeight:600, marginBottom:8 }}>
+                Target Plan
               </div>
+              <div style={{ background:'#fff', border:'1px solid #E2E8F0', borderRadius:10, padding:'10px 12px', fontSize:13 }}>
+                <div style={{ fontWeight:600 }}>AI-generated Plan</div>
+                <div style={{ fontSize:12, color:'#9CA3AF', marginTop:2 }}>
+                  {affectedAreas || 'Enter affected areas below'}
+                </div>
+              </div>
+            </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#374151', marginBottom: '0.375rem' }}>
-                  Target Milestone <span style={{ fontWeight: 400, color: '#9CA3AF' }}>(optional)</span>
-                </label>
+            {/* Affected areas */}
+            <div>
+              <div style={{ fontSize:11, color:'#9CA3AF', textTransform:'uppercase', letterSpacing:'0.05em', fontWeight:600, marginBottom:8 }}>
+                Affected Areas / Scope
+              </div>
+              <input
+                type="text"
+                value={affectedAreas}
+                onChange={e => setAffectedAreas(e.target.value)}
+                placeholder="e.g. login, payment, checkout"
+                style={{ width:'100%', padding:'8px 12px', border:'1px solid #E2E8F0', borderRadius:8,
+                  fontSize:13, outline:'none', background:'#fff', boxSizing:'border-box' }}
+              />
+              <div style={{ fontSize:11, color:'#9CA3AF', marginTop:4 }}>Separate multiple areas with commas</div>
+            </div>
+
+            {/* Attach to Milestone */}
+            <div>
+              <div style={{ fontSize:11, color:'#9CA3AF', textTransform:'uppercase', letterSpacing:'0.05em', fontWeight:600, marginBottom:8 }}>
+                Attach Plan to
+                <span style={{ color:'#CBD5E1', fontWeight:400, textTransform:'none', letterSpacing:0 }}> — optional</span>
+              </div>
+              <div style={{ background:'#fff', border:'1px solid #E2E8F0', borderRadius:10, padding:'10px 12px' }}>
                 <select
                   value={selectedMilestone}
                   onChange={e => setSelectedMilestone(e.target.value)}
-                  style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1px solid #D1D5DB', borderRadius: '0.5rem', fontSize: '0.875rem', background: '#fff', outline: 'none' }}
+                  style={{ width:'100%', padding:'8px 10px', border:'1px solid #E2E8F0', borderRadius:8,
+                    fontSize:13, background:'#fff', outline:'none', cursor:'pointer' }}
                 >
-                  <option value="">— No specific milestone —</option>
-                  {milestones.map(m => (
-                    <option key={m.id} value={m.id}>{m.name}</option>
-                  ))}
+                  <option value="">— Standalone Plan —</option>
+                  {milestones.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                 </select>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#374151', marginBottom: '0.375rem' }}>
-                  Additional Context <span style={{ fontWeight: 400, color: '#9CA3AF' }}>(optional)</span>
-                </label>
-                <textarea
-                  value={context}
-                  onChange={e => setContext(e.target.value)}
-                  placeholder="Describe what changed, known risks, or specific scenarios to focus on..."
-                  rows={3}
-                  style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1px solid #D1D5DB', borderRadius: '0.5rem', fontSize: '0.875rem', resize: 'vertical', outline: 'none', boxSizing: 'border-box' }}
-                />
-              </div>
-
-              {error && (
-                <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '0.5rem', padding: '0.75rem', fontSize: '0.8125rem', color: '#DC2626', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <i className="ri-error-warning-line" />
-                  {error}
-                </div>
-              )}
-
-              <button
-                onClick={handleRun}
-                disabled={aiFeature.loading || !aiFeature.available}
-                style={{ width: '100%', padding: '0.75rem', border: 'none', borderRadius: '0.5rem', background: aiFeature.available ? '#6366F1' : '#E2E8F0', color: aiFeature.available ? '#fff' : '#94A3B8', fontSize: '0.9375rem', fontWeight: 600, cursor: aiFeature.available ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-              >
-                <i className="ri-sparkling-2-line" />
-                Generate Plan
-              </button>
-            </div>
-          )}
-
-          {/* ── Loading step ── */}
-          {step === 'loading' && (
-            <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
-              <div style={{ width: '4rem', height: '4rem', borderRadius: '50%', background: 'linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem', animation: 'pulse 2s ease-in-out infinite' }}>
-                <i className="ri-sparkling-2-line" style={{ fontSize: '1.75rem', color: '#6366F1' }} />
-              </div>
-              <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#1E293B', marginBottom: '0.5rem' }}>Analyzing your project...</h3>
-              <p style={{ fontSize: '0.875rem', color: '#64748B' }}>
-                Reviewing test cases and generating recommendations
-              </p>
-            </div>
-          )}
-
-          {/* ── Result step ── */}
-          {step === 'result' && result && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              {/* Summary card */}
-              <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '0.625rem', padding: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '0.2rem 0.6rem', borderRadius: '9999px' }}
-                    className={`${RISK_CONFIG[result.risk_level].bg} ${RISK_CONFIG[result.risk_level].text}`}>
-                    {RISK_CONFIG[result.risk_level].label}
-                  </span>
-                  <span style={{ fontSize: '0.75rem', color: '#64748B' }}>
-                    ~{result.estimated_effort_hours}h estimated
-                  </span>
-                  <span style={{ fontSize: '0.75rem', color: '#64748B' }}>
-                    {result.suggested_test_cases.length} TCs suggested
-                  </span>
-                </div>
-                <p style={{ fontSize: '0.875rem', color: '#374151', margin: 0, lineHeight: 1.6 }}>{result.summary}</p>
-                {result.coverage_areas.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem', marginTop: '0.75rem' }}>
-                    {result.coverage_areas.map(area => (
-                      <span key={area} style={{ fontSize: '0.6875rem', background: '#EEF2FF', color: '#6366F1', padding: '0.2rem 0.5rem', borderRadius: '0.25rem' }}>
-                        {area}
-                      </span>
-                    ))}
+                {selectedMilestoneName && (
+                  <div style={{ marginTop:8, padding:'6px 8px', background:'#F8FAFC', borderRadius:6,
+                    fontSize:11, color:'#9CA3AF', display:'flex', alignItems:'center', gap:4 }}>
+                    <svg style={{width:12,height:12,color:'#22C55E'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    Will attach to <b style={{color:'#7C3AED'}}>{selectedMilestoneName}</b>
                   </div>
                 )}
+                <div style={{ fontSize:11, color:'#9CA3AF', marginTop:6, lineHeight:1.45 }}>
+                  비워두면 <b>standalone Plan</b>으로 생성 (나중에 Milestone에 붙일 수 있음)
+                </div>
               </div>
+            </div>
 
-              {/* TC list */}
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.625rem' }}>
-                  <h4 style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#374151', margin: 0 }}>
-                    Recommended Test Cases ({selectedTcIds.size} selected)
-                  </h4>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button onClick={() => setSelectedTcIds(new Set(result.suggested_test_cases.map(tc => tc.id)))}
-                      style={{ fontSize: '0.75rem', color: '#6366F1', background: 'none', border: 'none', cursor: 'pointer' }}>
+            {/* Include signals */}
+            <div>
+              <div style={{ fontSize:11, color:'#9CA3AF', textTransform:'uppercase', letterSpacing:'0.05em', fontWeight:600, marginBottom:8 }}>
+                Include Signals
+              </div>
+              <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                {SIGNAL_OPTIONS.map(s => {
+                  const on = signals.has(s.id);
+                  return (
+                    <button key={s.id}
+                      onClick={() => setSignals(prev => { const n=new Set(prev); on?n.delete(s.id):n.add(s.id); return n; })}
+                      style={{ padding:'4px 10px', borderRadius:14,
+                        border:`1px solid ${on?'#C7D2FE':'#E2E8F0'}`,
+                        background:on?'#EEF2FF':'#fff', fontSize:11,
+                        color:on?'#6366F1':'#9CA3AF', cursor:'pointer', fontWeight:on?500:400 }}>
+                      {s.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Custom prompt */}
+            <div>
+              <div style={{ fontSize:11, color:'#9CA3AF', textTransform:'uppercase', letterSpacing:'0.05em', fontWeight:600, marginBottom:8 }}>
+                Custom Prompt <span style={{color:'#CBD5E1',fontWeight:400,textTransform:'none',letterSpacing:0}}>optional</span>
+              </div>
+              <textarea
+                value={context}
+                onChange={e => setContext(e.target.value)}
+                placeholder="Describe what changed, known risks, or specific scenarios..."
+                rows={3}
+                style={{ width:'100%', padding:'8px 12px', border:'1px solid #E2E8F0', borderRadius:8,
+                  fontSize:12, resize:'vertical', outline:'none', boxSizing:'border-box', background:'#fff' }}
+              />
+            </div>
+
+            {/* Error */}
+            {error && (
+              <div style={{ background:'#FEF2F2', border:'1px solid #FECACA', borderRadius:8, padding:'10px 12px',
+                fontSize:12, color:'#DC2626', display:'flex', alignItems:'center', gap:6 }}>
+                <svg style={{width:14,height:14,flexShrink:0}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                </svg>
+                {error}
+              </div>
+            )}
+
+            {/* Run button */}
+            <button
+              onClick={handleRun}
+              disabled={step==='loading' || (!aiFeature.available && !aiFeature.loading)}
+              style={{ padding:'10px 12px', borderRadius:10, border:'none',
+                background:step==='loading'||(!aiFeature.available&&!aiFeature.loading)?'#E2E8F0':'linear-gradient(135deg,#6366f1,#7c3aed)',
+                color:step==='loading'||(!aiFeature.available&&!aiFeature.loading)?'#94A3B8':'#fff',
+                fontSize:13, fontWeight:600, cursor:step==='loading'?'wait':(!aiFeature.available&&!aiFeature.loading)?'not-allowed':'pointer',
+                display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+              <svg style={{width:15,height:15}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2"/>
+              </svg>
+              {step==='loading' ? 'Analyzing…' : result ? 'Re-run analysis' : 'Generate Plan'}
+            </button>
+
+            {/* Meta info */}
+            {(result || step==='result') && (
+              <div style={{ padding:'10px 12px', background:'#fff', borderRadius:8, border:'1px solid #E2E8F0',
+                fontSize:11, color:'#9CA3AF', display:'flex', alignItems:'center', gap:4 }}>
+                <svg style={{width:13,height:13,color:'#7C3AED'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+                Analyzed <b style={{color:'#0F172A'}}>{result?.suggested_test_cases.length ?? 0} TCs</b> · last 7 days
+              </div>
+            )}
+          </div>
+
+          {/* ── RIGHT: Recommendations ── */}
+          <div style={{ display:'flex', flexDirection:'column' }}>
+            <div style={{ padding:'14px 18px 0', display:'flex', alignItems:'center', gap:10 }}>
+              <div style={{ fontWeight:600, fontSize:14 }}>
+                Recommended TCs
+                {result && <span style={{ color:'#9CA3AF', fontWeight:400 }}> ({result.suggested_test_cases.length})</span>}
+              </div>
+              {result && (
+                <>
+                  <span style={{ fontSize:11, fontWeight:500, padding:'2px 8px', borderRadius:20,
+                    background:'#EDE9FE', color:'#6D28D9' }}>AI-scored</span>
+                  <div style={{ marginLeft:'auto', display:'flex', gap:6, fontSize:12, color:'#9CA3AF' }}>
+                    <button onClick={() => setSelectedTcIds(new Set(result.suggested_test_cases.map(tc=>tc.id)))}
+                      style={{ fontSize:12, color:'#6366F1', background:'none', border:'none', cursor:'pointer' }}>
                       Select all
                     </button>
                     <button onClick={() => setSelectedTcIds(new Set())}
-                      style={{ fontSize: '0.75rem', color: '#64748B', background: 'none', border: 'none', cursor: 'pointer' }}>
+                      style={{ fontSize:12, color:'#9CA3AF', background:'none', border:'none', cursor:'pointer' }}>
                       Clear
                     </button>
                   </div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '18rem', overflow: 'auto' }}>
-                  {result.suggested_test_cases.map(tc => (
-                    <div
-                      key={tc.id}
-                      onClick={() => toggleTc(tc.id)}
-                      style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '0.75rem', border: `1px solid ${selectedTcIds.has(tc.id) ? '#C7D2FE' : '#E2E8F0'}`, borderRadius: '0.5rem', cursor: 'pointer', background: selectedTcIds.has(tc.id) ? '#EEF2FF' : '#fff', transition: 'all 0.1s' }}
-                    >
-                      <div style={{ width: '1.125rem', height: '1.125rem', borderRadius: '0.25rem', border: `2px solid ${selectedTcIds.has(tc.id) ? '#6366F1' : '#D1D5DB'}`, background: selectedTcIds.has(tc.id) ? '#6366F1' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '0.125rem' }}>
-                        {selectedTcIds.has(tc.id) && <i className="ri-check-line" style={{ color: '#fff', fontSize: '0.6875rem' }} />}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.25rem' }}>
-                          <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1E293B', flex: 1 }}>{tc.title}</span>
-                          <span style={{ width: '0.5rem', height: '0.5rem', borderRadius: '50%', background: PRIORITY_COLOR[tc.priority] || '#94A3B8', flexShrink: 0 }} title={tc.priority} />
-                        </div>
-                        <p style={{ fontSize: '0.75rem', color: '#64748B', margin: 0 }}>{tc.rationale}</p>
-                        {tc.folder && (
-                          <span style={{ fontSize: '0.6875rem', color: '#9CA3AF', marginTop: '0.2rem', display: 'block' }}>
-                            <i className="ri-folder-line" style={{ marginRight: '0.2rem' }} />{tc.folder}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '0.75rem' }}>
-                <button
-                  onClick={() => { setStep('input'); setResult(null); }}
-                  style={{ flex: 1, padding: '0.625rem', border: '1px solid #D1D5DB', borderRadius: '0.5rem', background: '#fff', fontSize: '0.875rem', cursor: 'pointer', color: '#374151' }}>
-                  Regenerate
-                </button>
-                <button
-                  onClick={handleApply}
-                  disabled={selectedTcIds.size === 0}
-                  style={{ flex: 2, padding: '0.625rem', border: 'none', borderRadius: '0.5rem', background: selectedTcIds.size > 0 ? '#6366F1' : '#E2E8F0', color: selectedTcIds.size > 0 ? '#fff' : '#94A3B8', fontSize: '0.875rem', fontWeight: 600, cursor: selectedTcIds.size > 0 ? 'pointer' : 'not-allowed' }}>
-                  Use {selectedTcIds.size} TCs in New Plan
-                </button>
-              </div>
+                </>
+              )}
             </div>
-          )}
+
+            <div style={{ padding:'14px 18px', overflowY:'auto', flex:1, maxHeight:520 }}>
+
+              {/* Loading state */}
+              {step === 'loading' && (
+                <div style={{ textAlign:'center', padding:'4rem 1rem' }}>
+                  <div style={{ width:64, height:64, borderRadius:'50%',
+                    background:'linear-gradient(135deg,#EEF2FF,#E0E7FF)',
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    margin:'0 auto 1.25rem', animation:'ai-pulse 2s ease-in-out infinite' }}>
+                    <svg style={{width:28,height:28,color:'#6366F1'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2"/>
+                    </svg>
+                  </div>
+                  <h3 style={{ fontSize:16, fontWeight:600, color:'#0F172A', marginBottom:8 }}>Analyzing your project...</h3>
+                  <p style={{ fontSize:14, color:'#64748B', margin:0 }}>Reviewing test cases and generating recommendations</p>
+                </div>
+              )}
+
+              {/* Upgrade gate */}
+              {!aiFeature.loading && !aiFeature.tierOk && step==='input' && (
+                <div style={{ textAlign:'center', padding:'4rem 1rem' }}>
+                  <svg style={{width:48,height:48,color:'#6366F1',margin:'0 auto 16px',display:'block'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <circle cx="12" cy="8" r="4"/><path d="M21 20a9 9 0 0 0-18 0"/>
+                  </svg>
+                  <h3 style={{ fontSize:16, fontWeight:600, margin:'0 0 8px' }}>AI Plan Assistant</h3>
+                  <p style={{ fontSize:14, color:'#9CA3AF', margin:0 }}>
+                    {aiFeature.tierOk
+                      ? `You've used all ${aiFeature.monthlyLimit} AI credits this month.`
+                      : `Requires ${aiFeature.requiresTierName} plan or higher.`}
+                  </p>
+                </div>
+              )}
+
+              {/* Input idle state */}
+              {step === 'input' && (aiFeature.loading || aiFeature.tierOk) && (
+                <div style={{ textAlign:'center', padding:'4rem 1rem', color:'#CBD5E1' }}>
+                  <svg style={{width:48,height:48,margin:'0 auto 16px',display:'block'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2"/>
+                  </svg>
+                  <p style={{ fontSize:14, margin:0 }}>
+                    Configure the analysis on the left, then click <b>Generate Plan</b> to see recommendations.
+                  </p>
+                </div>
+              )}
+
+              {/* Results */}
+              {step === 'result' && result && (
+                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                  {result.suggested_test_cases.map(tc => {
+                    const selected = selectedTcIds.has(tc.id);
+                    const score = RISK_SCORE[tc.priority] ?? 50;
+                    const scoreColor = score>=80?'#7C3AED':score>=60?'#F59E0B':'#22C55E';
+                    return (
+                      <div key={tc.id} onClick={() => toggleTc(tc.id)}
+                        style={{ display:'grid', gridTemplateColumns:'24px minmax(0,1fr) auto auto',
+                          gap:12, alignItems:'center', padding:'12px 14px',
+                          border:`1px solid ${selected?'#DDD6FE':'#E2E8F0'}`, borderRadius:10,
+                          background:selected?'#F5F3FF':'#fff', cursor:'pointer', transition:'all 0.1s' }}>
+                        {/* Checkbox */}
+                        <div style={{ width:18, height:18, borderRadius:4,
+                          border:`2px solid ${selected?'#7C3AED':'#D1D5DB'}`,
+                          background:selected?'#7C3AED':'#fff',
+                          display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', flexShrink:0 }}>
+                          {selected && <svg style={{width:12,height:12}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
+                        </div>
+                        {/* Content */}
+                        <div>
+                          <div style={{ fontSize:13, fontWeight:600, display:'flex', alignItems:'center', gap:8 }}>
+                            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, fontWeight:700,
+                              padding:'1px 5px', borderRadius:4, background:'#EEF2FF', color:'#6366F1' }}>
+                              {tc.id.slice(0,6).toUpperCase()}
+                            </span>
+                            {tc.title}
+                          </div>
+                          <div style={{ fontSize:11, color:'#9CA3AF', marginTop:2 }}>{tc.rationale}</div>
+                          <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginTop:6 }}>
+                            {tc.priority==='critical' && <span style={{...ratStyle(RAT_MAP.critical)}}>{RAT_MAP.critical.label}</span>}
+                            {(tc.tags||[]).includes('changed') && <span style={{...ratStyle(RAT_MAP.changed)}}>{RAT_MAP.changed.label}</span>}
+                            {(tc.tags||[]).includes('flaky') && <span style={{...ratStyle(RAT_MAP.flaky)}}>{RAT_MAP.flaky.label}</span>}
+                            {(tc.tags||[]).includes('req') && <span style={{...ratStyle(RAT_MAP.req)}}>{RAT_MAP.req.label}</span>}
+                            {tc.priority==='high' && <span style={{...ratStyle(RAT_MAP.failure)}}>{RAT_MAP.failure.label}</span>}
+                            <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 7px', borderRadius:10, fontSize:10, fontWeight:500, background:'#F5F3FF', color:'#6D28D9', border:'1px solid #DDD6FE' }}>● AI 분석</span>
+                          </div>
+                        </div>
+                        {/* Risk score */}
+                        <div style={{ textAlign:'right', minWidth:56 }}>
+                          <div style={{ fontSize:16, fontWeight:700, color:scoreColor }}>{score}</div>
+                          <div style={{ fontSize:10, color:'#9CA3AF' }}>risk</div>
+                        </div>
+                        {/* Info btn */}
+                        <button onClick={e=>{e.stopPropagation();}}
+                          style={{ width:28, height:28, borderRadius:6, border:'1px solid #E2E8F0',
+                            background:'#fff', display:'flex', alignItems:'center', justifyContent:'center',
+                            color:'#9CA3AF', cursor:'pointer' }}>
+                          <svg style={{width:14,height:14}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+                          </svg>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
+
+        {/* Footer */}
+        {(step === 'result' && result) && (
+          <div style={{ padding:'14px 22px', borderTop:'1px solid #E2E8F0', display:'flex', alignItems:'center', gap:10, background:'#F8FAFC' }}>
+            <div style={{ fontSize:12, color:'#9CA3AF' }}>
+              <b style={{ color:'#0F172A' }}>{selectedCount} of {totalCount}</b> selected
+              {selectedCount > 0 && <> · 예상 실행 시간 <b style={{color:'#0F172A'}}>~{estimatedHours}h</b></>}
+            </div>
+            <div style={{ marginLeft:'auto', display:'flex', gap:8 }}>
+              <button onClick={() => { setStep('input'); setResult(null); }}
+                style={{ padding:'8px 16px', border:'1px solid #E2E8F0', borderRadius:8, background:'#fff',
+                  fontSize:13, cursor:'pointer', color:'#374151' }}>
+                Regenerate
+              </button>
+              <button onClick={handleApply} disabled={selectedCount === 0}
+                style={{ padding:'8px 16px', border:'none', borderRadius:8,
+                  background:selectedCount>0?'#6366F1':'#E2E8F0',
+                  color:selectedCount>0?'#fff':'#94A3B8', fontSize:13, fontWeight:600,
+                  cursor:selectedCount>0?'pointer':'not-allowed' }}>
+                Add {selectedCount > 0 ? selectedCount : ''} TCs to Plan
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <style>{`
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+        @keyframes ai-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.7;transform:scale(.97)} }
       `}</style>
     </div>
   );
+}
+
+// Helper to turn RatTag class string into inline style
+function ratStyle(tag: RatTag): React.CSSProperties {
+  return {
+    display:'inline-flex', alignItems:'center', gap:4,
+    padding:'2px 7px', borderRadius:10, fontSize:10, fontWeight:500,
+    // we can't use tailwind here so use simple inline colors
+    background: tag.cls.includes('orange')  ? '#FFF7ED' :
+                tag.cls.includes('red')      ? '#FEF2F2' :
+                tag.cls.includes('yellow')   ? '#FFFBEB' :
+                tag.cls.includes('blue')     ? '#EFF6FF' :
+                tag.cls.includes('violet')   ? '#F5F3FF' : '#F1F5F9',
+    color: tag.cls.includes('orange')  ? '#C2410C' :
+           tag.cls.includes('red')     ? '#B91C1C' :
+           tag.cls.includes('yellow')  ? '#92400E' :
+           tag.cls.includes('blue')    ? '#1D4ED8' :
+           tag.cls.includes('violet')  ? '#6D28D9' : '#475569',
+    border: `1px solid ${
+      tag.cls.includes('orange')  ? '#FED7AA' :
+      tag.cls.includes('red')     ? '#FECACA' :
+      tag.cls.includes('yellow')  ? '#FDE68A' :
+      tag.cls.includes('blue')    ? '#BFDBFE' :
+      tag.cls.includes('violet')  ? '#DDD6FE' : '#E2E8F0'
+    }`,
+  };
 }
