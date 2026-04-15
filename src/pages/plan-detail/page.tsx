@@ -1045,7 +1045,6 @@ function SettingsTab({
     milestone_id: plan.milestone_id ?? '',
     start_date: plan.start_date ?? '',
     end_date: plan.end_date ?? '',
-    target_date: plan.target_date ?? '',
   });
   const [entryCriteria, setEntryCriteria] = useState<string[]>(Array.isArray(plan.entry_criteria) ? plan.entry_criteria : []);
   const [exitCriteria, setExitCriteria] = useState<string[]>(Array.isArray(plan.exit_criteria) ? plan.exit_criteria : []);
@@ -1069,7 +1068,6 @@ function SettingsTab({
         milestone_id: form.milestone_id || null,
         start_date: form.start_date || null,
         end_date: form.end_date || null,
-        target_date: form.target_date || null,
         entry_criteria: entryCriteria,
         exit_criteria: exitCriteria,
       });
@@ -1152,10 +1150,6 @@ function SettingsTab({
               <option value="">— Ad-hoc (no milestone) —</option>
               {milestones.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
             </select>
-          </div>
-          <div>
-            <label className="form-label">Target Date</label>
-            <input type="date" className="form-input" value={form.target_date} onChange={e=>setFormField('target_date',e.target.value)} />
           </div>
           <div>
             <label className="form-label">Start Date</label>

@@ -112,7 +112,7 @@ export default function ProjectMilestones() {
   const [adHocRuns, setAdHocRuns] = useState<any[]>([]);
   const [showCreatePlanModal, setShowCreatePlanModal] = useState(false);
   const [createPlanMilestoneId, setCreatePlanMilestoneId] = useState<string | null>(null);
-  const [planFormData, setPlanFormData] = useState({ name: '', priority: 'medium', start_date: '', end_date: '', target_date: '' });
+  const [planFormData, setPlanFormData] = useState({ name: '', priority: 'medium', start_date: '', end_date: '' });
   const { showToast } = useToast();
   const [showAIAssistModal, setShowAIAssistModal] = useState(false);
   const [aiAssistMilestoneId, setAiAssistMilestoneId] = useState<string | null>(null);
@@ -530,7 +530,6 @@ export default function ProjectMilestones() {
         priority: planFormData.priority,
         start_date: planFormData.start_date || null,
         end_date: planFormData.end_date || null,
-        target_date: planFormData.target_date || null,
         status: 'planning',
         owner_id: user?.id || null,
       }]).select().single();
@@ -539,7 +538,7 @@ export default function ProjectMilestones() {
       const planIdSnap = data?.id;
       setShowCreatePlanModal(false);
       setCreatePlanMilestoneId(null);
-      setPlanFormData({ name: '', priority: 'medium', start_date: '', end_date: '', target_date: '' });
+      setPlanFormData({ name: '', priority: 'medium', start_date: '', end_date: '' });
       showToast('Test plan created.', 'success');
       fetchData();
       if (planIdSnap && milestoneIdSnap) {
@@ -691,7 +690,7 @@ export default function ProjectMilestones() {
           <div style={{ display: 'flex', gap: '8px', marginTop: '3px', fontSize: '11px', color: '#94A3B8', whiteSpace: 'nowrap' }}>
             {totalTc > 0 ? (
               <>
-                <span>{plan.total_passed || 0}P · {plan.total_failed || 0}F</span>
+                <span>{plan.total_passed || 0} passed · {plan.total_failed || 0} failed</span>
                 <span style={{ marginLeft: 'auto', fontWeight: 600, color: passRate >= 70 ? '#16A34A' : '#EF4444' }}>{passRate}%</span>
               </>
             ) : (
@@ -758,7 +757,7 @@ export default function ProjectMilestones() {
           </div>
           {sub.totalTests > 0 ? (
             <div style={{ display: 'flex', gap: '8px', marginTop: '3px', fontSize: '11px', color: '#94A3B8', flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
-              <span>{sub.passedTests}P · {sub.failedTests}F · {remaining}R</span>
+              <span>{sub.passedTests} passed · {sub.failedTests} failed · {remaining} remaining</span>
               <span style={{ marginLeft: 'auto', fontWeight: 600, color: '#64748B' }}>{sub.actualProgress}%</span>
             </div>
           ) : (
@@ -1200,7 +1199,7 @@ export default function ProjectMilestones() {
                           <div style={{ display: 'flex', gap: '8px', marginTop: '3px', fontSize: '11px', color: '#94A3B8', whiteSpace: 'nowrap' }}>
                             {totalTcs > 0 ? (
                               <>
-                                <span>{passed}P · {failed}F · {untested}R</span>
+                                <span>{passed} passed · {failed} failed · {untested} untested</span>
                                 <span style={{ marginLeft: 'auto', fontWeight: 600, color: passRate >= 70 ? '#16A34A' : '#EF4444' }}>{passRate}%</span>
                               </>
                             ) : (
@@ -1335,29 +1334,20 @@ export default function ProjectMilestones() {
                     placeholder="e.g. Login Flow Regression"
                   />
                 </div>
+                <div>
+                  <label className="block text-[0.8125rem] font-medium text-gray-700 mb-1">Priority</label>
+                  <select
+                    value={planFormData.priority}
+                    onChange={e => setPlanFormData(f => ({ ...f, priority: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-[0.875rem]"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                  </select>
+                </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[0.8125rem] font-medium text-gray-700 mb-1">Priority</label>
-                    <select
-                      value={planFormData.priority}
-                      onChange={e => setPlanFormData(f => ({ ...f, priority: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-[0.875rem]"
-                    >
-                      <option value="low">Low</option>
-                      <option value="medium">Medium</option>
-                      <option value="high">High</option>
-                      <option value="critical">Critical</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[0.8125rem] font-medium text-gray-700 mb-1">Target Date</label>
-                    <input
-                      type="date"
-                      value={planFormData.target_date}
-                      onChange={e => setPlanFormData(f => ({ ...f, target_date: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-[0.875rem]"
-                    />
-                  </div>
                   <div>
                     <label className="block text-[0.8125rem] font-medium text-gray-700 mb-1">Start Date</label>
                     <input
@@ -1381,7 +1371,7 @@ export default function ProjectMilestones() {
               <div className="flex items-center gap-3 mt-6">
                 <button
                   type="button"
-                  onClick={() => { setShowCreatePlanModal(false); setCreatePlanMilestoneId(null); setPlanFormData({ name: '', priority: 'medium', start_date: '', end_date: '', target_date: '' }); }}
+                  onClick={() => { setShowCreatePlanModal(false); setCreatePlanMilestoneId(null); setPlanFormData({ name: '', priority: 'medium', start_date: '', end_date: '' }); }}
                   className="flex-1 px-[0.875rem] py-[0.4375rem] text-[0.875rem] text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all cursor-pointer"
                 >
                   Cancel
