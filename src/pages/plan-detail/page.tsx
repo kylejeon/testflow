@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import ProjectHeader from '../../components/ProjectHeader';
 import { useToast } from '../../components/Toast';
 import PageLoader from '../../components/PageLoader';
+import AIPlanAssistantModal from '../project-plans/AIPlanAssistantModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -116,8 +117,8 @@ type TabKey = typeof TABS[number]['key'];
 
 // ─── Plan Sidebar (shared across all tabs) ────────────────────────────────────
 
-function PlanSidebar({ plan, milestone, parentMilestone, profiles }:
-  { plan: TestPlan; milestone: Milestone | null; parentMilestone: Milestone | null; profiles: Map<string, Profile> }) {
+function PlanSidebar({ plan, milestone, parentMilestone, profiles, onOpenAI }:
+  { plan: TestPlan; milestone: Milestone | null; parentMilestone: Milestone | null; profiles: Map<string, Profile>; onOpenAI?: () => void }) {
   const owner = plan.owner_id ? profiles.get(plan.owner_id) : null;
   const ownerInitials = owner?.full_name
     ? owner.full_name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()
@@ -143,7 +144,9 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles }:
           <div style={{paddingLeft:2}}>• Login flow untested 14d</div>
           <div style={{paddingLeft:2}}>• 2 blocked by open bugs</div>
         </div>
-        <button className="pd-btn pd-btn-sm" style={{marginTop:10, background:'#fff', borderColor:'#ddd6fe', color:'var(--violet)', justifyContent:'center', width:'100%'}}>
+        <button className="pd-btn pd-btn-sm" onClick={onOpenAI}
+          style={{marginTop:10, background:'#fff', borderColor:'#ddd6fe', color:'var(--violet)', justifyContent:'center', width:'100%'}}>
+          <svg style={{width:12,height:12}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2"/></svg>
           Run risk scan
         </button>
       </div>
@@ -416,7 +419,7 @@ function TestCasesTab({
         </div>
       </div>
 
-      <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles} />
+      <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles} onOpenAI={() => setShowAIModal(true)} />
 
       {/* TC Picker Modal */}
       {showPicker && (
@@ -599,7 +602,7 @@ function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilest
             <div style={{textAlign:'center', padding:'2rem', color:'var(--text-muted)', fontSize:13, marginTop:8}}>No runs linked to this plan yet.</div>
           )}
         </div>
-        <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles} />
+        <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles} onOpenAI={() => setShowAIModal(true)} />
       </div>
     </div>
   );
@@ -706,7 +709,7 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone }: {
           ))
         )}
       </div>
-      <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles} />
+      <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles} onOpenAI={() => setShowAIModal(true)} />
     </div>
   );
 }
@@ -1265,6 +1268,7 @@ export default function PlanDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>('testcases');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showAIModal, setShowAIModal] = useState(false);
 
   useEffect(() => {
     if (!projectId || !planId) return;
@@ -1453,7 +1457,7 @@ export default function PlanDetailPage() {
             </span>
           )}
           <div className="detail-head-right">
-            <button className="pd-btn pd-btn-ai">
+            <button className="pd-btn pd-btn-ai" onClick={() => setShowAIModal(true)}>
               <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2"/></svg>
               AI Optimize
             </button>
@@ -1534,6 +1538,36 @@ export default function PlanDetailPage() {
           <SettingsTab plan={plan} milestones={milestones} onUpdate={handleUpdate} onDelete={()=>setShowDeleteConfirm(true)} />
         )}
       </div>
+
+      {/* AI Optimize Modal */}
+      {showAIModal && (
+        <AIPlanAssistantModal
+          projectId={projectId!}
+          milestones={milestones.map(m => ({ id: m.id, name: m.name, status: 'active', end_date: null }))}
+          onClose={() => setShowAIModal(false)}
+          onApply={async (tcIds, _planName) => {
+            // Add recommended TCs to the current plan (skip already-added ones)
+            const existingIds = new Set(planTcs.map(p => p.test_case_id));
+            const newIds = tcIds.filter(id => !existingIds.has(id));
+            if (newIds.length === 0) {
+              showToast('All recommended TCs are already in this plan', 'info');
+              setShowAIModal(false);
+              return;
+            }
+            const inserts = newIds.map(tcId => ({ test_plan_id: planId, test_case_id: tcId }));
+            const { error } = await supabase.from('test_plan_test_cases').insert(inserts);
+            if (error) { showToast('Failed to add TCs: ' + error.message, 'error'); return; }
+            const addedTcs = allTcs.filter(t => newIds.includes(t.id));
+            setPlanTcs(prev => [...prev, ...addedTcs.map(tc => ({
+              test_plan_id: planId!, test_case_id: tc.id,
+              added_at: new Date().toISOString(), test_case: tc,
+            } as PlanTestCase))]);
+            setShowAIModal(false);
+            showToast(`Added ${newIds.length} AI-recommended TCs to plan`, 'success');
+            setActiveTab('testcases');
+          }}
+        />
+      )}
 
       {/* Delete confirm modal */}
       {showDeleteConfirm && (

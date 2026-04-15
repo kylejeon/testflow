@@ -25,6 +25,7 @@ import { triggerWebhook } from '../../hooks/useWebhooks';
 import ProjectHeader from '../../components/ProjectHeader';
 import { Avatar, AvatarStack } from '../../components/Avatar';
 import { useToast } from '../../components/Toast';
+import AIPlanAssistantModal from '../project-plans/AIPlanAssistantModal';
 
 interface Milestone {
   id: string;
@@ -113,7 +114,8 @@ export default function ProjectMilestones() {
   const [createPlanMilestoneId, setCreatePlanMilestoneId] = useState<string | null>(null);
   const [planFormData, setPlanFormData] = useState({ name: '', priority: 'medium', target_date: '' });
   const { showToast } = useToast();
-  const [showConceptBanner, setShowConceptBanner] = useState(true);
+  const [showAIAssistModal, setShowAIAssistModal] = useState(false);
+  const [aiAssistMilestoneId, setAiAssistMilestoneId] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -1002,9 +1004,9 @@ export default function ProjectMilestones() {
                     {/* AI Assist */}
                     <button
                       style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 600, padding: '3px 9px', borderRadius: '6px', border: '1px solid #C7D2FE', background: 'linear-gradient(135deg, #EEF2FF, #EDE9FE)', color: '#6366F1', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                      onClick={e => e.stopPropagation()}
+                      onClick={e => { e.stopPropagation(); setAiAssistMilestoneId(milestone.id); setShowAIAssistModal(true); }}
                     >
-                      <i className="ri-star-line" style={{ fontSize: '11px' }} />AI Assist
+                      <i className="ri-sparkling-2-line" style={{ fontSize: '11px' }} />AI Assist
                     </button>
                     <button
                       style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 500, padding: '3px 9px', borderRadius: '6px', border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', cursor: 'pointer', whiteSpace: 'nowrap' }}
@@ -1097,32 +1099,6 @@ export default function ProjectMilestones() {
 
         <main className="flex-1 overflow-y-auto bg-slate-50">
           <div className="p-5">
-
-            {/* ── Concept banner (dismissable, gradient) ── */}
-            {showConceptBanner && (
-              <div style={{ marginBottom: '18px', background: 'linear-gradient(135deg, #EEF2FF 0%, #F5F3FF 100%)', border: '1px solid #E0E7FF', borderRadius: '10px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '14px', fontSize: '12px' }}>
-                <i className="ri-information-line flex-shrink-0" style={{ color: '#6366F1', fontSize: '18px' }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, color: '#1E293B', marginBottom: '3px' }}>
-                    Milestones &amp; Test Plans — 어떻게 다른가요?
-                  </div>
-                  <div style={{ color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
-                    <span style={{ padding: '2px 8px', borderRadius: '6px', background: '#fff', border: '1px solid #E0E7FF', color: '#4F46E5', fontWeight: 600 }}>Milestone</span>
-                    = 릴리스 타깃 ("v2.0, 5/30까지")
-                    <i className="ri-arrow-right-s-line" style={{ color: '#CBD5E1' }} />
-                    <span style={{ padding: '2px 8px', borderRadius: '6px', background: '#fff', border: '1px solid #EDE9FE', color: '#7C3AED', fontWeight: 600 }}>Test Plan</span>
-                    = 그 안의 실행 전략 ("Login Regression 48 TC"). Plan은 Milestone에 N:1로 귀속.
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowConceptBanner(false)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', padding: '4px', borderRadius: '4px', flexShrink: 0, display: 'flex', alignItems: 'center' }}
-                  className="hover:bg-white/60 transition-colors"
-                >
-                  <i className="ri-close-line" style={{ fontSize: '16px' }} />
-                </button>
-              </div>
-            )}
 
             {/* ── Milestones unified container ── */}
             {filteredMilestones.length === 0 ? (
@@ -1390,6 +1366,42 @@ export default function ProjectMilestones() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* ── AI Plan Assistant Modal ── */}
+      {showAIAssistModal && (
+        <AIPlanAssistantModal
+          projectId={id!}
+          milestones={[
+            ...milestones.map(m => ({ id: m.id, name: m.name, status: m.status, end_date: m.end_date })),
+            ...milestones.flatMap(m => (m.subMilestones || []).map((s: any) => ({ id: s.id, name: s.name, status: s.status, end_date: s.end_date }))),
+          ]}
+          onClose={() => { setShowAIAssistModal(false); setAiAssistMilestoneId(null); }}
+          onApply={async (tcIds, planName) => {
+            try {
+              const { data: { user } } = await supabase.auth.getUser();
+              const { data: planData, error: planErr } = await supabase
+                .from('test_plans')
+                .insert([{ project_id: id, milestone_id: aiAssistMilestoneId || null, name: planName, priority: 'medium', status: 'planning', owner_id: user?.id || null }])
+                .select().single();
+              if (planErr) throw planErr;
+              if (tcIds.length > 0) {
+                await supabase.from('test_plan_test_cases').insert(
+                  tcIds.map(tcId => ({ test_plan_id: planData.id, test_case_id: tcId }))
+                );
+              }
+              setShowAIAssistModal(false);
+              setAiAssistMilestoneId(null);
+              showToast(`Plan "${planName}" created with ${tcIds.length} TCs`, 'success');
+              fetchData();
+              if (aiAssistMilestoneId) {
+                navigate(`/projects/${id}/milestones/${aiAssistMilestoneId}/plans/${planData.id}`);
+              }
+            } catch (err: any) {
+              showToast('Failed to create AI plan: ' + err.message, 'error');
+            }
+          }}
+        />
       )}
 
       {editingMilestone && (
