@@ -68,6 +68,8 @@ const ProjectIntegrations = lazy(() => import('../pages/project-integrations/pag
 const ProjectRequirements = lazy(() => import('../pages/project-requirements/page'));
 const ProjectTraceability = lazy(() => import('../pages/project-traceability/page'));
 const ProjectSharedSteps = lazy(() => import('../pages/project-shared-steps/page'));
+const ProjectPlans = lazyWithRetry(() => import('../pages/project-plans/page'));
+const PlanDetail = lazyWithRetry(() => import('../pages/plan-detail/page'));
 const TestCasesOverviewPage = lazy(() => import('../pages/stats/TestCasesOverviewPage'));
 const ActiveRunsPage = lazy(() => import('../pages/stats/ActiveRunsPage'));
 const PassRateReportPage = lazy(() => import('../pages/stats/PassRateReportPage'));
@@ -183,6 +185,14 @@ const routes: RouteObject[] = [
   {
     path: '/projects/:id/shared-steps',
     element: <ProjectSharedSteps />,
+  },
+  {
+    path: '/projects/:id/plans',
+    element: <ProjectPlans />,
+  },
+  {
+    path: '/projects/:id/plans/:planId',
+    element: <PlanDetail />,
   },
   {
     path: '/testcases',

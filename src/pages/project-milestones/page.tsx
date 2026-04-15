@@ -2,6 +2,17 @@ import { LogoMark } from '../../components/Logo';
 import PageLoader from '../../components/PageLoader';
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+
+interface TestPlanSummary {
+  id: string;
+  name: string;
+  status: 'planning' | 'active' | 'completed' | 'cancelled';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  milestone_id: string | null;
+  target_date: string | null;
+  tc_count?: number;
+  run_count?: number;
+}
 import { supabase } from '../../lib/supabase';
 import NotificationBell from '../../components/feature/NotificationBell';
 import { notifyProjectMembers } from '../../hooks/useNotifications';
@@ -91,6 +102,7 @@ export default function ProjectMilestones() {
   const [milestoneRunAssignees, setMilestoneRunAssignees] = useState<Map<string, string[]>>(new Map());
   const [milestoneAssigneeProfiles, setMilestoneAssigneeProfiles] = useState<Map<string, { name: string | null; email: string; url: string | null }>>(new Map());
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [testPlans, setTestPlans] = useState<TestPlanSummary[]>([]);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -352,6 +364,12 @@ export default function ProjectMilestones() {
         (apData || []).forEach((p: any) => apMap.set(p.id, { name: p.full_name || null, email: p.email || '', url: p.avatar_url || null }));
         setMilestoneAssigneeProfiles(apMap);
       }
+      // Load test plans (non-blocking, graceful fallback if table not yet created)
+      supabase.from('test_plans').select('id, name, status, priority, milestone_id, target_date').eq('project_id', id)
+        .order('created_at', { ascending: false }).limit(20)
+        .then(({ data: plansData }) => { if (plansData) setTestPlans(plansData); })
+        .catch(() => {});
+
     } catch (error) {
       console.error('데이터 로딩 오류:', error);
     } finally {
@@ -858,6 +876,110 @@ export default function ProjectMilestones() {
             ) : (
               <div className="flex flex-col gap-[0.625rem]">
                 {filteredMilestones.map(milestone => renderMilestone(milestone))}
+              </div>
+            )}
+
+            {/* ── Test Plans section ────────────────────────── */}
+            {activeTab === 'all' && (
+              <div className="mt-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <i className="ri-file-list-3-line text-indigo-500 text-[0.9375rem]" />
+                    <h2 className="text-[0.875rem] font-semibold text-slate-700">Test Plans</h2>
+                    <span className="text-[0.6875rem] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-semibold">{testPlans.length}</span>
+                  </div>
+                  <Link
+                    to={`/projects/${id}/plans`}
+                    className="flex items-center gap-1 text-[0.75rem] text-indigo-600 font-medium hover:text-indigo-800 transition-colors"
+                  >
+                    View all <i className="ri-arrow-right-s-line" />
+                  </Link>
+                </div>
+
+                {testPlans.length === 0 ? (
+                  <div className="bg-white border border-dashed border-slate-200 rounded-xl py-8 text-center">
+                    <i className="ri-file-list-3-line text-3xl text-slate-300 block mb-2" />
+                    <p className="text-[0.8125rem] text-slate-400 mb-3">No test plans yet</p>
+                    <Link
+                      to={`/projects/${id}/plans`}
+                      className="inline-flex items-center gap-1 text-[0.8125rem] font-medium text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors"
+                    >
+                      <i className="ri-add-line" /> Create First Plan
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(16rem, 1fr))' }}>
+                    {testPlans.slice(0, 6).map(plan => {
+                      const statusCls: Record<string, string> = {
+                        planning:  'bg-slate-100 text-slate-600',
+                        active:    'bg-blue-100 text-blue-600',
+                        completed: 'bg-green-100 text-green-600',
+                        cancelled: 'bg-rose-100 text-rose-600',
+                      };
+                      const isOverdue = plan.target_date && new Date(plan.target_date) < new Date() && plan.status !== 'completed';
+                      return (
+                        <Link
+                          key={plan.id}
+                          to={`/projects/${id}/plans/${plan.id}`}
+                          className="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-md hover:border-indigo-200 transition-all group block"
+                        >
+                          <div className="flex items-start gap-3 mb-3">
+                            <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
+                              <i className="ri-file-list-3-line text-indigo-500 text-xs" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[0.875rem] font-semibold text-slate-800 truncate group-hover:text-indigo-600 transition-colors">{plan.name}</p>
+                              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                <span className={`text-[0.6875rem] font-medium px-1.5 py-0.5 rounded-full ${statusCls[plan.status] || statusCls.planning}`}>
+                                  {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
+                                </span>
+                                {plan.milestone_id && milestones.find(m => m.id === plan.milestone_id) && (
+                                  <span className="text-[0.6875rem] text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
+                                    <i className="ri-flag-line text-[0.5625rem] mr-0.5" />
+                                    {milestones.find(m => m.id === plan.milestone_id)?.name}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          {plan.target_date && (
+                            <p className={`text-[0.75rem] flex items-center gap-1 ${isOverdue ? 'text-rose-500' : 'text-slate-400'}`}>
+                              <i className={`ri-calendar-${isOverdue ? 'close' : 'event'}-line`} />
+                              {isOverdue ? 'Overdue' : 'Due'} {new Date(plan.target_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </p>
+                          )}
+                        </Link>
+                      );
+                    })}
+                    {testPlans.length > 6 && (
+                      <Link
+                        to={`/projects/${id}/plans`}
+                        className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center text-slate-400 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-500 transition-all"
+                      >
+                        <i className="ri-more-2-fill text-xl mb-1" />
+                        <span className="text-[0.75rem] font-medium">+{testPlans.length - 6} more</span>
+                      </Link>
+                    )}
+                  </div>
+                )}
+
+                {/* Burndown placeholder (P0 — real data P1) */}
+                <div className="mt-4 bg-white border border-slate-200 rounded-xl p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <i className="ri-line-chart-line text-indigo-500" />
+                    <h3 className="text-[0.875rem] font-semibold text-slate-700">Milestone Burndown</h3>
+                    <span className="text-[0.6875rem] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-medium">Coming soon</span>
+                  </div>
+                  <div className="flex items-end justify-between gap-1" style={{ height: '5rem' }}>
+                    {[85, 78, 70, 65, 62, 58, 50, 45, 38, 35, 28, 20].map((v, i) => (
+                      <div key={i} style={{ flex: 1, background: i < 8 ? '#6366F1' : '#E2E8F0', borderRadius: '0.25rem 0.25rem 0 0', height: `${v}%`, opacity: i < 8 ? 0.7 : 0.4 }} />
+                    ))}
+                  </div>
+                  <div className="flex justify-between mt-2 text-[0.6875rem] text-slate-400">
+                    <span>Week 1</span><span>Week 4</span><span>Week 8</span><span>Week 12</span>
+                  </div>
+                  <p className="text-[0.75rem] text-slate-400 mt-2 text-center">Real burndown data will be available once runs are linked to plans.</p>
+                </div>
               </div>
             )}
           </div>

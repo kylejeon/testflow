@@ -109,6 +109,8 @@ export default function ProjectRunsPage() {
   const milestoneDropdownRef = useRef<HTMLDivElement>(null);
   const sortMenuRef = useRef<HTMLDivElement>(null);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [testPlans, setTestPlans] = useState<{ id: string; name: string }[]>([]);
+  const [planFilter, setPlanFilter] = useState<'all' | 'plan' | 'adhoc' | string>('all'); // 'all' | 'adhoc' | plan_id
   const [testRuns, setTestRuns] = useState<TestRun[]>([]);
   const [testCases, setTestCases] = useState<TestCase[]>([]);
   const [loading, setLoading] = useState(true);
@@ -122,6 +124,7 @@ export default function ProjectRunsPage() {
     name: '',
     description: '',
     milestone_id: '',
+    test_plan_id: '',
     status: 'new' as 'new' | 'in_progress' | 'under_review' | 'completed',
     tags: '',
     include_all_cases: true,
@@ -169,6 +172,10 @@ export default function ProjectRunsPage() {
 
   useEffect(() => {
     if (searchParams.get('action') === 'create') {
+      const planId = searchParams.get('plan_id');
+      if (planId) {
+        setFormData(prev => ({ ...prev, test_plan_id: planId } as any));
+      }
       setShowAddRunModal(true);
       setSearchParams({}, { replace: true });
     }
@@ -890,6 +897,11 @@ export default function ProjectRunsPage() {
       setProject(projectData);
       setMilestones(milestonesData || []);
       setTestCases(testCasesData || []);
+
+      // Load test plans (non-blocking, graceful fallback)
+      supabase.from('test_plans').select('id, name').eq('project_id', id).order('created_at', { ascending: false })
+        .then(({ data: plansData }) => { if (plansData) setTestPlans(plansData); })
+        .catch(() => {});
       setFolderMetas((foldersData || []).map((f: any) => ({
         id: f.id,
         name: f.name,
@@ -1113,6 +1125,7 @@ export default function ProjectRunsPage() {
         const newRun = {
           project_id: id,
           milestone_id: formData.milestone_id && formData.milestone_id.trim() !== '' ? formData.milestone_id : null,
+          test_plan_id: (formData as any).test_plan_id && (formData as any).test_plan_id.trim() !== '' ? (formData as any).test_plan_id : null,
           name: formData.name,
           ...(formData.description !== undefined ? { description: formData.description.trim() || null } : {}),
           status: formData.status,
@@ -1325,6 +1338,7 @@ export default function ProjectRunsPage() {
         name: '',
         description: '',
         milestone_id: '',
+        test_plan_id: '',
         status: 'new',
         tags: '',
         include_all_cases: true,
@@ -1456,7 +1470,12 @@ export default function ProjectRunsPage() {
         : resultFilter === 'all_passed' ? run.failed === 0 && run.blocked === 0
         : resultFilter === 'has_blocked' ? run.blocked > 0
         : true;
-      return tabMatch && searchMatch && msMatch && resultMatch;
+      // Linkage filter: all | adhoc | plan_id
+      const linkageMatch =
+        planFilter === 'all' ? true
+        : planFilter === 'adhoc' ? !(run as any).test_plan_id
+        : (run as any).test_plan_id === planFilter;
+      return tabMatch && searchMatch && msMatch && resultMatch && linkageMatch;
     });
   };
 
@@ -1953,12 +1972,13 @@ export default function ProjectRunsPage() {
                     name: '',
                     configuration: '',
                     milestone_id: '',
+                    test_plan_id: '',
                     status: 'new',
                     issues: '',
                     tags: '',
                     include_all_cases: true,
                     is_ci_cd_run: false,
-                  });
+                  } as any);
                   setSelectedTestCases([]);
                   setShowAddRunModal(true);
                 }}
@@ -2029,6 +2049,25 @@ export default function ProjectRunsPage() {
                   ))}
                 </div>
               )}
+            </div>
+            {/* Linkage filter chips */}
+            <div className="flex items-center gap-1.5">
+              {(['all', 'adhoc'] as const).map(key => (
+                <button key={key}
+                  onClick={() => setPlanFilter(key)}
+                  className={`flex items-center gap-1 px-2.5 py-[0.3125rem] border rounded-full text-[0.75rem] cursor-pointer whitespace-nowrap transition-colors ${planFilter === key ? 'border-indigo-300 bg-indigo-50 text-indigo-700 font-medium' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}>
+                  {key === 'all' && <><i className="ri-layout-grid-line text-xs" /> All</>}
+                  {key === 'adhoc' && <><i className="ri-flashlight-line text-xs" /> Ad-hoc</>}
+                </button>
+              ))}
+              {testPlans.map(plan => (
+                <button key={plan.id}
+                  onClick={() => setPlanFilter(p => p === plan.id ? 'all' : plan.id)}
+                  className={`flex items-center gap-1 px-2.5 py-[0.3125rem] border rounded-full text-[0.75rem] cursor-pointer whitespace-nowrap transition-colors ${planFilter === plan.id ? 'border-indigo-300 bg-indigo-50 text-indigo-700 font-medium' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}>
+                  <i className="ri-file-list-3-line text-xs" />
+                  {plan.name.length > 16 ? plan.name.slice(0, 14) + '…' : plan.name}
+                </button>
+              ))}
             </div>
             <div className="relative" ref={resultFilterRef}>
               <button
@@ -2294,18 +2333,33 @@ export default function ProjectRunsPage() {
                       />
                     </div>
 
-                    {/* Milestone */}
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Milestone</label>
-                      <select
-                        name="milestone_id"
-                        value={formData.milestone_id}
-                        onChange={(e) => setFormData(prev => ({ ...prev, milestone_id: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm cursor-pointer"
-                      >
-                        <option value="">No milestone</option>
-                        {milestones.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                      </select>
+                    {/* Milestone + Test Plan */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Milestone</label>
+                        <select
+                          name="milestone_id"
+                          value={formData.milestone_id}
+                          onChange={(e) => setFormData(prev => ({ ...prev, milestone_id: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm cursor-pointer"
+                        >
+                          <option value="">No milestone</option>
+                          {milestones.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                          Test Plan <span className="normal-case font-normal text-gray-400">(optional)</span>
+                        </label>
+                        <select
+                          value={(formData as any).test_plan_id || ''}
+                          onChange={(e) => setFormData(prev => ({ ...prev, test_plan_id: e.target.value } as any))}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm cursor-pointer"
+                        >
+                          <option value="">Ad-hoc (no plan)</option>
+                          {testPlans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
+                      </div>
                     </div>
 
                     {/* Assignees multi-select */}

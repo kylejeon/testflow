@@ -186,6 +186,11 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
       active: path.includes('/traceability'),
     },
     {
+      label: 'Plans',
+      to: `/projects/${projectId}/plans`,
+      active: path.includes('/plans'),
+    },
+    {
       label: 'Milestones',
       to: `/projects/${projectId}/milestones`,
       active: path.includes('/milestones'),
