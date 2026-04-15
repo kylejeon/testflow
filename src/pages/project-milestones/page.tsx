@@ -12,6 +12,11 @@ interface TestPlanSummary {
   target_date: string | null;
   tc_count?: number;
   run_count?: number;
+  total_passed?: number;
+  total_failed?: number;
+  total_untested?: number;
+  pass_rate?: number;
+  description?: string;
 }
 import { supabase } from '../../lib/supabase';
 import NotificationBell from '../../components/feature/NotificationBell';
@@ -108,6 +113,7 @@ export default function ProjectMilestones() {
   const [createPlanMilestoneId, setCreatePlanMilestoneId] = useState<string | null>(null);
   const [planFormData, setPlanFormData] = useState({ name: '', priority: 'medium', target_date: '' });
   const { showToast } = useToast();
+  const [showConceptBanner, setShowConceptBanner] = useState(true);
 
   useEffect(() => {
     if (id) {
@@ -369,11 +375,28 @@ export default function ProjectMilestones() {
         (apData || []).forEach((p: any) => apMap.set(p.id, { name: p.full_name || null, email: p.email || '', url: p.avatar_url || null }));
         setMilestoneAssigneeProfiles(apMap);
       }
-      // Load test plans (non-blocking, graceful fallback if table not yet created)
-      supabase.from('test_plans').select('id, name, status, priority, milestone_id, target_date').eq('project_id', id)
-        .order('created_at', { ascending: false }).limit(20)
-        .then(({ data: plansData }) => { if (plansData) setTestPlans(plansData); })
-        .catch(() => {});
+      // Load test plan stats via view (non-blocking, graceful fallback)
+      supabase.from('vw_test_plan_stats')
+        .select('plan_id, name, status, priority, milestone_id, target_date, tc_count, run_count, total_passed, total_failed, total_untested, pass_rate, created_at')
+        .eq('project_id', id)
+        .order('created_at', { ascending: false })
+        .limit(50)
+        .then(({ data: plansData, error: plansError }) => {
+          if (plansData && !plansError) {
+            setTestPlans(plansData.map((p: any) => ({ ...p, id: p.plan_id })));
+          } else {
+            supabase.from('test_plans').select('id, name, status, priority, milestone_id, target_date').eq('project_id', id)
+              .order('created_at', { ascending: false }).limit(50)
+              .then(({ data: fallbackData }) => { if (fallbackData) setTestPlans(fallbackData); })
+              .catch(() => {});
+          }
+        })
+        .catch(() => {
+          supabase.from('test_plans').select('id, name, status, priority, milestone_id, target_date').eq('project_id', id)
+            .order('created_at', { ascending: false }).limit(50)
+            .then(({ data: fallbackData }) => { if (fallbackData) setTestPlans(fallbackData); })
+            .catch(() => {});
+        });
 
     } catch (error) {
       console.error('데이터 로딩 오류:', error);
@@ -592,62 +615,87 @@ export default function ProjectMilestones() {
 
   /* ── Compact card renderers ── */
   const renderPlanRow = (plan: TestPlanSummary, milestoneId: string) => {
-    const statusCls: Record<string, string> = {
-      planning:  'bg-slate-100 text-slate-600',
-      active:    'bg-blue-100 text-blue-700',
-      completed: 'bg-green-100 text-green-700',
-      cancelled: 'bg-rose-100 text-rose-600',
+    // Badge icon color based on status
+    const iconStyle = plan.status === 'completed'
+      ? { bg: '#F0FDF4', color: '#16A34A' }
+      : plan.status === 'active'
+      ? { bg: '#EEF2FF', color: '#6366F1' }
+      : plan.status === 'cancelled'
+      ? { bg: '#F8FAFC', color: '#94A3B8' }
+      : { bg: '#F8FAFC', color: '#94A3B8' }; // planning → neutral
+
+    // Status badge colors
+    const statusStyle: Record<string, { bg: string; color: string }> = {
+      planning:  { bg: '#F1F5F9', color: '#64748B' },
+      active:    { bg: '#DBEAFE', color: '#1D4ED8' },
+      completed: { bg: '#DCFCE7', color: '#15803D' },
+      cancelled: { bg: '#FEE2E2', color: '#DC2626' },
     };
-    const priorityIcon: Record<string, string> = {
-      critical: 'text-rose-500',
-      high:     'text-orange-500',
-      medium:   'text-amber-500',
-      low:      'text-slate-300',
-    };
+    const ss = statusStyle[plan.status] || statusStyle.planning;
+
+    const totalTc = (plan.total_passed || 0) + (plan.total_failed || 0) + (plan.total_untested || 0);
+    const passedPct = totalTc > 0 ? (plan.total_passed || 0) / totalTc * 100 : 0;
+    const failedPct = totalTc > 0 ? (plan.total_failed || 0) / totalTc * 100 : 0;
+    const passRate = Math.round(plan.pass_rate ?? 0);
     const isOverdue = plan.target_date && new Date(plan.target_date) < new Date() && plan.status !== 'completed';
 
     return (
-      <div key={plan.id} className="relative mb-1.5 last:mb-0">
-        {/* horizontal branch */}
-        <div className="absolute left-[-0.625rem] top-1/2 w-[0.625rem] h-[1.5px] bg-slate-200" />
-        <div
-          className="rounded-md px-[0.8125rem] py-[0.5625rem] transition-all cursor-pointer"
-          style={{ background: '#F0F9FF', border: '1px solid #BAE6FD' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#7DD3FC'; (e.currentTarget as HTMLElement).style.background = '#E0F2FE'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#BAE6FD'; (e.currentTarget as HTMLElement).style.background = '#F0F9FF'; }}
-          onClick={() => navigate(`/projects/${id}/milestones/${milestoneId}/plans/${plan.id}`)}
-        >
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0" style={{ background: '#EEF2FF' }}>
-              <i className="ri-file-list-3-line text-[0.75rem] text-indigo-500" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <span className="block text-[0.8125rem] font-semibold text-slate-900 truncate">
-                {plan.name}
+      <div
+        key={plan.id}
+        style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: '#fff', border: '1px solid #E2E8F0', borderRadius: '8px', marginBottom: '6px', cursor: 'pointer' }}
+        onClick={() => navigate(`/projects/${id}/milestones/${milestoneId}/plans/${plan.id}`)}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F8FAFC'; (e.currentTarget as HTMLElement).style.borderColor = '#CBD5E1'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#fff'; (e.currentTarget as HTMLElement).style.borderColor = '#E2E8F0'; }}
+      >
+        {/* Color-coded badge icon */}
+        <div style={{ width: '26px', height: '26px', borderRadius: '6px', background: iconStyle.bg, color: iconStyle.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <i className="ri-file-list-3-line" style={{ fontSize: '13px' }} />
+        </div>
+
+        {/* Name + sub-info */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 600, fontSize: '13px', color: '#1E293B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {plan.name}
+          </div>
+          <div style={{ fontSize: '11px', color: '#94A3B8', marginTop: '1px' }}>
+            {plan.tc_count !== undefined ? `${plan.tc_count} TCs` : '0 TCs'}
+            {plan.priority !== 'medium' && ` · ${plan.priority} priority`}
+            {plan.target_date && (
+              <span style={{ color: isOverdue ? '#EF4444' : undefined }}>
+                {` · ${isOverdue ? 'Overdue' : 'Due'} ${new Date(plan.target_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
               </span>
-              {plan.target_date && (
-                <div className={`text-[0.6875rem] mt-[0.0625rem] flex items-center gap-1 ${isOverdue ? 'text-rose-500' : 'text-slate-400'}`}>
-                  <i className={`${isOverdue ? 'ri-calendar-close-line' : 'ri-calendar-event-line'}`} style={{ fontSize: '0.5625rem', verticalAlign: '-1px' }} />
-                  {isOverdue ? 'Overdue' : 'Due'} {new Date(plan.target_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                </div>
-              )}
-            </div>
-            {plan.priority !== 'medium' && (
-              <i className={`ri-flag-fill text-[0.75rem] flex-shrink-0 ${priorityIcon[plan.priority] || ''}`} title={plan.priority} />
             )}
-            <span className={`text-[0.625rem] font-semibold px-[0.4375rem] py-[0.125rem] rounded-full flex-shrink-0 ${statusCls[plan.status] || statusCls.planning}`}>
-              {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
-            </span>
-            <div className="flex-shrink-0" onClick={e => e.stopPropagation()}>
-              <button
-                onClick={() => navigate(`/projects/${id}/milestones/${milestoneId}/plans/${plan.id}`)}
-                className="flex items-center gap-[0.1875rem] text-[0.625rem] font-medium px-[0.375rem] py-[0.1875rem] rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-all whitespace-nowrap cursor-pointer"
-              >
-                <i className="ri-eye-line text-[0.75rem]" />View
-              </button>
-            </div>
           </div>
         </div>
+
+        {/* 200px progress bar */}
+        <div style={{ width: '200px', flexShrink: 0 }}>
+          <div style={{ height: '5px', background: '#F1F5F9', borderRadius: '3px', overflow: 'hidden', display: 'flex' }}>
+            <div style={{ width: `${passedPct}%`, background: '#22C55E', height: '100%' }} />
+            <div style={{ width: `${failedPct}%`, background: '#EF4444', height: '100%' }} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '3px', fontSize: '11px', color: '#94A3B8' }}>
+            {totalTc > 0 ? (
+              <>
+                <span>{plan.total_passed || 0} passed · {plan.total_failed || 0} failed</span>
+                <span style={{ fontWeight: 600, color: passRate >= 70 ? '#16A34A' : '#EF4444' }}>{passRate}%</span>
+              </>
+            ) : (
+              <>
+                <span>Not started</span>
+                <span style={{ color: '#CBD5E1' }}>—</span>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Status badge */}
+        <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '20px', background: ss.bg, color: ss.color, flexShrink: 0, whiteSpace: 'nowrap' }}>
+          {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
+        </span>
+
+        {/* Chevron */}
+        <i className="ri-arrow-right-s-line flex-shrink-0" style={{ fontSize: '16px', color: '#CBD5E1' }} />
       </div>
     );
   };
@@ -657,69 +705,70 @@ export default function ProjectMilestones() {
     const remaining = sub.totalTests - sub.passedTests - sub.failedTests;
     const passedPct = sub.totalTests > 0 ? (sub.passedTests / sub.totalTests) * 100 : 0;
     const failedPct = sub.totalTests > 0 ? (sub.failedTests / sub.totalTests) * 100 : 0;
+    const iconBg = sub.status === 'completed' ? '#F0FDF4' : '#EEF2FF';
+    const iconColor = sub.status === 'completed' ? '#16A34A' : '#6366F1';
 
     return (
       <div
         key={sub.id}
-        className="relative mb-1.5 last:mb-0"
+        style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: '#fff', border: '1px solid #E2E8F0', borderRadius: '8px', marginBottom: '6px' }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F8FAFC'; (e.currentTarget as HTMLElement).style.borderColor = '#CBD5E1'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#fff'; (e.currentTarget as HTMLElement).style.borderColor = '#E2E8F0'; }}
       >
-        {/* horizontal branch */}
-        <div className="absolute left-[-0.625rem] top-1/2 w-[0.625rem] h-[1.5px] bg-slate-200" />
-        <div
-          className="rounded-md px-[0.8125rem] py-[0.6875rem] transition-all cursor-pointer"
-          style={{ background: '#FAFAFF', border: '1px solid #EEF2FF' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#C7D2FE'; (e.currentTarget as HTMLElement).style.background = '#F5F3FF'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#EEF2FF'; (e.currentTarget as HTMLElement).style.background = '#FAFAFF'; }}
-        >
-          {/* sub top row */}
-          <div className="flex items-center gap-2 mb-[0.375rem]">
-            <div className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0"
-              style={{ background: sub.status === 'completed' ? '#F0FDF4' : '#EEF2FF' }}>
-              <i className={`${sub.status === 'completed' ? 'ri-checkbox-circle-fill' : 'ri-flag-line'} text-[0.75rem]`}
-                style={{ color: sub.status === 'completed' ? '#16A34A' : '#6366F1' }} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <Link
-                to={`/projects/${id}/milestones/${sub.id}`}
-                onClick={e => e.stopPropagation()}
-                className="block text-[0.8125rem] font-semibold text-slate-900 truncate hover:text-indigo-600 transition-colors"
-              >
-                {sub.name}
-              </Link>
-              <div className="text-[0.6875rem] text-slate-400 mt-[0.0625rem] flex items-center gap-1">
-                <i className="ri-calendar-line" style={{ fontSize: '0.5625rem', verticalAlign: '-1px' }} />
-                {formatDateRange(sub.start_date, sub.end_date)}
-              </div>
-            </div>
-            <span className={`text-[0.625rem] font-semibold px-[0.4375rem] py-[0.125rem] rounded-full flex-shrink-0 ${info.badgeCls}`}>
-              {info.label}
-            </span>
-            {/* Sub action button */}
-            <div className="flex-shrink-0" onClick={e => e.stopPropagation()}>
-              <button
-                onClick={() => {
-                  setEditFormData({ name: sub.name, start_date: sub.start_date ? sub.start_date.split('T')[0] : '', end_date: sub.end_date ? sub.end_date.split('T')[0] : '', status: sub.status });
-                  setEditingMilestone(sub);
-                }}
-                className="flex items-center gap-[0.1875rem] text-[0.625rem] font-medium px-[0.375rem] py-[0.1875rem] rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-all whitespace-nowrap cursor-pointer"
-              >
-                <i className="ri-edit-line text-[0.75rem]" />Edit
-              </button>
-            </div>
+        {/* Icon */}
+        <div style={{ width: '26px', height: '26px', borderRadius: '6px', background: iconBg, color: iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <i className={`${sub.status === 'completed' ? 'ri-checkbox-circle-fill' : 'ri-flag-line'}`} style={{ fontSize: '13px' }} />
+        </div>
+
+        {/* Name + date + progress */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Link
+            to={`/projects/${id}/milestones/${sub.id}`}
+            onClick={e => e.stopPropagation()}
+            style={{ display: 'block', fontWeight: 600, fontSize: '13px', color: '#1E293B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'none' }}
+            className="hover:text-indigo-600 transition-colors"
+          >
+            {sub.name}
+          </Link>
+          <div style={{ fontSize: '11px', color: '#94A3B8', marginTop: '1px' }}>
+            <i className="ri-calendar-line" style={{ fontSize: '9px', verticalAlign: '-1px', marginRight: '2px' }} />
+            {formatDateRange(sub.start_date, sub.end_date)}
           </div>
-          {/* sub progress */}
-          <div className="flex items-center gap-2">
-            <div className="flex-1 h-[4.5px] bg-slate-100 rounded-full overflow-hidden flex">
-              <div className="h-full bg-emerald-500 transition-all" style={{ width: `${passedPct}%` }} />
-              <div className="h-full bg-rose-500 transition-all" style={{ width: `${failedPct}%` }} />
-            </div>
-            <div className="flex items-center gap-2 text-[0.6875rem] text-slate-500 whitespace-nowrap flex-shrink-0">
-              <span className="font-semibold text-slate-600">{sub.actualProgress}%</span>
-              <span className="text-emerald-500 font-semibold">{sub.passedTests} passed</span>
-              <span className="text-rose-500 font-semibold">{sub.failedTests} failed</span>
-              {sub.totalTests > 0 && <span>{remaining} remaining</span>}
-            </div>
+        </div>
+
+        {/* 200px progress bar */}
+        <div style={{ width: '200px', flexShrink: 0 }}>
+          <div style={{ height: '5px', background: '#F1F5F9', borderRadius: '3px', overflow: 'hidden', display: 'flex' }}>
+            <div style={{ width: `${passedPct}%`, background: '#22C55E', height: '100%' }} />
+            <div style={{ width: `${failedPct}%`, background: '#EF4444', height: '100%' }} />
           </div>
+          {sub.totalTests > 0 ? (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '3px', fontSize: '11px', color: '#94A3B8' }}>
+              <span>{sub.passedTests} passed · {sub.failedTests} failed · {remaining} remaining</span>
+              <span style={{ fontWeight: 600, color: '#64748B' }}>{sub.actualProgress}%</span>
+            </div>
+          ) : (
+            <div style={{ fontSize: '11px', color: '#CBD5E1', marginTop: '3px' }}>No runs yet</div>
+          )}
+        </div>
+
+        {/* Status badge */}
+        <span className={`text-[11px] font-semibold px-2 py-[2px] rounded-full flex-shrink-0 ${info.badgeCls}`}>
+          {info.label}
+        </span>
+
+        {/* Edit button */}
+        <div style={{ flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+          <button
+            onClick={() => {
+              setEditFormData({ name: sub.name, start_date: sub.start_date ? sub.start_date.split('T')[0] : '', end_date: sub.end_date ? sub.end_date.split('T')[0] : '', status: sub.status });
+              setEditingMilestone(sub);
+            }}
+            style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '11px', fontWeight: 500, padding: '3px 7px', borderRadius: '4px', border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', cursor: 'pointer', whiteSpace: 'nowrap' }}
+            className="hover:bg-slate-100 transition-colors"
+          >
+            <i className="ri-edit-line" style={{ fontSize: '12px' }} />Edit
+          </button>
         </div>
       </div>
     );
@@ -730,239 +779,257 @@ export default function ProjectMilestones() {
     const hasSubMilestones = milestone.subMilestones && milestone.subMilestones.length > 0;
     const milestonePlans = testPlans.filter(p => p.milestone_id === milestone.id);
     const isExpanded = expandedMilestones.has(milestone.id);
+    const canExpand = hasSubMilestones || milestonePlans.length > 0;
     const remaining = milestone.totalTests - milestone.passedTests - milestone.failedTests;
     const passedPct = milestone.totalTests > 0 ? (milestone.passedTests / milestone.totalTests) * 100 : 0;
     const failedPct = milestone.totalTests > 0 ? (milestone.failedTests / milestone.totalTests) * 100 : 0;
     const isDone = milestone.status === 'completed';
 
-    return (
-      <div key={milestone.id} className="ms-wrapper">
-        {/* Parent card */}
-        <div
-          className={`bg-white border rounded-lg px-[1.125rem] py-[0.9375rem] transition-all cursor-pointer ${
-            isDone
-              ? 'border-slate-200 opacity-70 hover:opacity-85'
-              : isExpanded
-              ? 'border-indigo-200 shadow-[0_1px_6px_rgba(99,102,241,0.1)]'
-              : 'border-slate-200 hover:shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:border-indigo-200'
-          }`}
-          onClick={() => {
-            if (hasSubMilestones || milestonePlans.length > 0) toggleExpanded(milestone.id);
-            else navigate(`/projects/${id}/milestones/${milestone.id}`);
-          }}
-        >
-          {/* Top row */}
-          <div className="flex items-center gap-[0.625rem] mb-[0.5625rem]">
-            {/* expand chevron */}
-            {(hasSubMilestones || milestonePlans.length > 0) ? (
-              <button
-                onClick={e => { e.stopPropagation(); toggleExpanded(milestone.id); }}
-                className={`w-[1.75rem] h-[1.75rem] rounded flex items-center justify-center flex-shrink-0 text-lg transition-all hover:bg-slate-100 ${isExpanded ? 'text-indigo-500 rotate-90 bg-indigo-50' : 'text-slate-400'}`}
-              >
-                <i className="ri-arrow-right-s-line" />
-              </button>
-            ) : null}
+    const endTs = milestone.end_date
+      ? new Date(milestone.end_date.split('T')[0]).getTime()
+      : null;
+    const daysLeft = endTs !== null
+      ? Math.ceil((endTs - new Date().setHours(0, 0, 0, 0)) / 86400000)
+      : null;
 
-            {/* icon */}
-            <div className="w-9 h-9 rounded-[0.4375rem] flex items-center justify-center flex-shrink-0" style={{ background: info.iconBg }}>
-              <i className={`${info.icon} text-[1.125rem]`} style={{ color: info.iconColor }} />
+    const COLORS = ['#6366F1','#F59E0B','#10B981','#EC4899','#3B82F6','#8B5CF6','#EF4444'];
+
+    return (
+      <div key={milestone.id} style={{ borderBottom: '1px solid #F1F5F9' }} className="last:border-b-0">
+        <div style={{ background: isExpanded ? '#FAFAFA' : undefined }}>
+
+          {/* ── Main row ── */}
+          <div
+            className="flex items-center gap-3 px-4 cursor-pointer"
+            style={{ minHeight: '60px', paddingTop: '10px', paddingBottom: '10px' }}
+            onClick={() => canExpand ? toggleExpanded(milestone.id) : navigate(`/projects/${id}/milestones/${milestone.id}`)}
+          >
+            {/* Chevron */}
+            <button
+              className="flex items-center justify-center flex-shrink-0 transition-transform text-slate-400 hover:text-slate-600"
+              style={{ width: '20px', height: '20px', transform: isExpanded ? 'rotate(90deg)' : undefined, visibility: canExpand ? 'visible' : 'hidden', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              onClick={e => { e.stopPropagation(); if (canExpand) toggleExpanded(milestone.id); }}
+            >
+              <i className="ri-arrow-right-s-line" style={{ fontSize: '18px' }} />
+            </button>
+
+            {/* Flag icon */}
+            <div className="flex items-center justify-center flex-shrink-0" style={{ width: '32px', height: '32px', borderRadius: '8px', background: info.iconBg }}>
+              <i className={`${info.icon}`} style={{ fontSize: '16px', color: info.iconColor }} />
             </div>
 
-            {/* name + date */}
+            {/* Name + date + compact progress (collapsed only) */}
             <div className="flex-1 min-w-0">
-              <Link
-                to={`/projects/${id}/milestones/${milestone.id}`}
-                onClick={e => e.stopPropagation()}
-                className={`block text-[0.875rem] font-semibold truncate hover:text-indigo-600 transition-colors ${isDone ? 'text-slate-500' : 'text-slate-900'}`}
-              >
-                {milestone.name}
-              </Link>
-              <div className="text-[0.75rem] text-slate-400 mt-[0.0625rem] flex items-center gap-1">
-                <i className="ri-calendar-line" style={{ fontSize: '0.625rem', verticalAlign: '-1px' }} />
-                {formatDateRange(milestone.start_date, milestone.end_date)}
+              <div className="flex items-center gap-2">
+                <Link
+                  to={`/projects/${id}/milestones/${milestone.id}`}
+                  onClick={e => e.stopPropagation()}
+                  className={`font-semibold truncate hover:text-indigo-600 transition-colors ${isDone ? 'text-slate-400' : 'text-slate-900'}`}
+                  style={{ fontSize: '15px', textDecoration: 'none' }}
+                >
+                  {milestone.name}
+                </Link>
                 {milestone.isAggregated && (
-                  <span className="text-[0.5625rem] font-medium text-indigo-400 ml-1">
-                    ({milestone.date_mode === 'manual' ? '✏️ manual' : '🔄 auto'})
+                  <span style={{ fontSize: '10px', color: '#94A3B8', flexShrink: 0 }}>
+                    {milestone.date_mode === 'manual' ? '✏️ manual' : '🔄 auto'}
                   </span>
                 )}
                 {(milestone.dateWarnings?.length ?? 0) > 0 && (
-                  <span className="text-[0.5625rem] text-amber-500 ml-1" title={milestone.dateWarnings!.join('\n')}>
-                    ⚠️ {milestone.dateWarnings!.length} warning{milestone.dateWarnings!.length !== 1 ? 's' : ''}
+                  <span style={{ fontSize: '10px', color: '#F59E0B' }} title={milestone.dateWarnings!.join('\n')}>
+                    ⚠️ {milestone.dateWarnings!.length}
                   </span>
                 )}
               </div>
+              <div style={{ fontSize: '11px', color: '#94A3B8', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <i className="ri-calendar-line" style={{ fontSize: '9px', verticalAlign: '-1px' }} />
+                {formatDateRange(milestone.start_date, milestone.end_date)}
+                {isDone && <span style={{ marginLeft: '4px' }}>· shipped</span>}
+              </div>
+              {/* Compact inline progress bar — collapsed state only */}
+              {!isExpanded && milestone.totalTests > 0 && (
+                <div style={{ marginTop: '6px', height: '5px', background: '#F1F5F9', borderRadius: '3px', overflow: 'hidden', display: 'flex', maxWidth: '160px' }}>
+                  <div style={{ width: `${passedPct}%`, background: '#22C55E', height: '100%' }} />
+                  <div style={{ width: `${failedPct}%`, background: '#EF4444', height: '100%' }} />
+                </div>
+              )}
             </div>
 
-            {/* sub count */}
-            {hasSubMilestones && (
-              <span className="text-[0.6875rem] font-semibold text-indigo-500 flex items-center gap-[0.1875rem] flex-shrink-0">
-                <i className="ri-git-branch-line text-[0.8125rem]" />
-                {milestone.subMilestones!.length} subs
+            {/* Plans badge (violet) */}
+            {milestonePlans.length > 0 && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '11px', fontWeight: 600, color: '#6D28D9', background: '#EDE9FE', border: '1px solid #DDD6FE', padding: '2px 8px', borderRadius: '20px', flexShrink: 0 }}>
+                <i className="ri-file-list-3-line" style={{ fontSize: '10px' }} />
+                {milestonePlans.length} plan{milestonePlans.length !== 1 ? 's' : ''}
               </span>
             )}
-            {/* plan count */}
-            {milestonePlans.length > 0 && (
-              <span className="text-[0.6875rem] font-semibold text-indigo-400 flex items-center gap-[0.1875rem] flex-shrink-0">
-                <i className="ri-file-list-3-line text-[0.8125rem]" />
-                {milestonePlans.length} plan{milestonePlans.length !== 1 ? 's' : ''}
+
+            {/* Subs badge */}
+            {hasSubMilestones && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '11px', fontWeight: 500, color: '#64748B', background: '#fff', border: '1px solid #E2E8F0', padding: '2px 8px', borderRadius: '20px', flexShrink: 0 }}>
+                <i className="ri-git-branch-line" style={{ fontSize: '10px' }} />
+                {milestone.subMilestones!.length} subs
               </span>
             )}
 
             {/* Roll-up badge */}
             {milestone.isAggregated && (
-              <span
-                className="inline-flex items-center gap-1 text-[0.625rem] font-semibold text-indigo-500 bg-indigo-50 px-[0.4375rem] py-[0.125rem] rounded-full flex-shrink-0"
-                title="Sub milestone 데이터 자동 집계"
-              >
-                <i className="ri-loop-left-line text-[0.6875rem]" />
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '11px', fontWeight: 500, color: '#6366F1', background: '#fff', border: '1px solid #C7D2FE', padding: '2px 8px', borderRadius: '20px', flexShrink: 0 }}>
+                <i className="ri-loop-left-line" style={{ fontSize: '10px' }} />
                 Roll-up
               </span>
             )}
 
-            {/* status badge */}
-            <span className={`text-[0.6875rem] font-semibold px-2 py-[0.1875rem] rounded-full flex-shrink-0 ${info.badgeCls}`}>
+            {/* Progress text (collapsed) */}
+            {!isExpanded && milestone.totalTests > 0 && (
+              <span style={{ fontSize: '11px', color: '#94A3B8', flexShrink: 0 }}>
+                {milestone.actualProgress}% · {milestone.completedTests}/{milestone.totalTests}
+              </span>
+            )}
+
+            {/* Days-left badge */}
+            {daysLeft !== null && !isDone && daysLeft >= 0 && daysLeft <= 60 && (
+              <span style={{
+                fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '20px', flexShrink: 0,
+                ...(daysLeft <= 7
+                  ? { background: '#FEF2F2', color: '#EF4444', border: '1px solid #FCA5A5' }
+                  : { background: '#FFFBEB', color: '#D97706', border: '1px solid #FCD34D' })
+              }}>
+                {daysLeft}d left
+              </span>
+            )}
+
+            {/* Status badge */}
+            <span className={`text-[11px] font-semibold px-2 py-[2px] rounded-full flex-shrink-0 ${info.badgeCls}`}>
               {info.label}
             </span>
 
-            {/* action buttons */}
+            {/* Action buttons */}
             <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
-              <button
-                onClick={() => { setCreatePlanMilestoneId(milestone.id); setShowCreatePlanModal(true); }}
-                className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-medium px-[0.4375rem] py-1 rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-all whitespace-nowrap cursor-pointer"
-              >
-                <i className="ri-file-list-3-line text-[0.8125rem]" />+Plan
-              </button>
+              {!milestone.isAggregated && milestone.status === 'upcoming' && (
+                <button onClick={() => handleStartMilestone(milestone.id)}
+                  style={{ fontSize: '11px', fontWeight: 500, padding: '3px 7px', borderRadius: '4px', border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                  className="hover:bg-slate-100 transition-colors">Start</button>
+              )}
+              {!milestone.isAggregated && (milestone.status === 'started' || milestone.status === 'past_due') && (
+                <button onClick={() => handleMarkAsComplete(milestone.id)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '11px', fontWeight: 500, padding: '3px 7px', borderRadius: '4px', border: '1px solid #86EFAC', background: '#fff', color: '#16A34A', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                  className="hover:bg-green-50 transition-colors">
+                  <i className="ri-check-line" style={{ fontSize: '12px' }} />Complete
+                </button>
+              )}
               <button
                 onClick={() => { setParentMilestoneId(milestone.id); setShowCreateModal(true); }}
-                className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-medium px-[0.4375rem] py-1 rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-all whitespace-nowrap cursor-pointer"
-              >
-                <i className="ri-git-branch-line text-[0.8125rem]" />+Sub
+                style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '11px', fontWeight: 500, padding: '3px 7px', borderRadius: '4px', border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                className="hover:bg-slate-100 transition-colors">
+                <i className="ri-git-branch-line" style={{ fontSize: '11px' }} />+Sub
               </button>
               <button
                 onClick={() => { setEditFormData({ name: milestone.name, start_date: milestone.start_date ? milestone.start_date.split('T')[0] : '', end_date: milestone.end_date ? milestone.end_date.split('T')[0] : '', status: milestone.status }); setEditingMilestone(milestone); }}
-                className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-medium px-[0.4375rem] py-1 rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-all whitespace-nowrap cursor-pointer"
-              >
-                <i className="ri-edit-line text-[0.8125rem]" />Edit
+                style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '11px', fontWeight: 500, padding: '3px 7px', borderRadius: '4px', border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                className="hover:bg-slate-100 transition-colors">
+                <i className="ri-edit-line" style={{ fontSize: '11px' }} />Edit
               </button>
-              {!milestone.isAggregated && milestone.status === 'upcoming' && (
-                <button
-                  onClick={() => handleStartMilestone(milestone.id)}
-                  className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-medium px-[0.4375rem] py-1 rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-all whitespace-nowrap cursor-pointer"
-                >
-                  Start
-                </button>
-              )}
-              {!milestone.isAggregated && (milestone.status === 'started' || milestone.status === 'past_due') && (
-                <button
-                  onClick={() => handleMarkAsComplete(milestone.id)}
-                  className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-medium px-[0.4375rem] py-1 rounded border border-green-300 bg-white text-green-600 hover:bg-green-50 transition-all whitespace-nowrap cursor-pointer"
-                >
-                  <i className="ri-check-line text-[0.8125rem]" />Complete
-                </button>
-              )}
-              {isDone && (
-                <Link
-                  to={`/projects/${id}/milestones/${milestone.id}`}
-                  onClick={e => e.stopPropagation()}
-                  className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-medium px-[0.4375rem] py-1 rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-all whitespace-nowrap cursor-pointer"
-                >
-                  <i className="ri-eye-line text-[0.8125rem]" />View
-                </Link>
-              )}
             </div>
           </div>
 
-          {/* Progress bar */}
-          <div className="mb-[0.4375rem]">
-            <div className="h-[6px] bg-slate-100 rounded-full overflow-hidden flex mb-[0.3125rem]">
-              <div className="h-full bg-emerald-500 transition-all" style={{ width: `${passedPct}%` }} />
-              <div className="h-full bg-rose-500 transition-all" style={{ width: `${failedPct}%` }} />
-            </div>
-            <div className="flex justify-between text-[0.75rem]">
-              <span className="font-semibold text-slate-900">{milestone.actualProgress}% complete</span>
-              <span className="text-slate-400">{milestone.completedTests} / {milestone.totalTests} cases</span>
-            </div>
-          </div>
+          {/* ── Expanded section ── */}
+          {isExpanded && (
+            <div style={{ borderTop: '1px solid #F1F5F9', background: '#FAFAFA' }}>
 
-          {/* Bottom: counts + assignees */}
-          <div className="flex items-center gap-3 text-[0.75rem]">
-            <span className="flex items-center gap-[0.1875rem]">
-              <span className="w-[6px] h-[6px] rounded-full bg-emerald-500 flex-shrink-0" />
-              <span className="text-slate-500">{milestone.passedTests} passed</span>
-            </span>
-            <span className="flex items-center gap-[0.1875rem]">
-              <span className="w-[6px] h-[6px] rounded-full bg-rose-500 flex-shrink-0" />
-              <span className="text-slate-500">{milestone.failedTests} failed</span>
-            </span>
-            <span className="flex items-center gap-[0.1875rem]">
-              <span className="w-[6px] h-[6px] rounded-full bg-slate-300 flex-shrink-0" />
-              <span className="text-slate-500">{remaining} remaining</span>
-            </span>
-            {milestone.isAggregated && milestone.rollupPassRate !== undefined && milestone.rollupPassRate > 0 && (
-              <span className="flex items-center gap-[0.1875rem] pl-2 border-l border-slate-200">
-                <span className="text-indigo-500 font-semibold">{milestone.rollupPassRate}% pass rate</span>
-              </span>
-            )}
-            {/* Assignee avatar stack */}
-            {(() => {
-              const uids = milestoneRunAssignees.get(milestone.id) || [];
-              if (uids.length === 0) return null;
-              const COLORS = ['#6366F1','#F59E0B','#10B981','#EC4899','#3B82F6','#8B5CF6','#EF4444'];
-              return (
-                <div className="ml-auto flex items-center flex-shrink-0">
-                  {uids.slice(0, 4).map((uid, idx) => {
-                    const p = milestoneAssigneeProfiles.get(uid);
-                    const initials = p?.name
-                      ? p.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
-                      : (p?.email?.slice(0, 2).toUpperCase() ?? '??');
+              {/* Wide progress bar */}
+              {milestone.totalTests > 0 && (
+                <div style={{ padding: '12px 16px 12px 60px' }}>
+                  <div style={{ height: '8px', background: '#E2E8F0', borderRadius: '4px', overflow: 'hidden', display: 'flex' }}>
+                    <div style={{ width: `${passedPct}%`, background: '#22C55E', height: '100%' }} />
+                    <div style={{ width: `${failedPct}%`, background: '#EF4444', height: '100%' }} />
+                  </div>
+                  <div style={{ display: 'flex', gap: '14px', marginTop: '8px', fontSize: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span><span style={{ display: 'inline-block', width: '7px', height: '7px', borderRadius: '50%', background: '#22C55E', marginRight: '4px', verticalAlign: '-1px' }} /><strong>{milestone.passedTests}</strong> <span style={{ color: '#94A3B8' }}>passed</span></span>
+                    <span><span style={{ display: 'inline-block', width: '7px', height: '7px', borderRadius: '50%', background: '#EF4444', marginRight: '4px', verticalAlign: '-1px' }} /><strong>{milestone.failedTests}</strong> <span style={{ color: '#94A3B8' }}>failed</span></span>
+                    <span><span style={{ display: 'inline-block', width: '7px', height: '7px', borderRadius: '50%', background: '#CBD5E1', marginRight: '4px', verticalAlign: '-1px' }} /><strong>{remaining}</strong> <span style={{ color: '#94A3B8' }}>remaining</span></span>
+                    <span style={{ color: '#CBD5E1' }}>|</span>
+                    <span><strong>{milestone.actualProgress}%</strong> <span style={{ color: '#94A3B8' }}>complete</span></span>
+                    {milestone.isAggregated && (milestone.rollupPassRate ?? 0) > 0 && (
+                      <><span style={{ color: '#CBD5E1' }}>|</span><span><strong>{milestone.rollupPassRate}%</strong> <span style={{ color: '#94A3B8' }}>pass rate</span></span></>
+                    )}
+                    <span style={{ marginLeft: 'auto', color: '#94A3B8' }}>{milestone.completedTests} / {milestone.totalTests} cases</span>
+                  </div>
+                  {/* Assignee stack */}
+                  {(() => {
+                    const uids = milestoneRunAssignees.get(milestone.id) || [];
+                    if (uids.length === 0) return null;
                     return (
-                      <div
-                        key={uid}
-                        title={p?.name || p?.email || uid}
-                        style={{
-                          background: COLORS[idx % COLORS.length],
-                          marginLeft: idx === 0 ? 0 : '-0.25rem',
-                          width: '1.375rem', height: '1.375rem', borderRadius: '50%',
-                          border: '1.5px solid #fff', display: 'flex', alignItems: 'center',
-                          justifyContent: 'center', fontSize: '0.5rem', fontWeight: 700,
-                          color: '#fff', flexShrink: 0, position: 'relative', zIndex: 4 - idx,
-                          overflow: 'hidden',
-                        }}
-                      >
-                        {p?.url ? <img src={p.url} alt={initials} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
+                      <div style={{ display: 'flex', alignItems: 'center', marginTop: '8px' }}>
+                        {uids.slice(0, 4).map((uid, idx) => {
+                          const p = milestoneAssigneeProfiles.get(uid);
+                          const initials = p?.name ? p.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : (p?.email?.slice(0, 2).toUpperCase() ?? '??');
+                          return (
+                            <div key={uid} title={p?.name || p?.email || uid}
+                              style={{ background: COLORS[idx % COLORS.length], marginLeft: idx === 0 ? 0 : '-5px', width: '22px', height: '22px', borderRadius: '50%', border: '2px solid #FAFAFA', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', fontWeight: 700, color: '#fff', flexShrink: 0, position: 'relative', zIndex: 4 - idx, overflow: 'hidden' }}>
+                              {p?.url ? <img src={p.url} alt={initials} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
+                            </div>
+                          );
+                        })}
+                        {uids.length > 4 && (
+                          <div style={{ marginLeft: '-5px', width: '22px', height: '22px', borderRadius: '50%', border: '2px solid #FAFAFA', background: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '7px', fontWeight: 700, color: '#64748B' }}>
+                            +{uids.length - 4}
+                          </div>
+                        )}
                       </div>
                     );
-                  })}
-                  {uids.length > 4 && (
-                    <div style={{ marginLeft: '-0.25rem', width: '1.375rem', height: '1.375rem', borderRadius: '50%', border: '1.5px solid #fff', background: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.4375rem', fontWeight: 700, color: '#64748B' }}>
-                      +{uids.length - 4}
-                    </div>
-                  )}
+                  })()}
                 </div>
-              );
-            })()}
-          </div>
-        </div>
+              )}
 
-        {/* Sub-milestones and Plans */}
-        {(hasSubMilestones || milestonePlans.length > 0) && isExpanded && (
-          <div className="mt-1.5 pl-[1.125rem] relative">
-            {/* vertical connector line */}
-            <div className="absolute left-2 top-0 bottom-3 w-[1.5px] bg-slate-200 rounded" />
-            {milestone.subMilestones?.map(sub => renderSubMilestone(sub))}
-            {milestonePlans.map(plan => renderPlanRow(plan, milestone.id))}
-            {/* + New Plan row */}
-            <div className="relative mb-0">
-              <div className="absolute left-[-0.625rem] top-1/2 w-[0.625rem] h-[1.5px] bg-slate-200" />
-              <button
-                onClick={e => { e.stopPropagation(); setCreatePlanMilestoneId(milestone.id); setShowCreatePlanModal(true); }}
-                className="w-full text-left bg-white border border-dashed border-slate-200 rounded-md px-[0.8125rem] py-[0.4375rem] text-[0.75rem] text-slate-400 hover:border-indigo-300 hover:text-indigo-500 hover:bg-indigo-50/40 transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <i className="ri-add-line text-sm" />New Plan
-              </button>
+              {/* Sub-milestones section */}
+              {hasSubMilestones && (
+                <div style={{ padding: '0 16px 12px 60px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', fontSize: '11px', fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <i className="ri-git-branch-line" style={{ color: '#6366F1', fontSize: '12px' }} />
+                    Sub Milestones
+                    <span style={{ color: '#CBD5E1', fontWeight: 500, textTransform: 'none', letterSpacing: 0 }}>{milestone.subMilestones!.length}</span>
+                  </div>
+                  {milestone.subMilestones!.map(sub => renderSubMilestone(sub))}
+                </div>
+              )}
+
+              {/* Test Plans section */}
+              <div style={{ padding: '0 16px 14px 60px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0 8px', fontSize: '11px', fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <i className="ri-calendar-2-line" style={{ color: '#7C3AED', fontSize: '12px' }} />
+                  Test Plans
+                  <span style={{ color: '#CBD5E1', fontWeight: 500, textTransform: 'none', letterSpacing: 0 }}>{milestonePlans.length}</span>
+                  <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }}>
+                    {/* AI Assist */}
+                    <button
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 600, padding: '3px 9px', borderRadius: '6px', border: '1px solid #C7D2FE', background: 'linear-gradient(135deg, #EEF2FF, #EDE9FE)', color: '#6366F1', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <i className="ri-star-line" style={{ fontSize: '11px' }} />AI Assist
+                    </button>
+                    <button
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 500, padding: '3px 9px', borderRadius: '6px', border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                      className="hover:bg-slate-50 transition-colors"
+                      onClick={e => { e.stopPropagation(); setCreatePlanMilestoneId(milestone.id); setShowCreatePlanModal(true); }}
+                    >
+                      <i className="ri-add-line" style={{ fontSize: '12px' }} />New Plan
+                    </button>
+                  </div>
+                </div>
+                {milestonePlans.map(plan => renderPlanRow(plan, milestone.id))}
+                {milestonePlans.length === 0 && (
+                  <button
+                    onClick={e => { e.stopPropagation(); setCreatePlanMilestoneId(milestone.id); setShowCreatePlanModal(true); }}
+                    style={{ width: '100%', textAlign: 'left', border: '1px dashed #E2E8F0', borderRadius: '8px', padding: '8px 14px', fontSize: '12px', color: '#94A3B8', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    className="hover:border-indigo-300 hover:text-indigo-500 hover:bg-indigo-50/30 transition-all"
+                  >
+                    <i className="ri-add-line" style={{ fontSize: '14px' }} />Create first Test Plan for this milestone
+                  </button>
+                )}
+              </div>
+
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     );
   };
@@ -1000,13 +1067,6 @@ export default function ProjectMilestones() {
           ))}
           <div className="flex-1" />
           <button
-            onClick={() => { setCreatePlanMilestoneId(null); setShowCreatePlanModal(true); }}
-            className="flex items-center gap-1 px-[0.75rem] py-[0.3125rem] border border-slate-200 bg-white text-slate-600 rounded-[0.375rem] text-[0.75rem] font-semibold hover:bg-slate-50 transition-colors cursor-pointer whitespace-nowrap mr-1.5"
-          >
-            <i className="ri-file-list-3-line text-sm" />
-            New Plan
-          </button>
-          <button
             onClick={() => { setParentMilestoneId(null); setShowCreateModal(true); }}
             className="flex items-center gap-1 px-[0.75rem] py-[0.3125rem] bg-indigo-500 text-white rounded-[0.375rem] text-[0.75rem] font-semibold hover:bg-indigo-600 transition-colors cursor-pointer whitespace-nowrap shadow-[0_1px_3px_rgba(99,102,241,0.3)]"
           >
@@ -1021,7 +1081,7 @@ export default function ProjectMilestones() {
             <i className="ri-search-line text-[0.875rem] text-slate-400 flex-shrink-0" />
             <input
               type="text"
-              placeholder="Search milestones..."
+              placeholder="Search milestones &amp; plans…"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="border-none bg-transparent outline-none text-[0.8125rem] text-slate-800 placeholder-slate-400 flex-1 min-w-0 font-[inherit]"
@@ -1037,15 +1097,34 @@ export default function ProjectMilestones() {
 
         <main className="flex-1 overflow-y-auto bg-slate-50">
           <div className="p-5">
-            {/* Info banner */}
-            <div className="flex items-start gap-3 bg-indigo-50 border border-indigo-100 rounded-lg px-4 py-3 mb-4 text-[0.8125rem]">
-              <i className="ri-information-line text-indigo-400 text-base flex-shrink-0 mt-[0.0625rem]" />
-              <div className="text-slate-600 leading-relaxed">
-                <span className="font-semibold text-indigo-700">Milestones</span> group your test efforts by release or sprint. Expand a milestone to see its{' '}
-                <span className="font-semibold" style={{ color: '#0284C7' }}>Test Plans</span> — each plan defines a scope of test cases and tracks execution runs.{' '}
-                Runs not linked to any milestone appear in <span className="font-semibold text-slate-700">Ad-hoc Runs</span> below.
+
+            {/* ── Concept banner (dismissable, gradient) ── */}
+            {showConceptBanner && (
+              <div style={{ marginBottom: '18px', background: 'linear-gradient(135deg, #EEF2FF 0%, #F5F3FF 100%)', border: '1px solid #E0E7FF', borderRadius: '10px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '14px', fontSize: '12px' }}>
+                <i className="ri-information-line flex-shrink-0" style={{ color: '#6366F1', fontSize: '18px' }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, color: '#1E293B', marginBottom: '3px' }}>
+                    Milestones &amp; Test Plans — 어떻게 다른가요?
+                  </div>
+                  <div style={{ color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                    <span style={{ padding: '2px 8px', borderRadius: '6px', background: '#fff', border: '1px solid #E0E7FF', color: '#4F46E5', fontWeight: 600 }}>Milestone</span>
+                    = 릴리스 타깃 ("v2.0, 5/30까지")
+                    <i className="ri-arrow-right-s-line" style={{ color: '#CBD5E1' }} />
+                    <span style={{ padding: '2px 8px', borderRadius: '6px', background: '#fff', border: '1px solid #EDE9FE', color: '#7C3AED', fontWeight: 600 }}>Test Plan</span>
+                    = 그 안의 실행 전략 ("Login Regression 48 TC"). Plan은 Milestone에 N:1로 귀속.
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowConceptBanner(false)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', padding: '4px', borderRadius: '4px', flexShrink: 0, display: 'flex', alignItems: 'center' }}
+                  className="hover:bg-white/60 transition-colors"
+                >
+                  <i className="ri-close-line" style={{ fontSize: '16px' }} />
+                </button>
               </div>
-            </div>
+            )}
+
+            {/* ── Milestones unified container ── */}
             {filteredMilestones.length === 0 ? (
               <div className="text-center py-12">
                 <i className="ri-flag-line text-5xl text-slate-300 block mb-3"></i>
@@ -1055,63 +1134,123 @@ export default function ProjectMilestones() {
                 </p>
               </div>
             ) : (
-              <div className="flex flex-col gap-[0.625rem]">
+              <div style={{ border: '1px solid #E2E8F0', borderRadius: '12px', background: '#fff', overflow: 'hidden', marginBottom: '24px' }}>
                 {filteredMilestones.map(milestone => renderMilestone(milestone))}
               </div>
             )}
 
-            {/* ── Ad-hoc Runs section ────────────────────────── */}
+            {/* ── Ad-hoc Runs section ── */}
             {activeTab === 'all' && adHocRuns.length > 0 && (
-              <div className="mt-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <i className="ri-play-circle-line text-slate-400 text-[0.9375rem]" />
-                  <h2 className="text-[0.875rem] font-semibold text-slate-600">Ad-hoc Runs</h2>
-                  <span className="text-[0.6875rem] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-semibold">{adHocRuns.length}</span>
-                  <span className="text-[0.6875rem] text-slate-400">· Not linked to a milestone</span>
+              <div>
+                {/* Section header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '11px', fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <i className="ri-flashlight-line" style={{ color: '#F97316', fontSize: '14px' }} />
+                  Ad-hoc Runs
+                  <span style={{ background: '#FFF7ED', color: '#C2410C', border: '1px solid #FDBA74', borderRadius: '20px', padding: '1px 7px', fontSize: '11px', fontWeight: 600, textTransform: 'none', letterSpacing: 0 }}>{adHocRuns.length}</span>
+                  <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, fontSize: '11px', color: '#CBD5E1' }}>
+                    Milestone / Plan 없이 생성된 일회성 실행
+                  </span>
+                  <Link
+                    to={`/projects/${id}/runs`}
+                    style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 500, padding: '3px 9px', borderRadius: '6px', border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', textDecoration: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                    className="hover:bg-slate-50 transition-colors"
+                  >
+                    <i className="ri-add-line" style={{ fontSize: '12px' }} />New Run
+                  </Link>
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  {adHocRuns.slice(0, 8).map((run: any) => {
+
+                {/* Ad-hoc runs unified container */}
+                <div style={{ border: '1px solid #E2E8F0', borderRadius: '12px', background: '#fff', overflow: 'hidden' }}>
+                  {adHocRuns.slice(0, 8).map((run: any, runIdx: number) => {
                     const totalTcs = run.test_case_ids?.length || 0;
                     const passed = run.passed || 0;
                     const failed = run.failed || 0;
+                    const untested = totalTcs - passed - failed;
                     const passedPct = totalTcs > 0 ? (passed / totalTcs) * 100 : 0;
                     const failedPct = totalTcs > 0 ? (failed / totalTcs) * 100 : 0;
+                    const passRate = totalTcs > 0 ? Math.round(passed / totalTcs * 100) : 0;
+                    const runStatus = run.status === 'completed' ? 'Completed' : run.status === 'in_progress' ? 'In Progress' : 'Not Started';
+                    const runStatusStyle = run.status === 'completed'
+                      ? { bg: '#DCFCE7', color: '#15803D' }
+                      : run.status === 'in_progress'
+                      ? { bg: '#FEF3C7', color: '#B45309' }
+                      : { bg: '#F1F5F9', color: '#64748B' };
                     return (
-                      <Link
-                        key={run.id}
-                        to={`/projects/${id}/runs/${run.id}`}
-                        className="bg-white border border-slate-200 rounded-md px-[0.8125rem] py-[0.5625rem] hover:border-indigo-200 hover:shadow-sm transition-all flex items-center gap-3 no-underline"
-                      >
-                        <div className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0" style={{ background: '#F8FAFC' }}>
-                          <i className="ri-play-circle-line text-[0.75rem] text-slate-400" />
+                      <div key={run.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderBottom: runIdx < Math.min(adHocRuns.length, 8) - 1 ? '1px solid #F1F5F9' : undefined }}>
+                        {/* Orange lightning icon */}
+                        <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#FFF7ED', color: '#F97316', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <i className="ri-flashlight-line" style={{ fontSize: '15px' }} />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <span className="text-[0.8125rem] font-medium text-slate-800 truncate block">{run.name}</span>
-                          <div className="flex items-center gap-2 mt-[0.1875rem]">
-                            <div className="flex-1 h-[3px] bg-slate-100 rounded-full overflow-hidden flex" style={{ maxWidth: '6rem' }}>
-                              <div className="h-full bg-emerald-500" style={{ width: `${passedPct}%` }} />
-                              <div className="h-full bg-rose-500" style={{ width: `${failedPct}%` }} />
-                            </div>
-                            <span className="text-[0.6875rem] text-slate-400">{totalTcs} cases</span>
+
+                        {/* Name + meta */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
+                            <Link
+                              to={`/projects/${id}/runs/${run.id}`}
+                              style={{ fontWeight: 600, fontSize: '14px', color: '#1E293B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'none' }}
+                              className="hover:text-indigo-600 transition-colors"
+                            >
+                              {run.name}
+                            </Link>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 500, color: '#F97316', background: '#FFF7ED', border: '1px solid #FDBA74', padding: '1px 7px', borderRadius: '20px', flexShrink: 0 }}>
+                              <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#F97316', flexShrink: 0 }} />
+                              Ad-hoc
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#94A3B8' }}>
+                            {totalTcs} TCs
+                            {run.created_at && ` · ${new Date(run.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
                           </div>
                         </div>
-                        <span className="text-[0.6875rem] text-slate-400 flex-shrink-0">
-                          {new Date(run.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+
+                        {/* 200px progress bar */}
+                        <div style={{ width: '200px', flexShrink: 0 }}>
+                          <div style={{ height: '5px', background: '#F1F5F9', borderRadius: '3px', overflow: 'hidden', display: 'flex' }}>
+                            <div style={{ width: `${passedPct}%`, background: '#22C55E', height: '100%' }} />
+                            <div style={{ width: `${failedPct}%`, background: '#EF4444', height: '100%' }} />
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '3px', fontSize: '11px', color: '#94A3B8' }}>
+                            {totalTcs > 0 ? (
+                              <>
+                                <span>{passed} passed · {failed} failed · {untested} untested</span>
+                                <span style={{ fontWeight: 600, color: passRate >= 70 ? '#16A34A' : '#EF4444' }}>{passRate}%</span>
+                              </>
+                            ) : (
+                              <span>No test cases</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Status badge */}
+                        <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '20px', background: runStatusStyle.bg, color: runStatusStyle.color, flexShrink: 0, whiteSpace: 'nowrap' }}>
+                          {runStatus}
                         </span>
-                      </Link>
+
+                        {/* Promote to Plan button */}
+                        <button
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 500, padding: '3px 9px', borderRadius: '6px', border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
+                          className="hover:bg-slate-50 transition-colors"
+                          onClick={() => { setCreatePlanMilestoneId(null); setShowCreatePlanModal(true); }}
+                          title="Promote to a Test Plan"
+                        >
+                          <i className="ri-add-line" style={{ fontSize: '12px' }} />Promote to Plan
+                        </button>
+                      </div>
                     );
                   })}
-                  {adHocRuns.length > 8 && (
-                    <Link
-                      to={`/projects/${id}/runs`}
-                      className="text-center py-2 text-[0.8125rem] text-indigo-500 hover:text-indigo-700 font-medium no-underline"
-                    >
-                      View all {adHocRuns.length} ad-hoc runs →
-                    </Link>
-                  )}
                 </div>
+
+                {adHocRuns.length > 8 && (
+                  <Link
+                    to={`/projects/${id}/runs`}
+                    className="block text-center py-2 text-[0.8125rem] text-indigo-500 hover:text-indigo-700 font-medium no-underline mt-2"
+                  >
+                    View all {adHocRuns.length} ad-hoc runs →
+                  </Link>
+                )}
               </div>
             )}
+
           </div>
         </main>
       </div>
