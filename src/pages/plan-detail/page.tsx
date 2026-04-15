@@ -763,111 +763,107 @@ export default function PlanDetailPage() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#F8FAFC', fontFamily: 'Inter, sans-serif' }}>
       <ProjectHeader projectId={projectId!} projectName={project?.name ?? ''} />
 
-      {/* Plan header */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #E2E8F0', padding: '1.25rem 2rem 0' }}>
-        <div style={{ maxWidth: '60rem', margin: '0 auto' }}>
-          {/* Breadcrumb */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', fontSize: '0.8125rem' }}>
-            <Link to={`/projects/${projectId}/milestones`} style={{ color: '#64748B', textDecoration: 'none' }} className="hover:text-indigo-600">Milestones</Link>
-            <i className="ri-arrow-right-s-line" style={{ color: '#CBD5E1' }} />
-            {milestone && (
-              <>
-                <Link to={`/projects/${projectId}/milestones/${milestoneId}`} style={{ color: '#64748B', textDecoration: 'none' }} className="hover:text-indigo-600">{milestone.name}</Link>
-                <i className="ri-arrow-right-s-line" style={{ color: '#CBD5E1' }} />
-              </>
-            )}
-            <span style={{ color: '#1E293B', fontWeight: 500 }}>{plan.name}</span>
-          </div>
+      {/* Plan detail info bar */}
+      <div style={{ background: '#fff', borderBottom: '1px solid #E2E8F0', padding: '0.875rem 1.5rem 0', flexShrink: 0 }}>
+        {/* Breadcrumb */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.625rem', fontSize: '0.75rem' }}>
+          <Link to={`/projects/${projectId}/milestones`} style={{ color: '#6366F1', fontWeight: 500, textDecoration: 'none' }} className="hover:underline">Milestones</Link>
+          <i className="ri-arrow-right-s-line" style={{ color: '#CBD5E1', fontSize: '0.625rem' }} />
+          {milestone && (
+            <>
+              <Link to={`/projects/${projectId}/milestones/${milestoneId}`} style={{ color: '#6366F1', fontWeight: 500, textDecoration: 'none' }} className="hover:underline">{milestone.name}</Link>
+              <i className="ri-arrow-right-s-line" style={{ color: '#CBD5E1', fontSize: '0.625rem' }} />
+            </>
+          )}
+          <span style={{ color: '#94A3B8', fontWeight: 500 }}>{plan.name}</span>
+        </div>
 
-          {/* Title row */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '1rem' }}>
-            <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '0.625rem', background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              {plan.is_locked
-                ? <i className="ri-lock-2-line" style={{ color: '#6366F1', fontSize: '1.125rem' }} />
-                : <i className="ri-file-list-3-line" style={{ color: '#6366F1', fontSize: '1.125rem' }} />
-              }
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.25rem' }}>
-                <h1 style={{ fontSize: '1.375rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>{plan.name}</h1>
-                <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '0.2rem 0.6rem', borderRadius: '9999px' }} className={sc.cls}>
-                  {sc.label}
-                </span>
-                <span style={{ fontSize: '0.75rem', fontWeight: 500, padding: '0.2rem 0.5rem', borderRadius: '0.25rem', border: '1px solid' }} className={pc.cls}>
-                  {pc.label}
-                </span>
-                {plan.is_locked && (
-                  <span style={{ fontSize: '0.75rem', background: '#FFF7ED', color: '#9A3412', border: '1px solid #FED7AA', padding: '0.2rem 0.5rem', borderRadius: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <i className="ri-lock-2-line" style={{ fontSize: '0.6875rem' }} /> Locked
-                  </span>
-                )}
-              </div>
-              {plan.description && <p style={{ fontSize: '0.875rem', color: '#64748B', margin: 0 }}>{plan.description}</p>}
-            </div>
+        {/* Title row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', flexWrap: 'wrap', marginBottom: '0.625rem' }}>
+          <div style={{ width: '2rem', height: '2rem', borderRadius: '0.5rem', background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            {plan.is_locked
+              ? <i className="ri-lock-2-line" style={{ color: '#6366F1', fontSize: '1rem' }} />
+              : <i className="ri-file-list-3-line" style={{ color: '#6366F1', fontSize: '1rem' }} />
+            }
           </div>
-
-          {/* Stats bar */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', paddingBottom: '0.25rem', fontSize: '0.8125rem', color: '#64748B', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-              <i className="ri-test-tube-line" style={{ color: '#6366F1' }} />
-              <span><strong style={{ color: '#1E293B' }}>{tcCount}</strong> Test Cases</span>
+          <h1 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#0F172A', margin: 0 }}>{plan.name}</h1>
+          <span style={{ fontSize: '0.6875rem', fontWeight: 600, padding: '0.1875rem 0.5rem', borderRadius: '9999px', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }} className={sc.cls}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'currentColor', opacity: 0.6 }} />
+            {sc.label}
+          </span>
+          <span style={{ fontSize: '0.6875rem', fontWeight: 500, padding: '0.1875rem 0.5rem', borderRadius: '0.25rem', border: '1px solid' }} className={pc.cls}>
+            {pc.label}
+          </span>
+          {plan.is_locked && (
+            <span style={{ fontSize: '0.6875rem', background: '#FFF7ED', color: '#9A3412', border: '1px solid #FED7AA', padding: '0.1875rem 0.4375rem', borderRadius: '0.25rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+              <i className="ri-lock-2-line" style={{ fontSize: '0.625rem' }} /> Locked
+            </span>
+          )}
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1.5rem', fontSize: '0.8125rem', color: '#64748B' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3125rem' }}>
+              <i className="ri-test-tube-line" style={{ color: '#6366F1', fontSize: '0.875rem' }} />
+              <span><strong style={{ color: '#0F172A' }}>{tcCount}</strong> TCs</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-              <i className="ri-play-circle-line" style={{ color: '#10B981' }} />
-              <span><strong style={{ color: '#1E293B' }}>{doneRuns}/{runCount}</strong> Runs done</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3125rem' }}>
+              <i className="ri-play-circle-line" style={{ color: '#10B981', fontSize: '0.875rem' }} />
+              <span><strong style={{ color: '#0F172A' }}>{doneRuns}/{runCount}</strong> runs</span>
             </div>
             {totalDone > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                <i className="ri-percent-line" style={{ color: overallPassRate >= 80 ? '#10B981' : '#F59E0B' }} />
-                <span><strong style={{ color: overallPassRate >= 80 ? '#10B981' : '#F59E0B' }}>{overallPassRate}%</strong> pass rate</span>
-              </div>
-            )}
-            {milestone && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                <i className="ri-flag-line" style={{ color: '#6366F1' }} />
-                <Link to={`/projects/${projectId}/milestones/${milestone.id}`} style={{ color: '#6366F1', textDecoration: 'none', fontWeight: 500 }} className="hover:underline">
-                  {milestone.name}
-                </Link>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3125rem' }}>
+                <i className="ri-percent-line" style={{ color: overallPassRate >= 80 ? '#10B981' : '#F59E0B', fontSize: '0.875rem' }} />
+                <strong style={{ color: overallPassRate >= 80 ? '#10B981' : '#F59E0B' }}>{overallPassRate}%</strong>
               </div>
             )}
             {plan.target_date && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                <i className="ri-calendar-event-line" />
-                <span>Due {new Date(plan.target_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3125rem' }}>
+                <i className="ri-calendar-event-line" style={{ fontSize: '0.875rem' }} />
+                Due {new Date(plan.target_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               </div>
             )}
           </div>
+        </div>
 
-          {/* Tabs */}
-          <div style={{ display: 'flex', marginTop: '1rem', gap: '0' }}>
-            {TABS.map(tab => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '0.375rem',
-                  padding: '0.625rem 1rem',
-                  border: 'none',
-                  borderBottom: `2px solid ${activeTab === tab.key ? '#6366F1' : 'transparent'}`,
-                  background: 'none',
-                  fontSize: '0.875rem',
-                  fontWeight: activeTab === tab.key ? 600 : 400,
-                  color: activeTab === tab.key ? '#6366F1' : '#64748B',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                <i className={tab.icon} />
-                {tab.label}
-              </button>
-            ))}
+        {/* Progress bar */}
+        {runCount > 0 && totalDone > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+            <div style={{ flex: 1, height: '0.375rem', background: '#E2E8F0', borderRadius: '9999px', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${overallPassRate}%`, background: overallPassRate >= 80 ? '#22C55E' : '#F97316', borderRadius: '9999px', transition: 'width 0.3s' }} />
+            </div>
+            <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap' }}>{overallPassRate}% pass rate</span>
           </div>
+        )}
+
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: 0 }}>
+          {TABS.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.3125rem',
+                padding: '0 0.875rem', height: '2.5rem',
+                border: 'none',
+                borderBottom: `2.5px solid ${activeTab === tab.key ? '#6366F1' : 'transparent'}`,
+                background: 'none',
+                fontSize: '0.8125rem',
+                fontWeight: activeTab === tab.key ? 600 : 500,
+                color: activeTab === tab.key ? '#6366F1' : '#64748B',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                fontFamily: 'inherit',
+                position: 'relative',
+              }}
+            >
+              <i className={tab.icon} style={{ fontSize: '0.9375rem' }} />
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Tab content */}
-      <div style={{ flex: 1, overflow: 'auto', padding: '1.5rem 2rem' }}>
-        <div style={{ maxWidth: '60rem', margin: '0 auto' }}>
+      <div style={{ flex: 1, overflow: 'auto', padding: '1.5rem' }}>
+        <div style={{ maxWidth: '56rem', margin: '0 auto' }}>
           {activeTab === 'testcases' && (
             <TestCasesTab
               plan={plan}

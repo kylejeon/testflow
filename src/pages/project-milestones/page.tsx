@@ -611,7 +611,10 @@ export default function ProjectMilestones() {
         {/* horizontal branch */}
         <div className="absolute left-[-0.625rem] top-1/2 w-[0.625rem] h-[1.5px] bg-slate-200" />
         <div
-          className="bg-indigo-50/60 border border-indigo-100 rounded-md px-[0.8125rem] py-[0.5625rem] hover:border-indigo-300 hover:bg-indigo-50 transition-all cursor-pointer"
+          className="rounded-md px-[0.8125rem] py-[0.5625rem] transition-all cursor-pointer"
+          style={{ background: '#F0F9FF', border: '1px solid #BAE6FD' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#7DD3FC'; (e.currentTarget as HTMLElement).style.background = '#E0F2FE'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#BAE6FD'; (e.currentTarget as HTMLElement).style.background = '#F0F9FF'; }}
           onClick={() => navigate(`/projects/${id}/milestones/${milestoneId}/plans/${plan.id}`)}
         >
           <div className="flex items-center gap-2">
@@ -662,11 +665,18 @@ export default function ProjectMilestones() {
       >
         {/* horizontal branch */}
         <div className="absolute left-[-0.625rem] top-1/2 w-[0.625rem] h-[1.5px] bg-slate-200" />
-        <div className="bg-violet-50 border border-indigo-50 rounded-md px-[0.8125rem] py-[0.6875rem] hover:border-indigo-200 hover:bg-violet-50 transition-all cursor-pointer">
+        <div
+          className="rounded-md px-[0.8125rem] py-[0.6875rem] transition-all cursor-pointer"
+          style={{ background: '#FAFAFF', border: '1px solid #EEF2FF' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#C7D2FE'; (e.currentTarget as HTMLElement).style.background = '#F5F3FF'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#EEF2FF'; (e.currentTarget as HTMLElement).style.background = '#FAFAFF'; }}
+        >
           {/* sub top row */}
           <div className="flex items-center gap-2 mb-[0.375rem]">
-            <div className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0" style={{ background: info.iconBg }}>
-              <i className={`${info.icon} text-[0.75rem]`} style={{ color: info.iconColor }} />
+            <div className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0"
+              style={{ background: sub.status === 'completed' ? '#F0FDF4' : '#EEF2FF' }}>
+              <i className={`${sub.status === 'completed' ? 'ri-checkbox-circle-fill' : 'ri-flag-line'} text-[0.75rem]`}
+                style={{ color: sub.status === 'completed' ? '#16A34A' : '#6366F1' }} />
             </div>
             <div className="flex-1 min-w-0">
               <Link
@@ -818,7 +828,7 @@ export default function ProjectMilestones() {
             <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
               <button
                 onClick={() => { setCreatePlanMilestoneId(milestone.id); setShowCreatePlanModal(true); }}
-                className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-medium px-[0.4375rem] py-1 rounded border border-indigo-200 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-all whitespace-nowrap cursor-pointer"
+                className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-medium px-[0.4375rem] py-1 rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-all whitespace-nowrap cursor-pointer"
               >
                 <i className="ri-file-list-3-line text-[0.8125rem]" />+Plan
               </button>
@@ -874,7 +884,7 @@ export default function ProjectMilestones() {
             </div>
           </div>
 
-          {/* Bottom: counts */}
+          {/* Bottom: counts + assignees */}
           <div className="flex items-center gap-3 text-[0.75rem]">
             <span className="flex items-center gap-[0.1875rem]">
               <span className="w-[6px] h-[6px] rounded-full bg-emerald-500 flex-shrink-0" />
@@ -885,14 +895,52 @@ export default function ProjectMilestones() {
               <span className="text-slate-500">{milestone.failedTests} failed</span>
             </span>
             <span className="flex items-center gap-[0.1875rem]">
-              <span className="w-[6px] h-[6px] rounded-full bg-slate-400 flex-shrink-0" />
+              <span className="w-[6px] h-[6px] rounded-full bg-slate-300 flex-shrink-0" />
               <span className="text-slate-500">{remaining} remaining</span>
             </span>
             {milestone.isAggregated && milestone.rollupPassRate !== undefined && milestone.rollupPassRate > 0 && (
-              <span className="flex items-center gap-[0.1875rem] ml-2 pl-2 border-l border-slate-200">
+              <span className="flex items-center gap-[0.1875rem] pl-2 border-l border-slate-200">
                 <span className="text-indigo-500 font-semibold">{milestone.rollupPassRate}% pass rate</span>
               </span>
             )}
+            {/* Assignee avatar stack */}
+            {(() => {
+              const uids = milestoneRunAssignees.get(milestone.id) || [];
+              if (uids.length === 0) return null;
+              const COLORS = ['#6366F1','#F59E0B','#10B981','#EC4899','#3B82F6','#8B5CF6','#EF4444'];
+              return (
+                <div className="ml-auto flex items-center flex-shrink-0">
+                  {uids.slice(0, 4).map((uid, idx) => {
+                    const p = milestoneAssigneeProfiles.get(uid);
+                    const initials = p?.name
+                      ? p.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
+                      : (p?.email?.slice(0, 2).toUpperCase() ?? '??');
+                    return (
+                      <div
+                        key={uid}
+                        title={p?.name || p?.email || uid}
+                        style={{
+                          background: COLORS[idx % COLORS.length],
+                          marginLeft: idx === 0 ? 0 : '-0.25rem',
+                          width: '1.375rem', height: '1.375rem', borderRadius: '50%',
+                          border: '1.5px solid #fff', display: 'flex', alignItems: 'center',
+                          justifyContent: 'center', fontSize: '0.5rem', fontWeight: 700,
+                          color: '#fff', flexShrink: 0, position: 'relative', zIndex: 4 - idx,
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {p?.url ? <img src={p.url} alt={initials} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
+                      </div>
+                    );
+                  })}
+                  {uids.length > 4 && (
+                    <div style={{ marginLeft: '-0.25rem', width: '1.375rem', height: '1.375rem', borderRadius: '50%', border: '1.5px solid #fff', background: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.4375rem', fontWeight: 700, color: '#64748B' }}>
+                      +{uids.length - 4}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
 
@@ -952,6 +1000,13 @@ export default function ProjectMilestones() {
           ))}
           <div className="flex-1" />
           <button
+            onClick={() => { setCreatePlanMilestoneId(null); setShowCreatePlanModal(true); }}
+            className="flex items-center gap-1 px-[0.75rem] py-[0.3125rem] border border-slate-200 bg-white text-slate-600 rounded-[0.375rem] text-[0.75rem] font-semibold hover:bg-slate-50 transition-colors cursor-pointer whitespace-nowrap mr-1.5"
+          >
+            <i className="ri-file-list-3-line text-sm" />
+            New Plan
+          </button>
+          <button
             onClick={() => { setParentMilestoneId(null); setShowCreateModal(true); }}
             className="flex items-center gap-1 px-[0.75rem] py-[0.3125rem] bg-indigo-500 text-white rounded-[0.375rem] text-[0.75rem] font-semibold hover:bg-indigo-600 transition-colors cursor-pointer whitespace-nowrap shadow-[0_1px_3px_rgba(99,102,241,0.3)]"
           >
@@ -982,6 +1037,15 @@ export default function ProjectMilestones() {
 
         <main className="flex-1 overflow-y-auto bg-slate-50">
           <div className="p-5">
+            {/* Info banner */}
+            <div className="flex items-start gap-3 bg-indigo-50 border border-indigo-100 rounded-lg px-4 py-3 mb-4 text-[0.8125rem]">
+              <i className="ri-information-line text-indigo-400 text-base flex-shrink-0 mt-[0.0625rem]" />
+              <div className="text-slate-600 leading-relaxed">
+                <span className="font-semibold text-indigo-700">Milestones</span> group your test efforts by release or sprint. Expand a milestone to see its{' '}
+                <span className="font-semibold" style={{ color: '#0284C7' }}>Test Plans</span> — each plan defines a scope of test cases and tracks execution runs.{' '}
+                Runs not linked to any milestone appear in <span className="font-semibold text-slate-700">Ad-hoc Runs</span> below.
+              </div>
+            </div>
             {filteredMilestones.length === 0 ? (
               <div className="text-center py-12">
                 <i className="ri-flag-line text-5xl text-slate-300 block mb-3"></i>
