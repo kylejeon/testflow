@@ -618,7 +618,7 @@ const TABS = [
 type TabKey = typeof TABS[number]['key'];
 
 export default function PlanDetailPage() {
-  const { id: projectId, planId } = useParams<{ id: string; planId: string }>();
+  const { id: projectId, milestoneId, planId } = useParams<{ id: string; milestoneId: string; planId: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { showToast } = useToast();
@@ -736,7 +736,7 @@ export default function PlanDetailPage() {
   const handleDelete = async () => {
     const { error } = await supabase.from('test_plans').delete().eq('id', planId!);
     if (error) { showToast('Failed to delete plan', 'error'); return; }
-    navigate(`/projects/${projectId}/plans`);
+    navigate(`/projects/${projectId}/milestones`);
     showToast('Plan deleted', 'success');
   };
 
@@ -768,10 +768,14 @@ export default function PlanDetailPage() {
         <div style={{ maxWidth: '60rem', margin: '0 auto' }}>
           {/* Breadcrumb */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', fontSize: '0.8125rem' }}>
-            <Link to={`/projects/${projectId}`} style={{ color: '#64748B', textDecoration: 'none' }} className="hover:text-indigo-600">{project?.name}</Link>
+            <Link to={`/projects/${projectId}/milestones`} style={{ color: '#64748B', textDecoration: 'none' }} className="hover:text-indigo-600">Milestones</Link>
             <i className="ri-arrow-right-s-line" style={{ color: '#CBD5E1' }} />
-            <Link to={`/projects/${projectId}/plans`} style={{ color: '#64748B', textDecoration: 'none' }} className="hover:text-indigo-600">Plans</Link>
-            <i className="ri-arrow-right-s-line" style={{ color: '#CBD5E1' }} />
+            {milestone && (
+              <>
+                <Link to={`/projects/${projectId}/milestones/${milestoneId}`} style={{ color: '#64748B', textDecoration: 'none' }} className="hover:text-indigo-600">{milestone.name}</Link>
+                <i className="ri-arrow-right-s-line" style={{ color: '#CBD5E1' }} />
+              </>
+            )}
             <span style={{ color: '#1E293B', fontWeight: 500 }}>{plan.name}</span>
           </div>
 

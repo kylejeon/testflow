@@ -103,6 +103,10 @@ export default function ProjectMilestones() {
   const [milestoneAssigneeProfiles, setMilestoneAssigneeProfiles] = useState<Map<string, { name: string | null; email: string; url: string | null }>>(new Map());
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [testPlans, setTestPlans] = useState<TestPlanSummary[]>([]);
+  const [adHocRuns, setAdHocRuns] = useState<any[]>([]);
+  const [showCreatePlanModal, setShowCreatePlanModal] = useState(false);
+  const [createPlanMilestoneId, setCreatePlanMilestoneId] = useState<string | null>(null);
+  const [planFormData, setPlanFormData] = useState({ name: '', priority: 'medium', target_date: '' });
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -341,6 +345,7 @@ export default function ProjectMilestones() {
       });
       setExpandedMilestones(initialExpanded);
       setMilestones(organizedMilestones);
+      setAdHocRuns((allRunsData || []).filter((r: any) => !r.milestone_id));
 
       // Build milestone_id → assignee UUIDs map from run data (no DB schema change needed)
       const milestoneAssigneeMap = new Map<string, Set<string>>();
@@ -483,6 +488,35 @@ export default function ProjectMilestones() {
     setExpandedMilestones(newExpanded);
   };
 
+  const handleCreatePlan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data, error } = await supabase.from('test_plans').insert([{
+        project_id: id,
+        milestone_id: createPlanMilestoneId || null,
+        name: planFormData.name,
+        priority: planFormData.priority,
+        target_date: planFormData.target_date || null,
+        status: 'planning',
+        owner_id: user?.id || null,
+      }]).select().single();
+      if (error) throw error;
+      const milestoneId = createPlanMilestoneId;
+      setShowCreatePlanModal(false);
+      setCreatePlanMilestoneId(null);
+      setPlanFormData({ name: '', priority: 'medium', target_date: '' });
+      showToast('Test plan created.', 'success');
+      fetchData();
+      if (data?.id && milestoneId) {
+        navigate(`/projects/${id}/milestones/${milestoneId}/plans/${data.id}`);
+      }
+    } catch (err) {
+      console.error('Create plan error:', err);
+      showToast('Failed to create plan. Make sure the test_plans table exists.', 'error');
+    }
+  };
+
   const formatDateRange = (startDate: string | null, endDate: string | null) => {
     const fmt = (d: string | null) => {
       if (!d) return '';
@@ -557,6 +591,64 @@ export default function ProjectMilestones() {
   );
 
   /* ── Compact card renderers ── */
+  const renderPlanRow = (plan: TestPlanSummary, milestoneId: string) => {
+    const statusCls: Record<string, string> = {
+      planning:  'bg-slate-100 text-slate-600',
+      active:    'bg-blue-100 text-blue-700',
+      completed: 'bg-green-100 text-green-700',
+      cancelled: 'bg-rose-100 text-rose-600',
+    };
+    const priorityIcon: Record<string, string> = {
+      critical: 'text-rose-500',
+      high:     'text-orange-500',
+      medium:   'text-amber-500',
+      low:      'text-slate-300',
+    };
+    const isOverdue = plan.target_date && new Date(plan.target_date) < new Date() && plan.status !== 'completed';
+
+    return (
+      <div key={plan.id} className="relative mb-1.5 last:mb-0">
+        {/* horizontal branch */}
+        <div className="absolute left-[-0.625rem] top-1/2 w-[0.625rem] h-[1.5px] bg-slate-200" />
+        <div
+          className="bg-indigo-50/60 border border-indigo-100 rounded-md px-[0.8125rem] py-[0.5625rem] hover:border-indigo-300 hover:bg-indigo-50 transition-all cursor-pointer"
+          onClick={() => navigate(`/projects/${id}/milestones/${milestoneId}/plans/${plan.id}`)}
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0" style={{ background: '#EEF2FF' }}>
+              <i className="ri-file-list-3-line text-[0.75rem] text-indigo-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="block text-[0.8125rem] font-semibold text-slate-900 truncate">
+                {plan.name}
+              </span>
+              {plan.target_date && (
+                <div className={`text-[0.6875rem] mt-[0.0625rem] flex items-center gap-1 ${isOverdue ? 'text-rose-500' : 'text-slate-400'}`}>
+                  <i className={`${isOverdue ? 'ri-calendar-close-line' : 'ri-calendar-event-line'}`} style={{ fontSize: '0.5625rem', verticalAlign: '-1px' }} />
+                  {isOverdue ? 'Overdue' : 'Due'} {new Date(plan.target_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </div>
+              )}
+            </div>
+            {plan.priority !== 'medium' && (
+              <i className={`ri-flag-fill text-[0.75rem] flex-shrink-0 ${priorityIcon[plan.priority] || ''}`} title={plan.priority} />
+            )}
+            <span className={`text-[0.625rem] font-semibold px-[0.4375rem] py-[0.125rem] rounded-full flex-shrink-0 ${statusCls[plan.status] || statusCls.planning}`}>
+              {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
+            </span>
+            <div className="flex-shrink-0" onClick={e => e.stopPropagation()}>
+              <button
+                onClick={() => navigate(`/projects/${id}/milestones/${milestoneId}/plans/${plan.id}`)}
+                className="flex items-center gap-[0.1875rem] text-[0.625rem] font-medium px-[0.375rem] py-[0.1875rem] rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-all whitespace-nowrap cursor-pointer"
+              >
+                <i className="ri-eye-line text-[0.75rem]" />View
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderSubMilestone = (sub: MilestoneWithProgress) => {
     const info = getStatusInfo(sub.status);
     const remaining = sub.totalTests - sub.passedTests - sub.failedTests;
@@ -626,6 +718,7 @@ export default function ProjectMilestones() {
   const renderMilestone = (milestone: MilestoneWithProgress) => {
     const info = getStatusInfo(milestone.status);
     const hasSubMilestones = milestone.subMilestones && milestone.subMilestones.length > 0;
+    const milestonePlans = testPlans.filter(p => p.milestone_id === milestone.id);
     const isExpanded = expandedMilestones.has(milestone.id);
     const remaining = milestone.totalTests - milestone.passedTests - milestone.failedTests;
     const passedPct = milestone.totalTests > 0 ? (milestone.passedTests / milestone.totalTests) * 100 : 0;
@@ -644,14 +737,14 @@ export default function ProjectMilestones() {
               : 'border-slate-200 hover:shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:border-indigo-200'
           }`}
           onClick={() => {
-            if (hasSubMilestones) toggleExpanded(milestone.id);
+            if (hasSubMilestones || milestonePlans.length > 0) toggleExpanded(milestone.id);
             else navigate(`/projects/${id}/milestones/${milestone.id}`);
           }}
         >
           {/* Top row */}
           <div className="flex items-center gap-[0.625rem] mb-[0.5625rem]">
             {/* expand chevron */}
-            {hasSubMilestones ? (
+            {(hasSubMilestones || milestonePlans.length > 0) ? (
               <button
                 onClick={e => { e.stopPropagation(); toggleExpanded(milestone.id); }}
                 className={`w-[1.75rem] h-[1.75rem] rounded flex items-center justify-center flex-shrink-0 text-lg transition-all hover:bg-slate-100 ${isExpanded ? 'text-indigo-500 rotate-90 bg-indigo-50' : 'text-slate-400'}`}
@@ -697,6 +790,13 @@ export default function ProjectMilestones() {
                 {milestone.subMilestones!.length} subs
               </span>
             )}
+            {/* plan count */}
+            {milestonePlans.length > 0 && (
+              <span className="text-[0.6875rem] font-semibold text-indigo-400 flex items-center gap-[0.1875rem] flex-shrink-0">
+                <i className="ri-file-list-3-line text-[0.8125rem]" />
+                {milestonePlans.length} plan{milestonePlans.length !== 1 ? 's' : ''}
+              </span>
+            )}
 
             {/* Roll-up badge */}
             {milestone.isAggregated && (
@@ -716,6 +816,12 @@ export default function ProjectMilestones() {
 
             {/* action buttons */}
             <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
+              <button
+                onClick={() => { setCreatePlanMilestoneId(milestone.id); setShowCreatePlanModal(true); }}
+                className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-medium px-[0.4375rem] py-1 rounded border border-indigo-200 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-all whitespace-nowrap cursor-pointer"
+              >
+                <i className="ri-file-list-3-line text-[0.8125rem]" />+Plan
+              </button>
               <button
                 onClick={() => { setParentMilestoneId(milestone.id); setShowCreateModal(true); }}
                 className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-medium px-[0.4375rem] py-1 rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-all whitespace-nowrap cursor-pointer"
@@ -790,12 +896,23 @@ export default function ProjectMilestones() {
           </div>
         </div>
 
-        {/* Sub-milestones */}
-        {hasSubMilestones && isExpanded && (
+        {/* Sub-milestones and Plans */}
+        {(hasSubMilestones || milestonePlans.length > 0) && isExpanded && (
           <div className="mt-1.5 pl-[1.125rem] relative">
             {/* vertical connector line */}
             <div className="absolute left-2 top-0 bottom-3 w-[1.5px] bg-slate-200 rounded" />
-            {milestone.subMilestones!.map(sub => renderSubMilestone(sub))}
+            {milestone.subMilestones?.map(sub => renderSubMilestone(sub))}
+            {milestonePlans.map(plan => renderPlanRow(plan, milestone.id))}
+            {/* + New Plan row */}
+            <div className="relative mb-0">
+              <div className="absolute left-[-0.625rem] top-1/2 w-[0.625rem] h-[1.5px] bg-slate-200" />
+              <button
+                onClick={e => { e.stopPropagation(); setCreatePlanMilestoneId(milestone.id); setShowCreatePlanModal(true); }}
+                className="w-full text-left bg-white border border-dashed border-slate-200 rounded-md px-[0.8125rem] py-[0.4375rem] text-[0.75rem] text-slate-400 hover:border-indigo-300 hover:text-indigo-500 hover:bg-indigo-50/40 transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <i className="ri-add-line text-sm" />New Plan
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -879,106 +996,55 @@ export default function ProjectMilestones() {
               </div>
             )}
 
-            {/* ── Test Plans section ────────────────────────── */}
-            {activeTab === 'all' && (
+            {/* ── Ad-hoc Runs section ────────────────────────── */}
+            {activeTab === 'all' && adHocRuns.length > 0 && (
               <div className="mt-6">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <i className="ri-file-list-3-line text-indigo-500 text-[0.9375rem]" />
-                    <h2 className="text-[0.875rem] font-semibold text-slate-700">Test Plans</h2>
-                    <span className="text-[0.6875rem] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-semibold">{testPlans.length}</span>
-                  </div>
-                  <Link
-                    to={`/projects/${id}/plans`}
-                    className="flex items-center gap-1 text-[0.75rem] text-indigo-600 font-medium hover:text-indigo-800 transition-colors"
-                  >
-                    View all <i className="ri-arrow-right-s-line" />
-                  </Link>
+                <div className="flex items-center gap-2 mb-3">
+                  <i className="ri-play-circle-line text-slate-400 text-[0.9375rem]" />
+                  <h2 className="text-[0.875rem] font-semibold text-slate-600">Ad-hoc Runs</h2>
+                  <span className="text-[0.6875rem] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-semibold">{adHocRuns.length}</span>
+                  <span className="text-[0.6875rem] text-slate-400">· Not linked to a milestone</span>
                 </div>
-
-                {testPlans.length === 0 ? (
-                  <div className="bg-white border border-dashed border-slate-200 rounded-xl py-8 text-center">
-                    <i className="ri-file-list-3-line text-3xl text-slate-300 block mb-2" />
-                    <p className="text-[0.8125rem] text-slate-400 mb-3">No test plans yet</p>
-                    <Link
-                      to={`/projects/${id}/plans`}
-                      className="inline-flex items-center gap-1 text-[0.8125rem] font-medium text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors"
-                    >
-                      <i className="ri-add-line" /> Create First Plan
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(16rem, 1fr))' }}>
-                    {testPlans.slice(0, 6).map(plan => {
-                      const statusCls: Record<string, string> = {
-                        planning:  'bg-slate-100 text-slate-600',
-                        active:    'bg-blue-100 text-blue-600',
-                        completed: 'bg-green-100 text-green-600',
-                        cancelled: 'bg-rose-100 text-rose-600',
-                      };
-                      const isOverdue = plan.target_date && new Date(plan.target_date) < new Date() && plan.status !== 'completed';
-                      return (
-                        <Link
-                          key={plan.id}
-                          to={`/projects/${id}/plans/${plan.id}`}
-                          className="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-md hover:border-indigo-200 transition-all group block"
-                        >
-                          <div className="flex items-start gap-3 mb-3">
-                            <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
-                              <i className="ri-file-list-3-line text-indigo-500 text-xs" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[0.875rem] font-semibold text-slate-800 truncate group-hover:text-indigo-600 transition-colors">{plan.name}</p>
-                              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                                <span className={`text-[0.6875rem] font-medium px-1.5 py-0.5 rounded-full ${statusCls[plan.status] || statusCls.planning}`}>
-                                  {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
-                                </span>
-                                {plan.milestone_id && milestones.find(m => m.id === plan.milestone_id) && (
-                                  <span className="text-[0.6875rem] text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
-                                    <i className="ri-flag-line text-[0.5625rem] mr-0.5" />
-                                    {milestones.find(m => m.id === plan.milestone_id)?.name}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          {plan.target_date && (
-                            <p className={`text-[0.75rem] flex items-center gap-1 ${isOverdue ? 'text-rose-500' : 'text-slate-400'}`}>
-                              <i className={`ri-calendar-${isOverdue ? 'close' : 'event'}-line`} />
-                              {isOverdue ? 'Overdue' : 'Due'} {new Date(plan.target_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                            </p>
-                          )}
-                        </Link>
-                      );
-                    })}
-                    {testPlans.length > 6 && (
+                <div className="flex flex-col gap-1.5">
+                  {adHocRuns.slice(0, 8).map((run: any) => {
+                    const totalTcs = run.test_case_ids?.length || 0;
+                    const passed = run.passed || 0;
+                    const failed = run.failed || 0;
+                    const passedPct = totalTcs > 0 ? (passed / totalTcs) * 100 : 0;
+                    const failedPct = totalTcs > 0 ? (failed / totalTcs) * 100 : 0;
+                    return (
                       <Link
-                        to={`/projects/${id}/plans`}
-                        className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center text-slate-400 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-500 transition-all"
+                        key={run.id}
+                        to={`/projects/${id}/runs/${run.id}`}
+                        className="bg-white border border-slate-200 rounded-md px-[0.8125rem] py-[0.5625rem] hover:border-indigo-200 hover:shadow-sm transition-all flex items-center gap-3 no-underline"
                       >
-                        <i className="ri-more-2-fill text-xl mb-1" />
-                        <span className="text-[0.75rem] font-medium">+{testPlans.length - 6} more</span>
+                        <div className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0" style={{ background: '#F8FAFC' }}>
+                          <i className="ri-play-circle-line text-[0.75rem] text-slate-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-[0.8125rem] font-medium text-slate-800 truncate block">{run.name}</span>
+                          <div className="flex items-center gap-2 mt-[0.1875rem]">
+                            <div className="flex-1 h-[3px] bg-slate-100 rounded-full overflow-hidden flex" style={{ maxWidth: '6rem' }}>
+                              <div className="h-full bg-emerald-500" style={{ width: `${passedPct}%` }} />
+                              <div className="h-full bg-rose-500" style={{ width: `${failedPct}%` }} />
+                            </div>
+                            <span className="text-[0.6875rem] text-slate-400">{totalTcs} cases</span>
+                          </div>
+                        </div>
+                        <span className="text-[0.6875rem] text-slate-400 flex-shrink-0">
+                          {new Date(run.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </span>
                       </Link>
-                    )}
-                  </div>
-                )}
-
-                {/* Burndown placeholder (P0 — real data P1) */}
-                <div className="mt-4 bg-white border border-slate-200 rounded-xl p-5">
-                  <div className="flex items-center gap-2 mb-4">
-                    <i className="ri-line-chart-line text-indigo-500" />
-                    <h3 className="text-[0.875rem] font-semibold text-slate-700">Milestone Burndown</h3>
-                    <span className="text-[0.6875rem] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-medium">Coming soon</span>
-                  </div>
-                  <div className="flex items-end justify-between gap-1" style={{ height: '5rem' }}>
-                    {[85, 78, 70, 65, 62, 58, 50, 45, 38, 35, 28, 20].map((v, i) => (
-                      <div key={i} style={{ flex: 1, background: i < 8 ? '#6366F1' : '#E2E8F0', borderRadius: '0.25rem 0.25rem 0 0', height: `${v}%`, opacity: i < 8 ? 0.7 : 0.4 }} />
-                    ))}
-                  </div>
-                  <div className="flex justify-between mt-2 text-[0.6875rem] text-slate-400">
-                    <span>Week 1</span><span>Week 4</span><span>Week 8</span><span>Week 12</span>
-                  </div>
-                  <p className="text-[0.75rem] text-slate-400 mt-2 text-center">Real burndown data will be available once runs are linked to plans.</p>
+                    );
+                  })}
+                  {adHocRuns.length > 8 && (
+                    <Link
+                      to={`/projects/${id}/runs`}
+                      className="text-center py-2 text-[0.8125rem] text-indigo-500 hover:text-indigo-700 font-medium no-underline"
+                    >
+                      View all {adHocRuns.length} ad-hoc runs →
+                    </Link>
+                  )}
                 </div>
               </div>
             )}
@@ -1041,6 +1107,84 @@ export default function ProjectMilestones() {
                 Delete
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showCreatePlanModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center">
+                <i className="ri-file-list-3-line text-indigo-500 text-[1.0625rem]" />
+              </div>
+              <div>
+                <h2 className="text-[1rem] font-bold text-gray-900">New Test Plan</h2>
+                {createPlanMilestoneId && (
+                  <p className="text-[0.75rem] text-slate-500 mt-0.5">
+                    Under: <span className="font-medium text-slate-700">
+                      {milestones.find(m => m.id === createPlanMilestoneId)?.name ||
+                       milestones.flatMap(m => m.subMilestones || []).find(m => m.id === createPlanMilestoneId)?.name}
+                    </span>
+                  </p>
+                )}
+              </div>
+            </div>
+            <form onSubmit={handleCreatePlan}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[0.8125rem] font-medium text-gray-700 mb-1">Plan Name <span className="text-rose-400">*</span></label>
+                  <input
+                    type="text"
+                    value={planFormData.name}
+                    onChange={e => setPlanFormData(f => ({ ...f, name: e.target.value }))}
+                    required
+                    autoFocus
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-[0.875rem]"
+                    placeholder="e.g. Login Flow Regression"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[0.8125rem] font-medium text-gray-700 mb-1">Priority</label>
+                    <select
+                      value={planFormData.priority}
+                      onChange={e => setPlanFormData(f => ({ ...f, priority: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-[0.875rem]"
+                    >
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                      <option value="critical">Critical</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[0.8125rem] font-medium text-gray-700 mb-1">Target Date</label>
+                    <input
+                      type="date"
+                      value={planFormData.target_date}
+                      onChange={e => setPlanFormData(f => ({ ...f, target_date: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-[0.875rem]"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => { setShowCreatePlanModal(false); setCreatePlanMilestoneId(null); setPlanFormData({ name: '', priority: 'medium', target_date: '' }); }}
+                  className="flex-1 px-[0.875rem] py-[0.4375rem] text-[0.875rem] text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-[0.875rem] py-[0.4375rem] text-[0.875rem] text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-all cursor-pointer font-medium"
+                >
+                  Create Plan
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
