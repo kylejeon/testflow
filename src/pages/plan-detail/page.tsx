@@ -42,7 +42,6 @@ interface PlanTestCase {
     folder: string | null;
     tags: string[] | null;
     custom_id: string | null;
-    assigned_to: string | null;
   };
 }
 
@@ -91,7 +90,6 @@ interface TestCaseRow {
   folder: string | null;
   tags: string[] | null;
   custom_id: string | null;
-  assigned_to: string | null;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -246,7 +244,7 @@ function TestCasesTab({
   onLock: () => Promise<void>;
   onOpenAI?: () => void;
   milestone: Milestone | null; parentMilestone: Milestone | null; profiles: Map<string, Profile>;
-  tcResultMap: Map<string, string>;
+  tcResultMap: Map<string, { result: string; assignee: string | null }>;
 }) {
   const [search, setSearch] = useState('');
   const [showPicker, setShowPicker] = useState(false);
@@ -396,10 +394,12 @@ function TestCasesTab({
             filtered.map(ptc => {
               const pri = ptc.test_case.priority as string;
               const priCfg = TC_PRI[pri] || { label: pri || 'Medium', cls: 'pri-badge pri-p3' };
-              const result = tcResultMap.get(ptc.test_case_id) || 'untested';
+              const tcEntry = tcResultMap.get(ptc.test_case_id);
+              const result = tcEntry?.result || 'untested';
               const resultLabel = result.charAt(0).toUpperCase() + result.slice(1);
               const sbClass = RESULT_CLS[result] || 'sb-untested';
-              const assignee = ptc.test_case.assigned_to ? profiles.get(ptc.test_case.assigned_to) : null;
+              const assigneeId = tcEntry?.assignee;
+              const assignee = assigneeId ? profiles.get(assigneeId) : null;
               const assigneeInitials = assignee?.full_name
                 ? assignee.full_name.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase()
                 : assignee?.email?.slice(0,2).toUpperCase() ?? null;
@@ -1266,29 +1266,77 @@ function SettingsTab({
           Basic Information
         </div>
         <div className="form-grid">
+          {/* Plan Name — full width */}
           <div className="form-row-2">
             <label className="form-label">Plan Name *</label>
             <input className="form-input" value={form.name} onChange={e=>setFormField('name',e.target.value)} />
           </div>
+          {/* Description — full width */}
           <div className="form-row-2">
             <label className="form-label">Description</label>
             <textarea className="form-input" value={form.description} onChange={e=>setFormField('description',e.target.value)}
               rows={3} style={{resize:'vertical', fontFamily:'inherit'}} />
           </div>
+          {/* Owner (left) + Priority (right) */}
+          <div>
+            <label className="form-label">Owner</label>
+            <div style={{position:'relative'}}>
+              {form.owner_id && profiles.get(form.owner_id) && (() => {
+                const owner = profiles.get(form.owner_id)!;
+                const initials = owner.full_name?.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() ?? owner.email.slice(0,2).toUpperCase();
+                return (
+                  <span style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',width:22,height:22,borderRadius:'50%',
+                    background:'var(--primary-50)',color:'var(--primary)',fontSize:9,fontWeight:700,
+                    display:'inline-flex',alignItems:'center',justifyContent:'center',zIndex:1,pointerEvents:'none'}}>
+                    {initials}
+                  </span>
+                );
+              })()}
+              <select className="form-input" value={form.owner_id} onChange={e=>setFormField('owner_id',e.target.value)}
+                style={{paddingLeft: form.owner_id && profiles.get(form.owner_id) ? 40 : 10}}>
+                <option value="">— Unassigned —</option>
+                {[...profiles.values()].map(p => (
+                  <option key={p.id} value={p.id}>{p.full_name ? `@${p.full_name.split(' ')[0].toLowerCase()}` : p.email}</option>
+                ))}
+              </select>
+            </div>
+          </div>
           <div>
             <label className="form-label">Priority</label>
             <div style={{display:'flex',gap:6}}>
-              {(['critical','high','medium'] as const).map(p => (
+              {(['critical','high','medium','low'] as const).map(p => (
                 <button key={p} onClick={()=>setFormField('priority',p)}
-                  style={{flex:1,padding:'7px 10px',textAlign:'center',border:'1px solid var(--border)',borderRadius:6,fontSize:12,fontWeight:600,cursor:'pointer',
-                    background: form.priority===p ? (p==='critical'?'var(--danger-50)':p==='high'?'var(--warning-50)':'var(--primary-50)') : '#fff',
-                    borderColor: form.priority===p ? (p==='critical'?'var(--danger)':p==='high'?'var(--warning)':'var(--primary)') : 'var(--border)',
-                    color: form.priority===p ? (p==='critical'?'var(--danger-600)':p==='high'?'var(--warning)':'var(--primary)') : 'var(--text-muted)',
+                  style={{flex:1,padding:'7px 6px',textAlign:'center',border:'1px solid var(--border)',borderRadius:6,fontSize:12,fontWeight:600,cursor:'pointer',
+                    background: form.priority===p ? (p==='critical'?'var(--danger-50)':p==='high'?'var(--warning-50)':p==='medium'?'var(--primary-50)':'var(--bg-subtle)') : '#fff',
+                    borderColor: form.priority===p ? (p==='critical'?'var(--danger)':p==='high'?'var(--warning)':p==='medium'?'var(--primary)':'var(--text-subtle)') : 'var(--border)',
+                    color: form.priority===p ? (p==='critical'?'var(--danger-600)':p==='high'?'var(--warning)':p==='medium'?'var(--primary)':'var(--text)') : 'var(--text-muted)',
                   }}>
-                  {p==='critical'?'P1':p==='high'?'P2':'P3'}
+                  {p==='critical'?'P1':p==='high'?'P2':p==='medium'?'P3':'P4'}
                 </button>
               ))}
             </div>
+          </div>
+          {/* Dates — full width, two inputs side-by-side */}
+          <div className="form-row-2">
+            <label className="form-label">Dates</label>
+            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10}}>
+              <input type="date" className="form-input" value={form.start_date} onChange={e=>setFormField('start_date',e.target.value)}
+                placeholder="Start date" />
+              <input type="date" className="form-input" value={form.end_date} onChange={e=>setFormField('end_date',e.target.value)}
+                placeholder="End date" />
+            </div>
+          </div>
+          {/* Linked Milestone (left) + Status (right) */}
+          <div>
+            <label className="form-label">Linked Milestone</label>
+            <select className="form-input" value={form.milestone_id} onChange={e=>setFormField('milestone_id',e.target.value)}>
+              <option value="">— Ad-hoc (no milestone) —</option>
+              {milestones.map(m => (
+                <option key={m.id} value={m.id}>
+                  {m.parent_milestone_id ? `↳ ${m.name} (sub-milestone)` : m.name}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="form-label">Status</label>
@@ -1298,40 +1346,6 @@ function SettingsTab({
               <option value="completed">Completed</option>
               <option value="cancelled">Cancelled</option>
             </select>
-          </div>
-          <div>
-            <label className="form-label">Linked Milestone</label>
-            <select className="form-input" value={form.milestone_id} onChange={e=>setFormField('milestone_id',e.target.value)}>
-              <option value="">— Ad-hoc (no milestone) —</option>
-              {milestones.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="form-label">Start Date</label>
-            <input type="date" className="form-input" value={form.start_date} onChange={e=>setFormField('start_date',e.target.value)} />
-          </div>
-          <div>
-            <label className="form-label">End Date</label>
-            <input type="date" className="form-input" value={form.end_date} onChange={e=>setFormField('end_date',e.target.value)} />
-          </div>
-          <div className="form-row-2">
-            <label className="form-label">Owner</label>
-            <select className="form-input" value={form.owner_id} onChange={e=>setFormField('owner_id',e.target.value)}>
-              <option value="">— Unassigned —</option>
-              {[...profiles.values()].map(p => (
-                <option key={p.id} value={p.id}>{p.full_name || p.email}</option>
-              ))}
-            </select>
-            {form.owner_id && profiles.get(form.owner_id) && (() => {
-              const owner = profiles.get(form.owner_id)!;
-              const initials = owner.full_name?.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() ?? owner.email.slice(0,2).toUpperCase();
-              return (
-                <div style={{display:'flex',alignItems:'center',gap:6,marginTop:6}}>
-                  <span style={{width:22,height:22,borderRadius:'50%',background:'var(--primary-50)',color:'var(--primary)',fontSize:9,fontWeight:700,display:'inline-flex',alignItems:'center',justifyContent:'center',flex:'none'}}>{initials}</span>
-                  <span style={{fontSize:12,color:'var(--text-muted)'}}>{owner.full_name || owner.email}</span>
-                </div>
-              );
-            })()}
           </div>
         </div>
       </div>
@@ -1451,7 +1465,7 @@ export default function PlanDetailPage() {
   const [parentMilestone, setParentMilestone] = useState<Milestone | null>(null);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [profiles, setProfiles] = useState<Map<string, Profile>>(new Map());
-  const [tcResultMap, setTcResultMap] = useState<Map<string, string>>(new Map());
+  const [tcResultMap, setTcResultMap] = useState<Map<string, { result: string; assignee: string | null }>>(new Map());
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>('testcases');
@@ -1476,7 +1490,7 @@ export default function PlanDetailPage() {
           .select('test_plan_id, test_case_id, added_at')
           .eq('test_plan_id', planId!),
         supabase.from('test_cases')
-          .select('id, title, priority, lifecycle_status, folder, tags, custom_id, assigned_to')
+          .select('id, title, priority, lifecycle_status, folder, tags, custom_id')
           .eq('project_id', projectId!)
           .neq('lifecycle_status', 'deprecated')
           .order('title'),
@@ -1505,7 +1519,6 @@ export default function PlanDetailPage() {
         ...tc,
         tags: normalizeTags(tc.tags),
         custom_id: tc.custom_id ?? null,
-        assigned_to: tc.assigned_to ?? null,
       }));
       setAllTcs(normalizedAllTcs);
       const allRuns = runsRes.data || [];
@@ -1545,7 +1558,7 @@ export default function PlanDetailPage() {
         .order('created_at', { ascending: false }).limit(50);
       setActivityLogs(logs || []);
 
-      // Test results for TC execution status
+      // Test results for TC execution status + assignee
       const runIds = allRuns.map((r: any) => r.id);
       let resultAssigneeIds: string[] = [];
       if (runIds.length > 0) {
@@ -1554,20 +1567,22 @@ export default function PlanDetailPage() {
           .select('test_case_id, result, assigned_to, executed_at')
           .in('run_id', runIds)
           .order('executed_at', { ascending: false });
-        const rMap = new Map<string, string>();
+        const rMap = new Map<string, { result: string; assignee: string | null }>();
         for (const r of (results || [])) {
           if (r.test_case_id && !rMap.has(r.test_case_id)) {
-            rMap.set(r.test_case_id, r.result || 'untested');
+            rMap.set(r.test_case_id, {
+              result: r.result || 'untested',
+              assignee: r.assigned_to || null,
+            });
           }
         }
         setTcResultMap(rMap);
         resultAssigneeIds = [...new Set((results || []).map((r: any) => r.assigned_to).filter(Boolean))] as string[];
       }
 
-      // Profiles — combine activity actors + TC assignees + test_result assignees
+      // Profiles — combine activity actors + test_result assignees
       const actorIds = [...new Set((logs || []).map((l: any) => l.actor_id).filter(Boolean))] as string[];
-      const tcAssigneeIds = [...new Set(normalizedAllTcs.map(tc => tc.assigned_to).filter(Boolean))] as string[];
-      const allProfileIds = [...new Set([...actorIds, ...tcAssigneeIds, ...resultAssigneeIds])];
+      const allProfileIds = [...new Set([...actorIds, ...resultAssigneeIds])];
       if (allProfileIds.length > 0) {
         const { data: profileData } = await supabase
           .from('profiles').select('id, full_name, email, avatar_url').in('id', allProfileIds);
