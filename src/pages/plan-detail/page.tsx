@@ -41,6 +41,8 @@ interface PlanTestCase {
     lifecycle_status: string;
     folder: string | null;
     tags: string[] | null;
+    custom_id: string | null;
+    assigned_to: string | null;
   };
 }
 
@@ -89,6 +91,7 @@ interface TestCaseRow {
   folder: string | null;
   tags: string[] | null;
   custom_id: string | null;
+  assigned_to: string | null;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -234,7 +237,7 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, onOpenAI }:
 // ─── Tab: Test Cases ──────────────────────────────────────────────────────────
 
 function TestCasesTab({
-  plan, planTcs, allTcs, onAddTc, onAddTcs, onRemoveTc, onLock, onOpenAI, milestone, parentMilestone, profiles,
+  plan, planTcs, allTcs, onAddTc, onAddTcs, onRemoveTc, onLock, onOpenAI, milestone, parentMilestone, profiles, tcResultMap,
 }: {
   plan: TestPlan; planTcs: PlanTestCase[]; allTcs: TestCaseRow[];
   onAddTc: (id: string) => Promise<void>;
@@ -243,6 +246,7 @@ function TestCasesTab({
   onLock: () => Promise<void>;
   onOpenAI?: () => void;
   milestone: Milestone | null; parentMilestone: Milestone | null; profiles: Map<string, Profile>;
+  tcResultMap: Map<string, string>;
 }) {
   const [search, setSearch] = useState('');
   const [showPicker, setShowPicker] = useState(false);
@@ -264,9 +268,13 @@ function TestCasesTab({
     (!pickerSearch || tc.title.toLowerCase().includes(pickerSearch.toLowerCase()))
   );
 
-  const priMap: Record<string, string> = { critical: 'P1', high: 'P2', medium: 'P3', low: 'P3' };
-  const priClass: Record<string, string> = { critical: 'pri-badge pri-p1', high: 'pri-badge pri-p2', medium: 'pri-badge pri-p3', low: 'pri-badge pri-p3' };
-  const statusClass: Record<string, string> = {
+  const TC_PRI: Record<string, { label: string; cls: string }> = {
+    critical: { label: 'Critical', cls: 'pri-badge pri-p1' },
+    high:     { label: 'High',     cls: 'pri-badge pri-p2' },
+    medium:   { label: 'Medium',   cls: 'pri-badge pri-p3' },
+    low:      { label: 'Low',      cls: 'pri-badge pri-p3' },
+  };
+  const RESULT_CLS: Record<string, string> = {
     passed: 'sb-pass', failed: 'sb-fail', blocked: 'sb-block', untested: 'sb-untested',
   };
 
@@ -374,7 +382,7 @@ function TestCasesTab({
             <div>Title</div>
             <div>Priority</div>
             <div>Status</div>
-            <div>Last Run</div>
+            <div>Assignee</div>
             <div />
           </div>
           {filtered.length === 0 ? (
@@ -386,16 +394,19 @@ function TestCasesTab({
             </div>
           ) : (
             filtered.map(ptc => {
-              const pri = ptc.test_case.priority;
-              const ls = ptc.test_case.lifecycle_status;
-              let sbClass = 'sb-untested';
-              if (ls === 'passed') sbClass = 'sb-pass';
-              else if (ls === 'failed') sbClass = 'sb-fail';
-              else if (ls === 'blocked') sbClass = 'sb-block';
+              const pri = ptc.test_case.priority as string;
+              const priCfg = TC_PRI[pri] || { label: pri || 'Medium', cls: 'pri-badge pri-p3' };
+              const result = tcResultMap.get(ptc.test_case_id) || 'untested';
+              const resultLabel = result.charAt(0).toUpperCase() + result.slice(1);
+              const sbClass = RESULT_CLS[result] || 'sb-untested';
+              const assignee = ptc.test_case.assigned_to ? profiles.get(ptc.test_case.assigned_to) : null;
+              const assigneeInitials = assignee?.full_name
+                ? assignee.full_name.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase()
+                : assignee?.email?.slice(0,2).toUpperCase() ?? null;
               return (
                 <div key={ptc.test_case_id} className="tc-row">
                   <div style={{width:16,height:16,border:'1.5px solid var(--border)',borderRadius:3,background:'#fff'}} />
-                  <div className="tc-id">{ptc.test_case_id.slice(0,8)}</div>
+                  <div className="tc-id">{ptc.test_case.custom_id || ptc.test_case_id.slice(0,8)}</div>
                   <div>
                     <div style={{fontWeight:500, fontSize:13}}>{ptc.test_case.title}</div>
                     <div style={{fontSize:11, color:'var(--text-muted)', marginTop:2, display:'flex', gap:4}}>
@@ -405,9 +416,20 @@ function TestCasesTab({
                       ))}
                     </div>
                   </div>
-                  <div><span className={priMap[pri] === 'P1' ? 'pri-badge pri-p1' : priMap[pri] === 'P2' ? 'pri-badge pri-p2' : 'pri-badge pri-p3'}>{priMap[pri] || 'P3'}</span></div>
-                  <div><span className={sbClass}><span style={{width:6,height:6,borderRadius:'50%',background:'currentColor'}} />{ls || 'Untested'}</span></div>
-                  <div style={{fontSize:11.5, color:'var(--text-muted)'}}>—</div>
+                  <div><span className={priCfg.cls}>{priCfg.label}</span></div>
+                  <div><span className={sbClass}><span style={{width:6,height:6,borderRadius:'50%',background:'currentColor'}} />{resultLabel}</span></div>
+                  <div>
+                    {assigneeInitials ? (
+                      <div style={{display:'flex', alignItems:'center', gap:5}}>
+                        <span style={{width:22,height:22,borderRadius:'50%',background:'var(--primary-50)',color:'var(--primary)',fontSize:9,fontWeight:700,display:'inline-flex',alignItems:'center',justifyContent:'center',flex:'none'}}>{assigneeInitials}</span>
+                        <span style={{fontSize:11.5, color:'var(--text)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:90}}>
+                          {assignee?.full_name?.split(' ')[0] || assignee?.email}
+                        </span>
+                      </div>
+                    ) : (
+                      <span style={{fontSize:11.5, color:'var(--text-subtle)'}}>—</span>
+                    )}
+                  </div>
                   {!plan.is_locked && (
                     <button onClick={()=>onRemoveTc(ptc.test_case_id)}
                       style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-subtle)',padding:'0 2px',fontSize:14}}>×</button>
@@ -1162,9 +1184,9 @@ function EnvironmentsTab({ plan }: { plan: TestPlan }) {
 // ─── Tab: Settings ────────────────────────────────────────────────────────────
 
 function SettingsTab({
-  plan, milestones, onUpdate, onDelete,
+  plan, milestones, profiles, onUpdate, onDelete,
 }: {
-  plan: TestPlan; milestones: Milestone[];
+  plan: TestPlan; milestones: Milestone[]; profiles: Map<string, Profile>;
   onUpdate: (data: Partial<TestPlan>) => Promise<void>;
   onDelete: () => void;
 }) {
@@ -1176,6 +1198,7 @@ function SettingsTab({
     milestone_id: plan.milestone_id ?? '',
     start_date: plan.start_date ?? '',
     end_date: plan.end_date ?? '',
+    owner_id: plan.owner_id ?? '',
   });
   const [entryCriteria, setEntryCriteria] = useState<string[]>(Array.isArray(plan.entry_criteria) ? plan.entry_criteria : []);
   const [exitCriteria, setExitCriteria] = useState<string[]>(Array.isArray(plan.exit_criteria) ? plan.exit_criteria : []);
@@ -1199,6 +1222,7 @@ function SettingsTab({
         milestone_id: form.milestone_id || null,
         start_date: form.start_date || null,
         end_date: form.end_date || null,
+        owner_id: form.owner_id || null,
         entry_criteria: entryCriteria,
         exit_criteria: exitCriteria,
       });
@@ -1289,6 +1313,25 @@ function SettingsTab({
           <div>
             <label className="form-label">End Date</label>
             <input type="date" className="form-input" value={form.end_date} onChange={e=>setFormField('end_date',e.target.value)} />
+          </div>
+          <div className="form-row-2">
+            <label className="form-label">Owner</label>
+            <select className="form-input" value={form.owner_id} onChange={e=>setFormField('owner_id',e.target.value)}>
+              <option value="">— Unassigned —</option>
+              {[...profiles.values()].map(p => (
+                <option key={p.id} value={p.id}>{p.full_name || p.email}</option>
+              ))}
+            </select>
+            {form.owner_id && profiles.get(form.owner_id) && (() => {
+              const owner = profiles.get(form.owner_id)!;
+              const initials = owner.full_name?.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() ?? owner.email.slice(0,2).toUpperCase();
+              return (
+                <div style={{display:'flex',alignItems:'center',gap:6,marginTop:6}}>
+                  <span style={{width:22,height:22,borderRadius:'50%',background:'var(--primary-50)',color:'var(--primary)',fontSize:9,fontWeight:700,display:'inline-flex',alignItems:'center',justifyContent:'center',flex:'none'}}>{initials}</span>
+                  <span style={{fontSize:12,color:'var(--text-muted)'}}>{owner.full_name || owner.email}</span>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>
@@ -1408,6 +1451,7 @@ export default function PlanDetailPage() {
   const [parentMilestone, setParentMilestone] = useState<Milestone | null>(null);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [profiles, setProfiles] = useState<Map<string, Profile>>(new Map());
+  const [tcResultMap, setTcResultMap] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>('testcases');
@@ -1432,7 +1476,7 @@ export default function PlanDetailPage() {
           .select('test_plan_id, test_case_id, added_at')
           .eq('test_plan_id', planId!),
         supabase.from('test_cases')
-          .select('id, title, priority, lifecycle_status, folder, tags, custom_id')
+          .select('id, title, priority, lifecycle_status, folder, tags, custom_id, assigned_to')
           .eq('project_id', projectId!)
           .neq('lifecycle_status', 'deprecated')
           .order('title'),
@@ -1461,9 +1505,11 @@ export default function PlanDetailPage() {
         ...tc,
         tags: normalizeTags(tc.tags),
         custom_id: tc.custom_id ?? null,
+        assigned_to: tc.assigned_to ?? null,
       }));
       setAllTcs(normalizedAllTcs);
-      setRuns(runsRes.data || []);
+      const allRuns = runsRes.data || [];
+      setRuns(allRuns);
       setMilestones(milestonesRes.data || []);
 
       // Build planTcs by joining planTcIds with allTcs
@@ -1499,11 +1545,32 @@ export default function PlanDetailPage() {
         .order('created_at', { ascending: false }).limit(50);
       setActivityLogs(logs || []);
 
-      // Profiles
+      // Test results for TC execution status
+      const runIds = allRuns.map((r: any) => r.id);
+      let resultAssigneeIds: string[] = [];
+      if (runIds.length > 0) {
+        const { data: results } = await supabase
+          .from('test_results')
+          .select('test_case_id, result, assigned_to, executed_at')
+          .in('run_id', runIds)
+          .order('executed_at', { ascending: false });
+        const rMap = new Map<string, string>();
+        for (const r of (results || [])) {
+          if (r.test_case_id && !rMap.has(r.test_case_id)) {
+            rMap.set(r.test_case_id, r.result || 'untested');
+          }
+        }
+        setTcResultMap(rMap);
+        resultAssigneeIds = [...new Set((results || []).map((r: any) => r.assigned_to).filter(Boolean))] as string[];
+      }
+
+      // Profiles — combine activity actors + TC assignees + test_result assignees
       const actorIds = [...new Set((logs || []).map((l: any) => l.actor_id).filter(Boolean))] as string[];
-      if (actorIds.length > 0) {
+      const tcAssigneeIds = [...new Set(normalizedAllTcs.map(tc => tc.assigned_to).filter(Boolean))] as string[];
+      const allProfileIds = [...new Set([...actorIds, ...tcAssigneeIds, ...resultAssigneeIds])];
+      if (allProfileIds.length > 0) {
         const { data: profileData } = await supabase
-          .from('profiles').select('id, full_name, email, avatar_url').in('id', actorIds);
+          .from('profiles').select('id, full_name, email, avatar_url').in('id', allProfileIds);
         setProfiles(new Map((profileData || []).map((p: any) => [p.id, p])));
       }
     } catch (err: any) {
@@ -1736,6 +1803,7 @@ export default function PlanDetailPage() {
             onAddTc={handleAddTc} onAddTcs={handleAddTcs} onRemoveTc={handleRemoveTc} onLock={handleLock}
             onOpenAI={() => setShowAIModal(true)}
             milestone={milestone} parentMilestone={parentMilestone} profiles={profiles}
+            tcResultMap={tcResultMap}
           />
         )}
         {activeTab === 'runs' && (
@@ -1755,7 +1823,7 @@ export default function PlanDetailPage() {
           <EnvironmentsTab plan={plan} />
         )}
         {activeTab === 'settings' && (
-          <SettingsTab plan={plan} milestones={milestones} onUpdate={handleUpdate} onDelete={()=>setShowDeleteConfirm(true)} />
+          <SettingsTab plan={plan} milestones={milestones} profiles={profiles} onUpdate={handleUpdate} onDelete={()=>setShowDeleteConfirm(true)} />
         )}
       </div>
 
