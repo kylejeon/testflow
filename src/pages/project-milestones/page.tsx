@@ -11,7 +11,7 @@ import AIPlanAssistantModal from '../project-plans/AIPlanAssistantModal';
 import MilestoneSidebar from './MilestoneSidebar';
 import { MilestoneCardData } from './MilestoneCard';
 import { AdhocRun } from './AdhocRunCard';
-import MilestonePlanList, { TestPlanRow } from './MilestonePlanList';
+import MilestonePlanList, { TestPlanRow, DirectRun } from './MilestonePlanList';
 import AdhocPanel from './AdhocPanel';
 import NewMilestoneModal from './NewMilestoneModal';
 import NewPlanModal from './NewPlanModal';
@@ -131,6 +131,7 @@ export default function ProjectMilestones() {
   const [milestones, setMilestones] = useState<MilestoneWithStats[]>([]);
   const [allPlans, setAllPlans] = useState<TestPlanRow[]>([]);
   const [adhocRuns, setAdhocRuns] = useState<AdhocRun[]>([]);
+  const [allDirectRuns, setAllDirectRuns] = useState<DirectRun[]>([]);
   const [loading, setLoading] = useState(true);
 
   // UI state
@@ -249,6 +250,34 @@ export default function ProjectMilestones() {
       });
       setAdhocRuns(adhoc);
 
+      // Milestone-direct runs: milestone_id set, test_plan_id = null
+      const directRuns: DirectRun[] = allRuns
+        .filter(r => r.milestone_id && !r.test_plan_id)
+        .map(r => {
+          const runResults = projectResults.filter(res => res.run_id === r.id);
+          const statusMap = new Map<string, string>();
+          runResults.forEach((res: any) => { if (!statusMap.has(res.test_case_id)) statusMap.set(res.test_case_id, res.status); });
+          const total = (r.test_case_ids || []).length;
+          let dpassed = 0, dfailed = 0;
+          (r.test_case_ids || []).forEach((tcId: string) => {
+            const s = statusMap.get(tcId);
+            if (s === 'passed') dpassed++;
+            else if (s === 'failed' || s === 'blocked') dfailed++;
+          });
+          return {
+            id: r.id,
+            name: r.name || 'Unnamed Run',
+            description: r.description || null,
+            status: r.status || 'cancelled',
+            created_at: r.created_at,
+            milestone_id: r.milestone_id,
+            test_case_ids: r.test_case_ids || [],
+            passed: dpassed,
+            failed: dfailed,
+          };
+        });
+      setAllDirectRuns(directRuns);
+
       // Load test plan stats
       const loadPlans = async () => {
         const { data: plansData, error: plansError } = await supabase
@@ -354,6 +383,10 @@ export default function ProjectMilestones() {
 
   const milestonePlans = selectedMilestone
     ? allPlans.filter(p => p.milestone_id === selectedMilestone.id)
+    : [];
+
+  const milestoneDirectRuns = selectedMilestone
+    ? allDirectRuns.filter(r => r.milestone_id === selectedMilestone.id)
     : [];
 
   const promoteRun = promoteRunId ? adhocRuns.find(r => r.id === promoteRunId) : undefined;
@@ -594,10 +627,12 @@ export default function ProjectMilestones() {
               projectId={projectId!}
               milestone={selectedMilestone}
               plans={milestonePlans}
+              directRuns={milestoneDirectRuns}
               onNewPlan={() => {
                 setNewPlanMilestoneId(selectedMilestone.id);
                 setShowNewPlanModal(true);
               }}
+              onNewRun={() => navigate(`/projects/${projectId}/runs`)}
               onAIAssist={() => {
                 setAiMilestoneId(selectedMilestone.id);
                 setShowAIModal(true);
