@@ -21,6 +21,18 @@ export interface TestPlanRow {
   ownerAvatar?: string | null;
 }
 
+export interface DirectRun {
+  id: string;
+  name: string;
+  description?: string | null;
+  status: string;
+  created_at: string;
+  milestone_id: string;
+  test_case_ids?: string[];
+  passed: number;
+  failed: number;
+}
+
 interface Props {
   projectId: string;
   milestone: MilestoneCardData & {
@@ -28,7 +40,9 @@ interface Props {
     isAggregated?: boolean;
   };
   plans: TestPlanRow[];
+  directRuns: DirectRun[];
   onNewPlan: () => void;
+  onNewRun: () => void;
   onAIAssist: () => void;
   onEdit: () => void;
 }
@@ -38,6 +52,15 @@ const PLAN_STATUS: Record<string, { label: string; cls: string }> = {
   active:    { label: 'In Progress', cls: 'badge badge-orange' },
   completed: { label: 'Completed',   cls: 'badge badge-success' },
   cancelled: { label: 'Cancelled',   cls: 'badge' },
+};
+
+const RUN_STATUS_BADGE: Record<string, { label: string; cls: string }> = {
+  running:    { label: 'In Progress', cls: 'badge badge-orange' },
+  in_progress:{ label: 'In Progress', cls: 'badge badge-orange' },
+  completed:  { label: 'Completed',   cls: 'badge badge-success' },
+  paused:     { label: 'Paused',      cls: 'badge badge-warning' },
+  cancelled:  { label: 'Cancelled',   cls: 'badge' },
+  new:        { label: 'Not Started', cls: 'badge' },
 };
 
 const MS_STATUS: Record<string, { label: string; cls: string }> = {
@@ -72,12 +95,25 @@ function daysLeftNum(endDate: string | null): number | null {
   return Math.ceil((end - now.getTime()) / 86400000);
 }
 
+function timeAgo(dateStr: string): string {
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const diffMs = now - then;
+  const mins = Math.floor(diffMs / 60000);
+  const hours = Math.floor(mins / 60);
+  const days = Math.floor(hours / 24);
+  if (days > 1) return `${days} days ago`;
+  if (days === 1) return 'yesterday';
+  if (hours >= 1) return `${hours}h ago`;
+  if (mins >= 1) return `${mins}m ago`;
+  return 'just now';
+}
+
 type FilterKey = 'all' | 'active' | 'planning' | 'completed';
 
-export default function MilestonePlanList({ projectId, milestone, plans, onNewPlan, onAIAssist, onEdit }: Props) {
+export default function MilestonePlanList({ projectId, milestone, plans, directRuns, onNewPlan, onNewRun, onAIAssist, onEdit }: Props) {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterKey>('all');
-  const [breakdownOpen, setBreakdownOpen] = useState(false);
   const [aiDismissed, setAiDismissed] = useState(false);
 
   const msStatus = MS_STATUS[milestone.status] || MS_STATUS.upcoming;
@@ -123,23 +159,6 @@ export default function MilestonePlanList({ projectId, milestone, plans, onNewPl
 
   // AI suggestion: show if >= 1 plan and any has failures
   const showAI = !aiDismissed && plans.length >= 1 && plans.some(p => (p.failed ?? 0) > 0);
-
-  // Breakdown sub rows
-  const subBreakdown = (milestone.subMilestones ?? []).map(sub => ({
-    label: sub.name,
-    passed: sub.passedTests,
-    failed: sub.failedTests,
-    left: sub.totalTests - sub.passedTests - sub.failedTests,
-    isLast: false,
-  }));
-
-  // direct runs for parent = parent's own passes/fails (total - sub aggregation)
-  const subPassed = subBreakdown.reduce((a, b) => a + b.passed, 0);
-  const subFailed = subBreakdown.reduce((a, b) => a + b.failed, 0);
-  const subLeft   = subBreakdown.reduce((a, b) => a + b.left, 0);
-  const directPassed = passed - subPassed;
-  const directFailed = failed - subFailed;
-  const directLeft   = remaining - subLeft;
 
   const TABS: { key: FilterKey; label: string }[] = [
     { key: 'all',       label: 'All' },
@@ -250,70 +269,6 @@ export default function MilestonePlanList({ projectId, milestone, plans, onNewPl
           </div>
         )}
 
-        {/* Breakdown collapsible (only for roll-up parents) */}
-        {isRollup && hasSubs && (
-          <details
-            style={{
-              margin: '0 20px 12px',
-              border: '1px solid var(--border)',
-              borderRadius: 8,
-              background: '#fafafa',
-              overflow: 'hidden',
-            }}
-            open={breakdownOpen}
-            onToggle={e => setBreakdownOpen((e.target as HTMLDetailsElement).open)}
-          >
-            <summary style={{
-              padding: '8px 12px', fontSize: 12, fontWeight: 600,
-              color: 'var(--text-muted)', cursor: 'pointer',
-              listStyle: 'none', display: 'flex', alignItems: 'center', gap: 6,
-            }}>
-              <svg style={{ width: 12, height: 12, flexShrink: 0 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-              Progress breakdown
-            </summary>
-            <div style={{
-              padding: '8px 12px 10px', fontSize: 12, color: 'var(--text-muted)',
-              fontFamily: 'monospace', lineHeight: 1.8,
-            }}>
-              {(milestone.subMilestones ?? []).map((sub, i) => {
-                const isLastSub = i === (milestone.subMilestones!.length - 1) && directPassed === 0 && directFailed === 0 && directLeft <= 0;
-                const prefix = isLastSub ? '└' : '├';
-                const subLeft2 = sub.totalTests - sub.passedTests - sub.failedTests;
-                return (
-                  <div key={sub.id} style={{ display: 'flex', gap: 0, alignItems: 'baseline' }}>
-                    <span style={{ color: 'var(--text-subtle)', marginRight: 6 }}>{prefix}</span>
-                    <span style={{ minWidth: 110, color: 'var(--text)' }}>{sub.name}</span>
-                    <span>
-                      <b style={{ color: 'var(--success-600)' }}>{sub.passedTests}</b> passed &nbsp;·&nbsp;{' '}
-                      <b style={{ color: 'var(--danger)' }}>{sub.failedTests}</b> failed &nbsp;·&nbsp; {subLeft2} left
-                    </span>
-                  </div>
-                );
-              })}
-              {(directPassed > 0 || directFailed > 0 || directLeft > 0) && (
-                <div style={{ display: 'flex', gap: 0, alignItems: 'baseline' }}>
-                  <span style={{ color: 'var(--text-subtle)', marginRight: 6 }}>└</span>
-                  <span style={{ minWidth: 110, color: 'var(--text)' }}>Direct runs</span>
-                  <span>
-                    <b style={{ color: 'var(--success-600)' }}>{directPassed}</b> passed &nbsp;·&nbsp;{' '}
-                    <b style={{ color: 'var(--danger)' }}>{directFailed}</b> failed &nbsp;·&nbsp; {Math.max(0, directLeft)} left
-                  </span>
-                </div>
-              )}
-              <div style={{ borderTop: '1px solid var(--border)', marginTop: 6, paddingTop: 6, display: 'flex', gap: 0, alignItems: 'baseline' }}>
-                <span style={{ minWidth: 116, fontWeight: 600, color: 'var(--text)' }}>Total</span>
-                <span>
-                  <b style={{ color: 'var(--success-600)' }}>{passed}</b> passed &nbsp;·&nbsp;{' '}
-                  <b style={{ color: 'var(--danger)' }}>{failed}</b> failed &nbsp;·&nbsp; {remaining} left &nbsp;
-                  <span style={{ color: '#6366f1' }}>↻</span>
-                </span>
-              </div>
-            </div>
-          </details>
-        )}
-
         {/* Filter tabs + New Plan button */}
         <div className="filter-tabs" style={{ alignItems: 'center' }}>
           {TABS.map(tab => (
@@ -422,26 +377,102 @@ export default function MilestonePlanList({ projectId, milestone, plans, onNewPl
             </div>
           );
         })}
+      </div>
 
-        {/* AI Suggestion card */}
-        {showAI && (
-          <div className="ms-ai-card">
-            <div className="ms-ai-card-head">
-              <svg style={{ width: 16, height: 16, flexShrink: 0 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" />
-              </svg>
-              AI Suggestion
-            </div>
-            <div className="ms-ai-card-body">
-              Based on recent failures, consider using AI Assist to generate a focused regression plan for failing test areas.
-            </div>
-            <div className="ms-ai-card-actions">
-              <button className="btn btn-ai btn-sm" onClick={onAIAssist}>Create Plan</button>
-              <button className="btn btn-sm btn-ghost" onClick={() => setAiDismissed(true)}>Dismiss</button>
-            </div>
+      {/* ── Direct Runs section ──────────────────────────────────────────────── */}
+      <div className="runs-section">
+        <div className="runs-section-header">
+          <div className="runs-section-title">
+            <span style={{ fontSize: 14 }}>⚡</span>
+            Direct Runs
+            <span className="runs-section-count">{directRuns.length}</span>
           </div>
+          <button className="btn btn-sm" onClick={onNewRun}>
+            <svg className="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            New Run
+          </button>
+        </div>
+
+        {directRuns.length === 0 ? (
+          <div className="runs-empty">
+            No direct runs · runs linked directly to this milestone without a plan
+          </div>
+        ) : (
+          directRuns.map(run => {
+            const total = run.test_case_ids?.length ?? 0;
+            const runPassed = run.passed;
+            const runFailed = run.failed;
+            const runRemaining = total - runPassed - runFailed;
+            const runPassPct = total > 0 ? (runPassed / total * 100) : 0;
+            const runFailPct = total > 0 ? (runFailed / total * 100) : 0;
+            const statusInfo = RUN_STATUS_BADGE[run.status] || { label: 'Cancelled', cls: 'badge' };
+
+            return (
+              <div
+                key={run.id}
+                className="direct-run-card"
+                onClick={() => navigate(`/projects/${projectId}/runs/${run.id}`)}
+              >
+                <span className="adhoc-bolt" style={{ fontSize: 16, flexShrink: 0 }}>⚡</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="adhoc-card-row1" style={{ marginBottom: 2 }}>
+                    <span className="adhoc-card-name">{run.name}</span>
+                    <span className={statusInfo.cls} style={{ fontSize: 10, padding: '1px 5px', flexShrink: 0 }}>
+                      {statusInfo.label}
+                    </span>
+                  </div>
+                  {run.description && (
+                    <div className="adhoc-card-sub">— {run.description}</div>
+                  )}
+                  <div className="adhoc-card-time">
+                    🕐 {timeAgo(run.created_at)}{total > 0 && ` · ${total} TCs`}
+                  </div>
+                  {total > 0 && (
+                    <>
+                      <div className="ms-card-pbar" style={{ marginTop: 6 }}>
+                        <div className="ms-card-pbar-fill" style={{ width: `${runPassPct}%` }} />
+                      </div>
+                      <div className="ms-card-row3" style={{ justifyContent: 'space-between', marginTop: 4 }}>
+                        <span>
+                          <span className="stat-pass">{runPassed}</span> passed ·{' '}
+                          <span className="stat-fail">{runFailed}</span> failed · {runRemaining} left
+                        </span>
+                        <span style={{ fontWeight: 600, color: runPassPct >= 60 ? 'var(--success-600)' : 'var(--warning)' }}>
+                          {Math.round(runPassPct)}%
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </div>
+                <svg className="icon-sm" style={{ color: 'var(--text-subtle)', flexShrink: 0 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </div>
+            );
+          })
         )}
       </div>
+
+      {/* AI Suggestion card */}
+      {showAI && (
+        <div className="ms-ai-card" style={{ margin: '0 20px 20px' }}>
+          <div className="ms-ai-card-head">
+            <svg style={{ width: 16, height: 16, flexShrink: 0 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" />
+            </svg>
+            AI Suggestion
+          </div>
+          <div className="ms-ai-card-body">
+            Based on recent failures, consider using AI Assist to generate a focused regression plan for failing test areas.
+          </div>
+          <div className="ms-ai-card-actions">
+            <button className="btn btn-ai btn-sm" onClick={onAIAssist}>Create Plan</button>
+            <button className="btn btn-sm btn-ghost" onClick={() => setAiDismissed(true)}>Dismiss</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
