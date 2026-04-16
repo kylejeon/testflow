@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import ProjectHeader from '../../components/ProjectHeader';
@@ -26,6 +26,7 @@ interface TestPlan {
   exit_criteria: string[];
   is_locked: boolean;
   snapshot_id?: string | null;
+  snapshot_locked_at?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -90,6 +91,7 @@ interface TestCaseRow {
   folder: string | null;
   tags: string[] | null;
   custom_id: string | null;
+  updated_at?: string | null;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -121,41 +123,193 @@ type TabKey = typeof TABS[number]['key'];
 
 // ─── Plan Sidebar (shared across all tabs) ────────────────────────────────────
 
-function PlanSidebar({ plan, milestone, parentMilestone, profiles, onOpenAI }:
-  { plan: TestPlan; milestone: Milestone | null; parentMilestone: Milestone | null; profiles: Map<string, Profile>; onOpenAI?: () => void }) {
+function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, onLock, onUnlock, onRebase, planTcs }:
+  { plan: TestPlan; milestone: Milestone | null; parentMilestone: Milestone | null; profiles: Map<string, Profile>;
+    driftCount: number; onLock: () => Promise<void>; onUnlock: () => Promise<void>; onRebase: () => Promise<void>;
+    planTcs: PlanTestCase[]; }) {
+  const { showToast } = useToast();
   const owner = plan.owner_id ? profiles.get(plan.owner_id) : null;
   const ownerInitials = owner?.full_name
     ? owner.full_name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()
     : owner?.email?.slice(0,2).toUpperCase() ?? '??';
 
+  // Execution pace: 7-day TC execution history (mock sparkline from runs data)
+  const today = new Date();
+  const sparkDays = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() - (6 - i));
+    return d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+  });
+  // Placeholder bar heights (0–100) — in production, derive from test_results per day
+  const sparkValues = [12, 8, 22, 18, 30, 14, 24];
+  const maxSpark = Math.max(...sparkValues, 1);
+  const avgTcPerDay = Math.round(sparkValues.reduce((s, v) => s + v, 0) / sparkValues.length);
+  const remaining = Math.max(0, planTcs.length - (plan.status === 'completed' ? planTcs.length : 0));
+  const daysEst = avgTcPerDay > 0 ? Math.ceil(remaining / avgTcPerDay) : null;
+
   return (
     <aside className="plan-side">
-      {/* AI Risk Predictor */}
-      <div className="ai-card">
-        <div className="ai-card-title">
+
+      {/* ── AI Risk Predictor ── */}
+      <div className="ai-card" style={{background:'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)', borderColor:'#ddd6fe'}}>
+        <div className="ai-card-title" style={{color:'var(--violet)'}}>
           <svg style={{width:14,height:14,flex:'none'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2"/></svg>
           AI Risk Predictor
           <span className="badge" style={{marginLeft:'auto', background:'#fff', color:'var(--violet)', border:'1px solid #ddd6fe', fontSize:'10px'}}>Beta</span>
         </div>
-        <div style={{fontSize:12, color:'var(--text-muted)', marginBottom:10, lineHeight:1.4}}>
+        <div style={{fontSize:11.5, color:'#6d28d9', marginBottom:12, lineHeight:1.5}}>
           TC failure risk prediction based on code changes &amp; history.
         </div>
-        <div style={{fontSize:24, fontWeight:700, color:'var(--warning)', fontFamily:'JetBrains Mono,monospace', marginBottom:4}}>0.34</div>
-        <div style={{fontSize:11, color:'var(--text-muted)', marginBottom:10}}>/ 1.0 · Medium risk</div>
-        <div style={{fontSize:11.5, color:'var(--text)', lineHeight:1.4}}>
-          <b>Top risks:</b>
-          <div style={{marginTop:4, paddingLeft:2}}>• Flaky TCs on Safari</div>
-          <div style={{paddingLeft:2}}>• Login flow untested 14d</div>
-          <div style={{paddingLeft:2}}>• 2 blocked by open bugs</div>
+        {/* Forecast / Confidence 2-col */}
+        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:12}}>
+          <div style={{background:'#fff', borderRadius:8, padding:'8px 10px', border:'1px solid #ede9fe'}}>
+            <div style={{fontSize:10, color:'#7c3aed', fontWeight:600, marginBottom:2, textTransform:'uppercase', letterSpacing:'0.04em'}}>Forecast</div>
+            <div style={{fontSize:20, fontWeight:700, color:'var(--warning)', fontFamily:'JetBrains Mono,monospace', lineHeight:1}}>0.34</div>
+            <div style={{fontSize:10, color:'var(--text-muted)', marginTop:2}}>/ 1.0</div>
+          </div>
+          <div style={{background:'#fff', borderRadius:8, padding:'8px 10px', border:'1px solid #ede9fe'}}>
+            <div style={{fontSize:10, color:'#7c3aed', fontWeight:600, marginBottom:2, textTransform:'uppercase', letterSpacing:'0.04em'}}>Confidence</div>
+            <div style={{fontSize:20, fontWeight:700, color:'var(--success-600)', fontFamily:'JetBrains Mono,monospace', lineHeight:1}}>72%</div>
+            <div style={{fontSize:10, color:'var(--text-muted)', marginTop:2}}>Medium</div>
+          </div>
         </div>
-        <button className="pd-btn pd-btn-sm" onClick={onOpenAI}
-          style={{marginTop:10, background:'#fff', borderColor:'#ddd6fe', color:'var(--violet)', justifyContent:'center', width:'100%'}}>
-          <svg style={{width:12,height:12}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2"/></svg>
-          Run risk scan
-        </button>
+        {/* Top Risk Signals */}
+        <div style={{fontSize:11, fontWeight:600, color:'#6d28d9', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.04em'}}>Top Risk Signals</div>
+        <div style={{display:'flex', flexDirection:'column', gap:4, marginBottom:12}}>
+          {['Flaky TCs on Safari', 'Login flow untested 14d', '2 blocked by open bugs'].map((risk, i) => (
+            <div key={i} style={{display:'flex', alignItems:'center', gap:6, fontSize:12, color:'var(--text)'}}>
+              <span style={{width:6, height:6, borderRadius:'50%', background: i === 0 ? 'var(--danger)' : i === 1 ? 'var(--warning)' : 'var(--text-muted)', flex:'none'}} />
+              {risk}
+            </div>
+          ))}
+        </div>
+        {/* Recommendation */}
+        <div style={{background:'#fff', borderRadius:8, padding:'8px 10px', border:'1px solid #ede9fe', marginBottom:10}}>
+          <div style={{fontSize:10, fontWeight:600, color:'#7c3aed', marginBottom:4, textTransform:'uppercase', letterSpacing:'0.04em'}}>Recommendation</div>
+          <div style={{fontSize:11.5, color:'var(--text)', lineHeight:1.5}}>
+            Prioritize login &amp; Safari coverage. Resolve blocked TCs before run start.
+          </div>
+        </div>
+        <div style={{display:'flex', gap:6}}>
+          <button className="pd-btn pd-btn-sm"
+            onClick={() => showToast('AI Risk Scan — Coming Soon 🚧', 'info')}
+            style={{flex:1, background:'#fff', borderColor:'#ddd6fe', color:'var(--violet)', justifyContent:'center'}}>
+            <svg style={{width:11,height:11}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2"/></svg>
+            Run risk scan
+          </button>
+          <button className="pd-btn pd-btn-sm"
+            onClick={() => showToast('AI Apply — Coming Soon 🚧', 'info')}
+            style={{flex:1, background:'var(--violet)', borderColor:'var(--violet)', color:'#fff', justifyContent:'center'}}>
+            Apply
+          </button>
+        </div>
       </div>
 
-      {/* Plan Meta */}
+      {/* ── Snapshot Card ── */}
+      <div className="side-card" style={plan.is_locked ? {borderColor:'var(--violet)', borderWidth:1.5} : {}}>
+        <div className="side-card-title">
+          <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Snapshot
+          {plan.is_locked
+            ? <span className="badge" style={{marginLeft:'auto', background:'#ede9fe', color:'var(--violet)', border:'1px solid #ddd6fe', fontSize:'10px', fontWeight:600}}>LOCKED</span>
+            : <span className="badge badge-neutral" style={{marginLeft:'auto', fontSize:'10px'}}>Unlocked</span>
+          }
+        </div>
+        {plan.is_locked ? (
+          <>
+            {plan.snapshot_locked_at && (
+              <div className="side-row">
+                <span className="k">Locked at</span>
+                <span className="v">{new Date(plan.snapshot_locked_at).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })}</span>
+              </div>
+            )}
+            {owner && (
+              <div className="side-row">
+                <span className="k">Locked by</span>
+                <span className="v">{owner.full_name || owner.email}</span>
+              </div>
+            )}
+            <div className="side-row">
+              <span className="k">TC revision</span>
+              <span className="v" style={{fontFamily:'JetBrains Mono,monospace', fontSize:11}}>{plan.snapshot_id || '—'}</span>
+            </div>
+            <div className="side-row">
+              <span className="k">Drift</span>
+              <span className="v">
+                {driftCount > 0
+                  ? <span style={{color:'var(--warning)', fontWeight:600}}>{driftCount} TC{driftCount > 1 ? 's' : ''} drifted</span>
+                  : <span style={{color:'var(--success-600)'}}>No drift</span>
+                }
+              </span>
+            </div>
+            <div style={{display:'flex', gap:6, marginTop:8}}>
+              <button className="pd-btn pd-btn-sm" onClick={onRebase}
+                style={{flex:1, justifyContent:'center'}} title="Update baseline to latest TC revisions">
+                ↻ Rebase
+              </button>
+              <button className="pd-btn pd-btn-sm" onClick={onUnlock}
+                style={{flex:1, justifyContent:'center', color:'var(--danger)', borderColor:'var(--danger-200)'}}>
+                <svg style={{width:11,height:11}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+                Unlock
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{fontSize:12, color:'var(--text-muted)', lineHeight:1.5, marginBottom:10}}>
+              Lock the TC scope to prevent drift. Required before starting a tracked run.
+            </div>
+            {planTcs.length > 0 ? (
+              <button className="pd-btn pd-btn-sm" onClick={onLock}
+                style={{width:'100%', justifyContent:'center', background:'var(--violet)', borderColor:'var(--violet)', color:'#fff'}}>
+                <svg style={{width:11,height:11}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                Lock Snapshot
+              </button>
+            ) : (
+              <div style={{fontSize:11.5, color:'var(--text-subtle)'}}>Add TCs to enable locking.</div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* ── Execution Pace ── */}
+      <div className="side-card">
+        <div className="side-card-title">
+          <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Execution Pace
+        </div>
+        {/* 7-day sparkline bar chart */}
+        <div style={{display:'flex', alignItems:'flex-end', gap:3, height:40, marginBottom:8}}>
+          {sparkValues.map((v, i) => (
+            <div key={i} style={{flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:2}}>
+              <div style={{
+                width:'100%', borderRadius:'2px 2px 0 0',
+                height: `${Math.round((v / maxSpark) * 36)}px`,
+                background: i === sparkValues.length - 1 ? 'var(--primary)' : 'var(--primary-50)',
+                minHeight:3,
+              }} />
+            </div>
+          ))}
+        </div>
+        <div style={{display:'flex', justifyContent:'space-between', fontSize:10, color:'var(--text-subtle)', marginBottom:10}}>
+          <span>{sparkDays[0]}</span>
+          <span>{sparkDays[6]}</span>
+        </div>
+        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:8}}>
+          <div style={{background:'var(--bg-subtle)', borderRadius:8, padding:'8px 10px', border:'1px solid var(--border)'}}>
+            <div style={{fontSize:10, color:'var(--text-muted)', fontWeight:600, marginBottom:2, textTransform:'uppercase', letterSpacing:'0.04em'}}>Avg TC/day</div>
+            <div style={{fontSize:18, fontWeight:700, color:'var(--text)', fontFamily:'JetBrains Mono,monospace'}}>{avgTcPerDay}</div>
+          </div>
+          <div style={{background:'var(--bg-subtle)', borderRadius:8, padding:'8px 10px', border:'1px solid var(--border)'}}>
+            <div style={{fontSize:10, color:'var(--text-muted)', fontWeight:600, marginBottom:2, textTransform:'uppercase', letterSpacing:'0.04em'}}>Est. Remaining</div>
+            <div style={{fontSize:18, fontWeight:700, color:'var(--text)', fontFamily:'JetBrains Mono,monospace'}}>
+              {daysEst !== null ? `${daysEst}d` : '—'}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Plan Meta ── */}
       <div className="side-card">
         <div className="side-card-title">
           <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -196,15 +350,9 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, onOpenAI }:
           <span className="k">Created</span>
           <span className="v">{new Date(plan.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })}</span>
         </div>
-        {plan.snapshot_id && (
-          <div className="side-row">
-            <span className="k">Snapshot</span>
-            <span className="snap-id">{plan.snapshot_id}</span>
-          </div>
-        )}
       </div>
 
-      {/* Team */}
+      {/* ── Team ── */}
       <div className="side-card">
         <div className="side-card-title">
           <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -235,14 +383,16 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, onOpenAI }:
 // ─── Tab: Test Cases ──────────────────────────────────────────────────────────
 
 function TestCasesTab({
-  plan, planTcs, allTcs, onAddTc, onAddTcs, onRemoveTc, onLock, onOpenAI, milestone, parentMilestone, profiles, tcResultMap,
+  plan, planTcs, allTcs, onAddTc, onAddTcs, onRemoveTc, onLock, onUnlock, onRebase, milestone, parentMilestone, profiles, tcResultMap, driftCount,
 }: {
   plan: TestPlan; planTcs: PlanTestCase[]; allTcs: TestCaseRow[];
   onAddTc: (id: string) => Promise<void>;
   onAddTcs: (ids: string[]) => Promise<void>;
   onRemoveTc: (id: string) => Promise<void>;
   onLock: () => Promise<void>;
-  onOpenAI?: () => void;
+  onUnlock: () => Promise<void>;
+  onRebase: () => Promise<void>;
+  driftCount: number;
   milestone: Milestone | null; parentMilestone: Milestone | null; profiles: Map<string, Profile>;
   tcResultMap: Map<string, { result: string; assignee: string | null }>;
 }) {
@@ -294,7 +444,8 @@ function TestCasesTab({
               &nbsp;New TC changes in the library won't affect this plan.
             </div>
             <div style={{marginLeft:'auto', display:'flex', gap:8, alignItems:'center'}}>
-              <button className="pd-btn pd-btn-sm">Rebase</button>
+              <button className="pd-btn pd-btn-sm" onClick={onRebase}>↻ Rebase</button>
+              <button className="pd-btn pd-btn-sm" onClick={onUnlock} style={{color:'var(--danger)', borderColor:'var(--danger-200)'}}>Unlock</button>
             </div>
           </div>
         )}
@@ -463,7 +614,8 @@ function TestCasesTab({
         </div>
       </div>
 
-      <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles} onOpenAI={onOpenAI} />
+      <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles}
+        driftCount={driftCount} onLock={onLock} onUnlock={onUnlock} onRebase={onRebase} planTcs={planTcs} />
 
       {/* TC Picker Modal — runs-style */}
       {showPicker && (() => {
@@ -629,11 +781,12 @@ function TestCasesTab({
 
 // ─── Tab: Runs ────────────────────────────────────────────────────────────────
 
-function RunsTab({ runs, projectId, planId, planTcCount, onOpenAI, milestone, parentMilestone, profiles, plan }: {
+function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilestone, profiles, plan, driftCount, onLock, onUnlock, onRebase, planTcs }: {
   runs: PlanRun[]; projectId: string; planId: string; planTcCount: number;
-  onOpenAI?: () => void;
   milestone: Milestone | null; parentMilestone: Milestone | null;
   profiles: Map<string, Profile>; plan: TestPlan;
+  driftCount: number; onLock: () => Promise<void>; onUnlock: () => Promise<void>; onRebase: () => Promise<void>;
+  planTcs: PlanTestCase[];
 }) {
   const navigate = useNavigate();
   const totalRuns = runs.length;
@@ -769,7 +922,8 @@ function RunsTab({ runs, projectId, planId, planTcCount, onOpenAI, milestone, pa
             <div style={{textAlign:'center', padding:'2rem', color:'var(--text-muted)', fontSize:13, marginTop:8}}>No runs linked to this plan yet.</div>
           )}
         </div>
-        <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles} onOpenAI={onOpenAI} />
+        <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles}
+          driftCount={driftCount} onLock={onLock} onUnlock={onUnlock} onRebase={onRebase} planTcs={planTcs} />
       </div>
     </div>
   );
@@ -777,10 +931,11 @@ function RunsTab({ runs, projectId, planId, planTcCount, onOpenAI, milestone, pa
 
 // ─── Tab: Activity ────────────────────────────────────────────────────────────
 
-function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, onOpenAI }: {
+function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCount, onLock, onUnlock, onRebase, planTcs }: {
   logs: ActivityLog[]; profiles: Map<string, Profile>;
   plan: TestPlan; milestone: Milestone | null; parentMilestone: Milestone | null;
-  onOpenAI?: () => void;
+  driftCount: number; onLock: () => Promise<void>; onUnlock: () => Promise<void>; onRebase: () => Promise<void>;
+  planTcs: PlanTestCase[];
 }) {
   const [activeFilter, setActiveFilter] = useState('all');
 
@@ -877,7 +1032,8 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, onOpenA
           ))
         )}
       </div>
-      <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles} onOpenAI={onOpenAI} />
+      <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles}
+        driftCount={driftCount} onLock={onLock} onUnlock={onUnlock} onRebase={onRebase} planTcs={planTcs} />
     </div>
   );
 }
@@ -1486,6 +1642,83 @@ function SettingsTab({
   );
 }
 
+// ─── Run Button Helpers ───────────────────────────────────────────────────────
+
+function getRunButtonState(planRuns: PlanRun[]): { label: string; mode: 'start' | 'continue' | 'multiple'; runs: PlanRun[] } {
+  const inProgress = planRuns.filter(r => r.status === 'in_progress');
+  if (inProgress.length === 0) return { label: 'Start Run', mode: 'start', runs: [] };
+  if (inProgress.length === 1) return { label: 'Continue Run', mode: 'continue', runs: inProgress };
+  return { label: `Continue Run (${inProgress.length})`, mode: 'multiple', runs: inProgress };
+}
+
+function SplitButton({ label, mode, inProgressRuns, onStartNew, projectId, navigate }: {
+  label: string;
+  mode: 'start' | 'continue' | 'multiple';
+  inProgressRuns: PlanRun[];
+  onStartNew: () => void;
+  projectId: string;
+  navigate: (path: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const handleMain = () => {
+    if (mode === 'start') {
+      onStartNew();
+    } else if (mode === 'continue' && inProgressRuns.length === 1) {
+      navigate(`/projects/${projectId}/runs/${inProgressRuns[0].id}`);
+    } else {
+      setOpen(o => !o);
+    }
+  };
+
+  if (mode !== 'multiple') {
+    return (
+      <button className="pd-btn pd-btn-primary" onClick={handleMain}>
+        <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        {label}
+      </button>
+    );
+  }
+
+  return (
+    <div ref={ref} style={{position:'relative', display:'inline-flex'}}>
+      <button className="pd-btn pd-btn-primary" onClick={handleMain}
+        style={{borderTopRightRadius:0, borderBottomRightRadius:0}}>
+        <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        {label}
+      </button>
+      <button className="pd-btn pd-btn-primary" onClick={() => setOpen(o => !o)}
+        style={{borderTopLeftRadius:0, borderBottomLeftRadius:0, borderLeft:'1px solid rgba(255,255,255,0.3)', padding:'0 8px', minWidth:0}}>
+        <svg style={{width:10,height:10}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      {open && (
+        <div style={{position:'absolute', top:'100%', right:0, marginTop:4, background:'#fff', border:'1px solid var(--border)', borderRadius:8, boxShadow:'0 4px 16px rgba(0,0,0,0.12)', zIndex:100, minWidth:200, overflow:'hidden'}}>
+          {inProgressRuns.map(r => (
+            <button key={r.id}
+              onClick={() => { navigate(`/projects/${projectId}/runs/${r.id}`); setOpen(false); }}
+              style={{width:'100%', display:'flex', alignItems:'center', gap:8, padding:'8px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, textAlign:'left'}}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-subtle)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+              <svg style={{width:12,height:12,color:'var(--warning)',flex:'none'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              {r.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function PlanDetailPage() {
@@ -1515,6 +1748,17 @@ export default function PlanDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showAIModal, setShowAIModal] = useState(false);
 
+  // Story 4: Drift count — TCs modified after snapshot was locked
+  const driftCount = useMemo(() => {
+    if (!plan?.is_locked || !plan?.snapshot_locked_at) return 0;
+    const lockedAt = new Date(plan.snapshot_locked_at).getTime();
+    return planTcs.filter(ptc => {
+      const tc = allTcs.find(t => t.id === ptc.test_case_id);
+      if (!tc) return false;
+      return tc.updated_at ? new Date(tc.updated_at).getTime() > lockedAt : false;
+    }).length;
+  }, [plan?.is_locked, plan?.snapshot_locked_at, planTcs, allTcs]);
+
   useEffect(() => {
     if (!projectId || !planId) return;
     load();
@@ -1533,7 +1777,7 @@ export default function PlanDetailPage() {
           .select('test_plan_id, test_case_id, added_at')
           .eq('test_plan_id', planId!),
         supabase.from('test_cases')
-          .select('id, title, priority, lifecycle_status, folder, tags, custom_id')
+          .select('id, title, priority, lifecycle_status, folder, tags, custom_id, updated_at')
           .eq('project_id', projectId!)
           .neq('lifecycle_status', 'deprecated')
           .order('title'),
@@ -1681,10 +1925,38 @@ export default function PlanDetailPage() {
 
   const handleLock = async () => {
     const snapId = `snap_${Math.random().toString(36).slice(2, 10)}`;
-    const { error } = await supabase.from('test_plans').update({ is_locked: true, snapshot_id: snapId }).eq('id', planId!);
+    const now = new Date().toISOString();
+    const { error } = await supabase.from('test_plans')
+      .update({ is_locked: true, snapshot_id: snapId, snapshot_locked_at: now })
+      .eq('id', planId!);
     if (error) { showToast('Failed to lock snapshot', 'error'); return; }
-    setPlan(p => p ? { ...p, is_locked: true, snapshot_id: snapId } : p);
+    setPlan(p => p ? { ...p, is_locked: true, snapshot_id: snapId, snapshot_locked_at: now } : p);
     showToast('Snapshot locked', 'success');
+  };
+
+  const handleUnlock = async () => {
+    const confirmed = window.confirm(
+      'Unlocking the snapshot will allow TC additions and removals.\n' +
+      'Existing runs will not be affected, but plan scope may shift.\n' +
+      'Proceed?'
+    );
+    if (!confirmed) return;
+    const { error } = await supabase.from('test_plans')
+      .update({ is_locked: false, snapshot_id: null, snapshot_locked_at: null })
+      .eq('id', planId!);
+    if (error) { showToast('Failed to unlock snapshot', 'error'); return; }
+    setPlan(p => p ? { ...p, is_locked: false, snapshot_id: null, snapshot_locked_at: null } : p);
+    showToast('Snapshot unlocked', 'success');
+  };
+
+  const handleRebase = async () => {
+    const now = new Date().toISOString();
+    const { error } = await supabase.from('test_plans')
+      .update({ snapshot_locked_at: now })
+      .eq('id', planId!);
+    if (error) { showToast('Failed to rebase snapshot', 'error'); return; }
+    setPlan(p => p ? { ...p, snapshot_locked_at: now } : p);
+    showToast('Snapshot rebased to latest', 'success');
   };
 
   const handleUpdate = async (data: Partial<TestPlan>) => {
@@ -1745,6 +2017,19 @@ export default function PlanDetailPage() {
 
   const sc = STATUS_CONFIG[plan.status] || STATUS_CONFIG.planning;
 
+  // Story 5/6: Dynamic run button state
+  const runButtonState = getRunButtonState(runs);
+
+  // Story 7: TC 0 guard — block new run start if no TCs added
+  const handleStartNewRun = () => {
+    if (planTcs.length === 0) {
+      showToast('Add at least one test case before starting a run.', 'warning');
+      setActiveTab('testcases');
+      return;
+    }
+    navigate(`/projects/${projectId}/runs?action=create&plan_id=${planId}${plan.milestone_id ? `&milestone_id=${plan.milestone_id}` : ''}`);
+  };
+
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100vh', background:'#F8FAFC', fontFamily:'Inter,system-ui,sans-serif' }}>
       <ProjectHeader projectId={projectId!} projectName={project?.name ?? ''} />
@@ -1787,7 +2072,16 @@ export default function PlanDetailPage() {
           </div>
           <h1 className="detail-title">{plan.name}</h1>
           <span className={sc.badgeCls}>{sc.label}</span>
-          {plan.target_date && (
+          {/* Story 13: start_date – end_date range display */}
+          {(plan.start_date || plan.end_date) && (
+            <span className="detail-meta">
+              <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              {plan.start_date ? new Date(plan.start_date).toLocaleDateString('en-US', { month:'short', day:'numeric' }) : '?'}
+              {' – '}
+              {plan.end_date ? new Date(plan.end_date).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : '?'}
+            </span>
+          )}
+          {!plan.start_date && !plan.end_date && plan.target_date && (
             <span className="detail-meta">
               <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
               Due {new Date(plan.target_date).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })}
@@ -1816,10 +2110,14 @@ export default function PlanDetailPage() {
               <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               Edit
             </button>
-            <button className="pd-btn pd-btn-primary" onClick={()=>navigate(`/projects/${projectId}/runs?action=create&plan_id=${planId}${plan.milestone_id ? `&milestone_id=${plan.milestone_id}` : ''}`)}>
-              <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-              Start Run
-            </button>
+            <SplitButton
+              label={runButtonState.label}
+              mode={runButtonState.mode}
+              inProgressRuns={runButtonState.runs}
+              onStartNew={handleStartNewRun}
+              projectId={projectId!}
+              navigate={navigate}
+            />
           </div>
         </div>
 
@@ -1866,8 +2164,9 @@ export default function PlanDetailPage() {
         {activeTab === 'testcases' && (
           <TestCasesTab
             plan={plan} planTcs={planTcs} allTcs={allTcs}
-            onAddTc={handleAddTc} onAddTcs={handleAddTcs} onRemoveTc={handleRemoveTc} onLock={handleLock}
-            onOpenAI={() => setShowAIModal(true)}
+            onAddTc={handleAddTc} onAddTcs={handleAddTcs} onRemoveTc={handleRemoveTc}
+            onLock={handleLock} onUnlock={handleUnlock} onRebase={handleRebase}
+            driftCount={driftCount}
             milestone={milestone} parentMilestone={parentMilestone} profiles={profiles}
             tcResultMap={tcResultMap}
           />
@@ -1875,12 +2174,14 @@ export default function PlanDetailPage() {
         {activeTab === 'runs' && (
           <RunsTab
             runs={runs} projectId={projectId!} planId={planId!} planTcCount={totalTCs}
-            onOpenAI={() => setShowAIModal(true)}
             milestone={milestone} parentMilestone={parentMilestone} profiles={profiles} plan={plan}
+            driftCount={driftCount} onLock={handleLock} onUnlock={handleUnlock} onRebase={handleRebase}
+            planTcs={planTcs}
           />
         )}
         {activeTab === 'activity' && (
-          <ActivityTab logs={activityLogs} profiles={profiles} plan={plan} milestone={milestone} parentMilestone={parentMilestone} onOpenAI={() => setShowAIModal(true)} />
+          <ActivityTab logs={activityLogs} profiles={profiles} plan={plan} milestone={milestone} parentMilestone={parentMilestone}
+            driftCount={driftCount} onLock={handleLock} onUnlock={handleUnlock} onRebase={handleRebase} planTcs={planTcs} />
         )}
         {activeTab === 'issues' && (
           <IssuesTab runs={runs} plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles} />
