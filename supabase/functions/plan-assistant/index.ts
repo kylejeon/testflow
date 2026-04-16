@@ -111,12 +111,14 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // Service role client for DB operations
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    // ── 인증 (verify_jwt = false이므로 Authorization 헤더에서 직접 파싱) ──────
+    // ── 인증: anon-key 클라이언트에 JWT 포워딩 → Supabase Auth 서버에서 검증
+    // (verify_jwt = false이므로 로컬 JWT 파싱 안 함 → ES256 알고리즘 지원 문제 우회)
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return new Response(JSON.stringify({ error: 'Missing authorization header' }), {
@@ -125,10 +127,15 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    // Use anon-key client so auth.getUser() calls the Auth server (supports ES256)
+    const supabaseAuth = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
     if (userError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      return new Response(JSON.stringify({ error: 'Unauthorized', detail: userError?.message }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

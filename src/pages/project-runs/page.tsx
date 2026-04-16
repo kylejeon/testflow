@@ -173,9 +173,27 @@ export default function ProjectRunsPage() {
   useEffect(() => {
     if (searchParams.get('action') === 'create') {
       const planId = searchParams.get('plan_id');
+      const milestoneId = searchParams.get('milestone_id');
+      setFormData(prev => ({
+        ...prev,
+        ...(planId      ? { test_plan_id: planId }      : {}),
+        ...(milestoneId ? { milestone_id: milestoneId } : {}),
+      } as any));
+
+      // When coming from a test plan, pre-select that plan's test cases
       if (planId) {
-        setFormData(prev => ({ ...prev, test_plan_id: planId } as any));
+        supabase
+          .from('test_plan_test_cases')
+          .select('test_case_id')
+          .eq('test_plan_id', planId)
+          .then(({ data }) => {
+            if (data && data.length > 0) {
+              setSelectedTestCases(data.map((r: any) => r.test_case_id));
+              setFormData(prev => ({ ...prev, include_all_cases: false } as any));
+            }
+          });
       }
+
       setShowAddRunModal(true);
       setSearchParams({}, { replace: true });
     }
@@ -2503,7 +2521,8 @@ export default function ProjectRunsPage() {
                         value={tagInput}
                         onChange={e => setTagInput(e.target.value)}
                         onKeyDown={e => {
-                          if (e.key === 'Enter' && tagInput.trim()) {
+                          // nativeEvent.isComposing 체크: 한글 IME 조합 중 Enter는 무시
+                          if (e.key === 'Enter' && !e.nativeEvent.isComposing && tagInput.trim()) {
                             e.preventDefault();
                             const tag = tagInput.trim();
                             const existing = formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : [];

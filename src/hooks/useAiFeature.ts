@@ -120,7 +120,7 @@ export function useAiFeature(featureKey: AiFeatureKey): AiFeatureState {
           return;
         }
 
-        // 구독 tier 조회
+        // 구독 tier 조회 (백엔드 getEffectiveTier와 동일 로직)
         const { data: profile } = await supabase
           .from('profiles')
           .select('subscription_tier, is_trial, trial_ends_at')
@@ -131,6 +131,29 @@ export function useAiFeature(featureKey: AiFeatureKey): AiFeatureState {
         // 만료된 trial은 Free로 처리
         if (profile?.is_trial && profile?.trial_ends_at) {
           if (new Date() > new Date(profile.trial_ends_at)) tier = 1;
+        }
+
+        // 자신의 tier가 1이면 소속 프로젝트 owner의 tier도 확인 (effective tier)
+        if (tier <= 1) {
+          try {
+            const { data: memberships } = await supabase
+              .from('project_members').select('project_id').eq('user_id', user.id);
+            if (memberships?.length) {
+              const projectIds = memberships.map((m: any) => m.project_id);
+              const { data: owners } = await supabase
+                .from('project_members').select('user_id').in('project_id', projectIds).eq('role', 'owner');
+              if (owners?.length) {
+                const ownerIds = [...new Set(owners.map((o: any) => o.user_id))];
+                const { data: ownerProfiles } = await supabase
+                  .from('profiles').select('subscription_tier, is_trial, trial_ends_at').in('id', ownerIds);
+                for (const p of ownerProfiles || []) {
+                  let t = p.subscription_tier || 1;
+                  if (p.is_trial && p.trial_ends_at && new Date() > new Date(p.trial_ends_at)) t = 1;
+                  if (t > tier) tier = t;
+                }
+              }
+            }
+          } catch { /* silent — fall back to own tier */ }
         }
 
         const config = AI_FEATURES[featureKey];
@@ -216,6 +239,28 @@ export function useAiFeatures<K extends AiFeatureKey>(
         let tier = profile?.subscription_tier || 1;
         if (profile?.is_trial && profile?.trial_ends_at) {
           if (new Date() > new Date(profile.trial_ends_at)) tier = 1;
+        }
+
+        if (tier <= 1) {
+          try {
+            const { data: memberships } = await supabase
+              .from('project_members').select('project_id').eq('user_id', user.id);
+            if (memberships?.length) {
+              const projectIds = memberships.map((m: any) => m.project_id);
+              const { data: owners } = await supabase
+                .from('project_members').select('user_id').in('project_id', projectIds).eq('role', 'owner');
+              if (owners?.length) {
+                const ownerIds = [...new Set(owners.map((o: any) => o.user_id))];
+                const { data: ownerProfiles } = await supabase
+                  .from('profiles').select('subscription_tier, is_trial, trial_ends_at').in('id', ownerIds);
+                for (const p of ownerProfiles || []) {
+                  let t = p.subscription_tier || 1;
+                  if (p.is_trial && p.trial_ends_at && new Date() > new Date(p.trial_ends_at)) t = 1;
+                  if (t > tier) tier = t;
+                }
+              }
+            }
+          } catch { /* silent */ }
         }
 
         const monthlyLimit = PLAN_LIMITS[tier] ?? -1;
