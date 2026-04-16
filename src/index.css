@@ -311,6 +311,11 @@
 .cs-blocked  { background: var(--danger-50);  color: var(--danger-600); }
 .cs-pending  { background: var(--bg-subtle);  color: var(--text-muted); }
 
+/* ─── Icon size utilities ────────────────────────────────────────────────── */
+.icon    { width: 16px; height: 16px; flex: none; display: inline-block; }
+.icon-sm { width: 14px; height: 14px; flex: none; display: inline-block; }
+.icon-lg { width: 20px; height: 20px; flex: none; display: inline-block; }
+
 /* ─── Shared button / input utilities (used in milestones 2-col layout) ─── */
 .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: #fff; font-size: 13px; font-weight: 500; color: var(--text); cursor: pointer; white-space: nowrap; font-family: inherit; }
 .btn:hover { background: var(--bg-muted); }
