@@ -588,7 +588,7 @@ export default function ProjectMilestones() {
         />
 
         {/* Main panel */}
-        <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           {showMilestonePanel && selectedMilestone ? (
             <MilestonePlanList
               projectId={projectId!}
