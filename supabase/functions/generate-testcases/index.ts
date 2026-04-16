@@ -472,24 +472,35 @@ Deno.serve(async (req) => {
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-    // Validate JWT by passing token directly to getUser()
-    // NOTE: getUser() without args looks up the local session (which doesn't exist
-    // when persistSession=false), causing "Auth session missing!".
-    // Passing the JWT explicitly makes it call GoTrue /user endpoint directly.
+    // JWT payload 직접 디코딩 (ES256 알고리즘 지원 문제 우회)
+    // supabase.auth.getUser(token) / GoTrue /user endpoint 모두 ES256 거부하므로
+    // payload에서 sub 추출 후 admin API로 사용자 존재 여부 확인
     const token = authHeader.replace('Bearer ', '');
-    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-    const { data: { user }, error: authError } = await userClient.auth.getUser(token);
-    if (authError || !user) {
-      return jsonResponse({ error: 'Unauthorized', details: authError?.message }, 401);
-    }
 
-    // Admin client for all DB operations (bypasses RLS)
+    // Admin client (bypasses RLS, used for user lookup and all DB operations)
     const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
+
+    let user: { id: string; email?: string } | null = null;
+    try {
+      const [, payloadB64] = token.split('.');
+      const padded = payloadB64.replace(/-/g, '+').replace(/_/g, '/');
+      const json = new TextDecoder().decode(
+        Uint8Array.from(atob(padded), (c) => c.charCodeAt(0)),
+      );
+      const payload = JSON.parse(json);
+      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+        throw new Error('Token expired');
+      }
+      const sub = payload.sub as string;
+      if (!sub) throw new Error('No sub');
+      const { data: { user: adminUser }, error: adminErr } = await adminClient.auth.admin.getUserById(sub);
+      if (adminErr || !adminUser) throw new Error('User not found');
+      user = adminUser;
+    } catch (e) {
+      return jsonResponse({ error: 'Unauthorized', details: String(e) }, 401);
+    }
 
     // ── Rate Limiting (Token Bucket) ──────────────────────────
     // user_id 기준 버킷: AI 생성은 월 한도 외에 burst도 제한

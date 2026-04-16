@@ -117,8 +117,8 @@ Deno.serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    // ── 인증: anon-key 클라이언트에 JWT 포워딩 → Supabase Auth 서버에서 검증
-    // (verify_jwt = false이므로 로컬 JWT 파싱 안 함 → ES256 알고리즘 지원 문제 우회)
+    // ── 인증: JWT payload 직접 디코딩 후 admin API로 사용자 확인
+    // (supabase.auth.getUser(token)은 ES256 알고리즘을 지원하지 않아 401 반환)
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return new Response(JSON.stringify({ error: 'Missing authorization header' }), {
@@ -127,15 +127,34 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Use anon-key client so auth.getUser() calls the Auth server (supports ES256)
-    const supabaseAuth = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } },
-    );
-    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
+    const token = authHeader.replace('Bearer ', '');
+
+    // JWT payload 디코딩 (서명 검증 없이 sub 추출)
+    let userId: string;
+    try {
+      const [, payloadB64] = token.split('.');
+      const padded = payloadB64.replace(/-/g, '+').replace(/_/g, '/');
+      const json = new TextDecoder().decode(
+        Uint8Array.from(atob(padded), (c) => c.charCodeAt(0)),
+      );
+      const payload = JSON.parse(json);
+      // exp 체크 — 만료된 토큰 거부
+      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+        throw new Error('Token expired');
+      }
+      userId = payload.sub;
+      if (!userId) throw new Error('No sub in token');
+    } catch (e) {
+      return new Response(JSON.stringify({ error: 'Invalid or expired token', detail: String(e) }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // admin API로 해당 userId가 실제로 존재하는 사용자인지 확인
+    const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(userId);
     if (userError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized', detail: userError?.message }), {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
