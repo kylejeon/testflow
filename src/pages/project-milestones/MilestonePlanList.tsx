@@ -425,17 +425,17 @@ export default function MilestonePlanList({ projectId, milestone, plans, onNewPl
 
         {/* AI Suggestion card */}
         {showAI && (
-          <div className="ai-card">
-            <div className="ai-card-head">
-              <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <div className="ms-ai-card">
+            <div className="ms-ai-card-head">
+              <svg style={{ width: 16, height: 16, flexShrink: 0 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" />
               </svg>
               AI Suggestion
             </div>
-            <div className="ai-card-body">
+            <div className="ms-ai-card-body">
               Based on recent failures, consider using AI Assist to generate a focused regression plan for failing test areas.
             </div>
-            <div className="ai-card-actions">
+            <div className="ms-ai-card-actions">
               <button className="btn btn-ai btn-sm" onClick={onAIAssist}>Create Plan</button>
               <button className="btn btn-sm btn-ghost" onClick={() => setAiDismissed(true)}>Dismiss</button>
             </div>
