@@ -278,6 +278,8 @@ function TestCasesTab({
 
   const entryCriteria: string[] = Array.isArray(plan.entry_criteria) ? plan.entry_criteria : [];
   const exitCriteria: string[] = Array.isArray(plan.exit_criteria) ? plan.exit_criteria : [];
+  const [entryCriteriaMet, setEntryCriteriaMet] = useState<boolean[]>(() => entryCriteria.map(() => false));
+  const [exitCriteriaMet, setExitCriteriaMet] = useState<boolean[]>(() => exitCriteria.map(() => false));
 
   return (
     <div className="plan-layout">
@@ -305,16 +307,23 @@ function TestCasesTab({
               <div className="criteria-title">
                 <svg style={{width:13,height:13,color:'var(--success-600)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
                 Entry Criteria
-                <span className="badge badge-success" style={{marginLeft:'auto'}}>{entryCriteria.length} / {entryCriteria.length} met</span>
+                <span className="badge badge-success" style={{marginLeft:'auto'}}>{entryCriteriaMet.filter(Boolean).length} / {entryCriteria.length} met</span>
               </div>
-              {entryCriteria.map((c, i) => (
-                <div key={i} className="criterion">
-                  <div className="crit-check">
-                    <svg style={{width:10,height:10}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+              {entryCriteria.map((c, i) => {
+                const met = entryCriteriaMet[i] ?? false;
+                return (
+                  <div key={i} className="criterion">
+                    <div className={met ? 'crit-check' : 'crit-check pending'} style={{cursor:'pointer'}}
+                      onClick={() => setEntryCriteriaMet(prev => { const n=[...prev]; n[i]=!n[i]; return n; })}>
+                      {met
+                        ? <svg style={{width:10,height:10}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                        : <svg style={{width:10,height:10}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="12" cy="12" r="10"/></svg>
+                      }
+                    </div>
+                    <span style={{fontSize:13, textDecoration: met ? 'line-through' : 'none', color: met ? 'var(--text-muted)' : 'inherit'}}>{c}</span>
                   </div>
-                  <span style={{fontSize:13}}>{c}</span>
-                </div>
-              ))}
+                );
+              })}
               {entryCriteria.length === 0 && <div style={{fontSize:12, color:'var(--text-muted)'}}>No entry criteria defined.</div>}
             </div>
             {/* Exit Criteria */}
@@ -323,20 +332,24 @@ function TestCasesTab({
                 <svg style={{width:13,height:13,color:'var(--warning)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                 Exit Criteria
                 <span className="badge badge-warning" style={{marginLeft:'auto'}}>
-                  {Math.ceil(exitCriteria.length / 2)} / {exitCriteria.length} met
+                  {exitCriteriaMet.filter(Boolean).length} / {exitCriteria.length} met
                 </span>
               </div>
-              {exitCriteria.map((c, i) => (
-                <div key={i} className="criterion">
-                  <div className={i % 2 === 0 ? 'crit-check' : 'crit-check pending'}>
-                    {i % 2 === 0
-                      ? <svg style={{width:10,height:10}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
-                      : <svg style={{width:10,height:10}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="12" cy="12" r="10"/></svg>
-                    }
+              {exitCriteria.map((c, i) => {
+                const met = exitCriteriaMet[i] ?? false;
+                return (
+                  <div key={i} className="criterion">
+                    <div className={met ? 'crit-check' : 'crit-check pending'} style={{cursor:'pointer'}}
+                      onClick={() => setExitCriteriaMet(prev => { const n=[...prev]; n[i]=!n[i]; return n; })}>
+                      {met
+                        ? <svg style={{width:10,height:10}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                        : <svg style={{width:10,height:10}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="12" cy="12" r="10"/></svg>
+                      }
+                    </div>
+                    <span style={{fontSize:13, textDecoration: met ? 'line-through' : 'none', color: met ? 'var(--text-muted)' : 'inherit'}}>{c}</span>
                   </div>
-                  <span style={{fontSize:13}}>{c}</span>
-                </div>
-              ))}
+                );
+              })}
               {exitCriteria.length === 0 && <div style={{fontSize:12, color:'var(--text-muted)'}}>No exit criteria defined.</div>}
             </div>
           </div>
@@ -1184,9 +1197,9 @@ function EnvironmentsTab({ plan }: { plan: TestPlan }) {
 // ─── Tab: Settings ────────────────────────────────────────────────────────────
 
 function SettingsTab({
-  plan, milestones, profiles, onUpdate, onDelete,
+  plan, milestones, profiles, memberProfiles, onUpdate, onDelete,
 }: {
-  plan: TestPlan; milestones: Milestone[]; profiles: Map<string, Profile>;
+  plan: TestPlan; milestones: Milestone[]; profiles: Map<string, Profile>; memberProfiles: Profile[];
   onUpdate: (data: Partial<TestPlan>) => Promise<void>;
   onDelete: () => void;
 }) {
@@ -1200,8 +1213,12 @@ function SettingsTab({
     end_date: plan.end_date ?? '',
     owner_id: plan.owner_id ?? '',
   });
-  const [entryCriteria, setEntryCriteria] = useState<string[]>(Array.isArray(plan.entry_criteria) ? plan.entry_criteria : []);
-  const [exitCriteria, setExitCriteria] = useState<string[]>(Array.isArray(plan.exit_criteria) ? plan.exit_criteria : []);
+  const initEntry = Array.isArray(plan.entry_criteria) ? plan.entry_criteria : [];
+  const initExit = Array.isArray(plan.exit_criteria) ? plan.exit_criteria : [];
+  const [entryCriteria, setEntryCriteria] = useState<string[]>(initEntry);
+  const [exitCriteria, setExitCriteria] = useState<string[]>(initExit);
+  const [entryCriteriaMet, setEntryCriteriaMet] = useState<boolean[]>(() => initEntry.map(() => false));
+  const [exitCriteriaMet, setExitCriteriaMet] = useState<boolean[]>(() => initExit.map(() => false));
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const { showToast } = useToast();
@@ -1281,8 +1298,9 @@ function SettingsTab({
           <div>
             <label className="form-label">Owner</label>
             <div style={{position:'relative'}}>
-              {form.owner_id && profiles.get(form.owner_id) && (() => {
-                const owner = profiles.get(form.owner_id)!;
+              {form.owner_id && (() => {
+                const owner = memberProfiles.find(p=>p.id===form.owner_id) || profiles.get(form.owner_id);
+                if (!owner) return null;
                 const initials = owner.full_name?.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() ?? owner.email.slice(0,2).toUpperCase();
                 return (
                   <span style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',width:22,height:22,borderRadius:'50%',
@@ -1293,9 +1311,9 @@ function SettingsTab({
                 );
               })()}
               <select className="form-input" value={form.owner_id} onChange={e=>setFormField('owner_id',e.target.value)}
-                style={{paddingLeft: form.owner_id && profiles.get(form.owner_id) ? 40 : 10}}>
+                style={{paddingLeft: form.owner_id && (memberProfiles.find(p=>p.id===form.owner_id) || profiles.get(form.owner_id)) ? 40 : 10}}>
                 <option value="">— Unassigned —</option>
-                {[...profiles.values()].map(p => (
+                {(memberProfiles.length > 0 ? memberProfiles : [...profiles.values()]).map(p => (
                   <option key={p.id} value={p.id}>{p.full_name ? `@${p.full_name.split(' ')[0].toLowerCase()}` : p.email}</option>
                 ))}
               </select>
@@ -1304,14 +1322,14 @@ function SettingsTab({
           <div>
             <label className="form-label">Priority</label>
             <div style={{display:'flex',gap:6}}>
-              {(['critical','high','medium','low'] as const).map(p => (
+              {(['critical','high','medium'] as const).map(p => (
                 <button key={p} onClick={()=>setFormField('priority',p)}
                   style={{flex:1,padding:'7px 6px',textAlign:'center',border:'1px solid var(--border)',borderRadius:6,fontSize:12,fontWeight:600,cursor:'pointer',
-                    background: form.priority===p ? (p==='critical'?'var(--danger-50)':p==='high'?'var(--warning-50)':p==='medium'?'var(--primary-50)':'var(--bg-subtle)') : '#fff',
-                    borderColor: form.priority===p ? (p==='critical'?'var(--danger)':p==='high'?'var(--warning)':p==='medium'?'var(--primary)':'var(--text-subtle)') : 'var(--border)',
-                    color: form.priority===p ? (p==='critical'?'var(--danger-600)':p==='high'?'var(--warning)':p==='medium'?'var(--primary)':'var(--text)') : 'var(--text-muted)',
+                    background: form.priority===p ? (p==='critical'?'var(--danger-50)':p==='high'?'var(--warning-50)':'var(--primary-50)') : '#fff',
+                    borderColor: form.priority===p ? (p==='critical'?'var(--danger)':p==='high'?'var(--warning)':'var(--primary)') : 'var(--border)',
+                    color: form.priority===p ? (p==='critical'?'var(--danger-600)':p==='high'?'var(--warning)':'var(--primary)') : 'var(--text-muted)',
                   }}>
-                  {p==='critical'?'P1':p==='high'?'P2':p==='medium'?'P3':'P4'}
+                  {p==='critical'?'P1':p==='high'?'P2':'P3'}
                 </button>
               ))}
             </div>
@@ -1355,21 +1373,33 @@ function SettingsTab({
         <div className="section-title">
           <span className="icn success"><svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg></span>
           Entry Criteria
-          <span className="badge badge-success" style={{marginLeft:'auto'}}>{entryCriteria.length} / {entryCriteria.length} met</span>
+          <span className="badge badge-success" style={{marginLeft:'auto'}}>{entryCriteriaMet.filter(Boolean).length} / {entryCriteria.length} met</span>
         </div>
-        {entryCriteria.map((c, i) => (
-          <div key={i} className="criterion-item">
-            <div style={{width:18,height:18,borderRadius:4,background:'var(--success)',border:'1.5px solid var(--success)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-              <svg style={{width:11,height:11,color:'#fff'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+        {entryCriteria.map((c, i) => {
+          const met = entryCriteriaMet[i] ?? false;
+          return (
+            <div key={i} className="criterion-item">
+              <div
+                onClick={() => { setEntryCriteriaMet(prev => { const n=[...prev]; n[i]=!n[i]; return n; }); }}
+                style={{width:18,height:18,borderRadius:4,cursor:'pointer',flex:'none',
+                  background: met ? 'var(--success)' : 'var(--bg-subtle)',
+                  border: `1.5px solid ${met ? 'var(--success)' : 'var(--text-subtle)'}`,
+                  display:'flex',alignItems:'center',justifyContent:'center'}}>
+                {met && <svg style={{width:11,height:11,color:'#fff'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
+              </div>
+              <input value={c} onChange={e=>{const a=[...entryCriteria]; a[i]=e.target.value; setEntryCriteria(a); setDirty(true);}}
+                style={{border:'none',outline:'none',fontSize:13,background:'transparent',width:'100%',fontFamily:'inherit',
+                  textDecoration: met ? 'line-through' : 'none', color: met ? 'var(--text-muted)' : 'inherit'}} />
+              <button onClick={()=>{
+                setEntryCriteria(entryCriteria.filter((_,j)=>j!==i));
+                setEntryCriteriaMet(entryCriteriaMet.filter((_,j)=>j!==i));
+                setDirty(true);
+              }} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-subtle)',fontSize:16,padding:'0 2px'}}>×</button>
             </div>
-            <input value={c} onChange={e=>{const a=[...entryCriteria]; a[i]=e.target.value; setEntryCriteria(a); setDirty(true);}}
-              style={{border:'none',outline:'none',fontSize:13,background:'transparent',width:'100%',fontFamily:'inherit'}} />
-            <button onClick={()=>{setEntryCriteria(entryCriteria.filter((_,j)=>j!==i)); setDirty(true);}}
-              style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-subtle)',fontSize:16,padding:'0 2px'}}>×</button>
-          </div>
-        ))}
+          );
+        })}
         <div style={{border:'1px dashed var(--border)',borderRadius:8,padding:'10px 12px',display:'flex',alignItems:'center',gap:8,color:'var(--text-muted)',fontSize:13,cursor:'pointer'}}
-          onClick={()=>{setEntryCriteria([...entryCriteria,'']); setDirty(true);}}>
+          onClick={()=>{setEntryCriteria([...entryCriteria,'']); setEntryCriteriaMet([...entryCriteriaMet,false]); setDirty(true);}}>
           <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Add entry criterion
         </div>
@@ -1380,21 +1410,33 @@ function SettingsTab({
         <div className="section-title">
           <span className="icn warning"><svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
           Exit Criteria
-          <span className="badge badge-warning" style={{marginLeft:'auto'}}>{Math.ceil(exitCriteria.length/2)} / {exitCriteria.length} met</span>
+          <span className="badge badge-warning" style={{marginLeft:'auto'}}>{exitCriteriaMet.filter(Boolean).length} / {exitCriteria.length} met</span>
         </div>
-        {exitCriteria.map((c, i) => (
-          <div key={i} className="criterion-item">
-            <div style={{width:18,height:18,borderRadius:4,background:i%2===0?'var(--success)':'var(--bg-subtle)',border:`1.5px solid ${i%2===0?'var(--success)':'var(--text-subtle)'}`,display:'flex',alignItems:'center',justifyContent:'center'}}>
-              {i%2===0 && <svg style={{width:11,height:11,color:'#fff'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
+        {exitCriteria.map((c, i) => {
+          const met = exitCriteriaMet[i] ?? false;
+          return (
+            <div key={i} className="criterion-item">
+              <div
+                onClick={() => { setExitCriteriaMet(prev => { const n=[...prev]; n[i]=!n[i]; return n; }); }}
+                style={{width:18,height:18,borderRadius:4,cursor:'pointer',flex:'none',
+                  background: met ? 'var(--success)' : 'var(--bg-subtle)',
+                  border: `1.5px solid ${met ? 'var(--success)' : 'var(--text-subtle)'}`,
+                  display:'flex',alignItems:'center',justifyContent:'center'}}>
+                {met && <svg style={{width:11,height:11,color:'#fff'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
+              </div>
+              <input value={c} onChange={e=>{const a=[...exitCriteria]; a[i]=e.target.value; setExitCriteria(a); setDirty(true);}}
+                style={{border:'none',outline:'none',fontSize:13,background:'transparent',width:'100%',fontFamily:'inherit',
+                  textDecoration: met ? 'line-through' : 'none', color: met ? 'var(--text-muted)' : 'inherit'}} />
+              <button onClick={()=>{
+                setExitCriteria(exitCriteria.filter((_,j)=>j!==i));
+                setExitCriteriaMet(exitCriteriaMet.filter((_,j)=>j!==i));
+                setDirty(true);
+              }} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-subtle)',fontSize:16,padding:'0 2px'}}>×</button>
             </div>
-            <input value={c} onChange={e=>{const a=[...exitCriteria]; a[i]=e.target.value; setExitCriteria(a); setDirty(true);}}
-              style={{border:'none',outline:'none',fontSize:13,background:'transparent',width:'100%',fontFamily:'inherit'}} />
-            <button onClick={()=>{setExitCriteria(exitCriteria.filter((_,j)=>j!==i)); setDirty(true);}}
-              style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-subtle)',fontSize:16,padding:'0 2px'}}>×</button>
-          </div>
-        ))}
+          );
+        })}
         <div style={{border:'1px dashed var(--border)',borderRadius:8,padding:'10px 12px',display:'flex',alignItems:'center',gap:8,color:'var(--text-muted)',fontSize:13,cursor:'pointer'}}
-          onClick={()=>{setExitCriteria([...exitCriteria,'']); setDirty(true);}}>
+          onClick={()=>{setExitCriteria([...exitCriteria,'']); setExitCriteriaMet([...exitCriteriaMet,false]); setDirty(true);}}>
           <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Add exit criterion
         </div>
@@ -1465,6 +1507,7 @@ export default function PlanDetailPage() {
   const [parentMilestone, setParentMilestone] = useState<Milestone | null>(null);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [profiles, setProfiles] = useState<Map<string, Profile>>(new Map());
+  const [memberProfiles, setMemberProfiles] = useState<Profile[]>([]);
   const [tcResultMap, setTcResultMap] = useState<Map<string, { result: string; assignee: string | null }>>(new Map());
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -1580,14 +1623,22 @@ export default function PlanDetailPage() {
         resultAssigneeIds = [...new Set((results || []).map((r: any) => r.assigned_to).filter(Boolean))] as string[];
       }
 
-      // Profiles — combine activity actors + test_result assignees
+      // Project members (for Owner selector)
+      const { data: memberRows } = await supabase
+        .from('project_members').select('user_id').eq('project_id', projectId!);
+      const memberIds = (memberRows || []).map((m: any) => m.user_id).filter(Boolean) as string[];
+
+      // Profiles — combine activity actors + test_result assignees + project members
       const actorIds = [...new Set((logs || []).map((l: any) => l.actor_id).filter(Boolean))] as string[];
-      const allProfileIds = [...new Set([...actorIds, ...resultAssigneeIds])];
-      if (allProfileIds.length > 0) {
+      const allFetchIds = [...new Set([...actorIds, ...resultAssigneeIds, ...memberIds])];
+      const profileMap = new Map<string, Profile>();
+      if (allFetchIds.length > 0) {
         const { data: profileData } = await supabase
-          .from('profiles').select('id, full_name, email, avatar_url').in('id', allProfileIds);
-        setProfiles(new Map((profileData || []).map((p: any) => [p.id, p])));
+          .from('profiles').select('id, full_name, email, avatar_url').in('id', allFetchIds);
+        (profileData || []).forEach((p: any) => profileMap.set(p.id, p));
       }
+      setProfiles(profileMap);
+      setMemberProfiles(memberIds.map(id => profileMap.get(id)).filter(Boolean) as Profile[]);
     } catch (err: any) {
       setLoadError(true);
     } finally {
@@ -1838,7 +1889,7 @@ export default function PlanDetailPage() {
           <EnvironmentsTab plan={plan} />
         )}
         {activeTab === 'settings' && (
-          <SettingsTab plan={plan} milestones={milestones} profiles={profiles} onUpdate={handleUpdate} onDelete={()=>setShowDeleteConfirm(true)} />
+          <SettingsTab plan={plan} milestones={milestones} profiles={profiles} memberProfiles={memberProfiles} onUpdate={handleUpdate} onDelete={()=>setShowDeleteConfirm(true)} />
         )}
       </div>
 
