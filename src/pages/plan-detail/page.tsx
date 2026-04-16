@@ -400,7 +400,7 @@ function TestCasesTab({
                     <div style={{fontWeight:500, fontSize:13}}>{ptc.test_case.title}</div>
                     <div style={{fontSize:11, color:'var(--text-muted)', marginTop:2, display:'flex', gap:4}}>
                       {ptc.test_case.folder && <span>{ptc.test_case.folder}</span>}
-                      {ptc.test_case.tags?.slice(0,2).map(t=>(
+                      {Array.isArray(ptc.test_case.tags) && ptc.test_case.tags.slice(0,2).map(t=>(
                         <span key={t} style={{fontFamily:'JetBrains Mono,monospace', fontSize:10, background:'var(--bg-subtle)', padding:'1px 4px', borderRadius:3}}>#{t}</span>
                       ))}
                     </div>
@@ -1446,19 +1446,35 @@ export default function PlanDetailPage() {
       }
       setProject(projectRes.data);
       setPlan(planRes.data);
-      setAllTcs(allTcsRes.data || []);
+
+      // Normalize tags: DB may return null | string[] | JSON string — ensure string[]
+      const normalizeTags = (raw: any): string[] | null => {
+        if (!raw) return null;
+        if (Array.isArray(raw)) return raw;
+        if (typeof raw === 'string') {
+          try { const p = JSON.parse(raw); return Array.isArray(p) ? p : []; } catch { return []; }
+        }
+        return null;
+      };
+
+      const normalizedAllTcs: TestCaseRow[] = (allTcsRes.data || []).map((tc: any) => ({
+        ...tc,
+        tags: normalizeTags(tc.tags),
+        custom_id: tc.custom_id ?? null,
+      }));
+      setAllTcs(normalizedAllTcs);
       setRuns(runsRes.data || []);
       setMilestones(milestonesRes.data || []);
 
       // Build planTcs by joining planTcIds with allTcs
-      const tcMap = new Map<string, TestCaseRow>((allTcsRes.data || []).map((tc: TestCaseRow) => [tc.id, tc]));
+      const tcMap = new Map<string, TestCaseRow>(normalizedAllTcs.map(tc => [tc.id, tc]));
       const planTcRows: PlanTestCase[] = (planTcIdsRes.data || []).map((row: any) => ({
         test_plan_id: row.test_plan_id,
         test_case_id: row.test_case_id,
         added_at: row.added_at,
         test_case: tcMap.get(row.test_case_id) ?? {
           id: row.test_case_id, title: '(unknown)', priority: 'medium' as const,
-          lifecycle_status: 'untested', folder: null, tags: null,
+          lifecycle_status: 'untested', folder: null, tags: null, custom_id: null,
         },
       }));
       setPlanTcs(planTcRows);
