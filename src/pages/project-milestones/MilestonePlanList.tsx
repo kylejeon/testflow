@@ -422,8 +422,9 @@ export default function MilestonePlanList({ projectId, milestone, plans, directR
                   </div>
                   {total > 0 && (
                     <>
-                      <div className="ms-card-pbar" style={{ marginTop: 6 }}>
-                        <div className="ms-card-pbar-fill" style={{ width: `${runPassPct}%` }} />
+                      <div className="plan-pbar" style={{ marginTop: 6 }}>
+                        <div className="plan-pbar-pass" style={{ width: `${runPassPct}%` }} />
+                        <div className="plan-pbar-fail" style={{ left: `${runPassPct}%`, width: `${runFailPct}%` }} />
                       </div>
                       <div className="ms-card-row3" style={{ justifyContent: 'space-between', marginTop: 4 }}>
                         <span>
