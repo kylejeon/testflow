@@ -1859,7 +1859,7 @@ export default function PlanDetailPage() {
           .eq('project_id', projectId!)
           .neq('lifecycle_status', 'deprecated')
           .order('title'),
-        supabase.from('test_runs').select('*').eq('test_plan_id', planId!).order('created_at', { ascending: false }),
+        supabase.from('test_runs').select('*').eq('project_id', projectId!).order('created_at', { ascending: false }),
         supabase.from('milestones').select('id, name, parent_milestone_id').eq('project_id', projectId!).order('created_at'),
         supabase.from('folders').select('name, icon, color').eq('project_id', projectId!),
       ]);
@@ -1888,9 +1888,21 @@ export default function PlanDetailPage() {
       }));
       setAllTcs(normalizedAllTcs);
       setFolders((foldersRes.data || []).map((f: any) => ({ name: f.name, icon: f.icon || 'ri-folder-line', color: f.color || 'indigo' })));
-      const allRuns = runsRes.data || [];
-      setRuns(allRuns);
       setMilestones(milestonesRes.data || []);
+
+      // Filter runs that belong to this plan (by test_plan_id or TC overlap)
+      const planTcIdSet = new Set((planTcIdsRes.data || []).map((r: any) => r.test_case_id));
+      const allRuns = (runsRes.data || []).filter((run: any) => {
+        // Direct match by test_plan_id
+        if (run.test_plan_id === planId) return true;
+        // Fallback: match by TC overlap (for runs created before test_plan_id column existed)
+        if (!run.test_plan_id && Array.isArray(run.test_case_ids) && planTcIdSet.size > 0) {
+          const overlap = run.test_case_ids.filter((id: string) => planTcIdSet.has(id));
+          return overlap.length > 0 && overlap.length >= planTcIdSet.size * 0.5;
+        }
+        return false;
+      });
+      setRuns(allRuns);
 
       // Build planTcs by joining planTcIds with allTcs
       const tcMap = new Map<string, TestCaseRow>(normalizedAllTcs.map(tc => [tc.id, tc]));

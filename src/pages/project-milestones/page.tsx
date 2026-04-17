@@ -303,20 +303,73 @@ export default function ProjectMilestones() {
           }
         }
 
-        // Fetch run stats per plan
+        // Fetch run stats per plan — use test_results directly for accuracy
         let runStatsMap = new Map<string, { passed: number; failed: number }>();
         if (planIds.length > 0) {
-          const { data: runsData } = await supabase
+          // Strategy: for each plan, get its TC IDs, then find runs containing those TCs,
+          // then count test_results statuses
+          // Step 1: Get all runs for this project
+          const { data: projectRuns } = await supabase
             .from('test_runs')
-            .select('test_plan_id, passed, failed')
-            .in('test_plan_id', planIds);
-          for (const r of (runsData || [])) {
-            if (!r.test_plan_id) continue;
-            const prev = runStatsMap.get(r.test_plan_id) || { passed: 0, failed: 0 };
-            runStatsMap.set(r.test_plan_id, {
-              passed: prev.passed + (r.passed || 0),
-              failed: prev.failed + (r.failed || 0),
-            });
+            .select('id, test_plan_id, test_case_ids')
+            .eq('project_id', projectId);
+
+          // Step 2: Map runs to plans (by test_plan_id OR by TC overlap)
+          const planRunIds = new Map<string, string[]>(); // planId -> runIds
+          for (const planId of planIds) {
+            const planTcIds = new Set<string>();
+            (tcCountMap.get(planId) || 0); // just for reference
+            // Get this plan's TC IDs
+            const planTcRows = (await supabase
+              .from('test_plan_test_cases')
+              .select('test_case_id')
+              .eq('test_plan_id', planId)).data || [];
+            planTcRows.forEach(r => planTcIds.add(r.test_case_id));
+
+            const matchingRunIds: string[] = [];
+            for (const run of (projectRuns || [])) {
+              // Match by test_plan_id (if column exists and is set)
+              if (run.test_plan_id === planId) {
+                matchingRunIds.push(run.id);
+              }
+              // Also match by TC overlap (fallback)
+              else if (!run.test_plan_id && Array.isArray(run.test_case_ids) && planTcIds.size > 0) {
+                const overlap = run.test_case_ids.filter((id: string) => planTcIds.has(id));
+                if (overlap.length > 0 && overlap.length >= planTcIds.size * 0.5) {
+                  matchingRunIds.push(run.id);
+                }
+              }
+            }
+            if (matchingRunIds.length > 0) {
+              planRunIds.set(planId, matchingRunIds);
+            }
+          }
+
+          // Step 3: Fetch test_results for matched runs and compute stats
+          const allMatchedRunIds = [...new Set([...planRunIds.values()].flat())];
+          if (allMatchedRunIds.length > 0) {
+            const { data: resultsData } = await supabase
+              .from('test_results')
+              .select('run_id, test_case_id, status')
+              .in('run_id', allMatchedRunIds)
+              .order('created_at', { ascending: false });
+
+            // For each plan, compute passed/failed from latest result per TC
+            for (const [planId, rIds] of planRunIds) {
+              const planResults = (resultsData || []).filter(r => rIds.includes(r.run_id));
+              const latestPerTc = new Map<string, string>();
+              for (const r of planResults) {
+                if (r.test_case_id && !latestPerTc.has(r.test_case_id)) {
+                  latestPerTc.set(r.test_case_id, r.status);
+                }
+              }
+              let passed = 0, failed = 0;
+              for (const status of latestPerTc.values()) {
+                if (status === 'passed') passed++;
+                else if (status === 'failed') failed++;
+              }
+              runStatsMap.set(planId, { passed, failed });
+            }
           }
         }
 

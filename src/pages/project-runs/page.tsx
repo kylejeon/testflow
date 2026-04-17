@@ -943,34 +943,31 @@ export default function ProjectRunsPage() {
         testResultsData = data || [];
       }
 
-      // Fetch project members for assignee dropdown
-      const { data: memberRows } = await supabase
-        .from('project_members')
-        .select('user_id')
-        .eq('project_id', id);
-      const memberIds = [...new Set((memberRows || []).map((m: any) => m.user_id).filter(Boolean))];
+      // Fetch project members for assignee dropdown (independent query, must not fail)
+      try {
+        const { data: memberRows } = await supabase
+          .from('project_members')
+          .select('user_id')
+          .eq('project_id', id);
+        const memberIds = [...new Set((memberRows || []).map((m: any) => m.user_id).filter(Boolean))];
 
-      // Also include authors from test results
-      const uniqueAuthors = new Set<string>();
-      testResultsData.forEach(result => {
-        if (result.author) uniqueAuthors.add(result.author);
-      });
-      const allUserIds = [...new Set([...memberIds, ...Array.from(uniqueAuthors)])];
+        if (memberIds.length > 0) {
+          const { data: profilesData } = await supabase
+            .from('profiles')
+            .select('id, full_name, email')
+            .in('id', memberIds);
 
-      if (allUserIds.length > 0) {
-        const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('id, full_name, email')
-          .in('id', allUserIds);
-
-        const contributorsList: Contributor[] = (profilesData || []).map((profile: any) => ({
-          id: profile.id,
-          name: profile.full_name || profile.email?.split('@')[0] || 'Unknown',
-          email: profile.email || '',
-        }));
-
-        setContributors(contributorsList);
-      } else {
+          const contributorsList: Contributor[] = (profilesData || []).map((profile: any) => ({
+            id: profile.id,
+            name: profile.full_name || profile.email?.split('@')[0] || 'Unknown',
+            email: profile.email || '',
+          }));
+          setContributors(contributorsList);
+        } else {
+          setContributors([]);
+        }
+      } catch (memberErr) {
+        console.error('Failed to fetch project members:', memberErr);
         setContributors([]);
       }
 
