@@ -1001,30 +1001,47 @@ export default function RunDetail() {
 
       if (runError) throw runError;
 
-      // Auto-link Run to Plan if test_plan_id is missing but TC overlap matches a plan
+      // Auto-link Run to Plan if test_plan_id is missing
       if (!runData.test_plan_id && runData.project_id && Array.isArray(runData.test_case_ids) && runData.test_case_ids.length > 0) {
         try {
           const { data: plans } = await supabase
             .from('test_plans')
             .select('id')
             .eq('project_id', runData.project_id);
+
+          const runTcSet = new Set(runData.test_case_ids as string[]);
+          let bestMatch: { planId: string; score: number } | null = null;
+
           for (const plan of (plans || [])) {
             const { data: planTcRows } = await supabase
               .from('test_plan_test_cases')
               .select('test_case_id')
               .eq('test_plan_id', plan.id);
-            const planTcIds = new Set((planTcRows || []).map((r: any) => r.test_case_id));
-            if (planTcIds.size > 0) {
-              const overlap = runData.test_case_ids.filter((id: string) => planTcIds.has(id));
-              if (overlap.length === planTcIds.size && overlap.length === runData.test_case_ids.length) {
-                // Exact match — link this run to the plan
-                await supabase.from('test_runs').update({ test_plan_id: plan.id }).eq('id', runData.id);
-                runData.test_plan_id = plan.id;
-                break;
-              }
+            const planTcIds = (planTcRows || []).map((r: any) => r.test_case_id);
+            if (planTcIds.length === 0) continue;
+
+            // Score: how many of the plan's TCs are in this run
+            const matchCount = planTcIds.filter((id: string) => runTcSet.has(id)).length;
+            const score = matchCount / planTcIds.length;
+
+            // Must match at least 80% of plan's TCs
+            if (score >= 0.8 && (!bestMatch || score > bestMatch.score)) {
+              bestMatch = { planId: plan.id, score };
             }
           }
-        } catch { /* silent */ }
+
+          if (bestMatch) {
+            console.log(`[auto-link] Linking run ${runData.id} to plan ${bestMatch.planId} (score: ${bestMatch.score})`);
+            const { error: linkErr } = await supabase.from('test_runs').update({ test_plan_id: bestMatch.planId }).eq('id', runData.id);
+            if (linkErr) {
+              console.error('[auto-link] Failed to update test_plan_id:', linkErr);
+            } else {
+              runData.test_plan_id = bestMatch.planId;
+            }
+          }
+        } catch (e) {
+          console.error('[auto-link] Error:', e);
+        }
       }
 
       setRun(runData);
@@ -1268,30 +1285,38 @@ export default function RunDetail() {
         setRun({ ...run, status: newStatus, passed, failed, blocked, retest, untested });
 
         // Auto-update Plan status based on Run completion
-        if (run.test_plan_id) {
-          if (newStatus === 'in_progress') {
-            // Plan should be active when any Run is in progress
-            await supabase
-              .from('test_plans')
-              .update({ status: 'active' })
-              .eq('id', run.test_plan_id)
-              .in('status', ['planning']);
-          } else if (newStatus === 'completed') {
-            // Check if ALL runs for this plan are completed
-            const { data: planRuns } = await supabase
-              .from('test_runs')
-              .select('id, status')
-              .eq('test_plan_id', run.test_plan_id);
-            const allCompleted = (planRuns || []).every((r: any) =>
-              r.id === runId ? true : r.status === 'completed'
-            );
-            if (allCompleted) {
-              await supabase
+        const planId = run.test_plan_id;
+        if (planId) {
+          try {
+            if (newStatus === 'in_progress') {
+              const { error: planErr } = await supabase
                 .from('test_plans')
-                .update({ status: 'completed' })
-                .eq('id', run.test_plan_id);
+                .update({ status: 'active' })
+                .eq('id', planId)
+                .in('status', ['planning']);
+              if (planErr) console.error('[plan-status] Failed to set active:', planErr);
+              else console.log(`[plan-status] Plan ${planId} → active`);
+            } else if (newStatus === 'completed') {
+              const { data: planRuns } = await supabase
+                .from('test_runs')
+                .select('id, status')
+                .eq('test_plan_id', planId);
+              const allCompleted = (planRuns || []).every((r: any) =>
+                r.id === runId ? true : r.status === 'completed'
+              );
+              if (allCompleted) {
+                await supabase
+                  .from('test_plans')
+                  .update({ status: 'completed' })
+                  .eq('id', planId);
+                console.log(`[plan-status] Plan ${planId} → completed`);
+              }
             }
+          } catch (e) {
+            console.error('[plan-status] Error updating plan status:', e);
           }
+        } else {
+          console.warn('[plan-status] No test_plan_id on run — cannot update plan status');
         }
       }
     } catch (error) {
