@@ -1000,6 +1000,33 @@ export default function RunDetail() {
         .single();
 
       if (runError) throw runError;
+
+      // Auto-link Run to Plan if test_plan_id is missing but TC overlap matches a plan
+      if (!runData.test_plan_id && runData.project_id && Array.isArray(runData.test_case_ids) && runData.test_case_ids.length > 0) {
+        try {
+          const { data: plans } = await supabase
+            .from('test_plans')
+            .select('id')
+            .eq('project_id', runData.project_id);
+          for (const plan of (plans || [])) {
+            const { data: planTcRows } = await supabase
+              .from('test_plan_test_cases')
+              .select('test_case_id')
+              .eq('test_plan_id', plan.id);
+            const planTcIds = new Set((planTcRows || []).map((r: any) => r.test_case_id));
+            if (planTcIds.size > 0) {
+              const overlap = runData.test_case_ids.filter((id: string) => planTcIds.has(id));
+              if (overlap.length === planTcIds.size && overlap.length === runData.test_case_ids.length) {
+                // Exact match — link this run to the plan
+                await supabase.from('test_runs').update({ test_plan_id: plan.id }).eq('id', runData.id);
+                runData.test_plan_id = plan.id;
+                break;
+              }
+            }
+          }
+        } catch { /* silent */ }
+      }
+
       setRun(runData);
 
       // Determine AI summary state from stored snapshot vs current run aggregate counts
