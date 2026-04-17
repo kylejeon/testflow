@@ -109,7 +109,7 @@ export default function ProjectRunsPage() {
   const milestoneDropdownRef = useRef<HTMLDivElement>(null);
   const sortMenuRef = useRef<HTMLDivElement>(null);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
-  const [testPlans, setTestPlans] = useState<{ id: string; name: string }[]>([]);
+  const [testPlans, setTestPlans] = useState<{ id: string; name: string; end_date?: string | null; target_date?: string | null }[]>([]);
   const [planFilter, setPlanFilter] = useState<'all' | 'plan' | 'adhoc' | string>('all'); // 'all' | 'adhoc' | plan_id
   const [testRuns, setTestRuns] = useState<TestRun[]>([]);
   const [testCases, setTestCases] = useState<TestCase[]>([]);
@@ -921,7 +921,7 @@ export default function ProjectRunsPage() {
       setTestCases(testCasesData || []);
 
       // Load test plans (non-blocking, graceful fallback)
-      supabase.from('test_plans').select('id, name').eq('project_id', id).order('created_at', { ascending: false })
+      supabase.from('test_plans').select('id, name, end_date, target_date').eq('project_id', id).order('created_at', { ascending: false })
         .then(({ data: plansData }) => { if (plansData) setTestPlans(plansData); })
         .catch(() => {});
       setFolderMetas((foldersData || []).map((f: any) => ({
@@ -1880,6 +1880,9 @@ export default function ProjectRunsPage() {
                 <>
                   <i className="ri-arrow-right-s-line text-slate-300 text-[0.6875rem]"></i>
                   <span className="text-[0.6875rem] text-slate-500 truncate max-w-[100px]">{testPlan.name}</span>
+                  {(testPlan.end_date || testPlan.target_date) && (
+                    <span className="text-[0.625rem] text-slate-400 whitespace-nowrap">· due {new Date(testPlan.end_date || testPlan.target_date!).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                  )}
                 </>
               )}
               {run.created_at && (
