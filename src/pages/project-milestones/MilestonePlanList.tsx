@@ -43,7 +43,7 @@ interface Props {
   directRuns: DirectRun[];
   onNewPlan: () => void;
   onNewRun: () => void;
-  onAIAssist: () => void;
+  onAIAssist?: () => void;
   onEdit: () => void;
 }
 
@@ -114,7 +114,7 @@ type FilterKey = 'all' | 'active' | 'planning' | 'completed';
 export default function MilestonePlanList({ projectId, milestone, plans, directRuns, onNewPlan, onNewRun, onAIAssist, onEdit }: Props) {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterKey>('all');
-  const [aiDismissed, setAiDismissed] = useState(false);
+  // AI Suggestion card removed
 
   const msStatus = MS_STATUS[milestone.status] || MS_STATUS.upcoming;
   const hasSubs = (milestone.subMilestones?.length ?? 0) > 0;
@@ -158,7 +158,7 @@ export default function MilestonePlanList({ projectId, milestone, plans, directR
     });
 
   // AI suggestion: show if >= 1 plan and any has failures
-  const showAI = !aiDismissed && plans.length >= 1 && plans.some(p => (p.failed ?? 0) > 0);
+  // showAI removed — AI Suggestion card eliminated
 
   const TABS: { key: FilterKey; label: string }[] = [
     { key: 'all',       label: 'All' },
@@ -190,12 +190,6 @@ export default function MilestonePlanList({ projectId, milestone, plans, directR
           </div>
           <span className={msStatus.cls}>{msStatus.label}</span>
           <div className="ms-header-actions">
-            <button className="btn btn-ai btn-sm" onClick={onAIAssist}>
-              <svg className="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" />
-              </svg>
-              AI Assist
-            </button>
             <button className="btn btn-sm" onClick={onEdit}>
               <svg className="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -452,24 +446,7 @@ export default function MilestonePlanList({ projectId, milestone, plans, directR
         )}
       </div>
 
-      {/* AI Suggestion card */}
-      {showAI && (
-        <div className="ms-ai-card" style={{ margin: '0 20px 20px' }}>
-          <div className="ms-ai-card-head">
-            <svg style={{ width: 16, height: 16, flexShrink: 0 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" />
-            </svg>
-            AI Suggestion
-          </div>
-          <div className="ms-ai-card-body">
-            Based on recent failures, consider using AI Assist to generate a focused regression plan for failing test areas.
-          </div>
-          <div className="ms-ai-card-actions">
-            <button className="btn btn-ai btn-sm" onClick={onAIAssist}>Create Plan</button>
-            <button className="btn btn-sm btn-ghost" onClick={() => setAiDismissed(true)}>Dismiss</button>
-          </div>
-        </div>
-      )}
+      {/* AI Suggestion card removed — AI Plan Assistant is accessible from Plan Detail "AI Optimize" */}
     </div>
   );
 }
