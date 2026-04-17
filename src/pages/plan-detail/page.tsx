@@ -170,9 +170,33 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
     risk_signals: { signal: string; severity: string; badge: string }[];
     recommendation: string; summary: string;
     meta?: { credits_used: number; credits_remaining: number };
+    _scanned_at?: string;
   } | null>(null);
   const [riskLoading, setRiskLoading] = useState(false);
   const [riskError, setRiskError] = useState<string | null>(null);
+
+  // Load previous risk scan result on mount
+  useEffect(() => {
+    if (!plan.id) return;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('ai_generation_logs')
+          .select('output_data, created_at')
+          .eq('mode', 'risk-predictor')
+          .eq('step', 1)
+          .contains('input_data', { plan_id: plan.id })
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (data?.output_data) {
+          setRiskData({ ...data.output_data, _scanned_at: data.created_at });
+        }
+      } catch {
+        // Silently fail — user can manually scan
+      }
+    })();
+  }, [plan.id]);
 
   const handleRunRiskScan = async () => {
     if (planTcs.length === 0) {
@@ -208,9 +232,9 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
         return;
       }
 
-      setRiskData(data);
+      setRiskData({ ...data, _scanned_at: new Date().toISOString() });
       if (data.meta) {
-        showToast(`Risk scan complete (${data.meta.credits_used} credits used)`, 'success');
+        showToast(`Risk scan complete (${data.meta.credits_used} credit used)`, 'success');
       }
     } catch (err: any) {
       console.error('Risk scan error:', err);
@@ -240,7 +264,11 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
           </div>
           <div style={{flex:1}}>
             <div style={{fontWeight:700, fontSize:14, color:'#3730a3'}}>AI Risk Predictor</div>
-            <div style={{color:'#7c3aed', fontSize:11, opacity:0.8, marginTop:1}}>Failure risk diagnostic</div>
+            <div style={{color:'#7c3aed', fontSize:11, opacity:0.8, marginTop:1}}>
+              {riskData?._scanned_at
+                ? `Scanned ${new Date(riskData._scanned_at).toLocaleDateString('en-US', { month:'short', day:'numeric' })} · ${new Date(riskData._scanned_at).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' })}`
+                : 'Failure risk diagnostic'}
+            </div>
           </div>
         </div>
         {/* Body */}
@@ -293,7 +321,7 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
                   Run an AI-powered risk analysis to get failure predictions, risk signals, and actionable recommendations.
                 </div>
                 <div style={{fontSize:11, color:'var(--text-muted)', marginBottom:4}}>
-                  Costs 2 AI credits · Requires Starter plan
+                  Costs 1 AI credit · Requires Starter plan
                 </div>
               </div>
               <button className="pd-btn pd-btn-sm" onClick={handleRunRiskScan} disabled={riskLoading || planTcs.length === 0}
@@ -2227,13 +2255,13 @@ export default function PlanDetailPage() {
         </div>
 
         {/* Progress bar */}
-        <div style={{margin:'0 24px 8px', position:'relative'}}>
-          <div className="detail-progress" style={{margin:0}}>
+        <div style={{margin:'0 24px 8px', display:'flex', alignItems:'center', gap:10}}>
+          <div className="detail-progress" style={{margin:0, flex:1}}>
             <div className="seg-pass" style={{left:0, width:`${passWidth}%`}} />
             <div className="seg-fail" style={{left:`${passWidth}%`, width:`${failWidth}%`}} />
           </div>
           {totalTCs > 0 && (
-            <span className="detail-progress-label" style={{position:'absolute', right:0, top:-2}}>{Math.round(executed / totalTCs * 100)}%</span>
+            <span className="detail-progress-label" style={{flexShrink:0, fontSize:13, fontWeight:600, color:'var(--primary)'}}>{Math.round(executed / totalTCs * 100)}%</span>
           )}
         </div>
 

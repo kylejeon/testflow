@@ -90,7 +90,7 @@ export const AI_FEATURES = {
     mode: 'activity-summary',
   },
   risk_predictor: {
-    minTier: 3, creditCost: 2,
+    minTier: 3, creditCost: 1,
     label: 'AI Risk Predictor',
     mode: 'risk-predictor',
   },

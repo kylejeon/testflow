@@ -48,7 +48,7 @@ export const AI_FEATURES = {
   // ── 신규 기능 — Test Plans & Milestones 구현 시 활성화 ────────────────────
   plan_assistant:        { minTier: 1, creditCost: 1, label: 'AI Plan Assistant' },
   activity_summary:      { minTier: 2, creditCost: 1, label: 'AI Activity Summary' },
-  risk_predictor:        { minTier: 3, creditCost: 2, label: 'AI Risk Predictor' },
+  risk_predictor:        { minTier: 3, creditCost: 1, label: 'AI Risk Predictor' },
   burndown_insight:      { minTier: 3, creditCost: 2, label: 'AI Burndown Insight' },
   issues_analysis:       { minTier: 4, creditCost: 2, label: 'AI Issues Analysis' },
   tag_heatmap_insight:   { minTier: 4, creditCost: 2, label: 'AI Tag Heatmap Insight' },
