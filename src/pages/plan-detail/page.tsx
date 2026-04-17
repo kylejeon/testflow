@@ -137,11 +137,11 @@ type TabKey = typeof TABS[number]['key'];
 
 // ─── Plan Sidebar (shared across all tabs) ────────────────────────────────────
 
-function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, onLock, onUnlock, onRebase, planTcs, runs, tcResultMap, dailyExecCounts }:
+function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, onLock, onUnlock, onRebase, planTcs, runs, tcResultMap, dailyExecCounts, projectId }:
   { plan: TestPlan; milestone: Milestone | null; parentMilestone: Milestone | null; profiles: Map<string, Profile>;
     driftCount: number; onLock: () => Promise<void>; onUnlock: () => Promise<void>; onRebase: () => Promise<void>;
     planTcs: PlanTestCase[]; runs: PlanRun[]; tcResultMap: Map<string, { result: string; assignee: string | null }>;
-    dailyExecCounts: number[]; }) {
+    dailyExecCounts: number[]; projectId: string; }) {
   const { showToast } = useToast();
   const owner = plan.owner_id ? profiles.get(plan.owner_id) : null;
 
@@ -156,7 +156,6 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
   const maxSpark = Math.max(...sparkValues, 1);
   const totalExecLast7 = sparkValues.reduce((s, v) => s + v, 0);
   const avgTcPerDay = totalExecLast7 > 0 ? +(totalExecLast7 / 7).toFixed(1) : 0;
-  // Untested = TCs in plan without a result
   const testedCount = planTcs.filter(ptc => {
     const r = tcResultMap.get(ptc.test_case_id);
     return r && r.result !== 'untested';
@@ -164,76 +163,63 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
   const untested = planTcs.length - testedCount;
   const daysEst = avgTcPerDay > 0 ? Math.ceil(untested / avgTcPerDay) : null;
 
-  // ── AI Risk Predictor: computed from real run/result data ──
-  const totalTCs = planTcs.length;
-  const passed = planTcs.filter(ptc => tcResultMap.get(ptc.test_case_id)?.result === 'passed').length;
-  const failed = planTcs.filter(ptc => tcResultMap.get(ptc.test_case_id)?.result === 'failed').length;
-  const blocked = planTcs.filter(ptc => tcResultMap.get(ptc.test_case_id)?.result === 'blocked').length;
-  const passRate = testedCount > 0 ? Math.round((passed / testedCount) * 100) : 0;
-  const failRate = testedCount > 0 ? Math.round((failed / testedCount) * 100) : 0;
+  // ── AI Risk Predictor: API-backed state ──
+  const [riskData, setRiskData] = useState<{
+    forecast_date: string; forecast_note: string;
+    confidence: number; confidence_label: string;
+    risk_signals: { signal: string; severity: string; badge: string }[];
+    recommendation: string; summary: string;
+    meta?: { credits_used: number; credits_remaining: number };
+  } | null>(null);
+  const [riskLoading, setRiskLoading] = useState(false);
+  const [riskError, setRiskError] = useState<string | null>(null);
 
-  // Confidence = pass rate (simple heuristic, real AI would be more sophisticated)
-  const confidence = passRate;
-  const confidenceLabel = confidence >= 80 ? 'high' : confidence >= 50 ? 'moderate' : 'low';
-  const confidenceColor = confidence >= 80 ? '#22c55e' : confidence >= 50 ? '#f59e0b' : 'var(--danger)';
+  const handleRunRiskScan = async () => {
+    if (planTcs.length === 0) {
+      showToast('Add test cases to this plan first', 'warning');
+      return;
+    }
+    setRiskLoading(true);
+    setRiskError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Not authenticated');
 
-  // Forecast: estimate completion date based on execution pace
-  const forecastDate = useMemo(() => {
-    if (untested === 0) return 'Complete';
-    if (avgTcPerDay <= 0) return '—';
-    const d = new Date();
-    d.setDate(d.getDate() + Math.ceil(untested / avgTcPerDay));
-    return d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
-  }, [untested, avgTcPerDay]);
+      const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL || '';
+      const res = await fetch(`${supabaseUrl}/functions/v1/risk-predictor`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ project_id: projectId, plan_id: plan.id }),
+      });
 
-  const targetDate = plan.target_date || plan.end_date;
-  const forecastSub = useMemo(() => {
-    if (untested === 0) return 'All TCs executed';
-    if (!targetDate || avgTcPerDay <= 0) return `~${daysEst}d remaining`;
-    const target = new Date(targetDate);
-    const est = new Date();
-    est.setDate(est.getDate() + Math.ceil(untested / avgTcPerDay));
-    const diff = Math.round((target.getTime() - est.getTime()) / (1000 * 60 * 60 * 24));
-    if (diff > 0) return `${diff} day${diff > 1 ? 's' : ''} before target`;
-    if (diff < 0) return `${Math.abs(diff)} day${Math.abs(diff) > 1 ? 's' : ''} past target`;
-    return 'On target';
-  }, [untested, targetDate, avgTcPerDay, daysEst]);
+      const data = await res.json();
+      if (!res.ok) {
+        if (res.status === 403) {
+          showToast(data.error || 'Starter plan required for AI Risk Predictor', 'warning');
+        } else if (res.status === 429) {
+          showToast(data.error || 'Monthly AI credit limit reached', 'warning');
+        } else {
+          throw new Error(data.error || 'Risk scan failed');
+        }
+        setRiskError(data.error);
+        return;
+      }
 
-  // Top risk signals: derive from actual data
-  const riskSignals = useMemo(() => {
-    const signals: { signal: string; dot: 'red' | 'yellow'; badge: string; badgeColor: string }[] = [];
-    if (failed > 0) {
-      signals.push({ signal: `${failed} TC${failed > 1 ? 's' : ''} failing`, dot: 'red', badge: `${failRate}%`, badgeColor: 'var(--danger)' });
+      setRiskData(data);
+      if (data.meta) {
+        showToast(`Risk scan complete (${data.meta.credits_used} credits used)`, 'success');
+      }
+    } catch (err: any) {
+      console.error('Risk scan error:', err);
+      setRiskError(err.message);
+      showToast(`Risk scan failed: ${err.message}`, 'error');
+    } finally {
+      setRiskLoading(false);
     }
-    if (blocked > 0) {
-      signals.push({ signal: `${blocked} TC${blocked > 1 ? 's' : ''} blocked`, dot: 'yellow', badge: 'blocked', badgeColor: 'var(--warning)' });
-    }
-    if (untested > 5) {
-      signals.push({ signal: `${untested} TCs not yet tested`, dot: 'yellow', badge: `${Math.round((untested / totalTCs) * 100)}%`, badgeColor: '#6b7280' });
-    }
-    if (driftCount > 0) {
-      signals.push({ signal: `${driftCount} TC${driftCount > 1 ? 's' : ''} drifted since lock`, dot: 'yellow', badge: 'drift', badgeColor: 'var(--warning)' });
-    }
-    if (signals.length === 0) {
-      signals.push({ signal: 'No significant risks detected', dot: 'yellow', badge: 'low', badgeColor: '#22c55e' });
-    }
-    return signals.slice(0, 3);
-  }, [failed, blocked, untested, totalTCs, failRate, driftCount]);
-
-  // Recommendation text
-  const recommendation = useMemo(() => {
-    if (totalTCs === 0) return 'Add test cases to this plan to enable risk analysis.';
-    if (failed > 0) {
-      const failedTCs = planTcs.filter(ptc => tcResultMap.get(ptc.test_case_id)?.result === 'failed')
-        .map(ptc => ptc.test_case.custom_id || ptc.test_case.title.slice(0, 20))
-        .slice(0, 3);
-      return `Focus on failing TCs: ${failedTCs.join(', ')}. Resolve before proceeding to improve pass rate from ${passRate}%.`;
-    }
-    if (blocked > 0) return `Unblock ${blocked} TC${blocked > 1 ? 's' : ''} to continue execution. Current pass rate: ${passRate}%.`;
-    if (untested > totalTCs * 0.5) return `${untested} TCs remain untested (${Math.round((untested / totalTCs) * 100)}%). Increase execution pace to meet target.`;
-    if (passRate >= 95) return `Excellent pass rate (${passRate}%). Plan is on track for completion.`;
-    return `Pass rate is ${passRate}%. Review failing and untested TCs to improve coverage.`;
-  }, [totalTCs, failed, blocked, untested, passRate, planTcs, tcResultMap]);
+  };
 
   return (
     <aside className="plan-side">
@@ -259,48 +245,70 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
         </div>
         {/* Body */}
         <div style={{padding:'13px 15px', display:'flex', flexDirection:'column', gap:11}}>
-          {/* Forecast + Confidence */}
-          <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
-            <div style={{display:'flex', flexDirection:'column', gap:2}}>
-              <div style={{fontSize:10, fontWeight:600, color:'#6d28d9', textTransform:'uppercase', letterSpacing:'0.06em'}}>Forecast Completion</div>
-              <div style={{fontSize:22, fontWeight:800, letterSpacing:'-0.02em', color:'#1e1b4b', lineHeight:1.1}}>{forecastDate}</div>
-              <div style={{fontSize:11, color:'#7c3aed'}}>{forecastSub}</div>
-            </div>
-            <div style={{display:'flex', flexDirection:'column', gap:2, textAlign:'right'}}>
-              <div style={{fontSize:10, fontWeight:600, color:'#6d28d9', textTransform:'uppercase', letterSpacing:'0.06em'}}>Confidence</div>
-              <div style={{fontSize:22, fontWeight:800, color:confidenceColor, lineHeight:1.1}}>{confidence}%</div>
-              <div style={{fontSize:11, color:'var(--text-muted)'}}>{confidenceLabel}</div>
-            </div>
-          </div>
-          {/* Top Risk Signals */}
-          <div style={{background:'rgba(255,255,255,0.65)', border:'1px solid #c4b5fd', borderRadius:8, padding:'9px 11px'}}>
-            <div style={{fontSize:10, fontWeight:700, color:'#6d28d9', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:7}}>Top Risk Signals</div>
-            {riskSignals.map((r, i) => (
-              <div key={i} style={{display:'flex', justifyContent:'space-between', alignItems:'baseline', fontSize:12, gap:8, padding:'2px 0', ...(i > 0 ? {borderTop:'1px solid rgba(196,181,253,0.35)', paddingTop:5, marginTop:3} : {})}}>
-                <div style={{display:'flex', alignItems:'flex-start', gap:6, color:'#374151', flex:1}}>
-                  <span style={{width:7, height:7, borderRadius:'50%', background: r.dot === 'red' ? 'var(--danger)' : 'var(--warning)', flexShrink:0, marginTop:3}} />
-                  <span>{r.signal}</span>
+          {riskData ? (
+            <>
+              {/* Forecast + Confidence */}
+              <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
+                <div style={{display:'flex', flexDirection:'column', gap:2}}>
+                  <div style={{fontSize:10, fontWeight:600, color:'#6d28d9', textTransform:'uppercase', letterSpacing:'0.06em'}}>Forecast Completion</div>
+                  <div style={{fontSize:22, fontWeight:800, letterSpacing:'-0.02em', color:'#1e1b4b', lineHeight:1.1}}>{riskData.forecast_date}</div>
+                  <div style={{fontSize:11, color:'#7c3aed'}}>{riskData.forecast_note}</div>
                 </div>
-                <span style={{fontSize:11, fontWeight:700, whiteSpace:'nowrap', color: r.badgeColor}}>{r.badge}</span>
+                <div style={{display:'flex', flexDirection:'column', gap:2, textAlign:'right'}}>
+                  <div style={{fontSize:10, fontWeight:600, color:'#6d28d9', textTransform:'uppercase', letterSpacing:'0.06em'}}>Confidence</div>
+                  <div style={{fontSize:22, fontWeight:800, color: riskData.confidence >= 80 ? '#22c55e' : riskData.confidence >= 50 ? '#f59e0b' : 'var(--danger)', lineHeight:1.1}}>{riskData.confidence}%</div>
+                  <div style={{fontSize:11, color:'var(--text-muted)'}}>{riskData.confidence_label}</div>
+                </div>
               </div>
-            ))}
-          </div>
-          {/* Recommendation */}
-          <div style={{background:'rgba(255,255,255,0.8)', border:'1px solid #ddd6fe', borderRadius:8, padding:'10px 12px'}}>
-            <div style={{fontSize:11, fontWeight:700, color:'#7c3aed', display:'flex', alignItems:'center', gap:5, marginBottom:5}}>
-              <span>Recommendation</span>
-            </div>
-            <div style={{fontSize:12, lineHeight:1.55, color:'#374151'}}>
-              {recommendation}
-            </div>
-          </div>
-          {/* Apply button */}
-          <button className="pd-btn pd-btn-sm"
-            onClick={() => showToast('AI Risk Predictor is coming soon', 'info')}
-            style={{width:'100%', justifyContent:'center', background:'linear-gradient(135deg,#6366F1,#8B5CF6)', borderColor:'transparent', color:'#fff', fontWeight:500}}>
-            <svg style={{width:12,height:12}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2"/></svg>
-            Apply recommendation
-          </button>
+              {/* Top Risk Signals */}
+              <div style={{background:'rgba(255,255,255,0.65)', border:'1px solid #c4b5fd', borderRadius:8, padding:'9px 11px'}}>
+                <div style={{fontSize:10, fontWeight:700, color:'#6d28d9', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:7}}>Top Risk Signals</div>
+                {(riskData.risk_signals || []).map((r, i) => (
+                  <div key={i} style={{display:'flex', justifyContent:'space-between', alignItems:'baseline', fontSize:12, gap:8, padding:'2px 0', ...(i > 0 ? {borderTop:'1px solid rgba(196,181,253,0.35)', paddingTop:5, marginTop:3} : {})}}>
+                    <div style={{display:'flex', alignItems:'flex-start', gap:6, color:'#374151', flex:1}}>
+                      <span style={{width:7, height:7, borderRadius:'50%', background: r.severity === 'high' ? 'var(--danger)' : r.severity === 'medium' ? 'var(--warning)' : '#22c55e', flexShrink:0, marginTop:3}} />
+                      <span>{r.signal}</span>
+                    </div>
+                    <span style={{fontSize:11, fontWeight:700, whiteSpace:'nowrap', color: r.severity === 'high' ? 'var(--danger)' : r.severity === 'medium' ? 'var(--warning)' : '#6b7280'}}>{r.badge}</span>
+                  </div>
+                ))}
+              </div>
+              {/* Recommendation */}
+              <div style={{background:'rgba(255,255,255,0.8)', border:'1px solid #ddd6fe', borderRadius:8, padding:'10px 12px'}}>
+                <div style={{fontSize:11, fontWeight:700, color:'#7c3aed', display:'flex', alignItems:'center', gap:5, marginBottom:5}}>Recommendation</div>
+                <div style={{fontSize:12, lineHeight:1.55, color:'#374151'}}>{riskData.recommendation}</div>
+              </div>
+              {/* Re-scan button */}
+              <button className="pd-btn pd-btn-sm" onClick={handleRunRiskScan} disabled={riskLoading}
+                style={{width:'100%', justifyContent:'center', background:'#fff', borderColor:'#ddd6fe', color:'var(--violet)', fontWeight:500, opacity: riskLoading ? 0.6 : 1}}>
+                <svg style={{width:12,height:12}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                {riskLoading ? 'Scanning...' : 'Re-scan'}
+              </button>
+            </>
+          ) : (
+            <>
+              {/* Empty state — scan not run yet */}
+              <div style={{textAlign:'center', padding:'8px 0'}}>
+                <div style={{fontSize:12, color:'#6d28d9', lineHeight:1.5, marginBottom:12}}>
+                  Run an AI-powered risk analysis to get failure predictions, risk signals, and actionable recommendations.
+                </div>
+                <div style={{fontSize:11, color:'var(--text-muted)', marginBottom:4}}>
+                  Costs 2 AI credits · Requires Starter plan
+                </div>
+              </div>
+              <button className="pd-btn pd-btn-sm" onClick={handleRunRiskScan} disabled={riskLoading || planTcs.length === 0}
+                style={{width:'100%', justifyContent:'center', background:'linear-gradient(135deg,#6366F1,#8B5CF6)', borderColor:'transparent', color:'#fff', fontWeight:500, opacity: (riskLoading || planTcs.length === 0) ? 0.6 : 1}}>
+                {riskLoading ? (
+                  <><svg style={{width:12,height:12,animation:'spin 1s linear infinite'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Scanning...</>
+                ) : (
+                  <><svg style={{width:12,height:12}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2"/></svg> Run Risk Scan</>
+                )}
+              </button>
+              {riskError && (
+                <div style={{fontSize:11, color:'var(--danger)', textAlign:'center'}}>{riskError}</div>
+              )}
+            </>
+          )}
         </div>
       </div>
 
@@ -673,7 +681,7 @@ function TestCasesTab({
 
       <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles}
         driftCount={driftCount} onLock={onLock} onUnlock={onUnlock} onRebase={onRebase} planTcs={planTcs}
-        runs={runs} tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts} />
+        runs={runs} tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts} projectId={plan.project_id} />
 
       {/* TC Picker Modal — runs-style */}
       {showPicker && (() => {
@@ -983,7 +991,7 @@ function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilest
         </div>
         <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles}
           driftCount={driftCount} onLock={onLock} onUnlock={onUnlock} onRebase={onRebase} planTcs={planTcs}
-        runs={runs} tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts} />
+        runs={runs} tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts} projectId={plan.project_id} />
       </div>
     </div>
   );
@@ -1095,7 +1103,7 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCo
       </div>
       <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles}
         driftCount={driftCount} onLock={onLock} onUnlock={onUnlock} onRebase={onRebase} planTcs={planTcs}
-        runs={runs} tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts} />
+        runs={runs} tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts} projectId={plan.project_id} />
     </div>
   );
 }
@@ -2281,7 +2289,7 @@ export default function PlanDetailPage() {
         {activeTab === 'activity' && (
           <ActivityTab logs={activityLogs} profiles={profiles} plan={plan} milestone={milestone} parentMilestone={parentMilestone}
             driftCount={driftCount} onLock={handleLock} onUnlock={handleUnlockRequest} onRebase={handleRebase} planTcs={planTcs}
-            runs={runs} tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts} />
+            runs={runs} tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts} projectId={plan.project_id} />
         )}
         {activeTab === 'issues' && (
           <IssuesTab runs={runs} plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles} />
