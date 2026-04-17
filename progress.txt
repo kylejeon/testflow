@@ -1,25 +1,22 @@
-2026-04-17: Plan Detail 사이드바 전체 실데이터 전환
+2026-04-17: Plan→Run 연동 버그 3건 수정
 
 ## 뭘 했냐
-- AI Risk Predictor: 하드코딩 제거 → 실제 runs/results 데이터 기반 계산
-  - Forecast: 실행 속도 기반 완료 예상일 (untested / avgTcPerDay)
-  - Confidence: pass rate 기반 (pass / tested * 100)
-  - Risk Signals: 실제 failed/blocked/untested/drift 수치에서 자동 생성
-  - Recommendation: 상태별 자동 생성 (failed > 0이면 실패 TC 나열, blocked면 unblock 권고 등)
-- Execution Pace: mock sparkline → 실제 test_results.executed_at 기반 7일 일별 실행 수 집계
-  - Avg TC/day: 실제 7일 평균
-  - Remaining: tcResultMap에서 untested TC 수 계산
-- Snapshot: 이미 실데이터 (locked_at, snapshot_id, drift count)
-- tsc --noEmit 통과 (타입 에러 0건)
+- Bug 1: Add Run 모달 Assignees "No project members found" 수정
+  - test_results.author 기반 → project_members 테이블에서 직접 멤버 로드
+- Bug 2: Plan에서 Start Run 시 Select Cases 단계 스킵
+  - plan_id URL 파라미터 있으면 Step 2 생략, Plan TC 자동 사용하여 바로 Create Run
+- Bug 3: Run 결과가 Plan Detail에 미반영 수정
+  - test_results 컬럼명 불일치: result→status, assigned_to→author, executed_at→created_at
+- 추가: Plan 카드 TC 개수 0 표시 버그 수정 (vw_test_plan_stats → 직접 count)
+- 추가: Folder 아이콘 색상 불일치 수정 (fallback gray→indigo)
+- 추가: Plan 카드 아바타 Avatar 컴포넌트 교체 + last name 표시
+- 추가: TC 테이블 Folder 컬럼 아이콘+색상 표시
 
 ## 어디까지 됐냐
-- 사이드바 3개 카드 전부 실데이터:
-  - AI Risk Predictor: runs/results 분석 기반 (pass rate, fail rate, forecast)
-  - Snapshot: DB 기반 (is_locked, snapshot_locked_at, drift count)
-  - Execution Pace: test_results.executed_at 기반 7일 sparkline
-- Plan Detail 페이지 mockup_2 대비 전수 구현 완료
+- Plan Detail ↔ Run 연동 정상 동작
+- Plan에서 Start Run → Run 생성 → TC 실행 → Plan Detail에 결과 반영 전체 흐름 완성
+- Milestone 페이지 Plan 카드 TC 개수 정확 표시
 
 ## 다음에 할 것
-- 브라우저 실물 테스트 (dev server)
-- AI Risk Predictor를 별도 AI API 호출로 고도화 (현재는 로컬 계산)
-- Plan Meta/Team 정보를 Settings 탭 사이드바로 이동
+- 브라우저 실물 테스트 (전체 흐름 검증)
+- AI Risk Predictor 별도 API 호출 고도화
