@@ -564,6 +564,7 @@ function TestCasesTab({
             <div />
             <div>ID</div>
             <div>Title</div>
+            <div>Folder</div>
             <div>Priority</div>
             <div>Status</div>
             <div>Assignee</div>
@@ -595,12 +596,16 @@ function TestCasesTab({
                   <div className="tc-id">{ptc.test_case.custom_id || ptc.test_case_id.slice(0,8)}</div>
                   <div>
                     <div style={{fontWeight:500, fontSize:13}}>{ptc.test_case.title}</div>
-                    <div style={{fontSize:11, color:'var(--text-muted)', marginTop:2, display:'flex', gap:4}}>
-                      {ptc.test_case.folder && <span>{ptc.test_case.folder}</span>}
-                      {Array.isArray(ptc.test_case.tags) && ptc.test_case.tags.slice(0,2).map(t=>(
-                        <span key={t} style={{fontFamily:'JetBrains Mono,monospace', fontSize:10, background:'var(--bg-subtle)', padding:'1px 4px', borderRadius:3}}>#{t}</span>
-                      ))}
-                    </div>
+                    {Array.isArray(ptc.test_case.tags) && ptc.test_case.tags.length > 0 && (
+                      <div style={{fontSize:11, color:'var(--text-muted)', marginTop:2, display:'flex', gap:4}}>
+                        {ptc.test_case.tags.slice(0,2).map(t=>(
+                          <span key={t} style={{fontFamily:'JetBrains Mono,monospace', fontSize:10, background:'var(--bg-subtle)', padding:'1px 4px', borderRadius:3}}>#{t}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div style={{fontSize:12, color:'var(--text-muted)'}}>
+                    {ptc.test_case.folder || '—'}
                   </div>
                   <div><span className={priCfg.cls}>{priCfg.label}</span></div>
                   <div><span className={sbClass}><span style={{width:6,height:6,borderRadius:'50%',background:'currentColor'}} />{resultLabel}</span></div>
