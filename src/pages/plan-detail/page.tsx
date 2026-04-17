@@ -2134,15 +2134,14 @@ export default function PlanDetailPage() {
     </div>
   );
 
-  // Compute stats from latest run
-  const latestRun = runs[0] || null;
+  // Compute stats from tcResultMap (single source of truth for TC status)
   const totalTCs = planTcs.length;
-  const passed = latestRun?.passed ?? 0;
-  const failed = latestRun?.failed ?? 0;
-  const blocked = latestRun?.blocked ?? 0;
-  const retest = latestRun?.retest ?? 0;
+  const passed = planTcs.filter(ptc => tcResultMap.get(ptc.test_case_id)?.result === 'passed').length;
+  const failed = planTcs.filter(ptc => tcResultMap.get(ptc.test_case_id)?.result === 'failed').length;
+  const blocked = planTcs.filter(ptc => tcResultMap.get(ptc.test_case_id)?.result === 'blocked').length;
+  const retest = planTcs.filter(ptc => tcResultMap.get(ptc.test_case_id)?.result === 'retest').length;
   const executed = passed + failed + blocked + retest;
-  const untested = Math.max(0, totalTCs - executed);
+  const untested = totalTCs - executed;
   const passRate = executed > 0 ? Math.round(passed / executed * 100) : 0;
   const passWidth = totalTCs > 0 ? (passed / totalTCs * 100) : 0;
   const failWidth = totalTCs > 0 ? (failed / totalTCs * 100) : 0;
