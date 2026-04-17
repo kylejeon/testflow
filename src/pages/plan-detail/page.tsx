@@ -622,7 +622,7 @@ function TestCasesTab({
                   <div style={{fontSize:12, color:'var(--text-muted)'}}>
                     {ptc.test_case.folder ? (() => {
                       const f = folders.find(fd => fd.name === ptc.test_case.folder);
-                      const fs = FOLDER_COLOR_MAP[f?.color || 'gray'] || FOLDER_COLOR_MAP.gray;
+                      const fs = FOLDER_COLOR_MAP[f?.color || 'indigo'] || { bg: '#EEF2FF', fg: '#6366F1' };
                       return (
                         <span style={{display:'inline-flex', alignItems:'center', gap:4}}>
                           <span style={{width:18, height:18, borderRadius:4, background:fs.bg, display:'inline-flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>

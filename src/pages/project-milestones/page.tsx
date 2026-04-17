@@ -278,68 +278,79 @@ export default function ProjectMilestones() {
         });
       setAllDirectRuns(directRuns);
 
-      // Load test plan stats
+      // Load test plans with real TC counts
       const loadPlans = async () => {
+        // Fetch plans directly (vw_test_plan_stats lacks owner_id and tc_count can be stale)
         const { data: plansData, error: plansError } = await supabase
-          .from('vw_test_plan_stats')
-          .select('plan_id, name, status, priority, milestone_id, target_date, tc_count, total_passed, total_failed, pass_rate, created_at, owner_id')
+          .from('test_plans')
+          .select('id, name, status, priority, milestone_id, target_date, owner_id, created_at')
           .eq('project_id', projectId)
           .order('created_at', { ascending: false })
           .limit(200);
 
-        if (plansData && !plansError) {
-          // Fetch owner names
-          const ownerIds = [...new Set(plansData.map((p: any) => p.owner_id).filter(Boolean))];
-          let ownerMap = new Map<string, string>();
-          if (ownerIds.length > 0) {
-            const { data: profiles } = await supabase
-              .from('profiles')
-              .select('id, full_name, email')
-              .in('id', ownerIds);
-            (profiles || []).forEach((p: any) => {
-              ownerMap.set(p.id, p.full_name || p.email?.split('@')[0] || 'Unknown');
+        if (!plansData || plansError) return;
+
+        // Fetch TC counts per plan from junction table
+        const planIds = plansData.map((p: any) => p.id);
+        let tcCountMap = new Map<string, number>();
+        if (planIds.length > 0) {
+          const { data: tcRows } = await supabase
+            .from('test_plan_test_cases')
+            .select('test_plan_id')
+            .in('test_plan_id', planIds);
+          for (const row of (tcRows || [])) {
+            tcCountMap.set(row.test_plan_id, (tcCountMap.get(row.test_plan_id) || 0) + 1);
+          }
+        }
+
+        // Fetch run stats per plan
+        let runStatsMap = new Map<string, { passed: number; failed: number }>();
+        if (planIds.length > 0) {
+          const { data: runsData } = await supabase
+            .from('test_runs')
+            .select('test_plan_id, passed, failed')
+            .in('test_plan_id', planIds);
+          for (const r of (runsData || [])) {
+            if (!r.test_plan_id) continue;
+            const prev = runStatsMap.get(r.test_plan_id) || { passed: 0, failed: 0 };
+            runStatsMap.set(r.test_plan_id, {
+              passed: prev.passed + (r.passed || 0),
+              failed: prev.failed + (r.failed || 0),
             });
           }
+        }
 
-          setAllPlans(plansData.map((p: any) => ({
-            id: p.plan_id,
+        // Fetch owner names
+        const ownerIds = [...new Set(plansData.map((p: any) => p.owner_id).filter(Boolean))];
+        let ownerMap = new Map<string, string>();
+        if (ownerIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, full_name, email')
+            .in('id', ownerIds);
+          (profiles || []).forEach((p: any) => {
+            ownerMap.set(p.id, p.full_name || p.email?.split('@')[0] || 'Unknown');
+          });
+        }
+
+        setAllPlans(plansData.map((p: any) => {
+          const tcCount = tcCountMap.get(p.id) || 0;
+          const stats = runStatsMap.get(p.id) || { passed: 0, failed: 0 };
+          return {
+            id: p.id,
             name: p.name,
             status: p.status,
             priority: p.priority,
             milestone_id: p.milestone_id,
             target_date: p.target_date,
             owner_id: p.owner_id,
-            tc_count: p.tc_count ?? 0,
-            passed: p.total_passed ?? 0,
-            failed: p.total_failed ?? 0,
-            total: p.tc_count ?? 0,
+            tc_count: tcCount,
+            passed: stats.passed,
+            failed: stats.failed,
+            total: tcCount,
             ownerName: p.owner_id ? (ownerMap.get(p.owner_id) ?? null) : null,
-          })));
-        } else {
-          // Fallback: no stats view
-          const { data: fallback } = await supabase
-            .from('test_plans')
-            .select('id, name, status, priority, milestone_id, target_date, owner_id')
-            .eq('project_id', projectId)
-            .order('created_at', { ascending: false })
-            .limit(200);
-          if (fallback) {
-            setAllPlans(fallback.map((p: any) => ({
-              id: p.id,
-              name: p.name,
-              status: p.status,
-              priority: p.priority,
-              milestone_id: p.milestone_id,
-              target_date: p.target_date,
-              owner_id: p.owner_id,
-              tc_count: 0,
-              passed: 0,
-              failed: 0,
-              total: 0,
-              ownerName: null,
-            })));
-          }
-        }
+          };
+        }));
       };
       loadPlans().catch(() => {});
 
