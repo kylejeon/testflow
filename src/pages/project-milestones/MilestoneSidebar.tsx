@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import MilestoneCard, { MilestoneCardData } from './MilestoneCard';
-import AdhocRunCard, { AdhocRun } from './AdhocRunCard';
+import type { AdhocRun } from './AdhocRunCard';
 
 interface Props {
   milestones: MilestoneCardData[];
@@ -105,19 +105,45 @@ export default function MilestoneSidebar({
         />
       ))}
 
-      {/* Ad-hoc section */}
+      {/* Ad-hoc summary card (single card like milestone cards) */}
       {adhocRuns.length > 0 && (
         <>
           <hr className="sidebar-divider" />
           <div className="sidebar-section-label">Ad-hoc</div>
-          {adhocRuns.map(run => (
-            <AdhocRunCard
-              key={run.id}
-              run={run}
-              selectedId={selectedId}
-              onSelect={id => { onSelectAdhoc(id); onClose(); }}
-            />
-          ))}
+          <div
+            className={`ms-card ${selectedId === 'adhoc' || adhocRuns.some(r => r.id === selectedId) ? 'selected' : ''}`}
+            onClick={() => { onSelectAdhoc('adhoc'); onClose(); }}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="ms-card-row1">
+              <span style={{ width:8, height:8, borderRadius:'50%', background:'var(--warning)', flexShrink:0, display:'inline-block' }} />
+              <span className="ms-card-name">Ad-hoc Runs</span>
+              <span className="badge" style={{ fontSize:10, padding:'1px 5px', flexShrink:0 }}>
+                {adhocRuns.length} run{adhocRuns.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            {(() => {
+              const totalPassed = adhocRuns.reduce((s, r) => s + (r.passed || 0), 0);
+              const totalFailed = adhocRuns.reduce((s, r) => s + (r.failed || 0), 0);
+              const totalTCs = adhocRuns.reduce((s, r) => s + (r.test_case_ids?.length || 0), 0);
+              const remaining = totalTCs - totalPassed - totalFailed;
+              const passPct = totalTCs > 0 ? (totalPassed / totalTCs) * 100 : 0;
+              return (
+                <>
+                  <div className="ms-card-row2" style={{ fontSize:11, color:'var(--text-muted)' }}>
+                    Runs not assigned to any milestone
+                  </div>
+                  <div className="ms-card-pbar">
+                    <div className={`ms-card-pbar-fill${passPct < 60 && totalTCs > 0 ? ' low' : ''}`} style={{ width:`${passPct}%` }} />
+                  </div>
+                  <div className="ms-card-row3">
+                    <span className="stat-pass">{totalPassed}</span>&nbsp;passed &nbsp;·&nbsp;
+                    <span className="stat-fail">{totalFailed}</span>&nbsp;failed &nbsp;·&nbsp; {remaining} left
+                  </div>
+                </>
+              );
+            })()}
+          </div>
         </>
       )}
     </aside>
