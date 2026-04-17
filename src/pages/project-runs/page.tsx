@@ -1282,6 +1282,16 @@ export default function ProjectRunsPage() {
               .eq('id', newRunId);
           }
           // ────────────────────────────────────────────────────────────────────
+
+          // Update Plan status to 'active' when a Run is created from it
+          const planId = (formData as any).test_plan_id;
+          if (planId && planId.trim()) {
+            await supabase
+              .from('test_plans')
+              .update({ status: 'active' })
+              .eq('id', planId)
+              .in('status', ['planning']);  // Only update if still planning
+          }
         }
 
         void markOnboardingStep('runTest');

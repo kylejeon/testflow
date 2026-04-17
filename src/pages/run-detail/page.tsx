@@ -1239,6 +1239,33 @@ export default function RunDetail() {
 
       if (run) {
         setRun({ ...run, status: newStatus, passed, failed, blocked, retest, untested });
+
+        // Auto-update Plan status based on Run completion
+        if (run.test_plan_id) {
+          if (newStatus === 'in_progress') {
+            // Plan should be active when any Run is in progress
+            await supabase
+              .from('test_plans')
+              .update({ status: 'active' })
+              .eq('id', run.test_plan_id)
+              .in('status', ['planning']);
+          } else if (newStatus === 'completed') {
+            // Check if ALL runs for this plan are completed
+            const { data: planRuns } = await supabase
+              .from('test_runs')
+              .select('id, status')
+              .eq('test_plan_id', run.test_plan_id);
+            const allCompleted = (planRuns || []).every((r: any) =>
+              r.id === runId ? true : r.status === 'completed'
+            );
+            if (allCompleted) {
+              await supabase
+                .from('test_plans')
+                .update({ status: 'completed' })
+                .eq('id', run.test_plan_id);
+            }
+          }
+        }
       }
     } catch (error) {
       console.error('Error updating run status:', error);

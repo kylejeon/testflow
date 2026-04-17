@@ -395,9 +395,11 @@ export default function MilestonePlanList({ projectId, milestone, plans, directR
             const total = run.test_case_ids?.length ?? 0;
             const runPassed = run.passed;
             const runFailed = run.failed;
-            const runRemaining = total - runPassed - runFailed;
+            const runExecuted = runPassed + runFailed;
+            const runRemaining = total - runExecuted;
             const runPassPct = total > 0 ? (runPassed / total * 100) : 0;
             const runFailPct = total > 0 ? (runFailed / total * 100) : 0;
+            const runCompletePct = total > 0 ? Math.round(runExecuted / total * 100) : 0;
             const statusInfo = RUN_STATUS_BADGE[run.status] || { label: 'Cancelled', cls: 'badge' };
 
             return (
@@ -431,8 +433,8 @@ export default function MilestonePlanList({ projectId, milestone, plans, directR
                           <span className="stat-pass">{runPassed}</span> passed ·{' '}
                           <span className="stat-fail">{runFailed}</span> failed · {runRemaining} left
                         </span>
-                        <span style={{ fontWeight: 600, color: runPassPct >= 60 ? 'var(--success-600)' : 'var(--warning)' }}>
-                          {Math.round(runPassPct)}%
+                        <span style={{ fontWeight: 600, color: runCompletePct >= 80 ? 'var(--success-600)' : runCompletePct >= 50 ? 'var(--warning)' : 'var(--text-muted)' }}>
+                          {runCompletePct}%
                         </span>
                       </div>
                     </>
