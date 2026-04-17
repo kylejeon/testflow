@@ -355,7 +355,7 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
             {plan.snapshot_locked_at && (
               <div className="side-row">
                 <span className="k">Locked at</span>
-                <span className="v">{new Date(plan.snapshot_locked_at).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })}</span>
+                <span className="v">{new Date(plan.snapshot_locked_at).toLocaleDateString('en-US', { month:'short', day:'numeric' })} · {new Date(plan.snapshot_locked_at).toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', hour12:false })}</span>
               </div>
             )}
             {owner && (
@@ -366,14 +366,18 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
             )}
             <div className="side-row">
               <span className="k">TC revision</span>
-              <span className="v" style={{fontFamily:'JetBrains Mono,monospace', fontSize:11}}>{plan.snapshot_id || '—'}</span>
+              <span className="v" style={{fontFamily:'JetBrains Mono,monospace', fontSize:11}}>
+                {plan.snapshot_locked_at
+                  ? `rev.${new Date(plan.snapshot_locked_at).toISOString().slice(0,10).replace(/-/g,'.')}-a`
+                  : plan.snapshot_id || '—'}
+              </span>
             </div>
             <div className="side-row">
-              <span className="k">Drift</span>
+              <span className="k">Drift from live</span>
               <span className="v">
                 {driftCount > 0
-                  ? <span style={{color:'var(--warning)', fontWeight:600}}>{driftCount} TC{driftCount > 1 ? 's' : ''} drifted</span>
-                  : <span style={{color:'var(--success-600)'}}>No drift</span>
+                  ? <span style={{color:'var(--warning)', fontWeight:600}}>{driftCount} TC edited <span title="TCs modified after snapshot was locked" style={{cursor:'help', fontSize:12}}>ⓘ</span></span>
+                  : <span style={{color:'var(--success-600)'}}>Up to date</span>
                 }
               </span>
             </div>
