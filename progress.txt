@@ -1,15 +1,25 @@
-2026-04-17: pm/prd.md 작성 완료
+2026-04-17: Plan Detail 사이드바 전체 실데이터 전환
 
 ## 뭘 했냐
-- 코드베이스 전체 분석 (라우트, 기능, 가격, AI 설정, 통합 등)
-- pm/prd.md 작성 — 12개 섹션, 한국어, CEO 공유 가능 수준
+- AI Risk Predictor: 하드코딩 제거 → 실제 runs/results 데이터 기반 계산
+  - Forecast: 실행 속도 기반 완료 예상일 (untested / avgTcPerDay)
+  - Confidence: pass rate 기반 (pass / tested * 100)
+  - Risk Signals: 실제 failed/blocked/untested/drift 수치에서 자동 생성
+  - Recommendation: 상태별 자동 생성 (failed > 0이면 실패 TC 나열, blocked면 unblock 권고 등)
+- Execution Pace: mock sparkline → 실제 test_results.executed_at 기반 7일 일별 실행 수 집계
+  - Avg TC/day: 실제 7일 평균
+  - Remaining: tcResultMap에서 untested TC 수 계산
+- Snapshot: 이미 실데이터 (locked_at, snapshot_id, drift count)
+- tsc --noEmit 통과 (타입 에러 0건)
 
 ## 어디까지 됐냐
-- pm/prd.md 완성 (구현 완료 기능 vs 계획 명확 구분)
-- 가격 플랜 7개 정확한 숫자 추출 (코드 기반)
-- AI 기능 13개 전체 정리 (Tier + 크레딧 비용 포함)
-- 경쟁사 비교 (TestRail, Zephyr, qTest, PractiTest)
+- 사이드바 3개 카드 전부 실데이터:
+  - AI Risk Predictor: runs/results 분석 기반 (pass rate, fail rate, forecast)
+  - Snapshot: DB 기반 (is_locked, snapshot_locked_at, drift count)
+  - Execution Pace: test_results.executed_at 기반 7일 sparkline
+- Plan Detail 페이지 mockup_2 대비 전수 구현 완료
 
 ## 다음에 할 것
-- PRD 기반으로 OKR/로드맵 구체화 필요 시 후속 작업 가능
-- Product Hunt 런칭 관련 PM 태스크 (랜딩 카피, 런칭 체크리스트 등) 논의 가능
+- 브라우저 실물 테스트 (dev server)
+- AI Risk Predictor를 별도 AI API 호출로 고도화 (현재는 로컬 계산)
+- Plan Meta/Team 정보를 Settings 탭 사이드바로 이동
