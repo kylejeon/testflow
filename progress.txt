@@ -1,20 +1,20 @@
-2026-04-17: Plan↔Run 연동 근본 원인 재수정
+2026-04-17: Plan-Run TC Status Policy 작성
 
 ## 뭘 했냐
-- 이전 수정이 동작하지 않는 근본 원인 발견:
-  - test_runs.test_plan_id 컬럼이 DB에 없거나 null → 모든 Plan→Run 조회가 빈 결과
-  - test_results.author는 UUID가 아닌 이름 문자열 → profiles.id 쿼리에 섞이면 에러
-
-- Plan Detail: runs 조회를 test_plan_id 전용 → 프로젝트 전체 runs + TC overlap 필터로 변경
-- Milestone Plan 카드: test_runs.passed/failed 대신 test_results에서 직접 집계
-- Assignees: project_members 독립 쿼리로 완전 분리 (author 이름 문자열 혼입 제거)
+- Plan Detail TC 테이블에서 TC 실행 상태를 어떻게 표시할지 정책 문서 작성
+- Q1~Q4 모든 질문에 대한 명확한 규칙 확정
+- Plan Detail / Milestone Plan Card 각각의 정확한 쿼리 로직 정의
+- TC-overlap fallback 제거 방침 확정 (test_plan_id만 사용)
+- Edge cases 8건 정리
 
 ## 어디까지 됐냐
-- DB 마이그레이션 미적용 상황에서도 동작하는 우회 전략 적용
-- Plan Detail ↔ Run 결과 연동
-- Milestone Plan 카드 결과 표시
-- Add Run 모달 Assignees 로드
+- 정책 문서 완료: pm/specs/plan-run-tc-status-policy.md
+- 아직 코드 변경은 안 함 (정책 확정 후 적용 예정)
 
 ## 다음에 할 것
+- 정책 문서 기반으로 코드 변경 3건 적용:
+  1. plan-detail/page.tsx: TC-overlap fallback 제거
+  2. project-milestones/page.tsx: TC-overlap fallback 제거
+  3. project-runs/page.tsx: Run 생성 시 test_plan_id 세팅 확인
 - 브라우저 실물 테스트
 - Supabase migration (20260416_test_plans.sql) 프로덕션 적용 확인
