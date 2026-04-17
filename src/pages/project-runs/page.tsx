@@ -50,6 +50,8 @@ interface Milestone {
   status: 'active' | 'completed';
   progress: number;
   created_at: string;
+  parent_milestone_id?: string | null;
+  date_mode?: 'auto' | 'manual';
 }
 
 interface TestCase {
@@ -903,12 +905,14 @@ export default function ProjectRunsPage() {
         { data: testCasesData, error: testCasesError },
         { data: foldersData },
         { data: testRunsData, error: testRunsError },
+        { data: plansForRollup },
       ] = await Promise.all([
         supabase.from('projects').select('*').eq('id', id).single(),
         supabase.from('milestones').select('*').eq('project_id', id).order('created_at', { ascending: false }),
         supabase.from('test_cases').select('id, title, folder, priority, status, tags, description, lifecycle_status, custom_id').eq('project_id', id).order('created_at', { ascending: true }),
         supabase.from('folders').select('id, name, icon, color').eq('project_id', id).order('created_at', { ascending: true }),
         supabase.from('test_runs').select('*').eq('project_id', id).order('created_at', { ascending: false }),
+        supabase.from('test_plans').select('id, name, milestone_id, start_date, end_date, target_date').eq('project_id', id),
       ]);
 
       if (projectError) throw projectError;
@@ -917,13 +921,29 @@ export default function ProjectRunsPage() {
       if (testRunsError) throw testRunsError;
 
       setProject(projectData);
-      setMilestones(milestonesData || []);
+
+      // Apply roll-up end_date for parent milestones (same logic as milestones page)
+      const rawMs: Milestone[] = milestonesData || [];
+      const enrichedMs = rawMs.map(ms => {
+        if (ms.parent_milestone_id) return ms;
+        const subs = rawMs.filter(s => s.parent_milestone_id === ms.id);
+        if (subs.length === 0) return ms;
+        const allSubIds = [ms.id, ...subs.map(s => s.id)];
+        const relatedPlans = (plansForRollup || []).filter((p: any) => p.milestone_id && allSubIds.includes(p.milestone_id));
+        const subEnds = [
+          ...subs.map(s => s.end_date).filter(Boolean).map(d => new Date(d).getTime()),
+          ...relatedPlans.map((p: any) => p.end_date || p.target_date).filter(Boolean).map((d: string) => new Date(d).getTime()),
+        ];
+        if (subEnds.length > 0 && (!ms.date_mode || ms.date_mode === 'auto')) {
+          return { ...ms, end_date: new Date(Math.max(...subEnds)).toISOString() };
+        }
+        return ms;
+      });
+      setMilestones(enrichedMs);
       setTestCases(testCasesData || []);
 
-      // Load test plans (non-blocking, graceful fallback)
-      supabase.from('test_plans').select('id, name, end_date, target_date').eq('project_id', id).order('created_at', { ascending: false })
-        .then(({ data: plansData }) => { if (plansData) setTestPlans(plansData); })
-        .catch(() => {});
+      // Use already-loaded plans data
+      setTestPlans((plansForRollup || []).map((p: any) => ({ id: p.id, name: p.name, end_date: p.end_date, target_date: p.target_date })));
       setFolderMetas((foldersData || []).map((f: any) => ({
         id: f.id,
         name: f.name,
