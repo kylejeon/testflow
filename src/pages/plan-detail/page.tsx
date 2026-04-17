@@ -137,13 +137,14 @@ type TabKey = typeof TABS[number]['key'];
 
 // ─── Plan Sidebar (shared across all tabs) ────────────────────────────────────
 
-function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, onLock, onUnlock, onRebase, planTcs, runs, tcResultMap, dailyExecCounts, projectId }:
+function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, onLock, onUnlock, onRebase, planTcs, runs, tcResultMap, dailyExecCounts, projectId, currentUserProfile }:
   { plan: TestPlan; milestone: Milestone | null; parentMilestone: Milestone | null; profiles: Map<string, Profile>;
     driftCount: number; onLock: () => Promise<void>; onUnlock: () => Promise<void>; onRebase: () => Promise<void>;
     planTcs: PlanTestCase[]; runs: PlanRun[]; tcResultMap: Map<string, { result: string; assignee: string | null }>;
-    dailyExecCounts: number[]; projectId: string; }) {
+    dailyExecCounts: number[]; projectId: string; currentUserProfile: Profile | null; }) {
   const { showToast } = useToast();
   const owner = plan.owner_id ? profiles.get(plan.owner_id) : null;
+  const lockedByUser = owner || currentUserProfile;
 
   // ── Execution Pace: real data from dailyExecCounts (7 days) ──
   const today = new Date();
@@ -358,10 +359,10 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
                 <span className="v">{new Date(plan.snapshot_locked_at).toLocaleDateString('en-US', { month:'short', day:'numeric' })} · {new Date(plan.snapshot_locked_at).toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', hour12:false })}</span>
               </div>
             )}
-            {owner && (
+            {lockedByUser && (
               <div className="side-row">
                 <span className="k">Locked by</span>
-                <span className="v">{owner.full_name || owner.email}</span>
+                <span className="v">{lockedByUser.full_name || lockedByUser.email}</span>
               </div>
             )}
             <div className="side-row">
@@ -458,7 +459,7 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
 // ─── Tab: Test Cases ──────────────────────────────────────────────────────────
 
 function TestCasesTab({
-  plan, planTcs, allTcs, onAddTc, onAddTcs, onRemoveTc, onLock, onUnlock, onRebase, milestone, parentMilestone, profiles, tcResultMap, driftCount, runs, dailyExecCounts, folders,
+  plan, planTcs, allTcs, onAddTc, onAddTcs, onRemoveTc, onLock, onUnlock, onRebase, milestone, parentMilestone, profiles, tcResultMap, driftCount, runs, dailyExecCounts, folders, currentUserProfile,
 }: {
   plan: TestPlan; planTcs: PlanTestCase[]; allTcs: TestCaseRow[];
   onAddTc: (id: string) => Promise<void>;
@@ -472,6 +473,7 @@ function TestCasesTab({
   tcResultMap: Map<string, { result: string; assignee: string | null }>;
   runs: PlanRun[]; dailyExecCounts: number[];
   folders: { name: string; icon: string; color: string }[];
+  currentUserProfile: Profile | null;
 }) {
   const [search, setSearch] = useState('');
   const [showPicker, setShowPicker] = useState(false);
@@ -713,7 +715,7 @@ function TestCasesTab({
 
       <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles}
         driftCount={driftCount} onLock={onLock} onUnlock={onUnlock} onRebase={onRebase} planTcs={planTcs}
-        runs={runs} tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts} projectId={plan.project_id} />
+        runs={runs} tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts} projectId={plan.project_id} currentUserProfile={currentUserProfile} />
 
       {/* TC Picker Modal — runs-style */}
       {showPicker && (() => {
@@ -879,13 +881,14 @@ function TestCasesTab({
 
 // ─── Tab: Runs ────────────────────────────────────────────────────────────────
 
-function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilestone, profiles, plan, driftCount, onLock, onUnlock, onRebase, planTcs, tcResultMap, dailyExecCounts }: {
+function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilestone, profiles, plan, driftCount, onLock, onUnlock, onRebase, planTcs, tcResultMap, dailyExecCounts, currentUserProfile }: {
   runs: PlanRun[]; projectId: string; planId: string; planTcCount: number;
   milestone: Milestone | null; parentMilestone: Milestone | null;
   profiles: Map<string, Profile>; plan: TestPlan;
   driftCount: number; onLock: () => Promise<void>; onUnlock: () => Promise<void>; onRebase: () => Promise<void>;
   planTcs: PlanTestCase[];
   tcResultMap: Map<string, { result: string; assignee: string | null }>; dailyExecCounts: number[];
+  currentUserProfile: Profile | null;
 }) {
   const navigate = useNavigate();
   const totalRuns = runs.length;
@@ -1023,7 +1026,7 @@ function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilest
         </div>
         <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles}
           driftCount={driftCount} onLock={onLock} onUnlock={onUnlock} onRebase={onRebase} planTcs={planTcs}
-        runs={runs} tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts} projectId={plan.project_id} />
+        runs={runs} tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts} projectId={plan.project_id} currentUserProfile={currentUserProfile} />
       </div>
     </div>
   );
@@ -1031,12 +1034,13 @@ function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilest
 
 // ─── Tab: Activity ────────────────────────────────────────────────────────────
 
-function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCount, onLock, onUnlock, onRebase, planTcs, runs, tcResultMap, dailyExecCounts }: {
+function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCount, onLock, onUnlock, onRebase, planTcs, runs, tcResultMap, dailyExecCounts, currentUserProfile }: {
   logs: ActivityLog[]; profiles: Map<string, Profile>;
   plan: TestPlan; milestone: Milestone | null; parentMilestone: Milestone | null;
   driftCount: number; onLock: () => Promise<void>; onUnlock: () => Promise<void>; onRebase: () => Promise<void>;
   planTcs: PlanTestCase[];
   runs: PlanRun[]; tcResultMap: Map<string, { result: string; assignee: string | null }>; dailyExecCounts: number[];
+  currentUserProfile: Profile | null;
 }) {
   const [activeFilter, setActiveFilter] = useState('all');
 
@@ -1135,7 +1139,7 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCo
       </div>
       <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles}
         driftCount={driftCount} onLock={onLock} onUnlock={onUnlock} onRebase={onRebase} planTcs={planTcs}
-        runs={runs} tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts} projectId={plan.project_id} />
+        runs={runs} tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts} projectId={plan.project_id} currentUserProfile={currentUserProfile} />
     </div>
   );
 }
@@ -1856,6 +1860,7 @@ export default function PlanDetailPage() {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [profiles, setProfiles] = useState<Map<string, Profile>>(new Map());
   const [memberProfiles, setMemberProfiles] = useState<Profile[]>([]);
+  const [currentUserProfile, setCurrentUserProfile] = useState<Profile | null>(null);
   const [tcResultMap, setTcResultMap] = useState<Map<string, { result: string; assignee: string | null }>>(new Map());
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -2006,14 +2011,25 @@ export default function PlanDetailPage() {
         setDailyExecCounts(counts);
       }
 
-      // Project members (for Owner selector)
-      const { data: memberRows } = await supabase
-        .from('project_members').select('user_id').eq('project_id', projectId!);
-      const memberIds = (memberRows || []).map((m: any) => m.user_id).filter(Boolean) as string[];
+      // Current user
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const currentUserId = currentUser?.id;
 
-      // Profiles — combine activity actors + test_result assignees + project members
+      // Project members (for Owner selector) — independent query
+      let memberIds: string[] = [];
+      try {
+        const { data: memberRows } = await supabase
+          .from('project_members').select('user_id').eq('project_id', projectId!);
+        memberIds = (memberRows || []).map((m: any) => m.user_id).filter(Boolean) as string[];
+      } catch { /* ignore — fallback to current user */ }
+
+      // Always include current user + plan owner in member list
+      if (currentUserId && !memberIds.includes(currentUserId)) memberIds.push(currentUserId);
+      if (planRes.data?.owner_id && !memberIds.includes(planRes.data.owner_id)) memberIds.push(planRes.data.owner_id);
+
+      // Profiles — combine activity actors + project members (skip resultAssigneeIds — author is name string, not UUID)
       const actorIds = [...new Set((logs || []).map((l: any) => l.actor_id).filter(Boolean))] as string[];
-      const allFetchIds = [...new Set([...actorIds, ...resultAssigneeIds, ...memberIds])];
+      const allFetchIds = [...new Set([...actorIds, ...memberIds])];
       const profileMap = new Map<string, Profile>();
       if (allFetchIds.length > 0) {
         const { data: profileData } = await supabase
@@ -2022,6 +2038,7 @@ export default function PlanDetailPage() {
       }
       setProfiles(profileMap);
       setMemberProfiles(memberIds.map(id => profileMap.get(id)).filter(Boolean) as Profile[]);
+      if (currentUserId) setCurrentUserProfile(profileMap.get(currentUserId) || null);
     } catch (err: any) {
       setLoadError(true);
     } finally {
@@ -2306,7 +2323,7 @@ export default function PlanDetailPage() {
             driftCount={driftCount}
             milestone={milestone} parentMilestone={parentMilestone} profiles={profiles}
             tcResultMap={tcResultMap} runs={runs} dailyExecCounts={dailyExecCounts}
-            folders={folders}
+            folders={folders} currentUserProfile={currentUserProfile}
           />
         )}
         {activeTab === 'runs' && (
@@ -2315,12 +2332,13 @@ export default function PlanDetailPage() {
             milestone={milestone} parentMilestone={parentMilestone} profiles={profiles} plan={plan}
             driftCount={driftCount} onLock={handleLock} onUnlock={handleUnlockRequest} onRebase={handleRebase}
             planTcs={planTcs} tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts}
+            currentUserProfile={currentUserProfile}
           />
         )}
         {activeTab === 'activity' && (
           <ActivityTab logs={activityLogs} profiles={profiles} plan={plan} milestone={milestone} parentMilestone={parentMilestone}
             driftCount={driftCount} onLock={handleLock} onUnlock={handleUnlockRequest} onRebase={handleRebase} planTcs={planTcs}
-            runs={runs} tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts} projectId={plan.project_id} />
+            runs={runs} tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts} projectId={plan.project_id} currentUserProfile={currentUserProfile} />
         )}
         {activeTab === 'issues' && (
           <IssuesTab runs={runs} plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles} />
