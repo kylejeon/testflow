@@ -1931,27 +1931,27 @@ export default function PlanDetailPage() {
       if (runIds.length > 0) {
         const { data: results } = await supabase
           .from('test_results')
-          .select('test_case_id, result, assigned_to, executed_at')
+          .select('test_case_id, status, author, created_at')
           .in('run_id', runIds)
-          .order('executed_at', { ascending: false });
+          .order('created_at', { ascending: false });
         const rMap = new Map<string, { result: string; assignee: string | null }>();
         for (const r of (results || [])) {
           if (r.test_case_id && !rMap.has(r.test_case_id)) {
             rMap.set(r.test_case_id, {
-              result: r.result || 'untested',
-              assignee: r.assigned_to || null,
+              result: r.status || 'untested',
+              assignee: r.author || null,
             });
           }
         }
         setTcResultMap(rMap);
-        resultAssigneeIds = [...new Set((results || []).map((r: any) => r.assigned_to).filter(Boolean))] as string[];
+        resultAssigneeIds = [...new Set((results || []).map((r: any) => r.author).filter(Boolean))] as string[];
 
         // Daily execution counts for last 7 days
         const now = new Date();
         const counts = [0,0,0,0,0,0,0];
         for (const r of (results || [])) {
-          if (!r.executed_at || !r.result || r.result === 'untested') continue;
-          const execDate = new Date(r.executed_at);
+          if (!r.created_at || !r.status || r.status === 'untested') continue;
+          const execDate = new Date(r.created_at);
           const dayDiff = Math.floor((now.getTime() - execDate.getTime()) / (1000 * 60 * 60 * 24));
           if (dayDiff >= 0 && dayDiff < 7) {
             counts[6 - dayDiff]++;

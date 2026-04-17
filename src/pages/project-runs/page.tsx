@@ -144,6 +144,7 @@ export default function ProjectRunsPage() {
 
   // ─── Add Run 2-step wizard ──────────────────────────────────────
   const [addRunStep, setAddRunStep] = useState<1 | 2>(1);
+  const [fromPlanId, setFromPlanId] = useState<string | null>(null);
   const [runAssignees, setRunAssignees] = useState<string[]>([]);
   const [includeDraftTCs, setIncludeDraftTCs] = useState(false);
   const [showDraftWarningDismissed, setShowDraftWarningDismissed] = useState(false);
@@ -182,8 +183,9 @@ export default function ProjectRunsPage() {
         ...(milestoneId ? { milestone_id: milestoneId } : {}),
       } as any));
 
-      // When coming from a test plan, pre-select that plan's test cases
+      // When coming from a test plan, pre-select that plan's test cases and skip step 2
       if (planId) {
+        setFromPlanId(planId);
         supabase
           .from('test_plan_test_cases')
           .select('test_case_id')
@@ -937,22 +939,29 @@ export default function ProjectRunsPage() {
 
       if (testResultsError) throw testResultsError;
 
+      // Fetch project members for assignee dropdown (not just from test_results authors)
+      const { data: memberRows } = await supabase
+        .from('project_members')
+        .select('user_id')
+        .eq('project_id', id);
+      const memberIds = [...new Set((memberRows || []).map((m: any) => m.user_id).filter(Boolean))];
+
+      // Also include authors from test results who might not be project members
       const uniqueAuthors = new Set<string>();
       testResultsData?.forEach(result => {
-        if (result.author) {
-          uniqueAuthors.add(result.author);
-        }
+        if (result.author) uniqueAuthors.add(result.author);
       });
+      const allUserIds = [...new Set([...memberIds, ...Array.from(uniqueAuthors)])];
 
-      if (uniqueAuthors.size > 0) {
+      if (allUserIds.length > 0) {
         const { data: profilesData } = await supabase
           .from('profiles')
-          .select('id, name, email')
-          .in('id', Array.from(uniqueAuthors));
+          .select('id, full_name, email')
+          .in('id', allUserIds);
 
-        const contributorsList: Contributor[] = (profilesData || []).map((profile) => ({
+        const contributorsList: Contributor[] = (profilesData || []).map((profile: any) => ({
           id: profile.id,
-          name: profile.name || profile.email?.split('@')[0] || 'Unknown',
+          name: profile.full_name || profile.email?.split('@')[0] || 'Unknown',
           email: profile.email || '',
         }));
 
@@ -2400,6 +2409,7 @@ export default function ProjectRunsPage() {
           setTagInput('');
           setSelectedCaseFolder('');
           setRunNameError('');
+          setFromPlanId(null);
         };
 
         return (
@@ -2421,7 +2431,10 @@ export default function ProjectRunsPage() {
 
               {/* ── Step Indicator ── */}
               <div className="flex border-b border-gray-100 px-6">
-                {[{ n: 1, label: 'Configure' }, { n: 2, label: 'Select Cases' }].map(s => (
+                {(fromPlanId
+                  ? [{ n: 1, label: 'Configure' }]
+                  : [{ n: 1, label: 'Configure' }, { n: 2, label: 'Select Cases' }]
+                ).map(s => (
                   <button
                     key={s.n}
                     onClick={() => s.n < addRunStep ? setAddRunStep(s.n as 1 | 2) : undefined}
@@ -2439,6 +2452,11 @@ export default function ProjectRunsPage() {
                     {s.label}
                   </button>
                 ))}
+                {fromPlanId && (
+                  <span className="flex items-center gap-1.5 py-3 text-xs text-emerald-600 font-medium ml-auto">
+                    <i className="ri-check-line" /> {selectedTestCases.length} TCs from Plan
+                  </span>
+                )}
               </div>
 
               {/* ═══════════════ STEP 1: Configure ═══════════════ */}
@@ -2657,12 +2675,22 @@ export default function ProjectRunsPage() {
 
                   <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50">
                     <button onClick={closeModal} className="px-[0.875rem] py-[0.4375rem] text-[0.8125rem] text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer">Cancel</button>
-                    <button
-                      onClick={() => { if (!formData.name.trim()) { setRunNameError('Please enter a run name'); return; } setRunNameError(''); setAddRunStep(2); }}
-                      className="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-semibold cursor-pointer flex items-center gap-2"
-                    >
-                      Next: Select Cases <i className="ri-arrow-right-line" />
-                    </button>
+                    {fromPlanId ? (
+                      <button
+                        onClick={() => { if (!formData.name.trim()) { setRunNameError('Please enter a run name'); return; } setRunNameError(''); handleAddRun(true); }}
+                        disabled={submitting}
+                        className="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-semibold cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                      >
+                        {submitting ? 'Creating...' : 'Create Run'} <i className="ri-play-line" />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => { if (!formData.name.trim()) { setRunNameError('Please enter a run name'); return; } setRunNameError(''); setAddRunStep(2); }}
+                        className="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-semibold cursor-pointer flex items-center gap-2"
+                      >
+                        Next: Select Cases <i className="ri-arrow-right-line" />
+                      </button>
+                    )}
                   </div>
                 </>
               )}
