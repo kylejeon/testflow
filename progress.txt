@@ -1,18 +1,20 @@
-2026-04-17: Plan↔Run 연동 근본 원인 수정
+2026-04-17: Plan↔Run 연동 근본 원인 재수정
 
 ## 뭘 했냐
-- Run 결과 → Plan/Milestone 미반영 근본 원인 수정
-  - updateRunStatus()가 status만 저장, passed/failed/blocked/untested 미저장 → 집계 함께 업데이트
-- Assignees "No project members found" 근본 원인 수정
-  - runs 0개일 때 .in('run_id', []) 빈 배열로 에러 throw → project_members 쿼리 스킵됨
-  - runIds.length > 0 조건 추가 + project_members 쿼리 항상 실행
-- Runs 더보기 메뉴 잘림 수정 (overflow-hidden 제거, z-index 50)
+- 이전 수정이 동작하지 않는 근본 원인 발견:
+  - test_runs.test_plan_id 컬럼이 DB에 없거나 null → 모든 Plan→Run 조회가 빈 결과
+  - test_results.author는 UUID가 아닌 이름 문자열 → profiles.id 쿼리에 섞이면 에러
+
+- Plan Detail: runs 조회를 test_plan_id 전용 → 프로젝트 전체 runs + TC overlap 필터로 변경
+- Milestone Plan 카드: test_runs.passed/failed 대신 test_results에서 직접 집계
+- Assignees: project_members 독립 쿼리로 완전 분리 (author 이름 문자열 혼입 제거)
 
 ## 어디까지 됐냐
-- Run에서 TC 실행 → test_runs.passed/failed/blocked 자동 업데이트
-- Plan Detail에서 Run 결과 정상 표시
-- Milestone Plan 카드에서 Run 결과 정상 표시
-- Add Run 모달에서 project members 정상 로드
+- DB 마이그레이션 미적용 상황에서도 동작하는 우회 전략 적용
+- Plan Detail ↔ Run 결과 연동
+- Milestone Plan 카드 결과 표시
+- Add Run 모달 Assignees 로드
 
 ## 다음에 할 것
-- 브라우저 실물 테스트 (전체 흐름 검증)
+- 브라우저 실물 테스트
+- Supabase migration (20260416_test_plans.sql) 프로덕션 적용 확인
