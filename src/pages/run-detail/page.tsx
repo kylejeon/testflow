@@ -1582,13 +1582,8 @@ export default function RunDetail() {
       setSelectedTestCase({ ...selectedTestCase, runStatus: 'passed' });
       setTestResults([newResult, ...testResults]);
       
-      // Calculate untested count
-      const untestedCount = updatedTestCases.filter(tc => tc.runStatus === 'untested').length;
-      
-      // Update run status based on untested count
-      await updateRunStatus(runId!, {
-        untested: untestedCount
-      });
+      // Update run stats (passed/failed/blocked/retest/untested) and status
+      await updateRunStatus(runId!, updatedTestCases);
       
       // Move to next test case after a short delay
       setTimeout(() => {
