@@ -96,6 +96,20 @@ interface TestCaseRow {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
+const FOLDER_COLOR_MAP: Record<string, { bg: string; fg: string }> = {
+  indigo:  { bg: '#EEF2FF', fg: '#6366F1' },
+  violet:  { bg: '#F5F3FF', fg: '#8B5CF6' },
+  pink:    { bg: '#FDF2F8', fg: '#EC4899' },
+  emerald: { bg: '#F0FDF4', fg: '#10B981' },
+  amber:   { bg: '#FFFBEB', fg: '#F59E0B' },
+  cyan:    { bg: '#ECFEFF', fg: '#06B6D4' },
+  red:     { bg: '#FEF2F2', fg: '#EF4444' },
+  teal:    { bg: '#F0FDFA', fg: '#14B8A6' },
+  orange:  { bg: '#FFF7ED', fg: '#F97316' },
+  blue:    { bg: '#EFF6FF', fg: '#3B82F6' },
+  gray:    { bg: '#F3F4F6', fg: '#6B7280' },
+};
+
 const STATUS_CONFIG = {
   planning:  { label: 'Planning',     badgeCls: 'badge badge-neutral' },
   active:    { label: 'In Progress',  badgeCls: 'badge badge-warning' },
@@ -404,7 +418,7 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
 // ─── Tab: Test Cases ──────────────────────────────────────────────────────────
 
 function TestCasesTab({
-  plan, planTcs, allTcs, onAddTc, onAddTcs, onRemoveTc, onLock, onUnlock, onRebase, milestone, parentMilestone, profiles, tcResultMap, driftCount, runs, dailyExecCounts,
+  plan, planTcs, allTcs, onAddTc, onAddTcs, onRemoveTc, onLock, onUnlock, onRebase, milestone, parentMilestone, profiles, tcResultMap, driftCount, runs, dailyExecCounts, folders,
 }: {
   plan: TestPlan; planTcs: PlanTestCase[]; allTcs: TestCaseRow[];
   onAddTc: (id: string) => Promise<void>;
@@ -417,6 +431,7 @@ function TestCasesTab({
   milestone: Milestone | null; parentMilestone: Milestone | null; profiles: Map<string, Profile>;
   tcResultMap: Map<string, { result: string; assignee: string | null }>;
   runs: PlanRun[]; dailyExecCounts: number[];
+  folders: { name: string; icon: string; color: string }[];
 }) {
   const [search, setSearch] = useState('');
   const [showPicker, setShowPicker] = useState(false);
@@ -605,7 +620,18 @@ function TestCasesTab({
                     )}
                   </div>
                   <div style={{fontSize:12, color:'var(--text-muted)'}}>
-                    {ptc.test_case.folder || '—'}
+                    {ptc.test_case.folder ? (() => {
+                      const f = folders.find(fd => fd.name === ptc.test_case.folder);
+                      const fs = FOLDER_COLOR_MAP[f?.color || 'gray'] || FOLDER_COLOR_MAP.gray;
+                      return (
+                        <span style={{display:'inline-flex', alignItems:'center', gap:4}}>
+                          <span style={{width:18, height:18, borderRadius:4, background:fs.bg, display:'inline-flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>
+                            <i className={f?.icon || 'ri-folder-line'} style={{fontSize:11, color:fs.fg}} />
+                          </span>
+                          <span style={{overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{ptc.test_case.folder}</span>
+                        </span>
+                      );
+                    })() : '—'}
                   </div>
                   <div><span className={priCfg.cls}>{priCfg.label}</span></div>
                   <div><span className={sbClass}><span style={{width:6,height:6,borderRadius:'50%',background:'currentColor'}} />{resultLabel}</span></div>
@@ -1805,6 +1831,9 @@ export default function PlanDetailPage() {
     }).length;
   }, [plan?.is_locked, plan?.snapshot_locked_at, planTcs, allTcs]);
 
+  // Folders for icon/color display
+  const [folders, setFolders] = useState<{ name: string; icon: string; color: string }[]>([]);
+
   // Daily execution counts for last 7 days (from test_results via runs)
   const [dailyExecCounts, setDailyExecCounts] = useState<number[]>([0,0,0,0,0,0,0]);
 
@@ -1817,7 +1846,7 @@ export default function PlanDetailPage() {
     setLoading(true);
     setLoadError(false);
     try {
-      const [projectRes, planRes, planTcIdsRes, allTcsRes, runsRes, milestonesRes] = await Promise.all([
+      const [projectRes, planRes, planTcIdsRes, allTcsRes, runsRes, milestonesRes, foldersRes] = await Promise.all([
         supabase.from('projects').select('*').eq('id', projectId!).single(),
         supabase.from('test_plans').select('*').eq('id', planId!).single(),
         // Two-step approach: first get IDs, then join with test_cases
@@ -1832,6 +1861,7 @@ export default function PlanDetailPage() {
           .order('title'),
         supabase.from('test_runs').select('*').eq('test_plan_id', planId!).order('created_at', { ascending: false }),
         supabase.from('milestones').select('id, name, parent_milestone_id').eq('project_id', projectId!).order('created_at'),
+        supabase.from('folders').select('name, icon, color').eq('project_id', projectId!),
       ]);
 
       if (planRes.error) {
@@ -1857,6 +1887,7 @@ export default function PlanDetailPage() {
         custom_id: tc.custom_id ?? null,
       }));
       setAllTcs(normalizedAllTcs);
+      setFolders((foldersRes.data || []).map((f: any) => ({ name: f.name, icon: f.icon || 'ri-folder-line', color: f.color || 'indigo' })));
       const allRuns = runsRes.data || [];
       setRuns(allRuns);
       setMilestones(milestonesRes.data || []);
@@ -2229,6 +2260,7 @@ export default function PlanDetailPage() {
             driftCount={driftCount}
             milestone={milestone} parentMilestone={parentMilestone} profiles={profiles}
             tcResultMap={tcResultMap} runs={runs} dailyExecCounts={dailyExecCounts}
+            folders={folders}
           />
         )}
         {activeTab === 'runs' && (
