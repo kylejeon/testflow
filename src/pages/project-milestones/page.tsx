@@ -157,11 +157,12 @@ export default function ProjectMilestones() {
     try {
       setLoading(true);
 
-      const [projectRes, milestonesRes, runsRes, resultsRes] = await Promise.all([
+      const [projectRes, milestonesRes, runsRes, resultsRes, plansDateRes] = await Promise.all([
         supabase.from('projects').select('*').eq('id', projectId).single(),
         supabase.from('milestones').select('*').eq('project_id', projectId).order('created_at', { ascending: true }),
         supabase.from('test_runs').select('*').eq('project_id', projectId),
         supabase.from('test_results').select('run_id, test_case_id, status').order('created_at', { ascending: false }),
+        supabase.from('test_plans').select('id, milestone_id, start_date, end_date, target_date').eq('project_id', projectId),
       ]);
 
       if (projectRes.data) setProject(projectRes.data);
@@ -198,8 +199,20 @@ export default function ProjectMilestones() {
         }
         const rollupStats = computeRollupStats(parent, subs, allRuns, projectResults);
         const derivedStatus = deriveStatus(subs);
-        const subStarts = subs.map(s => s.start_date).filter(Boolean).map(d => new Date(d!).getTime());
-        const subEnds   = subs.map(s => s.end_date).filter(Boolean).map(d => new Date(d!).getTime());
+
+        // Collect dates from sub-milestones AND their plans
+        const allPlansData = plansDateRes.data || [];
+        const allSubIds = [parent.id, ...subs.map(s => s.id)];
+        const relatedPlans = allPlansData.filter((p: any) => p.milestone_id && allSubIds.includes(p.milestone_id));
+
+        const subStarts = [
+          ...subs.map(s => s.start_date).filter(Boolean).map(d => new Date(d!).getTime()),
+          ...relatedPlans.map((p: any) => p.start_date).filter(Boolean).map((d: string) => new Date(d).getTime()),
+        ];
+        const subEnds = [
+          ...subs.map(s => s.end_date).filter(Boolean).map(d => new Date(d!).getTime()),
+          ...relatedPlans.map((p: any) => p.end_date || p.target_date).filter(Boolean).map((d: string) => new Date(d).getTime()),
+        ];
         const derivedStart = subStarts.length > 0 ? new Date(Math.min(...subStarts)).toISOString() : parent.start_date;
         const derivedEnd   = subEnds.length   > 0 ? new Date(Math.max(...subEnds)).toISOString()   : parent.end_date;
         const displayStart = parent.date_mode === 'manual' ? parent.start_date : derivedStart;
