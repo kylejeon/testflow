@@ -2224,8 +2224,8 @@ export default function PlanDetailPage() {
             <div className="seg-pass" style={{left:0, width:`${passWidth}%`}} />
             <div className="seg-fail" style={{left:`${passWidth}%`, width:`${failWidth}%`}} />
           </div>
-          {executed > 0 && (
-            <span className="detail-progress-label" style={{position:'absolute', right:0, top:-2}}>{passRate}%</span>
+          {totalTCs > 0 && (
+            <span className="detail-progress-label" style={{position:'absolute', right:0, top:-2}}>{Math.round(executed / totalTCs * 100)}%</span>
           )}
         </div>
 
@@ -2236,8 +2236,9 @@ export default function PlanDetailPage() {
           <span className="stat"><span className="dot dot-warning" />Blocked <b>{blocked}</b></span>
           <span className="stat"><span className="dot dot-neutral" />Untested <b>{untested}</b></span>
           <span className="sep" />
+          <span className="stat">{executed}/{totalTCs} executed · <b>{totalTCs > 0 ? Math.round(executed / totalTCs * 100) : 0}%</b></span>
+          <span className="sep" />
           <span className="stat">Pass Rate <b>{passRate}%</b></span>
-          <span className="stat">Total TCs <b>{totalTCs}</b></span>
         </div>
 
         {/* Tab navigation */}
