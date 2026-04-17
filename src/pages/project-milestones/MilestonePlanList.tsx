@@ -347,16 +347,12 @@ export default function MilestonePlanList({ projectId, milestone, plans, directR
               </div>
               {plan.ownerName && (
                 <div className="plan-card-owner">
-                  <div
-                    className="avatar xs"
-                    style={{
-                      background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
-                      width: 20, height: 20, fontSize: 9,
-                    }}
-                  >
-                    {plan.ownerName.slice(0, 2).toUpperCase()}
-                  </div>
-                  <span>{plan.ownerName}</span>
+                  <Avatar
+                    userId={plan.owner_id || undefined}
+                    name={plan.ownerName}
+                    size="xs"
+                  />
+                  <span>{plan.ownerName.split(/\s+/).pop() || plan.ownerName}</span>
                 </div>
               )}
               <div className="plan-card-bottom">
