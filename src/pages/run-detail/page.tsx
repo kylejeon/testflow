@@ -1284,8 +1284,14 @@ export default function RunDetail() {
       if (run) {
         setRun({ ...run, status: newStatus, passed, failed, blocked, retest, untested });
 
-        // Auto-update Plan status based on Run completion
-        const planId = run.test_plan_id;
+        // Auto-update Plan status — read test_plan_id from DB (not stale React state)
+        const { data: freshRun } = await supabase
+          .from('test_runs')
+          .select('test_plan_id')
+          .eq('id', runId)
+          .single();
+        const planId = freshRun?.test_plan_id;
+        console.log(`[plan-status] runId=${runId}, test_plan_id=${planId}, newStatus=${newStatus}`);
         if (planId) {
           try {
             if (newStatus === 'in_progress') {
