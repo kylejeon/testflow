@@ -314,11 +314,12 @@ export default function MilestonePlanList({ projectId, milestone, plans, directR
           const planTotal = plan.total ?? (plan.tc_count ?? 0);
           const planPassPct = planTotal > 0 ? (planPassed / planTotal * 100) : 0;
           const planFailPct = planTotal > 0 ? (planFailed / planTotal * 100) : 0;
-          const planPassRate = (planPassed + planFailed) > 0 ? Math.round(planPassed / (planPassed + planFailed) * 100) : 0;
+          const planExecuted = planPassed + planFailed;
+          const planCompletePct = planTotal > 0 ? Math.round(planExecuted / planTotal * 100) : 0;
           const isOverdue = plan.target_date && new Date(plan.target_date) < new Date() && plan.status !== 'completed';
-          const pctColor = planPassRate >= 80
+          const pctColor = planCompletePct >= 80
             ? 'var(--success-600)'
-            : planPassRate >= 60
+            : planCompletePct >= 50
             ? 'var(--warning)'
             : 'var(--text-muted)';
 
@@ -364,7 +365,7 @@ export default function MilestonePlanList({ projectId, milestone, plans, directR
                   {planPassed} passed · {planFailed} failed
                 </span>
                 <span className="plan-card-pct" style={{ color: planTotal > 0 ? pctColor : 'var(--text-muted)' }}>
-                  {planTotal > 0 ? `${planPassRate}%` : '—'}
+                  {planTotal > 0 ? `${planCompletePct}%` : '—'}
                 </span>
                 <svg className="plan-card-caret icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polyline points="9 18 15 12 9 6" />
