@@ -447,6 +447,10 @@ function TestCasesTab({
     if (search && !p.test_case.title.toLowerCase().includes(search.toLowerCase())) return false;
     if (filterPri && p.test_case.priority !== filterPri) return false;
     return true;
+  }).sort((a, b) => {
+    const idA = a.test_case.custom_id || '';
+    const idB = b.test_case.custom_id || '';
+    return idA.localeCompare(idB, undefined, { numeric: true });
   });
   const available = allTcs.filter(tc =>
     !includedIds.has(tc.id) &&
