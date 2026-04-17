@@ -102,3 +102,24 @@
 - 파이프라인 가이드: `_template/pipeline-guide.md`
 - 개발지시서 템플릿: `_template/dev-spec-template.md`
 - 디자인 명세 템플릿: `_template/design-spec-template.md`
+
+---
+
+# 커밋 로그 (2026-04-17)
+
+### `c9606c2` feat(plan-detail): QA 감사 7건 수정 + 사이드바 실데이터 전환
+- SplitButton: 드롭다운에 "+ Start New Run" 추가, 1개 런도 드롭다운 표시, 2+ 라벨 수정
+- Unlock: window.confirm → 커스텀 모달 교체
+- Rebase: drift===0일 때 disabled
+- AI Risk Predictor: mockup 풀버전 UI + runs/results 실데이터 기반 (forecast, confidence, risk signals, recommendation)
+- Execution Pace: test_results.executed_at 기반 7일 sparkline
+- Plan Meta/Team 카드 사이드바에서 제거
+
+### `66d231d` feat: 6단계 제품 파이프라인 + 6개 에이전트 시스템 구축
+- `.claude/agents/`: researcher, planner, designer, developer, qa, marketer
+- `_template/`: dev-spec-template, design-spec-template, pipeline-guide
+- CLAUDE.md에 에이전트 라우팅 룰 추가
+
+### `1e81a22` docs: ARCHITECTURE.md 이동 + UI_GUIDE/progress 업데이트
+- ARCHITECTURE.md 루트 → docs/ 이동
+- progress.txt 세션 기록 갱신
