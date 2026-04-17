@@ -5,6 +5,7 @@ import ProjectHeader from '../../components/ProjectHeader';
 import { useToast } from '../../components/Toast';
 import PageLoader from '../../components/PageLoader';
 import AIPlanAssistantModal from '../project-plans/AIPlanAssistantModal';
+import { Avatar } from '../../components/Avatar';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -362,7 +363,10 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
             {lockedByUser && (
               <div className="side-row">
                 <span className="k">Locked by</span>
-                <span className="v">{lockedByUser.full_name || lockedByUser.email}</span>
+                <span className="v" style={{display:'inline-flex', alignItems:'center', gap:4}}>
+                  <Avatar userId={lockedByUser.id} name={lockedByUser.full_name || undefined} email={lockedByUser.email || undefined} size="xs" />
+                  <span>{lockedByUser.full_name ? lockedByUser.full_name.split(/\s+/).pop() : lockedByUser.email}</span>
+                </span>
               </div>
             )}
             <div className="side-row">
@@ -1563,12 +1567,9 @@ function SettingsTab({
               {form.owner_id && (() => {
                 const owner = memberProfiles.find(p=>p.id===form.owner_id) || profiles.get(form.owner_id);
                 if (!owner) return null;
-                const initials = owner.full_name?.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() ?? owner.email.slice(0,2).toUpperCase();
                 return (
-                  <span style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',width:22,height:22,borderRadius:'50%',
-                    background:'var(--primary-50)',color:'var(--primary)',fontSize:9,fontWeight:700,
-                    display:'inline-flex',alignItems:'center',justifyContent:'center',zIndex:1,pointerEvents:'none'}}>
-                    {initials}
+                  <span style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',zIndex:1,pointerEvents:'none'}}>
+                    <Avatar userId={owner.id} name={owner.full_name || undefined} email={owner.email || undefined} size="xs" />
                   </span>
                 );
               })()}
