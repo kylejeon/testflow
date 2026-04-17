@@ -931,24 +931,28 @@ export default function ProjectRunsPage() {
         color: f.color || 'indigo',
       })));
 
-      const { data: testResultsData, error: testResultsError } = await supabase
-        .from('test_results')
-        .select('run_id, test_case_id, status, author, step_statuses')
-        .in('run_id', (testRunsData || []).map(r => r.id))
-        .order('created_at', { ascending: false });
+      const runIds = (testRunsData || []).map(r => r.id);
+      let testResultsData: any[] = [];
+      if (runIds.length > 0) {
+        const { data, error: testResultsError } = await supabase
+          .from('test_results')
+          .select('run_id, test_case_id, status, author, step_statuses')
+          .in('run_id', runIds)
+          .order('created_at', { ascending: false });
+        if (testResultsError) console.error('test_results fetch error:', testResultsError);
+        testResultsData = data || [];
+      }
 
-      if (testResultsError) throw testResultsError;
-
-      // Fetch project members for assignee dropdown (not just from test_results authors)
+      // Fetch project members for assignee dropdown
       const { data: memberRows } = await supabase
         .from('project_members')
         .select('user_id')
         .eq('project_id', id);
       const memberIds = [...new Set((memberRows || []).map((m: any) => m.user_id).filter(Boolean))];
 
-      // Also include authors from test results who might not be project members
+      // Also include authors from test results
       const uniqueAuthors = new Set<string>();
-      testResultsData?.forEach(result => {
+      testResultsData.forEach(result => {
         if (result.author) uniqueAuthors.add(result.author);
       });
       const allUserIds = [...new Set([...memberIds, ...Array.from(uniqueAuthors)])];
@@ -1820,7 +1824,7 @@ export default function ProjectRunsPage() {
     return (
       <div
         key={run.id}
-        className="bg-white border border-slate-200 rounded-xl cursor-pointer hover:shadow-[0_4px_16px_rgba(15,23,42,0.08)] hover:border-slate-300 transition-all overflow-hidden"
+        className="bg-white border border-slate-200 rounded-xl cursor-pointer hover:shadow-[0_4px_16px_rgba(15,23,42,0.08)] hover:border-slate-300 transition-all"
         style={isAdhoc ? { borderLeft: '3px solid #f97316' } : undefined}
         onClick={() => handleRunClick(run.id)}
       >
@@ -2029,7 +2033,7 @@ export default function ProjectRunsPage() {
                 <i className="ri-more-2-fill text-[0.875rem]"></i>
               </button>
               {openMenuId === run.id && (
-                <div className="absolute right-0 mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                <div className="absolute right-0 mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
                   <button onClick={(e) => { e.stopPropagation(); handleEditRun(run); }} className="w-full text-left px-3.5 py-[7px] text-[0.8125rem] text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer">
                     <i className="ri-edit-line"></i><span>Edit</span>
                   </button>

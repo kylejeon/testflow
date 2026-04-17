@@ -1214,11 +1214,17 @@ export default function RunDetail() {
     }
   };
 
-  const updateRunStatus = async (runId: string, stats: { untested: number }) => {
+  const updateRunStatus = async (runId: string, updatedTCs: TestCaseWithRunStatus[]) => {
     try {
+      // Calculate stats from the passed-in TC list (not stale state)
+      const passed = updatedTCs.filter(tc => tc.runStatus === 'passed').length;
+      const failed = updatedTCs.filter(tc => tc.runStatus === 'failed').length;
+      const blocked = updatedTCs.filter(tc => tc.runStatus === 'blocked').length;
+      const retest = updatedTCs.filter(tc => tc.runStatus === 'retest').length;
+      const untested = updatedTCs.filter(tc => tc.runStatus === 'untested').length;
+
       let newStatus: 'new' | 'in_progress' | 'under_review' | 'completed';
-      
-      if (stats.untested === 0) {
+      if (untested === 0) {
         newStatus = 'completed';
       } else {
         newStatus = 'in_progress';
@@ -1226,14 +1232,13 @@ export default function RunDetail() {
 
       const { error } = await supabase
         .from('test_runs')
-        .update({ status: newStatus })
+        .update({ status: newStatus, passed, failed, blocked, retest, untested })
         .eq('id', runId);
 
       if (error) throw error;
 
-      // Update local state
       if (run) {
-        setRun({ ...run, status: newStatus });
+        setRun({ ...run, status: newStatus, passed, failed, blocked, retest, untested });
       }
     } catch (error) {
       console.error('Error updating run status:', error);
@@ -1415,13 +1420,8 @@ export default function RunDetail() {
         setSelectedTestCase({ ...selectedTestCase, runStatus: newStatus as any });
       }
 
-      // Calculate untested count
-      const untestedCount = updatedTestCases.filter(tc => tc.runStatus === 'untested').length;
-
-      // Update run status based on untested count
-      await updateRunStatus(runId!, {
-        untested: untestedCount
-      });
+      // Update run stats (passed/failed/blocked/retest/untested) and status
+      await updateRunStatus(runId!, updatedTestCases);
 
       // Switch to Results tab
       setActiveTab('results');
@@ -1844,13 +1844,8 @@ export default function RunDetail() {
         })();
       }
 
-      // Calculate untested count
-      const untestedCount = updatedTestCases.filter(tc => tc.runStatus === 'untested').length;
-
-      // Update run status based on untested count
-      await updateRunStatus(runId!, {
-        untested: untestedCount
-      });
+      // Update run stats (passed/failed/blocked/retest/untested) and status
+      await updateRunStatus(runId!, updatedTestCases);
 
       // Email notification: run_completed when all TCs are done (fire-and-forget)
       if (untestedCount === 0) {
