@@ -25,6 +25,8 @@ interface TestPlan {
   target_date: string | null;
   entry_criteria: string[];
   exit_criteria: string[];
+  entry_criteria_met: boolean[];
+  exit_criteria_met: boolean[];
   is_locked: boolean;
   snapshot_id?: string | null;
   snapshot_locked_at?: string | null;
@@ -463,7 +465,7 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
 // ─── Tab: Test Cases ──────────────────────────────────────────────────────────
 
 function TestCasesTab({
-  plan, planTcs, allTcs, onAddTc, onAddTcs, onRemoveTc, onLock, onUnlock, onRebase, milestone, parentMilestone, profiles, tcResultMap, driftCount, runs, dailyExecCounts, folders, currentUserProfile,
+  plan, planTcs, allTcs, onAddTc, onAddTcs, onRemoveTc, onLock, onUnlock, onRebase, milestone, parentMilestone, profiles, tcResultMap, driftCount, runs, dailyExecCounts, folders, currentUserProfile, onUpdateCriteriaMet,
 }: {
   plan: TestPlan; planTcs: PlanTestCase[]; allTcs: TestCaseRow[];
   onAddTc: (id: string) => Promise<void>;
@@ -478,6 +480,7 @@ function TestCasesTab({
   runs: PlanRun[]; dailyExecCounts: number[];
   folders: { name: string; icon: string; color: string }[];
   currentUserProfile: Profile | null;
+  onUpdateCriteriaMet: (type: 'entry' | 'exit', met: boolean[]) => void;
 }) {
   const [search, setSearch] = useState('');
   const [showPicker, setShowPicker] = useState(false);
@@ -515,8 +518,75 @@ function TestCasesTab({
 
   const entryCriteria: string[] = Array.isArray(plan.entry_criteria) ? plan.entry_criteria : [];
   const exitCriteria: string[] = Array.isArray(plan.exit_criteria) ? plan.exit_criteria : [];
-  const [entryCriteriaMet, setEntryCriteriaMet] = useState<boolean[]>(() => entryCriteria.map(() => false));
-  const [exitCriteriaMet, setExitCriteriaMet] = useState<boolean[]>(() => exitCriteria.map(() => false));
+
+  // ── Auto-evaluation context ──
+  const totalTCs = planTcs.length;
+  const resultValues = [...tcResultMap.values()].map(r => r.result);
+  const passedTCs = resultValues.filter(r => r === 'passed').length;
+  const failedTCs = resultValues.filter(r => r === 'failed').length;
+  const blockedTCs = resultValues.filter(r => r === 'blocked').length;
+  const executedTCs = resultValues.filter(r => r !== 'untested').length;
+  const untestedTCs = totalTCs - executedTCs;
+  const passRate = totalTCs > 0 ? (passedTCs / totalTCs) * 100 : 0;
+  const completionRate = totalTCs > 0 ? (executedTCs / totalTCs) * 100 : 0;
+  const criticalTCs = planTcs.filter(p => p.test_case?.priority === 'critical');
+  const criticalPassed = criticalTCs.filter(p => tcResultMap.get(p.test_case_id)?.result === 'passed').length;
+  const highTCs = planTcs.filter(p => p.test_case?.priority === 'high');
+  const highPassed = highTCs.filter(p => tcResultMap.get(p.test_case_id)?.result === 'passed').length;
+
+  const autoEvaluate = (text: string): { isAuto: boolean; met: boolean } => {
+    const t = text.toLowerCase().trim();
+    // Pass rate ≥ N%
+    const passRateMatch = t.match(/pass\s*rate\s*[≥>=]+\s*(\d+)\s*%/);
+    if (passRateMatch) return { isAuto: true, met: passRate >= Number(passRateMatch[1]) };
+    // Completion rate ≥ N%
+    const compMatch = t.match(/completion\s*rate\s*[≥>=]+\s*(\d+)\s*%/);
+    if (compMatch) return { isAuto: true, met: completionRate >= Number(compMatch[1]) };
+    // All critical TCs passed
+    if (/all\s*critical\s*(tc|test\s*case)s?\s*passed/i.test(t))
+      return { isAuto: true, met: criticalTCs.length > 0 && criticalPassed === criticalTCs.length };
+    // All high TCs passed
+    if (/all\s*high\s*(tc|test\s*case)s?\s*passed/i.test(t))
+      return { isAuto: true, met: highTCs.length > 0 && highPassed === highTCs.length };
+    // No blocked TCs
+    if (/no\s*blocked/i.test(t)) return { isAuto: true, met: blockedTCs === 0 };
+    // No failed TCs
+    if (/no\s*failed/i.test(t)) return { isAuto: true, met: failedTCs === 0 };
+    // All TCs executed
+    if (/all\s*(tc|test\s*case)s?\s*executed/i.test(t) || /100\s*%\s*(execution|completion)/i.test(t))
+      return { isAuto: true, met: totalTCs > 0 && untestedTCs === 0 };
+    return { isAuto: false, met: false };
+  };
+
+  // Met state from DB, merged with auto-evaluation
+  const dbEntryMet: boolean[] = Array.isArray(plan.entry_criteria_met) ? plan.entry_criteria_met : [];
+  const dbExitMet: boolean[] = Array.isArray(plan.exit_criteria_met) ? plan.exit_criteria_met : [];
+  const [entryMetLocal, setEntryMetLocal] = useState<boolean[]>(() => entryCriteria.map((_, i) => dbEntryMet[i] ?? false));
+  const [exitMetLocal, setExitMetLocal] = useState<boolean[]>(() => exitCriteria.map((_, i) => dbExitMet[i] ?? false));
+
+  // Compute final met (auto overrides manual for auto-evaluable items)
+  const entryFinal = entryCriteria.map((c, i) => {
+    const auto = autoEvaluate(c);
+    return { text: c, isAuto: auto.isAuto, met: auto.isAuto ? auto.met : (entryMetLocal[i] ?? false) };
+  });
+  const exitFinal = exitCriteria.map((c, i) => {
+    const auto = autoEvaluate(c);
+    return { text: c, isAuto: auto.isAuto, met: auto.isAuto ? auto.met : (exitMetLocal[i] ?? false) };
+  });
+
+  const handleToggleCriteria = (type: 'entry' | 'exit', index: number) => {
+    if (type === 'entry') {
+      if (entryFinal[index]?.isAuto) return; // auto items can't be toggled
+      const next = [...entryMetLocal]; next[index] = !next[index];
+      setEntryMetLocal(next);
+      onUpdateCriteriaMet('entry', next);
+    } else {
+      if (exitFinal[index]?.isAuto) return;
+      const next = [...exitMetLocal]; next[index] = !next[index];
+      setExitMetLocal(next);
+      onUpdateCriteriaMet('exit', next);
+    }
+  };
 
   return (
     <div className="plan-layout">
@@ -545,23 +615,30 @@ function TestCasesTab({
               <div className="criteria-title">
                 <svg style={{width:13,height:13,color:'var(--success-600)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
                 Entry Criteria
-                <span className="badge badge-success" style={{marginLeft:'auto'}}>{entryCriteriaMet.filter(Boolean).length} / {entryCriteria.length} met</span>
+                <span className="badge badge-success" style={{marginLeft:'auto'}}>{entryFinal.filter(f => f.met).length} / {entryCriteria.length} met</span>
               </div>
-              {entryCriteria.map((c, i) => {
-                const met = entryCriteriaMet[i] ?? false;
-                return (
-                  <div key={i} className="criterion">
-                    <div className={met ? 'crit-check' : 'crit-check pending'} style={{cursor:'pointer'}}
-                      onClick={() => setEntryCriteriaMet(prev => { const n=[...prev]; n[i]=!n[i]; return n; })}>
-                      {met
-                        ? <svg style={{width:10,height:10}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
-                        : <svg style={{width:10,height:10}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="12" cy="12" r="10"/></svg>
-                      }
-                    </div>
-                    <span style={{fontSize:13, textDecoration: met ? 'line-through' : 'none', color: met ? 'var(--text-muted)' : 'inherit'}}>{c}</span>
+              {entryFinal.map((item, i) => (
+                <div key={i} className="criterion">
+                  <div className={item.met ? 'crit-check' : 'crit-check pending'}
+                    style={{cursor: item.isAuto ? 'default' : 'pointer', ...(item.isAuto && item.met ? {background:'var(--primary-50)', borderColor:'var(--primary)'} : {})}}
+                    onClick={() => handleToggleCriteria('entry', i)}
+                    title={item.isAuto ? 'Auto-evaluated based on test results' : 'Click to toggle'}>
+                    {item.met
+                      ? item.isAuto
+                        ? <svg style={{width:10,height:10,color:'var(--primary)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                        : <svg style={{width:10,height:10}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                      : <svg style={{width:10,height:10}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="12" cy="12" r="10"/></svg>
+                    }
                   </div>
-                );
-              })}
+                  <span style={{fontSize:13, textDecoration: item.met ? 'line-through' : 'none', color: item.met ? 'var(--text-muted)' : 'inherit', flex:1}}>{item.text}</span>
+                  {item.isAuto && (
+                    <span title="Auto-evaluated" style={{fontSize:10, color:'var(--primary)', display:'inline-flex', alignItems:'center', gap:2, background:'var(--primary-50)', padding:'1px 6px', borderRadius:8, fontWeight:600, whiteSpace:'nowrap'}}>
+                      <svg style={{width:10,height:10}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                      Auto
+                    </span>
+                  )}
+                </div>
+              ))}
               {entryCriteria.length === 0 && <div style={{fontSize:12, color:'var(--text-muted)'}}>No entry criteria defined.</div>}
             </div>
             {/* Exit Criteria */}
@@ -570,24 +647,31 @@ function TestCasesTab({
                 <svg style={{width:13,height:13,color:'var(--warning)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                 Exit Criteria
                 <span className="badge badge-warning" style={{marginLeft:'auto'}}>
-                  {exitCriteriaMet.filter(Boolean).length} / {exitCriteria.length} met
+                  {exitFinal.filter(f => f.met).length} / {exitCriteria.length} met
                 </span>
               </div>
-              {exitCriteria.map((c, i) => {
-                const met = exitCriteriaMet[i] ?? false;
-                return (
-                  <div key={i} className="criterion">
-                    <div className={met ? 'crit-check' : 'crit-check pending'} style={{cursor:'pointer'}}
-                      onClick={() => setExitCriteriaMet(prev => { const n=[...prev]; n[i]=!n[i]; return n; })}>
-                      {met
-                        ? <svg style={{width:10,height:10}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
-                        : <svg style={{width:10,height:10}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="12" cy="12" r="10"/></svg>
-                      }
-                    </div>
-                    <span style={{fontSize:13, textDecoration: met ? 'line-through' : 'none', color: met ? 'var(--text-muted)' : 'inherit'}}>{c}</span>
+              {exitFinal.map((item, i) => (
+                <div key={i} className="criterion">
+                  <div className={item.met ? 'crit-check' : 'crit-check pending'}
+                    style={{cursor: item.isAuto ? 'default' : 'pointer', ...(item.isAuto && item.met ? {background:'var(--primary-50)', borderColor:'var(--primary)'} : {})}}
+                    onClick={() => handleToggleCriteria('exit', i)}
+                    title={item.isAuto ? 'Auto-evaluated based on test results' : 'Click to toggle'}>
+                    {item.met
+                      ? item.isAuto
+                        ? <svg style={{width:10,height:10,color:'var(--primary)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                        : <svg style={{width:10,height:10}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                      : <svg style={{width:10,height:10}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="12" cy="12" r="10"/></svg>
+                    }
                   </div>
-                );
-              })}
+                  <span style={{fontSize:13, textDecoration: item.met ? 'line-through' : 'none', color: item.met ? 'var(--text-muted)' : 'inherit', flex:1}}>{item.text}</span>
+                  {item.isAuto && (
+                    <span title="Auto-evaluated" style={{fontSize:10, color:'var(--primary)', display:'inline-flex', alignItems:'center', gap:2, background:'var(--primary-50)', padding:'1px 6px', borderRadius:8, fontWeight:600, whiteSpace:'nowrap'}}>
+                      <svg style={{width:10,height:10}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                      Auto
+                    </span>
+                  )}
+                </div>
+              ))}
               {exitCriteria.length === 0 && <div style={{fontSize:12, color:'var(--text-muted)'}}>No exit criteria defined.</div>}
             </div>
           </div>
@@ -1463,11 +1547,13 @@ function EnvironmentsTab({ plan }: { plan: TestPlan }) {
 // ─── Tab: Settings ────────────────────────────────────────────────────────────
 
 function SettingsTab({
-  plan, milestones, profiles, memberProfiles, onUpdate, onDelete,
+  plan, milestones, profiles, memberProfiles, onUpdate, onDelete, entryPresets, exitPresets, onSavePreset,
 }: {
   plan: TestPlan; milestones: Milestone[]; profiles: Map<string, Profile>; memberProfiles: Profile[];
   onUpdate: (data: Partial<TestPlan>) => Promise<void>;
   onDelete: () => void;
+  entryPresets: string[]; exitPresets: string[];
+  onSavePreset: (type: 'entry' | 'exit', text: string) => Promise<void>;
 }) {
   const [form, setForm] = useState({
     name: plan.name,
@@ -1483,10 +1569,10 @@ function SettingsTab({
   const initExit = Array.isArray(plan.exit_criteria) ? plan.exit_criteria : [];
   const [entryCriteria, setEntryCriteria] = useState<string[]>(initEntry);
   const [exitCriteria, setExitCriteria] = useState<string[]>(initExit);
-  const [entryCriteriaMet, setEntryCriteriaMet] = useState<boolean[]>(() => initEntry.map(() => false));
-  const [exitCriteriaMet, setExitCriteriaMet] = useState<boolean[]>(() => initExit.map(() => false));
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [showEntryPresets, setShowEntryPresets] = useState(false);
+  const [showExitPresets, setShowExitPresets] = useState(false);
   const { showToast } = useToast();
 
   const setFormField = (field: string, value: string) => {
@@ -1636,35 +1722,56 @@ function SettingsTab({
         <div className="section-title">
           <span className="icn success"><svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg></span>
           Entry Criteria
-          <span className="badge badge-success" style={{marginLeft:'auto'}}>{entryCriteriaMet.filter(Boolean).length} / {entryCriteria.length} met</span>
+          <span className="badge badge-neutral" style={{marginLeft:'auto'}}>{entryCriteria.length} items</span>
         </div>
-        {entryCriteria.map((c, i) => {
-          const met = entryCriteriaMet[i] ?? false;
-          return (
-            <div key={i} className="criterion-item">
-              <div
-                onClick={() => { setEntryCriteriaMet(prev => { const n=[...prev]; n[i]=!n[i]; return n; }); }}
-                style={{width:18,height:18,borderRadius:4,cursor:'pointer',flex:'none',
-                  background: met ? 'var(--success)' : 'var(--bg-subtle)',
-                  border: `1.5px solid ${met ? 'var(--success)' : 'var(--text-subtle)'}`,
-                  display:'flex',alignItems:'center',justifyContent:'center'}}>
-                {met && <svg style={{width:11,height:11,color:'#fff'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
-              </div>
-              <input value={c} onChange={e=>{const a=[...entryCriteria]; a[i]=e.target.value; setEntryCriteria(a); setDirty(true);}}
-                style={{border:'none',outline:'none',fontSize:13,background:'transparent',width:'100%',fontFamily:'inherit',
-                  textDecoration: met ? 'line-through' : 'none', color: met ? 'var(--text-muted)' : 'inherit'}} />
-              <button onClick={()=>{
-                setEntryCriteria(entryCriteria.filter((_,j)=>j!==i));
-                setEntryCriteriaMet(entryCriteriaMet.filter((_,j)=>j!==i));
-                setDirty(true);
-              }} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-subtle)',fontSize:16,padding:'0 2px'}}>×</button>
+        {entryCriteria.map((c, i) => (
+          <div key={i} className="criterion-item">
+            <span style={{width:18,height:18,borderRadius:4,flex:'none',background:'var(--bg-subtle)',border:'1.5px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,color:'var(--text-subtle)',fontWeight:700}}>
+              {i + 1}
+            </span>
+            <input value={c} onChange={e=>{const a=[...entryCriteria]; a[i]=e.target.value; setEntryCriteria(a); setDirty(true);}}
+              placeholder="e.g. All critical TCs passed"
+              style={{border:'none',outline:'none',fontSize:13,background:'transparent',width:'100%',fontFamily:'inherit'}} />
+            {c.trim() && !entryPresets.includes(c.trim()) && (
+              <button onClick={()=>onSavePreset('entry', c.trim())} title="Save as preset"
+                style={{background:'none',border:'none',cursor:'pointer',color:'var(--primary)',fontSize:12,padding:'0 2px',whiteSpace:'nowrap'}}>
+                <svg style={{width:12,height:12}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+              </button>
+            )}
+            <button onClick={()=>{setEntryCriteria(entryCriteria.filter((_,j)=>j!==i)); setDirty(true);}}
+              style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-subtle)',fontSize:16,padding:'0 2px'}}>×</button>
+          </div>
+        ))}
+        <div style={{display:'flex',gap:6}}>
+          <div style={{flex:1,border:'1px dashed var(--border)',borderRadius:8,padding:'10px 12px',display:'flex',alignItems:'center',gap:8,color:'var(--text-muted)',fontSize:13,cursor:'pointer'}}
+            onClick={()=>{setEntryCriteria([...entryCriteria,'']); setDirty(true);}}>
+            <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add criterion
+          </div>
+          {entryPresets.length > 0 && (
+            <div style={{position:'relative'}}>
+              <button className="pd-btn pd-btn-sm" onClick={()=>setShowEntryPresets(!showEntryPresets)}
+                style={{height:'100%',fontSize:12,gap:4,whiteSpace:'nowrap'}}>
+                <svg style={{width:12,height:12}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                Presets
+              </button>
+              {showEntryPresets && (
+                <div style={{position:'absolute',right:0,top:'100%',marginTop:4,background:'#fff',border:'1px solid var(--border)',borderRadius:8,boxShadow:'0 4px 12px rgba(0,0,0,.1)',zIndex:20,minWidth:260,maxHeight:200,overflowY:'auto'}}>
+                  {entryPresets.filter(p => !entryCriteria.includes(p)).map((p, i) => (
+                    <div key={i} onClick={()=>{setEntryCriteria([...entryCriteria, p]); setDirty(true); setShowEntryPresets(false);}}
+                      style={{padding:'8px 12px',fontSize:13,cursor:'pointer',borderBottom:'1px solid var(--bg-subtle)'}}
+                      onMouseEnter={e=>(e.currentTarget.style.background='var(--bg-subtle)')}
+                      onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
+                      {p}
+                    </div>
+                  ))}
+                  {entryPresets.filter(p => !entryCriteria.includes(p)).length === 0 && (
+                    <div style={{padding:'8px 12px',fontSize:12,color:'var(--text-muted)'}}>All presets already added</div>
+                  )}
+                </div>
+              )}
             </div>
-          );
-        })}
-        <div style={{border:'1px dashed var(--border)',borderRadius:8,padding:'10px 12px',display:'flex',alignItems:'center',gap:8,color:'var(--text-muted)',fontSize:13,cursor:'pointer'}}
-          onClick={()=>{setEntryCriteria([...entryCriteria,'']); setEntryCriteriaMet([...entryCriteriaMet,false]); setDirty(true);}}>
-          <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Add entry criterion
+          )}
         </div>
       </div>
 
@@ -1673,35 +1780,56 @@ function SettingsTab({
         <div className="section-title">
           <span className="icn warning"><svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
           Exit Criteria
-          <span className="badge badge-warning" style={{marginLeft:'auto'}}>{exitCriteriaMet.filter(Boolean).length} / {exitCriteria.length} met</span>
+          <span className="badge badge-neutral" style={{marginLeft:'auto'}}>{exitCriteria.length} items</span>
         </div>
-        {exitCriteria.map((c, i) => {
-          const met = exitCriteriaMet[i] ?? false;
-          return (
-            <div key={i} className="criterion-item">
-              <div
-                onClick={() => { setExitCriteriaMet(prev => { const n=[...prev]; n[i]=!n[i]; return n; }); }}
-                style={{width:18,height:18,borderRadius:4,cursor:'pointer',flex:'none',
-                  background: met ? 'var(--success)' : 'var(--bg-subtle)',
-                  border: `1.5px solid ${met ? 'var(--success)' : 'var(--text-subtle)'}`,
-                  display:'flex',alignItems:'center',justifyContent:'center'}}>
-                {met && <svg style={{width:11,height:11,color:'#fff'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
-              </div>
-              <input value={c} onChange={e=>{const a=[...exitCriteria]; a[i]=e.target.value; setExitCriteria(a); setDirty(true);}}
-                style={{border:'none',outline:'none',fontSize:13,background:'transparent',width:'100%',fontFamily:'inherit',
-                  textDecoration: met ? 'line-through' : 'none', color: met ? 'var(--text-muted)' : 'inherit'}} />
-              <button onClick={()=>{
-                setExitCriteria(exitCriteria.filter((_,j)=>j!==i));
-                setExitCriteriaMet(exitCriteriaMet.filter((_,j)=>j!==i));
-                setDirty(true);
-              }} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-subtle)',fontSize:16,padding:'0 2px'}}>×</button>
+        {exitCriteria.map((c, i) => (
+          <div key={i} className="criterion-item">
+            <span style={{width:18,height:18,borderRadius:4,flex:'none',background:'var(--bg-subtle)',border:'1.5px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,color:'var(--text-subtle)',fontWeight:700}}>
+              {i + 1}
+            </span>
+            <input value={c} onChange={e=>{const a=[...exitCriteria]; a[i]=e.target.value; setExitCriteria(a); setDirty(true);}}
+              placeholder="e.g. Pass rate ≥ 95%"
+              style={{border:'none',outline:'none',fontSize:13,background:'transparent',width:'100%',fontFamily:'inherit'}} />
+            {c.trim() && !exitPresets.includes(c.trim()) && (
+              <button onClick={()=>onSavePreset('exit', c.trim())} title="Save as preset"
+                style={{background:'none',border:'none',cursor:'pointer',color:'var(--primary)',fontSize:12,padding:'0 2px',whiteSpace:'nowrap'}}>
+                <svg style={{width:12,height:12}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+              </button>
+            )}
+            <button onClick={()=>{setExitCriteria(exitCriteria.filter((_,j)=>j!==i)); setDirty(true);}}
+              style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-subtle)',fontSize:16,padding:'0 2px'}}>×</button>
+          </div>
+        ))}
+        <div style={{display:'flex',gap:6}}>
+          <div style={{flex:1,border:'1px dashed var(--border)',borderRadius:8,padding:'10px 12px',display:'flex',alignItems:'center',gap:8,color:'var(--text-muted)',fontSize:13,cursor:'pointer'}}
+            onClick={()=>{setExitCriteria([...exitCriteria,'']); setDirty(true);}}>
+            <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add criterion
+          </div>
+          {exitPresets.length > 0 && (
+            <div style={{position:'relative'}}>
+              <button className="pd-btn pd-btn-sm" onClick={()=>setShowExitPresets(!showExitPresets)}
+                style={{height:'100%',fontSize:12,gap:4,whiteSpace:'nowrap'}}>
+                <svg style={{width:12,height:12}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                Presets
+              </button>
+              {showExitPresets && (
+                <div style={{position:'absolute',right:0,top:'100%',marginTop:4,background:'#fff',border:'1px solid var(--border)',borderRadius:8,boxShadow:'0 4px 12px rgba(0,0,0,.1)',zIndex:20,minWidth:260,maxHeight:200,overflowY:'auto'}}>
+                  {exitPresets.filter(p => !exitCriteria.includes(p)).map((p, i) => (
+                    <div key={i} onClick={()=>{setExitCriteria([...exitCriteria, p]); setDirty(true); setShowExitPresets(false);}}
+                      style={{padding:'8px 12px',fontSize:13,cursor:'pointer',borderBottom:'1px solid var(--bg-subtle)'}}
+                      onMouseEnter={e=>(e.currentTarget.style.background='var(--bg-subtle)')}
+                      onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
+                      {p}
+                    </div>
+                  ))}
+                  {exitPresets.filter(p => !exitCriteria.includes(p)).length === 0 && (
+                    <div style={{padding:'8px 12px',fontSize:12,color:'var(--text-muted)'}}>All presets already added</div>
+                  )}
+                </div>
+              )}
             </div>
-          );
-        })}
-        <div style={{border:'1px dashed var(--border)',borderRadius:8,padding:'10px 12px',display:'flex',alignItems:'center',gap:8,color:'var(--text-muted)',fontSize:13,cursor:'pointer'}}
-          onClick={()=>{setExitCriteria([...exitCriteria,'']); setExitCriteriaMet([...exitCriteriaMet,false]); setDirty(true);}}>
-          <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Add exit criterion
+          )}
         </div>
       </div>
 
@@ -1863,6 +1991,8 @@ export default function PlanDetailPage() {
   const [memberProfiles, setMemberProfiles] = useState<Profile[]>([]);
   const [currentUserProfile, setCurrentUserProfile] = useState<Profile | null>(null);
   const [tcResultMap, setTcResultMap] = useState<Map<string, { result: string; assignee: string | null }>>(new Map());
+  const [entryPresets, setEntryPresets] = useState<string[]>([]);
+  const [exitPresets, setExitPresets] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>('testcases');
@@ -2040,11 +2170,37 @@ export default function PlanDetailPage() {
       setProfiles(profileMap);
       setMemberProfiles(memberIds.map(id => profileMap.get(id)).filter(Boolean) as Profile[]);
       if (currentUserId) setCurrentUserProfile(profileMap.get(currentUserId) || null);
+
+      // Criteria presets
+      try {
+        const { data: presets } = await supabase
+          .from('criteria_presets').select('type, text').eq('project_id', projectId!);
+        setEntryPresets((presets || []).filter((p: any) => p.type === 'entry').map((p: any) => p.text));
+        setExitPresets((presets || []).filter((p: any) => p.type === 'exit').map((p: any) => p.text));
+      } catch { /* presets table may not exist yet */ }
     } catch (err: any) {
       setLoadError(true);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleUpdateCriteriaMet = async (type: 'entry' | 'exit', met: boolean[]) => {
+    const field = type === 'entry' ? 'entry_criteria_met' : 'exit_criteria_met';
+    const { error } = await supabase.from('test_plans').update({ [field]: met }).eq('id', planId!);
+    if (error) { showToast('Failed to save criteria state', 'error'); return; }
+    setPlan(p => p ? { ...p, [field]: met } : p);
+  };
+
+  const handleSavePreset = async (type: 'entry' | 'exit', text: string) => {
+    const { error } = await supabase.from('criteria_presets').insert({ project_id: projectId!, type, text });
+    if (error) {
+      if (error.code === '23505') { showToast('Preset already exists', 'info'); return; }
+      showToast('Failed to save preset', 'error'); return;
+    }
+    if (type === 'entry') setEntryPresets(prev => [...prev, text]);
+    else setExitPresets(prev => [...prev, text]);
+    showToast('Saved as preset', 'success');
   };
 
   const handleAddTc = async (tcId: string) => {
@@ -2325,6 +2481,7 @@ export default function PlanDetailPage() {
             milestone={milestone} parentMilestone={parentMilestone} profiles={profiles}
             tcResultMap={tcResultMap} runs={runs} dailyExecCounts={dailyExecCounts}
             folders={folders} currentUserProfile={currentUserProfile}
+            onUpdateCriteriaMet={handleUpdateCriteriaMet}
           />
         )}
         {activeTab === 'runs' && (
@@ -2348,7 +2505,7 @@ export default function PlanDetailPage() {
           <EnvironmentsTab plan={plan} />
         )}
         {activeTab === 'settings' && (
-          <SettingsTab plan={plan} milestones={milestones} profiles={profiles} memberProfiles={memberProfiles} onUpdate={handleUpdate} onDelete={()=>setShowDeleteConfirm(true)} />
+          <SettingsTab plan={plan} milestones={milestones} profiles={profiles} memberProfiles={memberProfiles} onUpdate={handleUpdate} onDelete={()=>setShowDeleteConfirm(true)} entryPresets={entryPresets} exitPresets={exitPresets} onSavePreset={handleSavePreset} />
         )}
       </div>
 
