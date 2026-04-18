@@ -536,25 +536,34 @@ function TestCasesTab({
 
   const autoEvaluate = (text: string): { isAuto: boolean; met: boolean } => {
     const t = text.toLowerCase().trim();
-    // Pass rate ≥ N%
-    const passRateMatch = t.match(/pass\s*rate\s*[≥>=]+\s*(\d+)\s*%/);
-    if (passRateMatch) return { isAuto: true, met: passRate >= Number(passRateMatch[1]) };
+    // Pass rate ≥ N%  |  >= N% passed  |  N% pass rate
+    const passMatch = t.match(/(?:[≥>=]+\s*(\d+)\s*%\s*pass)|(?:pass\s*(?:rate)?\s*[≥>=]+\s*(\d+)\s*%)|(?:(\d+)\s*%\s*pass\s*rate)/);
+    if (passMatch) { const n = Number(passMatch[1] || passMatch[2] || passMatch[3]); return { isAuto: true, met: passRate >= n }; }
     // Completion rate ≥ N%
     const compMatch = t.match(/completion\s*rate\s*[≥>=]+\s*(\d+)\s*%/);
     if (compMatch) return { isAuto: true, met: completionRate >= Number(compMatch[1]) };
-    // All critical TCs passed
+    // 0 critical failures  |  no critical failures  |  all critical TCs passed
+    if (/(?:0|no|zero)\s*critical\s*(failure|fail|bug|defect|issue)/i.test(t))
+      return { isAuto: true, met: criticalTCs.filter(p => tcResultMap.get(p.test_case_id)?.result === 'failed').length === 0 };
     if (/all\s*critical\s*(tc|test\s*case)s?\s*passed/i.test(t))
       return { isAuto: true, met: criticalTCs.length > 0 && criticalPassed === criticalTCs.length };
-    // All high TCs passed
+    // 0 high failures  |  all high TCs passed
+    if (/(?:0|no|zero)\s*high\s*(failure|fail|bug|defect|issue)/i.test(t))
+      return { isAuto: true, met: highTCs.filter(p => tcResultMap.get(p.test_case_id)?.result === 'failed').length === 0 };
     if (/all\s*high\s*(tc|test\s*case)s?\s*passed/i.test(t))
       return { isAuto: true, met: highTCs.length > 0 && highPassed === highTCs.length };
-    // No blocked TCs
-    if (/no\s*blocked/i.test(t)) return { isAuto: true, met: blockedTCs === 0 };
-    // No failed TCs
-    if (/no\s*failed/i.test(t)) return { isAuto: true, met: failedTCs === 0 };
-    // All TCs executed
+    // No blocked  |  0 blocked
+    if (/(?:0|no|zero)\s*blocked/i.test(t)) return { isAuto: true, met: blockedTCs === 0 };
+    // No failed  |  0 failed
+    if (/(?:0|no|zero)\s*fail/i.test(t)) return { isAuto: true, met: failedTCs === 0 };
+    // All TCs executed  |  100% execution
     if (/all\s*(tc|test\s*case)s?\s*executed/i.test(t) || /100\s*%\s*(execution|completion)/i.test(t))
       return { isAuto: true, met: totalTCs > 0 && untestedTCs === 0 };
+    // N untested TCs pending  |  untested ≤ N  |  N or fewer untested
+    const untestedMatch = t.match(/(\d+)\s*(?:or\s*fewer\s*)?untested\s*(tc|test\s*case)?s?\s*(?:pending|remaining|left)?/);
+    if (untestedMatch) return { isAuto: true, met: untestedTCs <= Number(untestedMatch[1]) };
+    const untestedMatch2 = t.match(/untested\s*[≤<=]+\s*(\d+)/);
+    if (untestedMatch2) return { isAuto: true, met: untestedTCs <= Number(untestedMatch2[1]) };
     return { isAuto: false, met: false };
   };
 
@@ -1573,7 +1582,18 @@ function SettingsTab({
   const [dirty, setDirty] = useState(false);
   const [showEntryPresets, setShowEntryPresets] = useState(false);
   const [showExitPresets, setShowExitPresets] = useState(false);
+  const entryPresetRef = useRef<HTMLDivElement>(null);
+  const exitPresetRef = useRef<HTMLDivElement>(null);
   const { showToast } = useToast();
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (showEntryPresets && entryPresetRef.current && !entryPresetRef.current.contains(e.target as Node)) setShowEntryPresets(false);
+      if (showExitPresets && exitPresetRef.current && !exitPresetRef.current.contains(e.target as Node)) setShowExitPresets(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showEntryPresets, showExitPresets]);
 
   const setFormField = (field: string, value: string) => {
     setForm(f => ({ ...f, [field]: value }));
@@ -1751,7 +1771,7 @@ function SettingsTab({
             <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add criterion
           </div>
-          <div style={{position:'relative'}}>
+          <div ref={entryPresetRef} style={{position:'relative'}}>
               <button className="pd-btn pd-btn-sm" onClick={()=>setShowEntryPresets(!showEntryPresets)}
                 style={{height:'100%',fontSize:12,gap:4,whiteSpace:'nowrap'}}>
                 <svg style={{width:12,height:12}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
@@ -1810,7 +1830,7 @@ function SettingsTab({
             <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add criterion
           </div>
-          <div style={{position:'relative'}}>
+          <div ref={exitPresetRef} style={{position:'relative'}}>
               <button className="pd-btn pd-btn-sm" onClick={()=>setShowExitPresets(!showExitPresets)}
                 style={{height:'100%',fontSize:12,gap:4,whiteSpace:'nowrap'}}>
                 <svg style={{width:12,height:12}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
