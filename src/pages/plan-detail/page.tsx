@@ -369,7 +369,7 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
                 <span className="k">Locked by</span>
                 <span className="v" style={{display:'inline-flex', alignItems:'center', gap:4}}>
                   <Avatar userId={lockedByUser.id} name={lockedByUser.full_name || undefined} email={lockedByUser.email || undefined} size="xs" />
-                  <span>{lockedByUser.full_name ? lockedByUser.full_name.split(/\s+/).pop() : lockedByUser.email}</span>
+                  <span>{lockedByUser.full_name || lockedByUser.email}</span>
                 </span>
               </div>
             )}
