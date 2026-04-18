@@ -1000,7 +1000,7 @@ function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilest
     const rate = executed > 0 ? Math.round(r.passed / executed * 100) : 0;
     if (rate > bestPassRate) {
       bestPassRate = rate;
-      bestRunLabel = `R-#${r.id.slice(-4)} (${new Date(r.created_at).toLocaleDateString('en-US', {month:'short',day:'numeric'})})`;
+      bestRunLabel = `${r.name} (${new Date(r.created_at).toLocaleDateString('en-US', {month:'short',day:'numeric'})})`;
     }
   });
 
@@ -1059,8 +1059,8 @@ function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilest
           </div>
           <div className="strip-stat">
             <div className="l">Latest</div>
-            <div className="v">{latest ? `R-#${latest.id.slice(-4)}` : '—'}</div>
-            <div className="sub">{latest ? `${latestAgo} · ${latest.assignee_name || ''}` : '—'}</div>
+            <div className="v" style={{fontSize:16, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{latest ? latest.name : '—'}</div>
+            <div className="sub">{latest ? `${latestAgo}${latest.assignee_name ? ` · ${latest.assignee_name}` : ''}` : '—'}</div>
           </div>
           <div className="strip-stat">
             <div className="l">Envs Covered</div>
@@ -2034,7 +2034,7 @@ function SplitButton({ label, mode, inProgressRuns, onStartNew, projectId, navig
               onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
               <span style={{fontWeight:500, color:'var(--text)'}}>Continue: {r.name}</span>
               <span style={{fontSize:11, color:'var(--text-muted)'}}>
-                {r.passed + r.failed + r.blocked}/{planTcs.length} executed
+                {r.passed + r.failed + r.blocked + r.retest}/{planTcs.length} executed
               </span>
             </button>
           ))}
@@ -2215,7 +2215,7 @@ export default function PlanDetailPage() {
       if (runIds.length > 0) {
         const { data: results } = await supabase
           .from('test_results')
-          .select('test_case_id, status, author, created_at')
+          .select('test_case_id, run_id, status, author, created_at')
           .in('run_id', runIds)
           .order('created_at', { ascending: false });
         const rMap = new Map<string, { result: string; assignee: string | null }>();
@@ -2228,6 +2228,40 @@ export default function PlanDetailPage() {
           }
         }
         setTcResultMap(rMap);
+
+        // Re-aggregate per-run stats from actual test_results (DB values may be stale)
+        const perRunStats = new Map<string, { passed: number; failed: number; blocked: number; retest: number }>();
+        // Get latest result per TC per run
+        const perRunTcMap = new Map<string, Map<string, string>>(); // runId -> (tcId -> status)
+        for (const r of (results || [])) {
+          if (!r.run_id || !r.test_case_id) continue;
+          if (!perRunTcMap.has(r.run_id)) perRunTcMap.set(r.run_id, new Map());
+          const tcMap = perRunTcMap.get(r.run_id)!;
+          if (!tcMap.has(r.test_case_id)) tcMap.set(r.test_case_id, r.status || 'untested');
+        }
+        for (const [runId, tcMap] of perRunTcMap) {
+          let passed = 0, failed = 0, blocked = 0, retest = 0;
+          for (const status of tcMap.values()) {
+            if (status === 'passed') passed++;
+            else if (status === 'failed') failed++;
+            else if (status === 'blocked') blocked++;
+            else if (status === 'retest') retest++;
+          }
+          perRunStats.set(runId, { passed, failed, blocked, retest });
+        }
+        // Patch allRuns with real stats
+        for (const run of allRuns) {
+          const stats = perRunStats.get(run.id);
+          if (stats) {
+            const totalTc = planTcRows.length || (run.passed + run.failed + run.blocked + run.retest + run.untested);
+            run.passed = stats.passed;
+            run.failed = stats.failed;
+            run.blocked = stats.blocked;
+            run.retest = stats.retest;
+            run.untested = Math.max(0, totalTc - stats.passed - stats.failed - stats.blocked - stats.retest);
+          }
+        }
+        setRuns([...allRuns]);
         resultAssigneeIds = [...new Set((results || []).map((r: any) => r.author).filter(Boolean))] as string[];
 
         // Daily execution counts for last 7 days
