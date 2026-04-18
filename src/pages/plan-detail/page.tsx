@@ -1577,7 +1577,7 @@ function SettingsTab({
                 style={{paddingLeft: form.owner_id && (memberProfiles.find(p=>p.id===form.owner_id) || profiles.get(form.owner_id)) ? 40 : 10}}>
                 <option value="">— Unassigned —</option>
                 {(memberProfiles.length > 0 ? memberProfiles : [...profiles.values()]).map(p => (
-                  <option key={p.id} value={p.id}>{p.full_name ? `@${p.full_name.split(' ')[0].toLowerCase()}` : p.email}</option>
+                  <option key={p.id} value={p.id}>{p.full_name || p.email}</option>
                 ))}
               </select>
             </div>
