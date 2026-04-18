@@ -378,7 +378,7 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
               <span className="v" style={{fontFamily:'JetBrains Mono,monospace', fontSize:11}}>
                 {plan.snapshot_locked_at
                   ? `rev.${new Date(plan.snapshot_locked_at).toISOString().slice(0,10).replace(/-/g,'.')}-a`
-                  : plan.snapshot_id || '—'}
+                  : '—'}
               </span>
             </div>
             <div className="side-row">
@@ -607,9 +607,7 @@ function TestCasesTab({
           <div className="lock-strip">
             <svg style={{width:16,height:16,color:'var(--violet)',flex:'none'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             <div style={{flex:1}}>
-              <b>Snapshot locked</b> — test case scope is fixed.
-              {plan.snapshot_id && <> Snapshot ID: <span className="snap-id">{plan.snapshot_id}</span></>}
-              &nbsp;New TC changes in the library won't affect this plan.
+              <b>Snapshot locked</b> — TC scope is fixed. New TC changes in the library won't affect this plan.
             </div>
             <div style={{marginLeft:'auto', display:'flex', gap:8, alignItems:'center'}}>
               <button className="pd-btn pd-btn-sm" onClick={onRebase}>↻ Rebase</button>
@@ -1682,30 +1680,6 @@ function SettingsTab({
 
   return (
     <div className="settings-layout">
-      {/* Snapshot Lock */}
-      <div className="lock-block">
-        <div style={{width:44,height:44,borderRadius:10,background:'#fff',color:'var(--violet)',display:'flex',alignItems:'center',justifyContent:'center',flex:'none'}}>
-          <svg style={{width:22,height:22}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        </div>
-        <div style={{flex:1}}>
-          <h3 style={{margin:'0 0 2px',fontSize:14,color:'var(--violet)'}}>
-            Snapshot Lock
-            {plan.snapshot_id && <span className="snap-id" style={{marginLeft:8}}>{plan.snapshot_id}</span>}
-          </h3>
-          <p style={{margin:0,fontSize:12.5,lineHeight:1.5}}>
-            {plan.is_locked
-              ? <>Activated — TC scope is locked as a snapshot. Changes to the test library won't affect this plan's executions. <b>Deactivate only if absolutely necessary.</b></>
-              : 'Not locked — enabling snapshot will freeze the current TC scope. Recommended before starting active runs.'}
-          </p>
-        </div>
-        <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:6}}>
-          <div style={{position:'relative',width:44,height:24,background:plan.is_locked?'var(--violet)':'var(--text-subtle)',borderRadius:12,cursor:'pointer'}}>
-            <div style={{position:'absolute',top:2,right:plan.is_locked?2:'auto',left:plan.is_locked?'auto':2,width:20,height:20,background:'#fff',borderRadius:'50%'}} />
-          </div>
-          <span style={{fontSize:10.5,color:'var(--violet)',fontWeight:600}}>{plan.is_locked?'LOCKED':'UNLOCKED'}</span>
-        </div>
-      </div>
-
       {/* Basic Information */}
       <div className="section-card">
         <div className="section-title">

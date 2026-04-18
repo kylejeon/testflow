@@ -200,6 +200,8 @@ export default function ProjectRunsPage() {
           });
       }
 
+      setRunAssignees([]);
+      setEditingRunId(null);
       setShowAddRunModal(true);
       setSearchParams({}, { replace: true });
     }
@@ -2162,6 +2164,8 @@ export default function ProjectRunsPage() {
                     is_ci_cd_run: false,
                   } as any);
                   setSelectedTestCases([]);
+                  setRunAssignees([]);
+                  setEditingRunId(null);
                   setShowAddRunModal(true);
                 }}
                 className="flex items-center gap-[0.3125rem] px-[0.875rem] py-[0.375rem] bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-[0.375rem] hover:opacity-90 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all font-semibold text-[0.8125rem] cursor-pointer whitespace-nowrap"
@@ -2335,7 +2339,7 @@ export default function ProjectRunsPage() {
                     icon={<TestRunsIllustration />}
                     title="No runs yet"
                     description="Kick off your first run to track which test cases pass, fail, or need attention."
-                    action={{ label: 'Start a run', onClick: () => setShowAddRunModal(true) }}
+                    action={{ label: 'Start a run', onClick: () => { setRunAssignees([]); setEditingRunId(null); setShowAddRunModal(true); } }}
                   />
                 );
               }
