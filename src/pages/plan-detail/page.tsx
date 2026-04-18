@@ -1717,8 +1717,11 @@ function SettingsTab({
         </div>
       </div>
 
+      {/* Entry / Exit Criteria — 2-column grid on desktop */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
       {/* Entry Criteria */}
-      <div className="section-card">
+      <div className="section-card" style={{marginBottom:0}}>
         <div className="section-title">
           <span className="icn success"><svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg></span>
           Entry Criteria
@@ -1748,8 +1751,7 @@ function SettingsTab({
             <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add criterion
           </div>
-          {entryPresets.length > 0 && (
-            <div style={{position:'relative'}}>
+          <div style={{position:'relative'}}>
               <button className="pd-btn pd-btn-sm" onClick={()=>setShowEntryPresets(!showEntryPresets)}
                 style={{height:'100%',fontSize:12,gap:4,whiteSpace:'nowrap'}}>
                 <svg style={{width:12,height:12}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
@@ -1765,18 +1767,20 @@ function SettingsTab({
                       {p}
                     </div>
                   ))}
-                  {entryPresets.filter(p => !entryCriteria.includes(p)).length === 0 && (
+                  {entryPresets.length === 0 && (
+                    <div style={{padding:'8px 12px',fontSize:12,color:'var(--text-muted)'}}>No presets saved yet</div>
+                  )}
+                  {entryPresets.length > 0 && entryPresets.filter(p => !entryCriteria.includes(p)).length === 0 && (
                     <div style={{padding:'8px 12px',fontSize:12,color:'var(--text-muted)'}}>All presets already added</div>
                   )}
                 </div>
               )}
             </div>
-          )}
         </div>
       </div>
 
       {/* Exit Criteria */}
-      <div className="section-card">
+      <div className="section-card" style={{marginBottom:0}}>
         <div className="section-title">
           <span className="icn warning"><svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
           Exit Criteria
@@ -1806,8 +1810,7 @@ function SettingsTab({
             <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add criterion
           </div>
-          {exitPresets.length > 0 && (
-            <div style={{position:'relative'}}>
+          <div style={{position:'relative'}}>
               <button className="pd-btn pd-btn-sm" onClick={()=>setShowExitPresets(!showExitPresets)}
                 style={{height:'100%',fontSize:12,gap:4,whiteSpace:'nowrap'}}>
                 <svg style={{width:12,height:12}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
@@ -1823,15 +1826,19 @@ function SettingsTab({
                       {p}
                     </div>
                   ))}
-                  {exitPresets.filter(p => !exitCriteria.includes(p)).length === 0 && (
+                  {exitPresets.length === 0 && (
+                    <div style={{padding:'8px 12px',fontSize:12,color:'var(--text-muted)'}}>No presets saved yet</div>
+                  )}
+                  {exitPresets.length > 0 && exitPresets.filter(p => !exitCriteria.includes(p)).length === 0 && (
                     <div style={{padding:'8px 12px',fontSize:12,color:'var(--text-muted)'}}>All presets already added</div>
                   )}
                 </div>
               )}
             </div>
-          )}
         </div>
       </div>
+
+      </div>{/* end criteria grid */}
 
       {/* Save bar */}
       {dirty && (
