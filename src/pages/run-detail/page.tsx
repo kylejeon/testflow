@@ -432,7 +432,7 @@ export default function RunDetail() {
       const status = tc.runStatus || 'untested';
       const color = statusColors[status] || '#64748B';
       const bg = statusBg[status] || '#F1F5F9';
-      const assignee = runAssignees.get(tc.id) || (tc as any).assignee || '';
+      const assignee = runAssignees.get(tc.id) || '';
       return `
         <tr style="background:${i % 2 === 0 ? '#fff' : '#F8FAFC'};">
           <td style="padding:7px 10px; font-size:11px; color:#64748B; font-family:monospace; white-space:nowrap;">${(tc as any).custom_id || ''}</td>
@@ -3447,7 +3447,7 @@ export default function RunDetail() {
                         </div>
                         <div className="col-span-1 flex items-center" onClick={(e) => e.stopPropagation()}>
                           {(() => {
-                            const assigneeName = runAssignees.get(testCase.id) || testCase.assignee || '';
+                            const assigneeName = runAssignees.get(testCase.id) || '';
                             const isOpen = openAssigneeDropdown === testCase.id;
                             return (
                               <div className="relative w-full">
