@@ -1,21 +1,23 @@
-2026-04-17: AI Risk Predictor Edge Function + Frontend 연동
+2026-04-19: Plan Detail 전면 개선 + Activity 탭 mockup_10 반영
 
 ## 뭘 했냐
-- Edge Function 생성: supabase/functions/risk-predictor/index.ts
-  - Plan의 TC 목록, Run 실행 이력, 실패 패턴 수집 → Claude Haiku 4.5 API 분석
-  - Tier 3 (Starter+) 필수, 2 credits/호출
-  - ai_generation_logs에 사용량 기록
-- Frontend: 로컬 계산 제거 → API 호출 방식으로 전환
-  - "Run Risk Scan" 버튼 → 실제 AI 분석 → 결과 표시
-  - Forecast, Confidence, Risk Signals, Recommendation
-  - Tier 부족/크레딧 초과 시 토스트 안내
+- Entry/Exit Criteria: 프리셋 템플릿 + 자동 판정(Auto) + 체크 상태 DB 저장
+- Snapshot UI 정리: Settings 토글 제거, Overview strip에서 snap_id 제거, TC revision만 표시
+- Runs 탭: mockup_9 기준 전면 개선 (summary strip 실제 데이터, Run 카드 그리드, Run #순번)
+- Run TC assignee: test_cases.assignee fallback 제거, run_testcase_assignees만 사용
+- Run 생성 시 assignee 초기화 (이전 값 유지 버그 수정)
+- Avatar 색상 일관성: run-detail에서 userId 전달하여 동일 색상
+- Activity 탭: mockup_10 기준 이벤트별 아이콘, Today/Yesterday 헤더, 3열 그리드
+- Milestones Plan 카드: blocked/retest 포함 정확한 진행률
+- Owner 표시: full name 통일 (Locked by, Milestones Plan 카드, Settings 드롭다운)
 
 ## 어디까지 됐냐
-- Edge Function 코드 완성 (배포 필요: supabase functions deploy risk-predictor)
-- Frontend 연동 완성
-- 기존 패턴(plan-assistant) 100% 따름
+- 마이그레이션: 20260418_criteria_presets.sql (배포 필요)
+- 코드: tsc 빌드 성공, claude 브랜치 커밋 완료
+- Run 카드 assignee 다수 표시: assignees 파싱 강화 (JSON string fallback 추가)
 
 ## 다음에 할 것
-- Edge Function 배포: supabase functions deploy risk-predictor
-- ANTHROPIC_API_KEY 환경변수 확인
-- 브라우저 실물 테스트
+- supabase db push (criteria_presets 마이그레이션)
+- Run assignee 2명 표시 실제 확인 (DB에 2명 저장되는지 검증)
+- Activity 탭 실제 데이터 검증 (activity_logs 테이블 데이터 확인)
+- mockup 기반 추가 정렬 필요 시 진행

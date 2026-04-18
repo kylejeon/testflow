@@ -1234,15 +1234,43 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCo
 
   const grouped = groupByDay(filtered);
 
-  const eventStyle = (type: string): { cls: string; iconCls: string } => {
-    if (type.includes('pass') || type.includes('complete')) return { cls: 'success', iconCls: 'success' };
-    if (type.includes('fail')) return { cls: 'fail', iconCls: 'fail' };
-    if (type.includes('ai')) return { cls: 'violet', iconCls: 'violet' };
-    if (type.includes('status') || type.includes('update')) return { cls: 'warning', iconCls: 'warning' };
-    return { cls: 'info', iconCls: 'info' };
+  const eventStyle = (type: string): { cls: string; iconCls: string; icon: JSX.Element } => {
+    if (type.includes('pass') || type.includes('complete'))
+      return { cls: 'success', iconCls: 'success', icon: <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg> };
+    if (type.includes('fail') || type.includes('block'))
+      return { cls: 'fail', iconCls: 'fail', icon: <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> };
+    if (type.includes('ai'))
+      return { cls: 'violet', iconCls: 'violet', icon: <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2"/></svg> };
+    if (type.includes('status') || type.includes('update') || type.includes('edit') || type.includes('criteria'))
+      return { cls: 'warning', iconCls: 'warning', icon: <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> };
+    if (type.includes('run') || type.includes('start') || type.includes('create'))
+      return { cls: 'info', iconCls: 'info', icon: <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> };
+    if (type.includes('add') || type.includes('insert'))
+      return { cls: 'info', iconCls: 'info', icon: <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> };
+    if (type.includes('lock') || type.includes('snapshot'))
+      return { cls: 'violet', iconCls: 'violet', icon: <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> };
+    return { cls: 'info', iconCls: 'info', icon: <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> };
   };
 
-  const formatTime = (ts: string) => new Date(ts).toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
+  const formatTime = (ts: string) => new Date(ts).toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', hour12: false });
+
+  const isToday = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const now = new Date();
+    return d.toDateString() === now.toDateString();
+  };
+
+  const isYesterday = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const y = new Date(); y.setDate(y.getDate() - 1);
+    return d.toDateString() === y.toDateString();
+  };
+
+  const getDayLabel = (dateStr: string, firstLog: ActivityLog) => {
+    if (isToday(firstLog.created_at)) return `Today · ${new Date(firstLog.created_at).toLocaleDateString('en-US', {month:'short',day:'numeric'})}`;
+    if (isYesterday(firstLog.created_at)) return `Yesterday · ${new Date(firstLog.created_at).toLocaleDateString('en-US', {month:'short',day:'numeric'})}`;
+    return dateStr;
+  };
 
   return (
     <div className="activity-layout">
@@ -1271,27 +1299,32 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCo
           Object.entries(grouped).map(([day, dayLogs]) => (
             <div key={day}>
               <div className="day-header">
-                {day}
-                <span style={{background:'var(--primary-50)', color:'var(--primary-600)', padding:'2px 8px', borderRadius:10, fontSize:10}}>{dayLogs.length} events</span>
+                {getDayLabel(day, dayLogs[0])}
+                {isToday(dayLogs[0].created_at) && <span className="today">{dayLogs.length} events</span>}
+                {!isToday(dayLogs[0].created_at) && <span style={{background:'var(--bg-subtle)', color:'var(--text-muted)', padding:'2px 8px', borderRadius:10, fontSize:10}}>{dayLogs.length}</span>}
               </div>
               <div className="timeline">
                 {dayLogs.map(log => {
                   const actor = profiles.get(log.actor_id);
                   const actorName = actor?.full_name || actor?.email || 'System';
-                  const { cls, iconCls } = eventStyle(log.event_type || '');
+                  const { cls, iconCls, icon } = eventStyle(log.event_type || '');
+                  const desc = log.event_type?.replace(/_/g, ' ') || '';
+                  const metaName = log.metadata?.name;
+                  const metaStatus = log.metadata?.status;
                   return (
-                    <div key={log.id} className={`t-event ${cls}`}>
-                      <div className={`t-event-icon ${iconCls}`}>
-                        <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                      </div>
-                      <div>
-                        <div style={{fontSize:13, lineHeight:1.4}}>
-                          <b>{actorName}</b> {log.event_type?.replace(/_/g,' ')}
-                          {log.metadata?.name && ` — "${log.metadata.name}"`}
+                    <div key={log.id} className={`event ${cls}`}>
+                      <div className={`event-icon ${iconCls}`}>{icon}</div>
+                      <div className="event-body">
+                        <div className="what">
+                          <b>{actorName}</b> {desc}
+                          {metaName && <> — "<i>{metaName}</i>"</>}
+                          {metaStatus && <> → <span className="pill" style={metaStatus === 'passed' ? {background:'var(--success-50)',color:'var(--success-600)'} : metaStatus === 'failed' ? {background:'var(--danger-50)',color:'var(--danger-600)'} : {}}>{metaStatus}</span></>}
                         </div>
-                        <div style={{fontSize:11.5, color:'var(--text-muted)', marginTop:3}}>{formatTime(log.created_at)}</div>
+                        {log.metadata?.details && (
+                          <div className="meta">{log.metadata.details}</div>
+                        )}
                       </div>
-                      <div style={{fontSize:11.5, color:'var(--text-subtle)', flex:'none'}}>{formatTime(log.created_at)}</div>
+                      <div className="when">{formatTime(log.created_at)}</div>
                     </div>
                   );
                 })}
@@ -2142,7 +2175,12 @@ export default function PlanDetailPage() {
       // Runs linked to this plan (test_plan_id only — no TC overlap fallback)
       // Enrich with all assignee UUIDs → profile names
       const rawRuns = runsRes.data || [];
-      const runAssigneeIds = [...new Set(rawRuns.flatMap((r: any) => (r.assignees || []).filter(Boolean)))];
+      const parseAssignees = (a: any): string[] => {
+        if (Array.isArray(a)) return a.filter(Boolean);
+        if (typeof a === 'string') { try { const p = JSON.parse(a); if (Array.isArray(p)) return p.filter(Boolean); } catch {} }
+        return [];
+      };
+      const runAssigneeIds = [...new Set(rawRuns.flatMap((r: any) => parseAssignees(r.assignees)))];
       let runAssigneeMap = new Map<string, string>();
       if (runAssigneeIds.length > 0) {
         try {
@@ -2151,11 +2189,16 @@ export default function PlanDetailPage() {
         } catch { /* ignore */ }
       }
       const allRuns: PlanRun[] = rawRuns.map((r: any) => {
-        const rawIds = ((r.assignees || []) as string[]).filter(Boolean);
-        // Keep pairs aligned — use ID as fallback name if profile not found
+        // Parse assignees — may be UUID[], JSONB, or JSON string
+        let rawAssignees: string[] = [];
+        if (Array.isArray(r.assignees)) {
+          rawAssignees = r.assignees.filter(Boolean);
+        } else if (typeof r.assignees === 'string') {
+          try { const p = JSON.parse(r.assignees); if (Array.isArray(p)) rawAssignees = p.filter(Boolean); } catch {}
+        }
         const ids: string[] = [];
         const names: string[] = [];
-        for (const id of rawIds) {
+        for (const id of rawAssignees) {
           ids.push(id);
           names.push(runAssigneeMap.get(id) || id.slice(0, 8));
         }
