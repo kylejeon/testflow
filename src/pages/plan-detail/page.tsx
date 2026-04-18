@@ -62,6 +62,8 @@ interface PlanRun {
   untested: number;
   created_at: string;
   environment?: string | null;
+  assignee_id?: string | null;
+  assignee_name?: string | null;
 }
 
 interface ActivityLog {
@@ -989,118 +991,173 @@ function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilest
 }) {
   const navigate = useNavigate();
   const totalRuns = runs.length;
-  const bestPassRate = runs.reduce((best, r) => {
+
+  // Best pass rate + which run
+  let bestPassRate = 0;
+  let bestRunLabel = '—';
+  runs.forEach(r => {
     const executed = r.passed + r.failed + r.blocked;
     const rate = executed > 0 ? Math.round(r.passed / executed * 100) : 0;
-    return Math.max(best, rate);
-  }, 0);
+    if (rate > bestPassRate) {
+      bestPassRate = rate;
+      bestRunLabel = `R-#${r.id.slice(-4)} (${new Date(r.created_at).toLocaleDateString('en-US', {month:'short',day:'numeric'})})`;
+    }
+  });
+
   const latest = runs[0];
-  const avgDur = 38; // placeholder
+  const latestAgo = latest ? (() => {
+    const diff = Date.now() - new Date(latest.created_at).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days}d ago`;
+  })() : '';
+
+  // Env coverage
+  const envs = new Set(runs.map(r => r.environment).filter(Boolean));
+  const envCount = envs.size || 0;
 
   const getRunIcon = (r: PlanRun) => {
     const executed = r.passed + r.failed + r.blocked;
     const rate = executed > 0 ? r.passed / executed : 0;
     if (r.status === 'in_progress') return 'inprogress';
     if (r.status === 'new') return 'notstarted';
+    if (executed === 0) return 'notstarted';
     if (rate >= 0.9) return 'pass';
     if (rate >= 0.6) return 'mixed';
     return 'fail';
   };
 
   const runIconSvg = (type: string) => {
-    if (type === 'pass' || type === 'mixed')
+    if (type === 'pass')
+      return <svg style={{width:16,height:16}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>;
+    if (type === 'mixed' || type === 'inprogress')
       return <svg style={{width:16,height:16}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>;
     if (type === 'fail')
-      return <svg style={{width:16,height:16}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>;
-    if (type === 'inprogress')
-      return <svg style={{width:16,height:16}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>;
+      return <svg style={{width:16,height:16}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
     return <svg style={{width:16,height:16}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/></svg>;
   };
 
-  return (
-    <div>
-      {/* Runs summary strip */}
-      <div className="runs-strip">
-        <div className="strip-stat">
-          <div className="l">Total Runs</div>
-          <div className="v">{totalRuns}</div>
-          <div className="sub">all plan-only linkage</div>
-        </div>
-        <div className="strip-stat">
-          <div className="l">Best Pass Rate</div>
-          <div className="v" style={{color:'var(--success-600)'}}>{bestPassRate}%</div>
-          <div className="sub">latest best</div>
-        </div>
-        <div className="strip-stat">
-          <div className="l">Latest</div>
-          <div className="v">{latest ? `R-#${latest.id.slice(-4)}` : '—'}</div>
-          <div className="sub">{latest ? new Date(latest.created_at).toLocaleDateString('en-US', {month:'short',day:'numeric'}) : '—'}</div>
-        </div>
-        <div className="strip-stat">
-          <div className="l">Envs Covered</div>
-          <div className="v">{new Set(runs.map(r=>r.environment).filter(Boolean)).size || 1} / 6</div>
-          <div className="sub">gap: Firefox, Safari</div>
-        </div>
-        <div className="strip-stat">
-          <div className="l">Avg Duration</div>
-          <div className="v">{avgDur}<span style={{fontSize:12,color:'var(--text-muted)',fontWeight:500,marginLeft:3}}>min</span></div>
-          <div className="sub">trend ▾ 12%</div>
-        </div>
-        <div>
-          <button className="pd-btn pd-btn-primary" onClick={()=>navigate(`/projects/${projectId}/runs?action=create&plan_id=${planId}${plan.milestone_id ? `&milestone_id=${plan.milestone_id}` : ''}`)}>
-            <svg style={{width:12,height:12}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            New Run
-          </button>
-        </div>
-      </div>
+  const startNewRun = () => navigate(`/projects/${projectId}/runs?action=create&plan_id=${planId}${plan.milestone_id ? `&milestone_id=${plan.milestone_id}` : ''}`);
 
-      <div style={{display:'grid', gridTemplateColumns:'minmax(0,1fr) 300px', gap:16}}>
-        <div>
-          {/* Run cards */}
+  return (
+    <div className="plan-layout">
+      <div>
+        {/* Runs summary strip */}
+        <div className="runs-strip" style={{margin:0, marginBottom:14}}>
+          <div className="strip-stat">
+            <div className="l">Total Runs</div>
+            <div className="v">{totalRuns}</div>
+            <div className="sub">{totalRuns > 0 ? 'plan-linked' : 'no runs yet'}</div>
+          </div>
+          <div className="strip-stat">
+            <div className="l">Best Pass Rate</div>
+            <div className="v" style={{color: bestPassRate >= 90 ? 'var(--success-600)' : bestPassRate >= 70 ? 'var(--warning)' : totalRuns > 0 ? 'var(--danger-600)' : 'var(--text-muted)'}}>{totalRuns > 0 ? `${bestPassRate}%` : '—'}</div>
+            <div className="sub">{totalRuns > 0 ? bestRunLabel : '—'}</div>
+          </div>
+          <div className="strip-stat">
+            <div className="l">Latest</div>
+            <div className="v">{latest ? `R-#${latest.id.slice(-4)}` : '—'}</div>
+            <div className="sub">{latest ? `${latestAgo} · ${latest.assignee_name || ''}` : '—'}</div>
+          </div>
+          <div className="strip-stat">
+            <div className="l">Envs Covered</div>
+            <div className="v">{envCount > 0 ? envCount : '—'}</div>
+            <div className="sub">{envCount > 0 ? [...envs].slice(0, 3).join(', ') : 'no env data'}</div>
+          </div>
+          <div>
+            <button className="pd-btn pd-btn-primary" onClick={startNewRun}>
+              <svg style={{width:12,height:12}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              New Run
+            </button>
+          </div>
+        </div>
+
+        {/* Run cards */}
+        <div style={{display:'flex', flexDirection:'column', gap:10}}>
           {runs.map(r => {
+            const totalTc = r.passed + r.failed + r.blocked + r.retest + r.untested;
             const executed = r.passed + r.failed + r.blocked + r.retest;
             const passRate = executed > 0 ? Math.round(r.passed / executed * 100) : 0;
             const passW = executed > 0 ? (r.passed / executed * 100) : 0;
             const failW = executed > 0 ? (r.failed / executed * 100) : 0;
             const iconType = getRunIcon(r);
+            const createdDate = new Date(r.created_at);
+            const dateStr = createdDate.toLocaleDateString('en-US', {month:'short',day:'numeric'});
+            const timeStr = createdDate.toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit',hour12:false});
+            const ago = (() => {
+              const diff = Date.now() - createdDate.getTime();
+              const mins = Math.floor(diff / 60000);
+              if (mins < 60) return `${mins}m ago`;
+              const hrs = Math.floor(mins / 60);
+              if (hrs < 24) return `${hrs}h ago`;
+              return `${Math.floor(hrs / 24)}d ago`;
+            })();
+
             return (
-              <div key={r.id} className="run-card" onClick={()=>navigate(`/projects/${projectId}/runs/${r.id}`)}>
-                <div className={`run-icon ${iconType}`}>{runIconSvg(iconType)}</div>
-                <div>
-                  <div className="run-title">
-                    {r.name}
-                    <span className="run-id">R-#{r.id.slice(-4)}</span>
-                    <span className="linkage-badge linkage-plan-only">
-                      <span className="run-type-dot plan-only" />Plan-only
-                    </span>
+              <div key={r.id} className="run-card" style={{
+                display:'grid', gridTemplateColumns:'36px minmax(200px,1.6fr) 120px minmax(140px,1fr) auto',
+                gap:16, alignItems:'center', padding:'14px 16px', cursor:'pointer',
+                background:'#fff', border:'1px solid var(--border)', borderRadius:10
+              }}
+                onClick={()=>navigate(`/projects/${projectId}/runs/${r.id}`)}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor='var(--primary)';e.currentTarget.style.boxShadow='0 2px 8px rgba(0,0,0,0.06)';}}
+                onMouseLeave={e=>{e.currentTarget.style.borderColor='var(--border)';e.currentTarget.style.boxShadow='none';}}>
+
+                {/* Icon */}
+                <div className={`run-icon ${iconType}`} style={{width:36,height:36,borderRadius:8,display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',
+                  background: iconType==='pass'?'var(--success)':iconType==='mixed'?'var(--warning)':iconType==='fail'?'var(--danger)':iconType==='inprogress'?'var(--primary)':'var(--text-subtle)'}}>
+                  {runIconSvg(iconType)}
+                </div>
+
+                {/* Title & sub */}
+                <div style={{minWidth:0}}>
+                  <div style={{fontSize:14,fontWeight:600,color:'var(--text)',display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+                    <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r.name}</span>
+                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,background:'var(--bg-subtle)',color:'var(--text-muted)',padding:'1px 6px',borderRadius:3,fontWeight:500,flexShrink:0}}>R-#{r.id.slice(-4)}</span>
                   </div>
-                  <div className="run-sub">
-                    <span><b>{new Date(r.created_at).toLocaleDateString('en-US', {month:'short',day:'numeric'})}</b></span>
-                    <span>{executed} of {r.passed+r.failed+r.blocked+r.retest+r.untested} executed</span>
+                  <div style={{fontSize:12,color:'var(--text-muted)',marginTop:4,display:'flex',gap:10,flexWrap:'wrap',alignItems:'center'}}>
+                    <span><b style={{color:'var(--text)',fontWeight:500}}>{dateStr}, {timeStr}</b> · {ago}</span>
+                    <span>{executed} of {totalTc} executed{r.untested > 0 ? ` · ${r.untested} untested` : ''}</span>
+                    {r.environment && (
+                      <span style={{fontSize:10.5,background:'var(--bg-subtle)',border:'1px solid var(--border)',borderRadius:4,padding:'1px 6px'}}>{r.environment}</span>
+                    )}
                   </div>
                 </div>
-                <div style={{display:'flex', gap:4, flexWrap:'wrap'}}>
-                  {r.environment && <span className="env-chip">{r.environment}</span>}
-                  <span className="env-chip">Chrome 124</span>
-                </div>
+
+                {/* Pass rate bar */}
                 <div>
-                  <div style={{fontSize:18, fontWeight:700, color:passRate>=90?'var(--success-600)':passRate>=70?'var(--warning)':'var(--danger-600)'}}>{passRate}%</div>
-                  <div style={{marginTop:4, height:5, background:'var(--bg-subtle)', borderRadius:3, overflow:'hidden', position:'relative'}}>
+                  <div style={{fontSize:18,fontWeight:700,lineHeight:1.1,
+                    color: passRate>=90?'var(--success-600)':passRate>=70?'var(--warning)':executed>0?'var(--danger-600)':'var(--text-muted)'}}>
+                    {executed > 0 ? `${passRate}%` : '—'}
+                  </div>
+                  <div style={{marginTop:4,height:5,background:'var(--bg-subtle)',borderRadius:3,overflow:'hidden',position:'relative'}}>
                     <div style={{position:'absolute',left:0,top:0,bottom:0,background:'var(--success)',width:`${passW}%`}} />
                     <div style={{position:'absolute',left:`${passW}%`,top:0,bottom:0,background:'var(--danger)',width:`${failW}%`}} />
                   </div>
-                  <div style={{fontSize:10.5, color:'var(--text-muted)', marginTop:3}}>{r.passed} pass · {r.failed} fail</div>
-                </div>
-                <div style={{display:'flex', alignItems:'center', gap:6}}>
-                  <div style={{display:'flex'}}>
-                    {[...profiles.values()].slice(0,2).map((p,i) => {
-                      const initials = p.full_name?.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() ?? p.email.slice(0,2).toUpperCase();
-                      return <span key={p.id} style={{width:24,height:24,borderRadius:'50%',background:'var(--primary-50)',color:'var(--primary)',fontSize:10,fontWeight:600,display:'inline-flex',alignItems:'center',justifyContent:'center',border:'2px solid #fff',marginLeft:i>0?-6:0}}>{initials}</span>;
-                    })}
+                  <div style={{fontSize:10.5,color:'var(--text-muted)',marginTop:3}}>
+                    {r.passed} pass · {r.failed} fail{r.blocked > 0 ? ` · ${r.blocked} block` : ''}
                   </div>
-                  <div style={{fontSize:12, fontWeight:500}}>{[...profiles.values()][0]?.full_name?.split(' ')[0] || '—'}</div>
                 </div>
-                <div style={{display:'flex', gap:6, alignItems:'center'}}>
+
+                {/* Assignee */}
+                <div style={{display:'flex',alignItems:'center',gap:8}}>
+                  {r.assignee_name ? (
+                    <>
+                      <Avatar userId={r.assignee_id || undefined} name={r.assignee_name || undefined} size="xs" />
+                      <div>
+                        <div style={{fontSize:12,fontWeight:500}}>{r.assignee_name.split(/\s+/).pop()}</div>
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{fontSize:12,color:'var(--text-muted)'}}>Unassigned</div>
+                  )}
+                </div>
+
+                {/* View action */}
+                <div>
                   <button className="pd-btn pd-btn-sm" onClick={e=>{e.stopPropagation();navigate(`/projects/${projectId}/runs/${r.id}`);}}>
                     <svg style={{width:11,height:11}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                     View
@@ -1111,7 +1168,7 @@ function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilest
           })}
 
           {/* New Run CTA */}
-          <div className="new-run-card" onClick={()=>navigate(`/projects/${projectId}/runs?action=create&plan_id=${planId}${plan.milestone_id ? `&milestone_id=${plan.milestone_id}` : ''}`)}>
+          <div className="new-run-card" onClick={startNewRun} style={{marginTop:4}}>
             <svg style={{width:18,height:18}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Start a new Run with these {planTcCount} TCs
             <span style={{fontSize:11.5, color:'var(--text-muted)', fontWeight:400}}>· opens New Run modal with Plan pre-selected</span>
@@ -1121,10 +1178,11 @@ function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilest
             <div style={{textAlign:'center', padding:'2rem', color:'var(--text-muted)', fontSize:13, marginTop:8}}>No runs linked to this plan yet.</div>
           )}
         </div>
-        <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles}
-          driftCount={driftCount} onLock={onLock} onUnlock={onUnlock} onRebase={onRebase} planTcs={planTcs}
-        runs={runs} tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts} projectId={plan.project_id} currentUserProfile={currentUserProfile} />
       </div>
+
+      <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles}
+        driftCount={driftCount} onLock={onLock} onUnlock={onUnlock} onRebase={onRebase} planTcs={planTcs}
+        runs={runs} tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts} projectId={plan.project_id} currentUserProfile={currentUserProfile} />
     </div>
   );
 }
@@ -2098,7 +2156,24 @@ export default function PlanDetailPage() {
       setMilestones(milestonesRes.data || []);
 
       // Runs linked to this plan (test_plan_id only — no TC overlap fallback)
-      const allRuns = runsRes.data || [];
+      // Enrich with assignee info from first assignee UUID
+      const rawRuns = runsRes.data || [];
+      const runAssigneeIds = [...new Set(rawRuns.flatMap((r: any) => (r.assignees || []).filter(Boolean)))];
+      let runAssigneeMap = new Map<string, string>();
+      if (runAssigneeIds.length > 0) {
+        try {
+          const { data: ap } = await supabase.from('profiles').select('id, full_name, email').in('id', runAssigneeIds);
+          (ap || []).forEach((p: any) => runAssigneeMap.set(p.id, p.full_name || p.email));
+        } catch { /* ignore */ }
+      }
+      const allRuns: PlanRun[] = rawRuns.map((r: any) => {
+        const firstAssignee = (r.assignees || [])[0];
+        return {
+          ...r,
+          assignee_id: firstAssignee || null,
+          assignee_name: firstAssignee ? (runAssigneeMap.get(firstAssignee) || null) : null,
+        };
+      });
       setRuns(allRuns);
 
       // Build planTcs by joining planTcIds with allTcs
