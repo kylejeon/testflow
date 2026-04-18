@@ -305,10 +305,12 @@ export default function MilestonePlanList({ projectId, milestone, plans, directR
           const statusInfo = PLAN_STATUS[plan.status] || PLAN_STATUS.planning;
           const planPassed = plan.passed ?? 0;
           const planFailed = plan.failed ?? 0;
+          const planBlocked = (plan as any).blocked ?? 0;
+          const planRetest = (plan as any).retest ?? 0;
           const planTotal = plan.total ?? (plan.tc_count ?? 0);
           const planPassPct = planTotal > 0 ? (planPassed / planTotal * 100) : 0;
           const planFailPct = planTotal > 0 ? (planFailed / planTotal * 100) : 0;
-          const planExecuted = planPassed + planFailed;
+          const planExecuted = planPassed + planFailed + planBlocked + planRetest;
           const planCompletePct = planTotal > 0 ? Math.round(planExecuted / planTotal * 100) : 0;
           const isOverdue = plan.target_date && new Date(plan.target_date) < new Date() && plan.status !== 'completed';
           const pctColor = planCompletePct >= 80

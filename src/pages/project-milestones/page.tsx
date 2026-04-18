@@ -317,7 +317,7 @@ export default function ProjectMilestones() {
         }
 
         // Fetch run stats per plan — test_plan_id link only (no TC overlap)
-        let runStatsMap = new Map<string, { passed: number; failed: number }>();
+        let runStatsMap = new Map<string, { passed: number; failed: number; blocked: number; retest: number }>();
         if (planIds.length > 0) {
           // Step 1: Get runs linked to plans via test_plan_id
           const { data: planRuns } = await supabase
@@ -351,12 +351,14 @@ export default function ProjectMilestones() {
                   latestPerTc.set(r.test_case_id, r.status);
                 }
               }
-              let passed = 0, failed = 0;
+              let passed = 0, failed = 0, blocked = 0, retest = 0;
               for (const status of latestPerTc.values()) {
                 if (status === 'passed') passed++;
                 else if (status === 'failed') failed++;
+                else if (status === 'blocked') blocked++;
+                else if (status === 'retest') retest++;
               }
-              runStatsMap.set(pId, { passed, failed });
+              runStatsMap.set(pId, { passed, failed, blocked, retest });
             }
           }
         }
@@ -376,7 +378,7 @@ export default function ProjectMilestones() {
 
         setAllPlans(plansData.map((p: any) => {
           const tcCount = tcCountMap.get(p.id) || 0;
-          const stats = runStatsMap.get(p.id) || { passed: 0, failed: 0 };
+          const stats = runStatsMap.get(p.id) || { passed: 0, failed: 0, blocked: 0, retest: 0 };
           return {
             id: p.id,
             name: p.name,
@@ -388,6 +390,8 @@ export default function ProjectMilestones() {
             tc_count: tcCount,
             passed: stats.passed,
             failed: stats.failed,
+            blocked: stats.blocked,
+            retest: stats.retest,
             total: tcCount,
             ownerName: p.owner_id ? (ownerMap.get(p.owner_id) ?? null) : null,
           };

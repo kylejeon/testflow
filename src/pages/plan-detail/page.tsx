@@ -1075,7 +1075,8 @@ function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilest
 
         {/* Run cards */}
         <div style={{display:'flex', flexDirection:'column', gap:10}}>
-          {runs.map(r => {
+          {runs.map((r, idx) => {
+            const runNumber = totalRuns - idx; // runs sorted desc by created_at
             const totalTc = r.passed + r.failed + r.blocked + r.retest + r.untested;
             const executed = r.passed + r.failed + r.blocked + r.retest;
             const passRate = executed > 0 ? Math.round(r.passed / executed * 100) : 0;
@@ -1114,7 +1115,7 @@ function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilest
                 <div style={{minWidth:0}}>
                   <div style={{fontSize:14,fontWeight:600,color:'var(--text)',display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
                     <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r.name}</span>
-                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,background:'var(--bg-subtle)',color:'var(--text-muted)',padding:'1px 6px',borderRadius:3,fontWeight:500,flexShrink:0}}>R-#{r.id.slice(-4)}</span>
+                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,background:'var(--bg-subtle)',color:'var(--text-muted)',padding:'1px 6px',borderRadius:3,fontWeight:500,flexShrink:0}}>Run #{runNumber}</span>
                   </div>
                   <div style={{fontSize:12,color:'var(--text-muted)',marginTop:4,display:'flex',gap:10,flexWrap:'wrap',alignItems:'center'}}>
                     <span><b style={{color:'var(--text)',fontWeight:500}}>{dateStr}, {timeStr}</b> · {ago}</span>
