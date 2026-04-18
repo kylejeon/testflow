@@ -2151,12 +2151,15 @@ export default function PlanDetailPage() {
         } catch { /* ignore */ }
       }
       const allRuns: PlanRun[] = rawRuns.map((r: any) => {
-        const ids = ((r.assignees || []) as string[]).filter(Boolean);
-        return {
-          ...r,
-          assignee_ids: ids,
-          assignee_names: ids.map(id => runAssigneeMap.get(id)).filter(Boolean) as string[],
-        };
+        const rawIds = ((r.assignees || []) as string[]).filter(Boolean);
+        // Keep pairs aligned — use ID as fallback name if profile not found
+        const ids: string[] = [];
+        const names: string[] = [];
+        for (const id of rawIds) {
+          ids.push(id);
+          names.push(runAssigneeMap.get(id) || id.slice(0, 8));
+        }
+        return { ...r, assignee_ids: ids, assignee_names: names };
       });
       setRuns(allRuns);
 

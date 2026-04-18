@@ -3458,9 +3458,10 @@ export default function RunDetail() {
                                     setOpenAssigneeDropdown(isOpen ? null : testCase.id);
                                   }}
                                 >
-                                  {assigneeName ? (
-                                    <Avatar size="sm" name={assigneeName} title={assigneeName} />
-                                  ) : (
+                                  {assigneeName ? (() => {
+                                    const member = projectMembers.find(m => m.full_name === assigneeName || m.email === assigneeName);
+                                    return <Avatar size="sm" userId={member?.user_id} name={assigneeName} title={assigneeName} />;
+                                  })() : (
                                     <span className="text-sm text-gray-400">—</span>
                                   )}
                                 </div>
@@ -3485,7 +3486,7 @@ export default function RunDetail() {
                                             className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer flex items-center gap-2"
                                             onClick={(e) => { e.stopPropagation(); handleAssigneeChange(testCase.id, name); setOpenAssigneeDropdown(null); }}
                                           >
-                                            <Avatar size="sm" name={name} />
+                                            <Avatar size="sm" userId={member.user_id} name={name} />
                                             <span className="truncate">{name}</span>
                                           </button>
                                         );
