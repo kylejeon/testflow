@@ -62,8 +62,8 @@ interface PlanRun {
   untested: number;
   created_at: string;
   environment?: string | null;
-  assignee_id?: string | null;
-  assignee_name?: string | null;
+  assignee_ids?: string[];
+  assignee_names?: string[];
 }
 
 interface ActivityLog {
@@ -1058,7 +1058,7 @@ function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilest
           <div className="strip-stat">
             <div className="l">Latest</div>
             <div className="v" style={{fontSize:16, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{latest ? latest.name : '—'}</div>
-            <div className="sub">{latest ? `${latestAgo}${latest.assignee_name ? ` · ${latest.assignee_name}` : ''}` : '—'}</div>
+            <div className="sub">{latest ? `${latestAgo}${latest.assignee_names?.length ? ` · ${latest.assignee_names[0]}` : ''}` : '—'}</div>
           </div>
           <div className="strip-stat">
             <div className="l">Envs Covered</div>
@@ -1141,13 +1141,22 @@ function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilest
                   </div>
                 </div>
 
-                {/* Assignee */}
+                {/* Assignees */}
                 <div style={{display:'flex',alignItems:'center',gap:8}}>
-                  {r.assignee_name ? (
+                  {(r.assignee_names?.length ?? 0) > 0 ? (
                     <>
-                      <Avatar userId={r.assignee_id || undefined} name={r.assignee_name || undefined} size="xs" />
+                      <div style={{display:'flex'}}>
+                        {r.assignee_ids!.map((uid, ai) => (
+                          <span key={uid} style={{marginLeft: ai > 0 ? -6 : 0}}>
+                            <Avatar userId={uid} name={r.assignee_names![ai] || undefined} size="xs" />
+                          </span>
+                        ))}
+                      </div>
                       <div>
-                        <div style={{fontSize:12,fontWeight:500}}>{r.assignee_name.split(/\s+/).pop()}</div>
+                        <div style={{fontSize:12,fontWeight:500}}>{r.assignee_names![0]}</div>
+                        {r.assignee_names!.length > 1 && (
+                          <div style={{fontSize:11,color:'var(--text-muted)'}}>+{r.assignee_names!.length - 1} more</div>
+                        )}
                       </div>
                     </>
                   ) : (
@@ -2131,7 +2140,7 @@ export default function PlanDetailPage() {
       setMilestones(milestonesRes.data || []);
 
       // Runs linked to this plan (test_plan_id only — no TC overlap fallback)
-      // Enrich with assignee info from first assignee UUID
+      // Enrich with all assignee UUIDs → profile names
       const rawRuns = runsRes.data || [];
       const runAssigneeIds = [...new Set(rawRuns.flatMap((r: any) => (r.assignees || []).filter(Boolean)))];
       let runAssigneeMap = new Map<string, string>();
@@ -2142,11 +2151,11 @@ export default function PlanDetailPage() {
         } catch { /* ignore */ }
       }
       const allRuns: PlanRun[] = rawRuns.map((r: any) => {
-        const firstAssignee = (r.assignees || [])[0];
+        const ids = ((r.assignees || []) as string[]).filter(Boolean);
         return {
           ...r,
-          assignee_id: firstAssignee || null,
-          assignee_name: firstAssignee ? (runAssigneeMap.get(firstAssignee) || null) : null,
+          assignee_ids: ids,
+          assignee_names: ids.map(id => runAssigneeMap.get(id)).filter(Boolean) as string[],
         };
       });
       setRuns(allRuns);

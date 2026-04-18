@@ -349,7 +349,7 @@ export default function MilestonePlanList({ projectId, milestone, plans, directR
                     name={plan.ownerName}
                     size="xs"
                   />
-                  <span>{plan.ownerName.split(/\s+/).pop() || plan.ownerName}</span>
+                  <span>{plan.ownerName}</span>
                 </div>
               )}
               <div className="plan-card-bottom">
