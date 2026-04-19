@@ -79,21 +79,31 @@ CREATE POLICY "project members can read github_sync_log"
 
 -- ============================================================
 -- pg_cron: sync-jira-metadata + sync-github-metadata (6시간마다)
--- 실제 등록은 Supabase Dashboard에서 수행. 템플릿만 주석으로 보관.
+-- 실제 등록은 Supabase Dashboard → Database → Extensions(pg_cron 활성화) →
+-- SQL Editor에서 아래 템플릿을 실행. 인증은 x-cron-secret 헤더 방식이며,
+-- Edge Function Settings에 CRON_SECRET 환경변수를 먼저 등록해야 함.
 -- ============================================================
 -- SELECT cron.schedule(
 --   'sync-jira-metadata-6h',
 --   '0 */6 * * *',
 --   $$SELECT net.http_post(
---     url := 'https://{project}.supabase.co/functions/v1/sync-jira-metadata',
---     headers := jsonb_build_object('Authorization', 'Bearer ' || '{service_role_key}')
+--     url := 'https://{project-ref}.supabase.co/functions/v1/sync-jira-metadata',
+--     headers := jsonb_build_object(
+--       'Content-Type', 'application/json',
+--       'x-cron-secret', '{same-value-as-CRON_SECRET-env}'
+--     ),
+--     body := '{"scope":"all"}'::jsonb
 --   )$$
 -- );
 -- SELECT cron.schedule(
 --   'sync-github-metadata-6h',
 --   '5 */6 * * *',
 --   $$SELECT net.http_post(
---     url := 'https://{project}.supabase.co/functions/v1/sync-github-metadata',
---     headers := jsonb_build_object('Authorization', 'Bearer ' || '{service_role_key}')
+--     url := 'https://{project-ref}.supabase.co/functions/v1/sync-github-metadata',
+--     headers := jsonb_build_object(
+--       'Content-Type', 'application/json',
+--       'x-cron-secret', '{same-value-as-CRON_SECRET-env}'
+--     ),
+--     body := '{"scope":"all"}'::jsonb
 --   )$$
 -- );
