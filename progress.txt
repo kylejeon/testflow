@@ -170,3 +170,52 @@
 ### QA Follow-up (배포 차단 아님)
 - 기존 pre-existing: page.tsx line 505 `navigate` unused (이번 작업 외)
 - 전역 tsc errors (ImportMeta.env 등)는 vite-env.d.ts 부재로 인한 프로젝트 차원 이슈 — 이번 scope 외
+
+---
+
+2026-04-20 (최종): @qa 검수 + Blocker 2건 수정 + 배포 완료
+
+## QA 결과 요약
+- 리포트: docs/qa/qa-report-milestone-overview-v2.md
+- 판정: Ship with fixes
+- Blocker 2건 (즉시 수정 완료):
+  1. **Rate limit 미구현**: milestone-risk-predictor/index.ts가 _shared/rate-limit.ts import 안 함 → Pro/Enterprise 사용자가 무제한 Claude API 호출 가능 (비용 리스크)
+  2. **Stale 캐시가 AI 카드 표시**: RiskInsightContainer.tsx hasValidAi가 stale_after 체크 안 해서 25h 지난 캐시도 AI 카드로 렌더
+- High 4건 / Medium / Low 다수 (Follow-up 티켓으로 분리)
+
+## Blocker 2건 수정 (추가 커밋 2개)
+- **588daa0** fix(milestone-risk): rate limit 5 req/min 적용
+  - _shared/rate-limit.ts 의 checkRateLimit + rateLimitResponse 사용
+  - scope='milestone_risk', capacity=5, refillRate=1/12 (12초당 1토큰 = 분당 5회)
+  - 캐시 hit 직후 + credit check 직전에 적용 (캐시 응답은 토큰 면제)
+- **a68747e** fix(risk-container): stale 캐시일 때 rule-based로 복귀
+  - `isStale = stale_after ? Date.now() > stale_after : (generated_at + 24h)` 폴백
+  - hasValidAi에 `!isStale` 조건 추가
+  - stale 시 자동으로 "Analyze with AI →" CTA 재활성화
+
+## 배포 완료
+- milestone-risk-predictor Edge Function 배포 완료 (supabase functions deploy, v1)
+- ANTHROPIC_API_KEY 환경변수는 이전 스프린트에서 이미 등록돼 있어 추가 설정 불필요
+- 기타 환경변수(CRON_SECRET 등) 변경 없음
+
+## CEO 수동 작업 필요
+1. `supabase db push` — 20260420_milestone_ai_risk_cache.sql (milestones.ai_risk_cache JSONB 컬럼 추가)
+2. 배포 후 UI에서 동작 확인:
+   - Risk Signal 카드 (기본 rule-based) 표시 확인
+   - Manager 이상 권한으로 "Analyze with AI →" 클릭 시 AI Risk Analysis 카드 전환 확인
+   - 24h 경과 후 stale 복귀 확인 (실제 테스트는 시간 후)
+
+## 최종 커밋 리스트 (claude 브랜치, push 대기)
+- 996b668 feat(db/edge): milestone-risk-predictor + ai_risk_cache JSONB
+- f879213 feat(ai-risk): RiskInsightContainer 외 3 컴포넌트 + useMilestoneAiRisk 훅
+- 1b9e015 feat(overview-v2): Hero/Intel strip/Activity strip/Bottom 레이아웃 재배치
+- 78e6ee4 chore(cleanup): AiRiskInsight.tsx 삭제 + 구 CSS 제거
+- f46648e chore(progress): @developer 구현 기록
+- 588daa0 fix(milestone-risk): rate limit 5 req/min
+- a68747e fix(risk-container): stale 캐시 복귀
+
+## 알려진 Follow-up (다음 스프린트)
+- i18n 하드코딩 (RiskSignalCard / AiRiskAnalysisCard / RiskInsightContainer) — KO 서비스 전 필수
+- AC-16 sub-milestone progress 프롬프트 포함
+- **Blocked Reasons 구조화 필드** (옵션 A) — test_results.block_reason enum + UI 강제 + 마이그레이션 전략 (이슈 2 후속)
+- 기존 follow-up 8건 (H-1/H-2/H-3/AC-B4/AC-A6/플랜 제한/AC-A5 DLQ/M-2) — M-2는 이번에 해결
