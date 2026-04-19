@@ -4,15 +4,26 @@
 // `github_issues` JSONB contains {number, repo} objects, then merges the fresh
 // values back into the JSONB with a `last_synced_at` timestamp.
 //
-// Related spec: dev-spec §4-1-A, §6-1 (D).
+// Auth (hybrid):
+//   - `x-cron-secret: <CRON_SECRET>` → trusted cron caller, all projects.
+//   - Bearer JWT → user must have Tester+ membership on every project whose
+//     data is touched. `scope=all` is narrowed down to the caller's projects.
+//
+// Related spec: dev-spec §4-1-A, §6-1 (D). QA Blocker #1 fix (2026-04-19).
 // -----------------------------------------------------------------------------
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import {
+  verifySyncCaller,
+  getAuthorizedProjectIds,
+  AuthError,
+  SYNC_ALLOWED_ROLES,
+} from '../_shared/auth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret',
 };
 
 interface SyncBody {
@@ -40,9 +51,30 @@ serve(async (req) => {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
+    // ── Auth: trusted cron OR authenticated user with Tester+ role ──────────
+    let caller;
+    try {
+      caller = await verifySyncCaller(req, admin);
+    } catch (err) {
+      if (err instanceof AuthError) return jsonResp({ success: false, error: err.message }, err.status);
+      throw err;
+    }
+
     const body: SyncBody = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
     const scope = body.scope || 'all';
     const onlyStale = body.only_stale !== false;
+
+    // For user callers, resolve the set of projects they're allowed to touch.
+    let authorizedProjectIds: string[] | null = null;
+    if (caller.kind === 'user') {
+      authorizedProjectIds = await getAuthorizedProjectIds(admin, caller.userId, SYNC_ALLOWED_ROLES);
+      if (authorizedProjectIds.length === 0) {
+        return jsonResp({ success: false, error: 'Forbidden — no eligible projects' }, 403);
+      }
+      if (scope === 'project_id' && body.project_id && !authorizedProjectIds.includes(body.project_id)) {
+        return jsonResp({ success: false, error: 'Forbidden — project not accessible' }, 403);
+      }
+    }
 
     let query = admin
       .from('test_results')
@@ -52,6 +84,9 @@ serve(async (req) => {
       query = query.in('run_id', body.run_ids);
     } else if (scope === 'project_id' && body.project_id) {
       query = query.eq('test_runs.project_id', body.project_id);
+    } else if (caller.kind === 'user' && authorizedProjectIds) {
+      // scope=all for user → narrow to their projects
+      query = query.in('test_runs.project_id', authorizedProjectIds);
     }
     query = query.limit(500);
 
@@ -66,11 +101,14 @@ serve(async (req) => {
     let synced = 0;
     const failed: string[] = [];
 
+    const authorizedSet = authorizedProjectIds ? new Set(authorizedProjectIds) : null;
+
     // Group by project to re-use github_settings lookups
     const byProject = new Map<string, any[]>();
     (rows || []).forEach((row: any) => {
       const projectId: string = row.test_runs?.project_id;
       if (!projectId) return;
+      if (authorizedSet && !authorizedSet.has(projectId)) return;
       const arr = byProject.get(projectId) || [];
       arr.push(row);
       byProject.set(projectId, arr);

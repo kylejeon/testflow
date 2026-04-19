@@ -5,18 +5,29 @@
 // JSONB element with the fresh values and a `last_synced_at` timestamp.
 //
 // Called by:
-//  - pg_cron every 6 hours (scope=all, only_stale=true)
-//  - Manual refresh from IssuesList component (scope=run_ids)
+//  - pg_cron every 6 hours (scope=all, only_stale=true) — auth via `x-cron-secret` header
+//  - Manual refresh from IssuesList component (scope=run_ids) — auth via user JWT
 //
-// Related spec: dev-spec §4-1-A, §6-1 (C).
+// Auth (hybrid):
+//   - `x-cron-secret: <CRON_SECRET>` → trusted cron caller, all projects.
+//   - Bearer JWT → user must have Tester+ membership on every project whose
+//     data is touched. `scope=all` is narrowed down to the caller's projects.
+//
+// Related spec: dev-spec §4-1-A, §6-1 (C). QA Blocker #1 fix (2026-04-19).
 // -----------------------------------------------------------------------------
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import {
+  verifySyncCaller,
+  getAuthorizedProjectIds,
+  AuthError,
+  SYNC_ALLOWED_ROLES,
+} from '../_shared/auth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret',
 };
 
 interface SyncBody {
@@ -44,9 +55,31 @@ serve(async (req) => {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
+    // ── Auth: trusted cron OR authenticated user with Tester+ role ──────────
+    let caller;
+    try {
+      caller = await verifySyncCaller(req, admin);
+    } catch (err) {
+      if (err instanceof AuthError) return jsonResp({ success: false, error: err.message }, err.status);
+      throw err;
+    }
+
     const body: SyncBody = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
     const scope = body.scope || 'all';
     const onlyStale = body.only_stale !== false;
+
+    // For user callers, resolve the set of projects they're allowed to touch.
+    let authorizedProjectIds: string[] | null = null;
+    if (caller.kind === 'user') {
+      authorizedProjectIds = await getAuthorizedProjectIds(admin, caller.userId, SYNC_ALLOWED_ROLES);
+      if (authorizedProjectIds.length === 0) {
+        return jsonResp({ success: false, error: 'Forbidden — no eligible projects' }, 403);
+      }
+      // If scope=project_id, enforce caller has access to it.
+      if (scope === 'project_id' && body.project_id && !authorizedProjectIds.includes(body.project_id)) {
+        return jsonResp({ success: false, error: 'Forbidden — project not accessible' }, 403);
+      }
+    }
 
     // 1. Select candidate test_results
     let resultsQuery = admin
@@ -58,6 +91,9 @@ serve(async (req) => {
       resultsQuery = resultsQuery.in('run_id', body.run_ids);
     } else if (scope === 'project_id' && body.project_id) {
       resultsQuery = resultsQuery.eq('test_runs.project_id', body.project_id);
+    } else if (caller.kind === 'user' && authorizedProjectIds) {
+      // scope=all for user → narrow to their projects
+      resultsQuery = resultsQuery.in('test_runs.project_id', authorizedProjectIds);
     }
     resultsQuery = resultsQuery.limit(500);
 
@@ -66,6 +102,10 @@ serve(async (req) => {
       console.error('[sync-jira-metadata] select error:', rowsErr);
       return jsonResp({ success: false, error: rowsErr.message }, 500);
     }
+
+    // For user callers, also drop any row whose project they're not authorized for
+    // (defence-in-depth against scope=run_ids with runs from unrelated projects).
+    const authorizedSet = authorizedProjectIds ? new Set(authorizedProjectIds) : null;
 
     // 2. Group by project_id → fetch jira_settings → fetch issues in bulk
     const byProject = new Map<string, Array<{ resultId: string; key: string; idx: number }>>();
@@ -78,6 +118,7 @@ serve(async (req) => {
       resultSnapshots.set(row.id, meta);
       const projectId: string = row.test_runs?.project_id;
       if (!projectId) return;
+      if (authorizedSet && !authorizedSet.has(projectId)) return;
       meta.forEach((m: any, i: number) => {
         if (!m?.key) return;
         if (onlyStale && m.last_synced_at) {
