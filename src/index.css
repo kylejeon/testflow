@@ -481,9 +481,9 @@
 
 /* Chart card */
 .mo-chart-card { background: #fff; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
-.mo-chart-head { padding: 9px 12px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+.mo-chart-head { padding: 7px 10px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); }
 .mo-chart-title { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px; }
-.mo-chart-body { padding: 4px 8px; flex: 1; min-height: 200px; }
+.mo-chart-body { padding: 2px 4px; flex: 1; min-height: 180px; }
 .mo-legend { display: flex; gap: 10px; font-size: 10px; color: var(--text-muted); }
 .mo-legend .sw { width: 14px; height: 2px; border-radius: 1px; display: inline-block; vertical-align: middle; margin-right: 4px; }
 .mo-legend .sw.ideal { background: var(--text-subtle); }
@@ -494,21 +494,24 @@
 .mo-range-tab { font-size: 10px; padding: 2px 7px; border-radius: 4px; cursor: pointer; color: var(--text-muted); border: 0; background: transparent; font-family: inherit; }
 .mo-range-tab.active { background: #fff; color: var(--text); font-weight: 500; box-shadow: var(--shadow-sm); }
 
-/* KPI strip */
-.mo-kpi-strip { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--border); background: #fff; border: 1px solid var(--border); border-top: 0; border-radius: 0 0 10px 10px; }
-.mo-kpi { padding: 8px 10px; border-left: 1px solid var(--border); }
+/* KPI strip (v3: 5-col with ETA absorbed from v2 EtaCard) */
+.mo-kpi-strip { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border-top: 1px solid var(--border); background: #fff; border: 1px solid var(--border); border-top: 0; border-radius: 0 0 10px 10px; }
+.mo-kpi { padding: 6px 8px; border-left: 1px solid var(--border); min-width: 0; overflow: hidden; }
 .mo-kpi:first-child { border-left: 0; }
-.mo-kpi .l { font-size: 9.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 500; }
-.mo-kpi .v { font-size: 17px; font-weight: 700; line-height: 1.1; margin-top: 2px; color: var(--text); }
-.mo-kpi .sub { font-size: 10.5px; color: var(--text-muted); margin-top: 1px; line-height: 1.3; }
+.mo-kpi .l { font-size: 9.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mo-kpi .v { font-size: 15px; font-weight: 700; line-height: 1.1; margin-top: 1px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mo-kpi .sub { font-size: 10px; color: var(--text-muted); margin-top: 1px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* KPI ETA cell modifier (5번째 slot) */
+.mo-kpi.eta .v.on-track { color: var(--success-600); }
+.mo-kpi.eta .v.off-track { color: var(--danger-600); }
 
 /* Overview v2 deprecates the .mo-overview-row + .mo-intel-col layout.
    See "Milestone Overview v2 — Hero Row + Intel Strip + Bottom Row" block below. */
 
 /* Intel card (re-used by Intel Strip cards + legacy Activity24hFeed card variant) */
-.mo-panel { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+.mo-panel { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
 .mo-panel.span-2 { grid-column: span 2; }
-.mo-panel-head { display: flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+.mo-panel-head { display: flex; align-items: center; gap: 6px; font-size: 9.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
 .mo-panel-head .right { margin-left: auto; font-weight: 500; text-transform: none; letter-spacing: 0; font-size: 10.5px; color: var(--text-muted); }
 .mo-panel-head .right.link { color: var(--primary); cursor: pointer; }
 .mo-panel-head .right.link:hover { text-decoration: underline; }
@@ -565,7 +568,8 @@
 .mo-feed .when { color: var(--text-subtle); font-size: 10.5px; margin-left: auto; flex: none; }
 
 /* Execution sections */
-.mo-sec-head { display: flex; align-items: center; gap: 8px; padding: 16px 0 10px; font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.mo-sec-head { display: flex; align-items: center; gap: 8px; padding: 10px 0 6px; font-size: 11.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.mo-sec-head:first-of-type { padding-top: 0; }
 .mo-sec-head .count { background: var(--bg-subtle); color: var(--text-muted); padding: 1px 7px; border-radius: 10px; font-size: 11px; font-weight: 600; text-transform: none; letter-spacing: 0; }
 .mo-sec-head .legend { margin-left: 10px; font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 11px; display: flex; gap: 10px; color: var(--text-muted); }
 .mo-sec-head .legend .leg { display: inline-flex; align-items: center; gap: 4px; }
@@ -624,43 +628,74 @@
 }
 
 /* =========================================================
-   Milestone Overview v2 — Hero Row + Intel Strip + Bottom Row
+   Milestone Overview v3 — Hero Row + Utility Row + Activity + Execution
+   (v2 구조를 density pass 관점에서 재조정)
    ========================================================= */
 
-/* Hero Row: Chart (2fr) + Risk Insight (1fr) */
+/* Hero Row (v3): Chart+KPI stack (1.7fr) + Risk Insight (1fr), align stretch */
 .mo-hero-row {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
-  gap: 14px;
-  margin-bottom: 14px;
-  align-items: start;
+  grid-template-columns: minmax(0, 1.7fr) minmax(300px, 1fr);
+  gap: 12px;
+  margin-bottom: 10px;
+  align-items: stretch;
 }
 @media (min-width: 1440px) {
-  .mo-hero-row { grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr); }
+  .mo-hero-row { grid-template-columns: minmax(0, 1.8fr) minmax(320px, 1fr); }
 }
 @media (max-width: 1279px) and (min-width: 1024px) {
-  .mo-hero-row { grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: 12px; }
+  .mo-hero-row { grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr); gap: 10px; }
 }
 @media (max-width: 1023px) {
   .mo-hero-row { grid-template-columns: 1fr; }
 }
 
-/* Intel Strip: 4 columns fixed ratio */
-.mo-intel-strip {
+/* Chart+KPI stack: grid with chart filling remaining space, KPI auto.
+   ResponsiveContainer gets a finite height from the grid row (§12-2 #1). */
+.mo-hero-row > .mo-chart-stack {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: 1fr auto;
+  min-width: 0;
+  min-height: 288px;
+}
+.mo-hero-row > .mo-chart-stack > .mo-chart-card { min-height: 0; }
+
+/* Utility Row (v3 신규): Intel Strip (3-col, 3fr) + Contributors sidebar (240px) */
+.mo-util-row {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) 240px;
   gap: 10px;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
+  align-items: stretch;
+}
+@media (min-width: 1440px) {
+  .mo-util-row { grid-template-columns: minmax(0, 3fr) 260px; }
+}
+@media (max-width: 1279px) and (min-width: 1024px) {
+  .mo-util-row { grid-template-columns: minmax(0, 2.5fr) 220px; }
 }
 @media (max-width: 1023px) {
-  .mo-intel-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mo-util-row { grid-template-columns: 1fr; gap: 8px; }
+  .mo-util-row > .mo-contrib-side { order: 2; }
+}
+
+/* Intel Strip (v3: 4 → 3 columns, ETA absorbed into KPI Strip) */
+.mo-intel-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 0;
+}
+@media (max-width: 1023px) {
+  .mo-intel-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 }
 @media (max-width: 767px) {
   .mo-intel-strip { grid-template-columns: 1fr; }
 }
 /* strip 안의 mo-panel은 고정 높이로 정렬 */
 .mo-intel-strip .mo-panel {
-  min-height: 112px;
+  min-height: 96px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
 }
@@ -676,13 +711,14 @@
   background: #fff;
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 8px 14px;
-  margin-bottom: 14px;
+  padding: 6px 12px;
+  margin-bottom: 10px;
   display: flex;
   align-items: center;
   gap: 12px;
   overflow: hidden;
-  font-size: 11.5px;
+  font-size: 11px;
+  height: 36px;
 }
 .mo-activity-strip .label {
   font-size: 10px;
@@ -710,7 +746,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 260px;
+  max-width: 220px;
 }
 .mo-activity-strip .ev .dot {
   width: 6px; height: 6px; border-radius: 50%; flex: none;
@@ -733,54 +769,61 @@
   .mo-activity-strip .ev:nth-child(n+3) { display: none; }
 }
 
-/* Bottom Row: Execution + Contributors side-by-side on desktop */
+/* Bottom Row (v3): Execution full-width (Contributors moved to Utility Row) */
 .mo-bottom-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1.55fr) 240px;
-  gap: 14px;
-  align-items: start;
-}
-@media (min-width: 1440px) {
-  .mo-bottom-row { grid-template-columns: minmax(0, 1.65fr) 260px; }
-}
-@media (max-width: 1279px) {
-  .mo-bottom-row { grid-template-columns: 1fr; }
+  display: block;
+  margin-top: 0;
 }
 
-/* Contributors sidebar variant (narrow) */
+/* Contributors sidebar — now anchored inside Utility Row (no sticky) */
 .mo-contrib-side {
   background: #fff;
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 12px 14px;
-  position: sticky;
-  top: 12px;
-}
-@media (max-width: 1279px) {
-  .mo-contrib-side { position: static; }
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  min-height: 96px;
+  min-width: 0;
 }
 .mo-contrib-side .mo-contrib-head {
-  font-size: 12px; font-weight: 700; color: var(--text);
-  display: flex; align-items: center; gap: 6px; margin-bottom: 10px;
+  font-size: 9.5px; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.05em;
+  display: flex; align-items: center; gap: 6px; margin-bottom: 6px;
 }
 .mo-contrib-side .mo-contrib-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: 6px 0; border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+  padding: 3px 0; border-top: 1px solid var(--border);
 }
 .mo-contrib-side .mo-contrib-row:first-of-type { border-top: 0; }
-.mo-contrib-side .mo-contrib-row .av { width: 26px; height: 26px; border-radius: 50%; flex: none; object-fit: cover; }
-.mo-contrib-side .mo-contrib-row .av.initials { display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; font-weight: 700; }
+.mo-contrib-side .mo-contrib-row .av { width: 20px; height: 20px; border-radius: 50%; flex: none; object-fit: cover; }
+.mo-contrib-side .mo-contrib-row .av.initials { display: flex; align-items: center; justify-content: center; color: #fff; font-size: 9px; font-weight: 700; }
 .mo-contrib-side .mo-contrib-row .name {
   flex: 1; min-width: 0;
-  font-size: 12.5px; font-weight: 500; color: var(--text);
+  font-size: 11.5px; font-weight: 500; color: var(--text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .mo-contrib-side .mo-contrib-row .cnt {
-  font-size: 11px; color: var(--text-muted); flex: none;
+  font-size: 10.5px; color: var(--text-muted); font-weight: 600; flex: none;
 }
 .mo-contrib-side .mo-contrib-empty {
   color: var(--text-subtle); font-size: 11.5px; font-style: italic;
 }
+
+/* Execution empty single card (v3 §5-3) */
+.mo-exec-empty {
+  background: #fff;
+  border: 1px dashed var(--border-strong);
+  border-radius: 10px;
+  padding: 20px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  color: var(--text-subtle);
+  justify-content: center;
+}
+.mo-exec-empty i { font-size: 18px; color: var(--text-subtle); }
 
 /* =========================================================
    Risk / AI Insight card (3-state: signal / loading / ai)
@@ -790,10 +833,10 @@
   background: #fff;
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 12px 14px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  min-height: 320px;
+  min-height: 288px;
   transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
 .mo-risk-card.ai {
@@ -832,7 +875,7 @@
 
 .mo-risk-card .mo-risk-body {
   flex: 1; min-height: 0;
-  overflow: auto; max-height: 380px;
+  overflow: auto; max-height: 320px;
   display: flex; flex-direction: column; gap: 6px;
   padding-top: 6px; border-top: 1px solid var(--border);
   transition: opacity 0.2s ease;

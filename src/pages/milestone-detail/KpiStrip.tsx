@@ -5,13 +5,41 @@ interface KpiStripProps {
   velocityPerDay: number | null;
   passed: number;
   passRate: number;
+  /** Days remaining until milestone end (null if no end date). */
+  etaDaysLeft: number | null;
+  /** Projected days until completion based on current velocity (null if no velocity). */
+  etaProjDays: number | null;
+  /** Whether projection completes before the milestone end. */
+  etaOnTrack: boolean;
 }
 
 /**
- * 4 KPI strip under Burndown chart.
- * Design-spec §4-1 KPI Strip Data.
+ * 5 KPI strip under Burndown chart (Design-spec v3 §1-5).
+ * Cells: Remaining | Executed | Velocity | Pass Rate | ETA (absorbed from v2 EtaCard).
  */
-export default function KpiStrip({ remaining, executed, total, velocityPerDay, passed, passRate }: KpiStripProps) {
+export default function KpiStrip({
+  remaining, executed, total, velocityPerDay, passed, passRate,
+  etaDaysLeft, etaProjDays, etaOnTrack,
+}: KpiStripProps) {
+  // ETA cell derived display
+  const etaHasDate = etaDaysLeft !== null;
+  const etaGap = etaHasDate && etaProjDays != null ? etaProjDays - etaDaysLeft! : null;
+  const etaPrimary = !etaHasDate
+    ? '—'
+    : etaDaysLeft! < 0
+      ? `D+${Math.abs(etaDaysLeft!)}`
+      : `D-${etaDaysLeft!}`;
+  const etaSubText = !etaHasDate
+    ? 'No date set'
+    : etaProjDays == null
+      ? `${etaDaysLeft}d target`
+      : etaOnTrack
+        ? `on track · ${etaProjDays}d proj`
+        : etaGap != null && etaGap > 0
+          ? `+${etaGap}d gap`
+          : `${etaProjDays}d proj`;
+  const etaColorClass = etaHasDate ? (etaOnTrack ? 'on-track' : 'off-track') : '';
+
   return (
     <div className="mo-kpi-strip">
       <div className="mo-kpi">
@@ -33,6 +61,11 @@ export default function KpiStrip({ remaining, executed, total, velocityPerDay, p
         <div className="l">Pass Rate</div>
         <div className="v" style={{ color: passRate >= 70 ? 'var(--success-600)' : passRate >= 40 ? 'var(--warning)' : 'var(--danger-600)' }}>{passRate}%</div>
         <div className="sub">{passed} passed</div>
+      </div>
+      <div className="mo-kpi eta">
+        <div className="l">ETA</div>
+        <div className={`v ${etaColorClass}`}>{etaPrimary}</div>
+        <div className="sub">{etaSubText}</div>
       </div>
     </div>
   );

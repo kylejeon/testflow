@@ -76,7 +76,7 @@ export default function BurndownChart({ startDate, endDate, totalTCs, executedPe
             <i className="ri-line-chart-line" /> Burndown
           </div>
         </div>
-        <div className="mo-chart-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 200 }}>
+        <div className="mo-chart-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ textAlign: 'center', color: 'var(--text-subtle)' }}>
             <i className="ri-bar-chart-line" style={{ fontSize: 32, display: 'block', margin: '0 auto 6px' }} />
             <div style={{ fontSize: 12 }}>Start running tests to see burndown</div>
@@ -106,8 +106,8 @@ export default function BurndownChart({ startDate, endDate, totalTCs, executedPe
         </div>
       </div>
       <div className="mo-chart-body">
-        <ResponsiveContainer width="100%" height={200}>
-          <LineChart data={data} margin={{ top: 8, right: 10, left: 0, bottom: 4 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 4, right: 6, left: -4, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
             <XAxis
               dataKey="dateLabel"
@@ -119,7 +119,9 @@ export default function BurndownChart({ startDate, endDate, totalTCs, executedPe
             <YAxis
               tick={{ fontSize: 9, fill: '#9ca3af' }}
               stroke="#d1d5db"
-              width={32}
+              width={26}
+              tickCount={4}
+              tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)}
             />
             <Tooltip
               contentStyle={{ background: '#111827', border: 'none', borderRadius: 4, color: '#fff', fontSize: 11, padding: '6px 8px' }}

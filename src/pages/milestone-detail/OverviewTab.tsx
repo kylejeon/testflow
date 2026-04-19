@@ -5,7 +5,6 @@ import KpiStrip from './KpiStrip';
 import FailedBlockedCard from './FailedBlockedCard';
 import VelocitySparkline from './VelocitySparkline';
 import TopFailTagsCard from './TopFailTagsCard';
-import EtaCard from './EtaCard';
 import RiskInsightContainer from './RiskInsightContainer';
 import Activity24hFeed from './Activity24hFeed';
 import ExecutionSections from './ExecutionSections';
@@ -206,9 +205,6 @@ export default function OverviewTab(props: OverviewTabProps) {
 
   const remaining = tcStats.untested;
   const executed = tcStats.total - remaining;
-  const daysTotal = (startDate && endDate)
-    ? Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / 86400000))
-    : 60;
   const daysElapsed = startDate
     ? Math.max(0, Math.floor((today.getTime() - startDate.getTime()) / 86400000))
     : 0;
@@ -256,9 +252,9 @@ export default function OverviewTab(props: OverviewTabProps) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-      {/* ── Hero Row: Chart (2fr) + Risk Insight (1fr) ── */}
+      {/* ── Hero Row (v3): Chart+KPI (1.7fr) + Risk Insight (1fr), stretch align ── */}
       <div className="mo-hero-row">
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div className="mo-chart-stack">
           <BurndownChart
             startDate={startDate}
             endDate={endDate}
@@ -272,6 +268,9 @@ export default function OverviewTab(props: OverviewTabProps) {
             velocityPerDay={velocityAvg}
             passed={tcStats.passed}
             passRate={tcStats.passRate}
+            etaDaysLeft={daysLeft}
+            etaProjDays={projDays}
+            etaOnTrack={onTrack}
           />
         </div>
         <RiskInsightContainer
@@ -284,50 +283,43 @@ export default function OverviewTab(props: OverviewTabProps) {
         />
       </div>
 
-      {/* ── Intel Strip: 4 columns (Failed&Blocked / Velocity / TopFailTags / ETA) ── */}
-      <div className="mo-intel-strip">
-        <FailedBlockedCard
-          tcs={failedBlockedTcs}
-          totalCount={failedBlockedTcs.length}
-          onViewAll={onGoIssues}
-        />
-        <VelocitySparkline weekCounts={velocity7d} />
-        <TopFailTagsCard tags={topFailTags} totalFails={totalFails} />
-        <EtaCard
-          daysLeft={daysLeft}
-          daysElapsed={daysElapsed}
-          daysTotal={daysTotal}
-          projDays={projDays}
-          onTrack={onTrack}
-        />
-      </div>
-
-      {/* ── 24h Activity inline strip ── */}
-      <Activity24hFeed logs={activity24h} onViewAll={onGoActivity} variant="strip" />
-
-      {/* ── Bottom Row: Execution (1.55fr) + Contributors sidebar (240px) ── */}
-      <div className="mo-bottom-row">
-        <div>
-          <ExecutionSections
-            projectId={projectId}
-            subMilestones={subMilestones}
-            subMilestoneProgress={subMilestoneProgress}
-            plans={plans}
-            plansLoading={extraLoading}
-            plansError={plansError}
-            runs={runs}
-            sessions={sessions}
-            planMap={planMap}
-            getSubBadge={getSubBadge}
-            getRunStatusStyle={getRunStatusStyle}
-            formatDateRange={formatDateRange}
+      {/* ── Utility Row (v3 신규): Intel Strip (3-col) + Contributors sidebar ── */}
+      <div className="mo-util-row">
+        <div className="mo-intel-strip">
+          <FailedBlockedCard
+            tcs={failedBlockedTcs}
+            totalCount={failedBlockedTcs.length}
+            onViewAll={onGoIssues}
           />
+          <VelocitySparkline weekCounts={velocity7d} />
+          <TopFailTagsCard tags={topFailTags} totalFails={totalFails} />
         </div>
         <ContributorsCard
           contributors={contributors}
           contributorProfiles={contributorProfiles}
           getAuthorColor={getAuthorColor}
           getContributorInitials={getContributorInitials}
+        />
+      </div>
+
+      {/* ── 24h Activity inline strip ── */}
+      <Activity24hFeed logs={activity24h} onViewAll={onGoActivity} variant="strip" />
+
+      {/* ── Bottom Row (v3): Execution 풀폭 (Contributors 이동됨) ── */}
+      <div className="mo-bottom-row">
+        <ExecutionSections
+          projectId={projectId}
+          subMilestones={subMilestones}
+          subMilestoneProgress={subMilestoneProgress}
+          plans={plans}
+          plansLoading={extraLoading}
+          plansError={plansError}
+          runs={runs}
+          sessions={sessions}
+          planMap={planMap}
+          getSubBadge={getSubBadge}
+          getRunStatusStyle={getRunStatusStyle}
+          formatDateRange={formatDateRange}
         />
       </div>
     </div>
