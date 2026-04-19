@@ -114,6 +114,7 @@ type MilestoneDetailData = {
   runAssigneeMap: Map<string, string[]>;
   tcStats: TcStats;
   failedBlockedTcs: FailedBlockedTcItem[];
+  issuesCount: number;
   subMilestoneProgress: Map<string, number>;
   rollupStats: RollupStats | null;
 };
@@ -453,6 +454,22 @@ async function loadMilestoneDetailData(projectId: string, milestoneId: string): 
     return { ...session, actualStatus, activityData: generateActivityData(sessionLogs) };
   });
 
+  // Pre-load Issues count so the tab badge shows before user opens Issues tab
+  let issuesCountPreload = 0;
+  if (runIds.length > 0) {
+    try {
+      const { data: issueRows } = await supabase
+        .from('test_results')
+        .select('issues, github_issues')
+        .in('run_id', runIds)
+        .limit(200);
+      for (const r of (issueRows || [])) {
+        if (Array.isArray(r.issues)) issuesCountPreload += r.issues.filter(Boolean).length;
+        if (Array.isArray(r.github_issues)) issuesCountPreload += r.github_issues.length;
+      }
+    } catch { /* ignore — badge falls back to live onCountChange */ }
+  }
+
   return {
     project: projectData,
     milestone: correctedMilestone,
@@ -469,6 +486,7 @@ async function loadMilestoneDetailData(projectId: string, milestoneId: string): 
     failedBlockedTcs: failedBlockedTcList,
     subMilestoneProgress,
     rollupStats,
+    issuesCount: issuesCountPreload,
   };
 }
 
@@ -505,7 +523,7 @@ export default function MilestoneDetail() {
   const [activityStatusFilter, setActivityStatusFilter] = useState<string>('all');
   const [activityPage, setActivityPage] = useState(1);
   const activityPerPage = 10;
-  const [issuesCount, setIssuesCount] = useState<number | null>(null);
+  const [liveIssuesCount, setLiveIssuesCount] = useState<number | null>(null);
 
   // ── React Query ─────────────────────────────────────────────────────────────
   const { data, isLoading } = useQuery({
@@ -525,6 +543,7 @@ export default function MilestoneDetail() {
   const contributorProfiles = data?.contributorProfiles ?? new Map();
   const tcStats = data?.tcStats ?? { passed: 0, failed: 0, blocked: 0, retest: 0, untested: 0, total: 0, passRate: 0 };
   const failedBlockedTcs = data?.failedBlockedTcs ?? [];
+  const issuesCount = liveIssuesCount ?? data?.issuesCount ?? null;
   const subMilestoneProgress = data?.subMilestoneProgress ?? new Map();
   const rollupStats = data?.rollupStats ?? null;
   const isAggregated = subMilestones.length > 0 && rollupStats !== null;
@@ -1043,7 +1062,7 @@ export default function MilestoneDetail() {
         {activeTab === 'issues' && (
           <IssuesList
             runIds={runs.map(r => r.id)}
-            onCountChange={setIssuesCount}
+            onCountChange={setLiveIssuesCount}
             allowRefresh={true}
           />
         )}
