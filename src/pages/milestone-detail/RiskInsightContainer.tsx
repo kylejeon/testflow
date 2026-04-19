@@ -167,7 +167,18 @@ export default function RiskInsightContainer({
 
   // ── Decide UI state ─────────────────────────────────────────────────────────
   const isLoading = mutation.isPending || loadingLock;
-  const hasValidAi = !!aiCache && aiCache.risk_level && aiCache.bullets;
+
+  // Stale check — 24h TTL (dev-spec BR-2 / AC-8): stale cache must fall back to
+  // rule-based Risk Signal, not render as valid AI. Prefer explicit stale_after
+  // from server; fall back to 24h from generated_at if absent (older cache rows).
+  const isStale = aiCache?.stale_after
+    ? Date.now() > Date.parse(aiCache.stale_after)
+    : aiCache?.generated_at
+      ? Date.now() - Date.parse(aiCache.generated_at) > 24 * 3600_000
+      : false;
+
+  const hasValidAi =
+    !!aiCache && !!aiCache.risk_level && !!aiCache.bullets && !isStale;
 
   // State: ai success (cache present and no active error/loading override)
   const showAi = hasValidAi && !isLoading && !errorCode;
