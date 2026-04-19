@@ -94,6 +94,11 @@ export const AI_FEATURES = {
     label: 'AI Risk Predictor',
     mode: 'risk-predictor',
   },
+  milestone_risk: {
+    minTier: 2, creditCost: 2,
+    label: 'AI Milestone Risk',
+    mode: 'milestone-risk',
+  },
   burndown_insight: {
     minTier: 3, creditCost: 2,
     label: 'AI Burndown Insight',

@@ -13,6 +13,7 @@ const PERMISSION_LEVEL: Record<string, number> = {
   execute_run:      3, // tester+
   export:           2, // viewer+
   use_ai:           3, // tester+
+  trigger_ai_analysis: 4, // manager+ (Milestone AI Risk Analyze/Refresh)
   manage_billing:   6, // owner only
   manage_members:   5, // admin+
   view_members:     1, // 전원
