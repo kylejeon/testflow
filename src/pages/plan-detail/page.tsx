@@ -1277,7 +1277,7 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCo
       actor: profiles.get(l.actor_id)?.full_name || profiles.get(l.actor_id)?.email || '',
       details: l.metadata?.details || l.metadata?.tc_title || l.metadata?.name || '',
     }));
-    const csv = ['Date,Event,Actor,Details', ...rows.map(r => `${r.date},"${r.event}","${r.actor}","${r.details}"`)].join('\n');
+    const csv = ['Date,Event,Actor,Details', ...rows.map(r => `"${r.date}","${r.event}","${r.actor}","${r.details.replace(/"/g,'""')}"`)].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1466,29 +1466,34 @@ function IssuesTab({ runs, plan, planTcs, milestone, parentMilestone, profiles, 
     const load = async () => {
       if (runs.length === 0) { setLoading(false); return; }
       const runIds = runs.map(r => r.id);
-      // Fetch issues from test_results (jira) + jira_created_issues + github
-      const [jiraRes, ghRes, jiraCreatedRes] = await Promise.all([
-        supabase.from('test_results')
-          .select('jira_issue_key, jira_issue_url, run_id, test_case_id, status, created_at')
-          .in('run_id', runIds).not('jira_issue_key', 'is', null).limit(50),
-        supabase.from('test_results')
-          .select('github_issue_url, run_id, test_case_id, status, created_at')
-          .in('run_id', runIds).not('github_issue_url', 'is', null).limit(50),
-        supabase.from('jira_created_issues')
-          .select('*').in('run_id', runIds).limit(50).then(r => r).catch(() => ({ data: [] })),
-      ]);
+
+      // test_results stores:
+      //   issues: string[] (Jira keys like "PROJ-123")
+      //   github_issues: {number, url, repo}[]
+      const { data: resultsData } = await supabase
+        .from('test_results')
+        .select('id, run_id, test_case_id, status, created_at, issues, github_issues')
+        .in('run_id', runIds)
+        .limit(200);
+
       const allIssues: any[] = [];
-      for (const r of (jiraRes.data || [])) {
-        allIssues.push({ source: 'jira', key: r.jira_issue_key, url: r.jira_issue_url, run_id: r.run_id, tc_id: r.test_case_id, status: r.status, created_at: r.created_at });
+
+      for (const r of (resultsData || [])) {
+        // Jira issues (stored as string[] in `issues` column)
+        const jiraKeys: string[] = Array.isArray(r.issues) ? r.issues : [];
+        for (const key of jiraKeys) {
+          if (key && !allIssues.find(i => i.key === key))
+            allIssues.push({ source: 'jira', key, url: null, run_id: r.run_id, tc_id: r.test_case_id, status: r.status, created_at: r.created_at });
+        }
+
+        // GitHub issues (stored as {number, url, repo}[] in `github_issues` column)
+        const ghIssues: any[] = Array.isArray(r.github_issues) ? r.github_issues : [];
+        for (const gi of ghIssues) {
+          if (gi?.number && !allIssues.find(i => i.key === `#${gi.number}` && i.source === 'github'))
+            allIssues.push({ source: 'github', key: `#${gi.number}`, url: gi.url, run_id: r.run_id, tc_id: r.test_case_id, status: r.status, created_at: r.created_at, repo: gi.repo });
+        }
       }
-      for (const r of (ghRes.data || [])) {
-        if (!allIssues.find(i => i.tc_id === r.test_case_id && i.run_id === r.run_id))
-          allIssues.push({ source: 'github', key: r.github_issue_url?.split('/').pop() ? `#${r.github_issue_url.split('/').pop()}` : '', url: r.github_issue_url, run_id: r.run_id, tc_id: r.test_case_id, status: r.status, created_at: r.created_at });
-      }
-      for (const r of ((jiraCreatedRes as any).data || [])) {
-        if (!allIssues.find(i => i.key === r.issue_key))
-          allIssues.push({ source: 'jira', key: r.issue_key, url: r.issue_url, run_id: r.run_id, tc_id: r.test_case_id, status: 'failed', created_at: r.created_at, summary: r.summary });
-      }
+
       allIssues.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       setIssues(allIssues);
       setLoading(false);
