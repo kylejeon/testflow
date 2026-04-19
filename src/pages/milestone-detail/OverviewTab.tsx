@@ -283,17 +283,15 @@ export default function OverviewTab(props: OverviewTabProps) {
         />
       </div>
 
-      {/* ── Utility Row (v3 신규): Intel Strip (3-col) + Contributors sidebar ── */}
-      <div className="mo-util-row">
-        <div className="mo-intel-strip">
-          <FailedBlockedCard
-            tcs={failedBlockedTcs}
-            totalCount={failedBlockedTcs.length}
-            onViewAll={onGoIssues}
-          />
-          <VelocitySparkline weekCounts={velocity7d} />
-          <TopFailTagsCard tags={topFailTags} totalFails={totalFails} />
-        </div>
+      {/* ── Utility Row (v3.1): Intel Strip 4-col incl. Contributors (equal width+height) ── */}
+      <div className="mo-intel-strip mo-intel-strip-4" style={{ marginBottom: 10 }}>
+        <FailedBlockedCard
+          tcs={failedBlockedTcs}
+          totalCount={failedBlockedTcs.length}
+          onViewAll={onGoIssues}
+        />
+        <VelocitySparkline weekCounts={velocity7d} />
+        <TopFailTagsCard tags={topFailTags} totalFails={totalFails} />
         <ContributorsCard
           contributors={contributors}
           contributorProfiles={contributorProfiles}

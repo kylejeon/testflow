@@ -671,25 +671,42 @@
   gap: 8px;
   margin-bottom: 0;
 }
+/* v3.1: 4-col variant (Contributors absorbed into Intel Strip) */
+.mo-intel-strip.mo-intel-strip-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
 @media (max-width: 1023px) {
   .mo-intel-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .mo-intel-strip.mo-intel-strip-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 767px) {
   .mo-intel-strip { grid-template-columns: 1fr; }
+  .mo-intel-strip.mo-intel-strip-4 { grid-template-columns: 1fr; }
 }
 /* strip 안의 mo-panel은 고정 높이로 정렬 */
-.mo-intel-strip .mo-panel {
-  min-height: 96px;
+.mo-intel-strip .mo-panel,
+.mo-intel-strip .mo-contrib-side {
+  min-height: 132px;
   min-width: 0;
   display: flex;
   flex-direction: column;
 }
 /* strip 내부 Failed&Blocked는 컴팩트 */
 .mo-intel-strip .mo-bl-row { font-size: 11px; padding: 3px 0; }
+.mo-intel-strip .mo-bl-row .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 /* TopFailTag tname 축소 (Intel Strip 안에서만) */
-.mo-intel-strip .mo-tag-row .tname { max-width: 90px; }
+.mo-intel-strip .mo-tag-row .tname { max-width: 70px; }
 /* panel head 우측 링크 줄바꿈 방지 */
 .mo-intel-strip .mo-panel-head .right { white-space: nowrap; }
+/* Contributors가 strip에 들어갈 때 panel과 시각 통일 */
+.mo-intel-strip .mo-contrib-side {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+.mo-intel-strip .mo-contrib-side .mo-contrib-row { padding: 2px 0; }
+.mo-intel-strip .mo-contrib-side .mo-contrib-row .av { width: 18px; height: 18px; }
 
 /* 24h Activity inline strip */
 .mo-activity-strip {

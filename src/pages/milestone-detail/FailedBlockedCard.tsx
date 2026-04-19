@@ -16,13 +16,13 @@ interface FailedBlockedCardProps {
  */
 export default function FailedBlockedCard({ tcs, onViewAll, totalCount }: FailedBlockedCardProps) {
   return (
-    <article className="mo-panel span-2" aria-label="Failed and blocked test cases">
+    <article className="mo-panel" aria-label="Failed and blocked test cases">
       <div className="mo-panel-head">
         <i className="ri-error-warning-line" style={{ color: 'var(--danger)' }} />
         Failed &amp; Blocked
-        {totalCount > 4 && (
+        {totalCount > 3 && (
           <button type="button" className="right link" onClick={onViewAll} style={{ border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
-            View all in Issues →
+            View all →
           </button>
         )}
       </div>
@@ -31,13 +31,12 @@ export default function FailedBlockedCard({ tcs, onViewAll, totalCount }: Failed
           No failed or blocked TCs 🎉
         </div>
       ) : (
-        tcs.slice(0, 4).map((tc, i) => (
+        tcs.slice(0, 3).map((tc, i) => (
           <div key={tc.tcId + i} className="mo-bl-row">
             <div className={`num${tc.status === 'blocked' ? ' warn' : ''}`}>
               {tc.status === 'failed' ? 'F' : 'B'}
             </div>
             <span className="lbl">{tc.tcName}</span>
-            <span className="pct">{tc.runName?.slice(0, 12)}</span>
           </div>
         ))
       )}
