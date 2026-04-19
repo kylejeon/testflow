@@ -1206,20 +1206,54 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCo
   currentUserProfile: Profile | null;
 }) {
   const [activeFilter, setActiveFilter] = useState('all');
+  const [dateRange, setDateRange] = useState<'7d' | '14d' | '30d' | 'all'>('14d');
+  const [showDateMenu, setShowDateMenu] = useState(false);
+  const dateMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (showDateMenu && dateMenuRef.current && !dateMenuRef.current.contains(e.target as Node)) setShowDateMenu(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showDateMenu]);
+
+  // Date-filtered logs
+  const dateLogs = useMemo(() => {
+    if (dateRange === 'all') return logs;
+    const days = dateRange === '7d' ? 7 : dateRange === '14d' ? 14 : 30;
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - days);
+    return logs.filter(l => new Date(l.created_at) >= cutoff);
+  }, [logs, dateRange]);
 
   const filters = [
-    { key: 'all',     label: 'All',      dot: '', count: logs.length },
-    { key: 'results', label: 'Results',  dot: 'var(--success)', count: logs.filter(l=>l.event_type?.includes('result')||l.event_type?.includes('run')).length },
-    { key: 'tc',      label: 'TC Edits', dot: 'var(--warning)', count: logs.filter(l=>l.event_type?.includes('tc')||l.event_type?.includes('test_case')).length },
-    { key: 'ai',      label: 'AI',       dot: 'var(--violet)', count: logs.filter(l=>l.event_type?.includes('ai')).length },
-    { key: 'status',  label: 'Status',   dot: 'var(--text-subtle)', count: logs.filter(l=>l.event_type?.includes('status')).length },
+    { key: 'all',     label: 'All',      dot: '', count: dateLogs.length },
+    { key: 'results', label: 'Results',  dot: 'var(--success)', count: dateLogs.filter(l=>l.event_type?.includes('result')||l.event_type?.includes('run')).length },
+    { key: 'tc',      label: 'TC Edits', dot: 'var(--warning)', count: dateLogs.filter(l=>l.event_type?.includes('tc')||l.event_type?.includes('test_case')).length },
+    { key: 'ai',      label: 'AI',       dot: 'var(--violet)', count: dateLogs.filter(l=>l.event_type?.includes('ai')).length },
+    { key: 'status',  label: 'Status',   dot: 'var(--text-subtle)', count: dateLogs.filter(l=>l.event_type?.includes('status')||l.event_type?.includes('snapshot')||l.event_type?.includes('lock')||l.event_type?.includes('plan_')||l.event_type?.includes('criteria')).length },
   ];
 
-  const filtered = activeFilter === 'all' ? logs
-    : activeFilter === 'results' ? logs.filter(l=>l.event_type?.includes('run')||l.event_type?.includes('result'))
-    : activeFilter === 'tc' ? logs.filter(l=>l.event_type?.includes('tc')||l.event_type?.includes('test_case'))
-    : activeFilter === 'ai' ? logs.filter(l=>l.event_type?.includes('ai'))
-    : logs.filter(l=>l.event_type?.includes('status'));
+  const filtered = activeFilter === 'all' ? dateLogs
+    : activeFilter === 'results' ? dateLogs.filter(l=>l.event_type?.includes('run')||l.event_type?.includes('result'))
+    : activeFilter === 'tc' ? dateLogs.filter(l=>l.event_type?.includes('tc')||l.event_type?.includes('test_case'))
+    : activeFilter === 'ai' ? dateLogs.filter(l=>l.event_type?.includes('ai'))
+    : dateLogs.filter(l=>l.event_type?.includes('status')||l.event_type?.includes('snapshot')||l.event_type?.includes('lock')||l.event_type?.includes('plan_')||l.event_type?.includes('criteria'));
+
+  const handleExport = () => {
+    const rows = filtered.map(l => ({
+      date: new Date(l.created_at).toISOString(),
+      event: l.event_type,
+      actor: profiles.get(l.actor_id)?.full_name || profiles.get(l.actor_id)?.email || '',
+      details: l.metadata?.details || l.metadata?.name || '',
+    }));
+    const csv = ['Date,Event,Actor,Details', ...rows.map(r => `${r.date},"${r.event}","${r.actor}","${r.details}"`)].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `activity_${plan.name.replace(/\s+/g,'_')}_${dateRange}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+  };
 
   const groupByDay = (logs: ActivityLog[]) => {
     const groups: Record<string, ActivityLog[]> = {};
@@ -1285,8 +1319,27 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCo
             </button>
           ))}
           <div style={{marginLeft:'auto', display:'flex', gap:6}}>
-            <button className="pd-btn pd-btn-sm">Last 14d ▾</button>
-            <button className="pd-btn pd-btn-sm">Export</button>
+            <div ref={dateMenuRef} style={{position:'relative'}}>
+              <button className="pd-btn pd-btn-sm" onClick={()=>setShowDateMenu(!showDateMenu)}>
+                {dateRange === 'all' ? 'All time' : `Last ${dateRange}`} <svg style={{width:10,height:10,marginLeft:2}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              {showDateMenu && (
+                <div style={{position:'absolute',right:0,top:'100%',marginTop:4,background:'#fff',border:'1px solid var(--border)',borderRadius:8,boxShadow:'0 4px 12px rgba(0,0,0,.1)',zIndex:20,minWidth:120,overflow:'hidden'}}>
+                  {([['7d','Last 7d'],['14d','Last 14d'],['30d','Last 30d'],['all','All time']] as const).map(([v,l])=>(
+                    <div key={v} onClick={()=>{setDateRange(v); setShowDateMenu(false);}}
+                      style={{padding:'8px 12px',fontSize:12,cursor:'pointer',fontWeight:dateRange===v?600:400,color:dateRange===v?'var(--primary)':'var(--text)',background:dateRange===v?'var(--primary-50)':'transparent'}}
+                      onMouseEnter={e=>{if(dateRange!==v) e.currentTarget.style.background='var(--bg-subtle)';}}
+                      onMouseLeave={e=>{if(dateRange!==v) e.currentTarget.style.background='transparent';}}>
+                      {l}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button className="pd-btn pd-btn-sm" onClick={handleExport}>
+              <svg style={{width:11,height:11}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export
+            </button>
           </div>
         </div>
 
@@ -1356,8 +1409,12 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCo
 
 // ─── Tab: Issues ──────────────────────────────────────────────────────────────
 
-function IssuesTab({ runs, plan, milestone, parentMilestone, profiles }: {
-  runs: PlanRun[]; plan: TestPlan; milestone: Milestone | null; parentMilestone: Milestone | null; profiles: Map<string, Profile>;
+function IssuesTab({ runs, plan, planTcs, milestone, parentMilestone, profiles, driftCount, onLock, onUnlock, onRebase, tcResultMap, dailyExecCounts, currentUserProfile }: {
+  runs: PlanRun[]; plan: TestPlan; planTcs: PlanTestCase[];
+  milestone: Milestone | null; parentMilestone: Milestone | null; profiles: Map<string, Profile>;
+  driftCount: number; onLock: () => Promise<void>; onUnlock: () => Promise<void>; onRebase: () => Promise<void>;
+  tcResultMap: Map<string, { result: string; assignee: string | null }>; dailyExecCounts: number[];
+  currentUserProfile: Profile | null;
 }) {
   const [issues, setIssues] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1367,128 +1424,162 @@ function IssuesTab({ runs, plan, milestone, parentMilestone, profiles }: {
     const load = async () => {
       if (runs.length === 0) { setLoading(false); return; }
       const runIds = runs.map(r => r.id);
-      const { data } = await supabase
-        .from('test_results')
-        .select('jira_issue_key, jira_issue_url, github_issue_url, run_id, test_case_id')
-        .in('run_id', runIds)
-        .not('jira_issue_key', 'is', null)
-        .limit(50);
-      setIssues(data || []);
+      // Fetch issues from test_results (jira) + jira_created_issues + github
+      const [jiraRes, ghRes, jiraCreatedRes] = await Promise.all([
+        supabase.from('test_results')
+          .select('jira_issue_key, jira_issue_url, run_id, test_case_id, status, created_at')
+          .in('run_id', runIds).not('jira_issue_key', 'is', null).limit(50),
+        supabase.from('test_results')
+          .select('github_issue_url, run_id, test_case_id, status, created_at')
+          .in('run_id', runIds).not('github_issue_url', 'is', null).limit(50),
+        supabase.from('jira_created_issues')
+          .select('*').in('run_id', runIds).limit(50).then(r => r).catch(() => ({ data: [] })),
+      ]);
+      const allIssues: any[] = [];
+      for (const r of (jiraRes.data || [])) {
+        allIssues.push({ source: 'jira', key: r.jira_issue_key, url: r.jira_issue_url, run_id: r.run_id, tc_id: r.test_case_id, status: r.status, created_at: r.created_at });
+      }
+      for (const r of (ghRes.data || [])) {
+        if (!allIssues.find(i => i.tc_id === r.test_case_id && i.run_id === r.run_id))
+          allIssues.push({ source: 'github', key: r.github_issue_url?.split('/').pop() ? `#${r.github_issue_url.split('/').pop()}` : '', url: r.github_issue_url, run_id: r.run_id, tc_id: r.test_case_id, status: r.status, created_at: r.created_at });
+      }
+      for (const r of ((jiraCreatedRes as any).data || [])) {
+        if (!allIssues.find(i => i.key === r.issue_key))
+          allIssues.push({ source: 'jira', key: r.issue_key, url: r.issue_url, run_id: r.run_id, tc_id: r.test_case_id, status: 'failed', created_at: r.created_at, summary: r.summary });
+      }
+      allIssues.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setIssues(allIssues);
       setLoading(false);
     };
     load();
   }, [runs]);
 
-  const jiraCount = issues.filter(i => i.jira_issue_key).length;
-  const ghCount = issues.filter(i => i.github_issue_url).length;
-  const openCount = Math.ceil(issues.length * 0.6);
-  const inProgressCount = Math.floor(issues.length * 0.2);
-  const resolvedCount = issues.length - openCount - inProgressCount;
+  const jiraCount = issues.filter(i => i.source === 'jira').length;
+  const ghCount = issues.filter(i => i.source === 'github').length;
+  const totalTCs = planTcs.length;
+  const linkedTcIds = new Set(issues.map(i => i.tc_id).filter(Boolean));
+
+  const filteredIssues = sourceFilter === 'all' ? issues
+    : issues.filter(i => i.source === sourceFilter);
+
+  // Find TC info for linked issues
+  const getTcInfo = (tcId: string) => {
+    const ptc = planTcs.find(p => p.test_case_id === tcId);
+    return ptc?.test_case;
+  };
+
+  const ghSvg = <svg style={{width:14,height:14}} viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1.1-.8.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.7 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3"/></svg>;
 
   return (
-    <div>
-      {/* Integration source filter */}
-      <div className="int-strip">
-        <span style={{fontSize:11, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em'}}>Sources</span>
-        <button className={`int-pill ${sourceFilter==='all'?'active':''}`} onClick={()=>setSourceFilter('all')}>All {issues.length}</button>
-        <button className={`int-pill ${sourceFilter==='jira'?'active':''}`} style={{gap:6}} onClick={()=>setSourceFilter('jira')}>
-          <span style={{width:16,height:16,borderRadius:3,background:'#0052cc',color:'#fff',fontSize:9,fontWeight:700,display:'inline-flex',alignItems:'center',justifyContent:'center'}}>J</span>
-          Jira {jiraCount}
-        </button>
-        <button className={`int-pill ${sourceFilter==='gh'?'active':''}`} style={{gap:6}} onClick={()=>setSourceFilter('gh')}>
-          <span style={{width:16,height:16,borderRadius:3,background:'#24292e',color:'#fff',fontSize:9,display:'inline-flex',alignItems:'center',justifyContent:'center'}}>
-            <svg style={{width:10,height:10}} viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1.1-.8.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.7 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3"/></svg>
-          </span>
-          GitHub {ghCount}
-        </button>
-        <button className="pd-btn pd-btn-sm pd-btn-primary" style={{marginLeft:'auto'}}>
-          <svg style={{width:11,height:11}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Create Issue
-        </button>
-      </div>
+    <div className="plan-layout">
+      <div>
+        {/* Source filter strip */}
+        <div className="int-strip" style={{margin:'0 0 14px'}}>
+          <span style={{fontSize:11, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em'}}>Sources</span>
+          <button className={`int-pill ${sourceFilter==='all'?'active':''}`} onClick={()=>setSourceFilter('all')}>All <span className="count">{issues.length}</span></button>
+          <button className={`int-pill jira ${sourceFilter==='jira'?'active':''}`} onClick={()=>setSourceFilter('jira')}>
+            <span className="logo">J</span>Jira <span className="count">{jiraCount}</span>
+          </button>
+          <button className={`int-pill gh ${sourceFilter==='github'?'active':''}`} onClick={()=>setSourceFilter('github')}>
+            <span className="logo">{ghSvg}</span>GitHub <span className="count">{ghCount}</span>
+          </button>
+          <span style={{marginLeft:'auto', fontSize:11, color:'var(--text-muted)'}}>Issues linked from failed TCs in Runs</span>
+        </div>
 
-      {/* KPIs */}
-      <div className="iss-kpis">
-        <div className="iss-kpi open">
-          <div className="l">Open</div>
-          <div className="v">{openCount}</div>
-          <div style={{fontSize:11,color:'var(--text-muted)',marginTop:2}}>critical + major</div>
+        {/* KPIs */}
+        <div className="iss-kpis" style={{margin:'0 0 12px'}}>
+          <div className="iss-kpi open">
+            <div className="l">Total Issues</div>
+            <div className="v">{issues.length}</div>
+            <div className="sub">from {runs.length} runs</div>
+          </div>
+          <div className="iss-kpi">
+            <div className="l">Jira</div>
+            <div className="v" style={{color:'#0052cc'}}>{jiraCount}</div>
+            <div className="sub">bug reports</div>
+          </div>
+          <div className="iss-kpi">
+            <div className="l">GitHub</div>
+            <div className="v" style={{color:'#24292e'}}>{ghCount}</div>
+            <div className="sub">issues</div>
+          </div>
+          <div className="iss-kpi">
+            <div className="l">Linked TCs</div>
+            <div className="v">{linkedTcIds.size} <span style={{fontSize:12,color:'var(--text-muted)',fontWeight:500}}>/ {totalTCs}</span></div>
+            <div className="sub">{totalTCs > 0 ? Math.round(linkedTcIds.size / totalTCs * 100) : 0}% with issue</div>
+          </div>
         </div>
-        <div className="iss-kpi prog">
-          <div className="l">In Progress</div>
-          <div className="v">{inProgressCount}</div>
-          <div style={{fontSize:11,color:'var(--text-muted)',marginTop:2}}>avg age 2d</div>
-        </div>
-        <div className="iss-kpi resolved">
-          <div className="l">Resolved</div>
-          <div className="v">{resolvedCount}</div>
-          <div style={{fontSize:11,color:'var(--text-muted)',marginTop:2}}>this sprint</div>
-        </div>
-        <div className="iss-kpi">
-          <div className="l">Linked TCs</div>
-          <div className="v">{issues.length} <span style={{fontSize:12,color:'var(--text-muted)',fontWeight:500}}>/ {plan.id.slice(0,3)}</span></div>
-          <div style={{fontSize:11,color:'var(--text-muted)',marginTop:2}}>with open issue</div>
-        </div>
-      </div>
 
-      {/* Issue list */}
-      {loading ? (
-        <div style={{textAlign:'center',padding:'2rem',color:'var(--text-muted)',fontSize:13}}>Loading issues...</div>
-      ) : issues.length === 0 ? (
-        <div style={{textAlign:'center',padding:'3rem 1rem',border:'2px dashed var(--border)',borderRadius:10}}>
-          <svg style={{width:32,height:32,color:'#CBD5E1',margin:'0 auto 12px',display:'block'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <p style={{color:'var(--text-muted)',fontSize:13,margin:0}}>No issues linked to this plan yet.</p>
-          <p style={{color:'var(--text-subtle)',fontSize:12,margin:'6px 0 0'}}>Issues are created automatically when test runs record failures.</p>
-        </div>
-      ) : (
-        <div className="iss-list">
-          {issues.map((issue, idx) => (
-            <div key={idx} className="iss-row">
-              <div className={`iss-source ${issue.jira_issue_key ? 'jira' : 'gh'}`}>
-                {issue.jira_issue_key
-                  ? <span style={{fontSize:11,fontWeight:700}}>J</span>
-                  : <svg style={{width:14,height:14}} viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1.1-.8.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.7 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3"/></svg>
-                }
-              </div>
-              <div>
-                <div className="iss-id">{issue.jira_issue_key || '#' + issue.run_id?.slice(-4)}</div>
-                <div style={{fontSize:10,color:'var(--text-muted)',marginTop:2}}>{issue.jira_issue_key ? 'Jira · Bug' : 'GitHub'}</div>
-              </div>
-              <div>
-                <div style={{fontWeight:500,fontSize:13}}>Issue linked to run {issue.run_id?.slice(-8)}</div>
-                <div style={{fontSize:11,color:'var(--text-muted)',marginTop:4,display:'flex',gap:8}}>
-                  <span style={{background:'var(--danger-50)',color:'var(--danger-600)',padding:'1px 6px',borderRadius:3,fontFamily:'JetBrains Mono,monospace',fontSize:10.5}}>→ {issue.test_case_id?.slice(-8)}</span>
-                  <span style={{fontFamily:'JetBrains Mono,monospace',fontSize:10.5,background:'var(--bg-subtle)',color:'var(--text-muted)',padding:'1px 5px',borderRadius:3}}>R-{issue.run_id?.slice(-4)}</span>
+        {/* Issue list */}
+        {loading ? (
+          <div style={{textAlign:'center',padding:'2rem',color:'var(--text-muted)',fontSize:13}}>Loading issues...</div>
+        ) : filteredIssues.length === 0 ? (
+          <div style={{textAlign:'center',padding:'3rem 1rem',border:'2px dashed var(--border)',borderRadius:10}}>
+            <svg style={{width:32,height:32,color:'#CBD5E1',margin:'0 auto 12px',display:'block'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <p style={{color:'var(--text-muted)',fontSize:13,margin:0}}>No issues linked to this plan yet.</p>
+            <p style={{color:'var(--text-subtle)',fontSize:12,margin:'6px 0 0'}}>Issues are created when test runs record failures and you create Jira/GitHub issues.</p>
+          </div>
+        ) : (
+          <div className="iss-list" style={{margin:0}}>
+            {filteredIssues.map((issue, idx) => {
+              const tc = getTcInfo(issue.tc_id);
+              const isJira = issue.source === 'jira';
+              const dateStr = issue.created_at ? new Date(issue.created_at).toLocaleDateString('en-US', {month:'short',day:'numeric'}) : '';
+              return (
+                <div key={idx} className="iss-row" onClick={()=>{ if(issue.url) window.open(issue.url, '_blank'); }}
+                  style={{gridTemplateColumns:'30px 90px minmax(200px,2fr) 80px auto'}}>
+                  <div className={`iss-source ${isJira ? 'jira' : 'gh'}`} style={{width:30,height:30,borderRadius:6}}>
+                    {isJira ? <span style={{fontSize:11,fontWeight:700}}>J</span> : ghSvg}
+                  </div>
+                  <div>
+                    <div className="iss-id">{issue.key || '—'}</div>
+                    <div style={{fontSize:10,color:'var(--text-muted)',marginTop:2}}>{isJira ? 'Jira · Bug' : 'GitHub'}</div>
+                  </div>
+                  <div>
+                    <div className="iss-title">{issue.summary || tc?.title || `Issue from TC ${issue.tc_id?.slice(-8) || ''}`}</div>
+                    <div className="iss-meta">
+                      {tc?.custom_id && <span className="linked">→ {tc.custom_id}</span>}
+                      {!tc?.custom_id && issue.tc_id && <span className="linked">→ {issue.tc_id.slice(-8)}</span>}
+                      {issue.run_id && <span className="run-ref">Run #{runs.findIndex(r=>r.id===issue.run_id)+1 || '?'}</span>}
+                      {dateStr && <span>{dateStr}</span>}
+                    </div>
+                  </div>
+                  <div>
+                    <span className={`sev ${tc?.priority === 'critical' ? 'sev-crit' : tc?.priority === 'high' ? 'sev-major' : 'sev-minor'}`}>
+                      {tc?.priority === 'critical' ? 'Critical' : tc?.priority === 'high' ? 'Major' : 'Minor'}
+                    </span>
+                  </div>
+                  <div>
+                    <svg style={{width:14,height:14,color:'var(--text-subtle)',cursor:'pointer'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 17L17 7"/><polyline points="7 7 17 7 17 17"/></svg>
+                  </div>
                 </div>
-              </div>
-              <div><span className="sev sev-major">Major</span></div>
-              <div><span className="iss-status open"><span style={{width:6,height:6,borderRadius:'50%',background:'currentColor'}} />Open</span></div>
-              <div style={{display:'flex',alignItems:'center',gap:6,fontSize:12}}>
-                <span style={{width:22,height:22,borderRadius:'50%',background:'var(--warning-50)',color:'var(--warning)',fontSize:10,fontWeight:600,display:'inline-flex',alignItems:'center',justifyContent:'center'}}>BK</span>
-                @backend
-              </div>
-              <div>
-                <svg style={{width:14,height:14,color:'var(--text-subtle)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 17L17 7"/><polyline points="7 7 17 7 17 17"/></svg>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
 
-      {/* AI insight */}
-      <div className="iss-ai">
-        <div style={{width:32,height:32,borderRadius:8,background:'#fff',color:'var(--violet)',display:'flex',alignItems:'center',justifyContent:'center',flex:'none'}}>
-          <svg style={{width:16,height:16}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2"/></svg>
-        </div>
-        <div>
-          <div style={{fontWeight:600,fontSize:13,color:'var(--violet)',marginBottom:4}}>AI Issue Analysis</div>
-          <p style={{margin:0,fontSize:12.5,color:'var(--text)',lineHeight:1.5}}>
-            {issues.length > 0
-              ? `${openCount} open issues detected. ${inProgressCount > 0 ? `${inProgressCount} in progress.` : ''} Recommend resolving critical issues before the next run.`
-              : 'No issues found. Plan is on track with no linked failures.'}
-          </p>
-        </div>
+        {/* AI insight */}
+        {issues.length > 0 && (
+          <div className="iss-ai" style={{margin:'14px 0 0'}}>
+            <div style={{width:32,height:32,borderRadius:8,background:'#fff',color:'var(--violet)',display:'flex',alignItems:'center',justifyContent:'center',flex:'none'}}>
+              <svg style={{width:16,height:16}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2"/></svg>
+            </div>
+            <div>
+              <h4 style={{margin:'0 0 4px',fontSize:13,color:'var(--violet)'}}>AI Analysis · {issues.length} issues linked</h4>
+              <p style={{margin:0,fontSize:12.5,color:'var(--text)',lineHeight:1.5}}>
+                {linkedTcIds.size} TCs have linked issues ({totalTCs > 0 ? Math.round(linkedTcIds.size / totalTCs * 100) : 0}% of plan).
+                {jiraCount > 0 && ` ${jiraCount} Jira issues tracked.`}
+                {ghCount > 0 && ` ${ghCount} GitHub issues tracked.`}
+                {' '}Resolve open issues before marking the plan as completed.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
+
+      <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles}
+        driftCount={driftCount} onLock={onLock} onUnlock={onUnlock} onRebase={onRebase} planTcs={planTcs}
+        runs={runs} tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts} projectId={plan.project_id} currentUserProfile={currentUserProfile} />
     </div>
   );
 }
@@ -2718,7 +2809,9 @@ export default function PlanDetailPage() {
             runs={runs} tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts} projectId={plan.project_id} currentUserProfile={currentUserProfile} />
         )}
         {activeTab === 'issues' && (
-          <IssuesTab runs={runs} plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles} />
+          <IssuesTab runs={runs} plan={plan} planTcs={planTcs} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles}
+            driftCount={driftCount} onLock={handleLock} onUnlock={handleUnlockRequest} onRebase={handleRebase}
+            tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts} currentUserProfile={currentUserProfile} />
         )}
         {activeTab === 'environments' && (
           <EnvironmentsTab plan={plan} />
