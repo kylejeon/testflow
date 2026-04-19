@@ -502,12 +502,10 @@
 .mo-kpi .v { font-size: 17px; font-weight: 700; line-height: 1.1; margin-top: 2px; color: var(--text); }
 .mo-kpi .sub { font-size: 10.5px; color: var(--text-muted); margin-top: 1px; line-height: 1.3; }
 
-/* Overview row + intel column */
-.mo-overview-row { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 14px; margin-bottom: 14px; }
-@media (max-width: 1279px) { .mo-overview-row { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); } }
-@media (max-width: 1023px) { .mo-overview-row { grid-template-columns: 1fr; } }
+/* Overview v2 deprecates the .mo-overview-row + .mo-intel-col layout.
+   See "Milestone Overview v2 — Hero Row + Intel Strip + Bottom Row" block below. */
 
-.mo-intel-col { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: min-content; gap: 10px; }
+/* Intel card (re-used by Intel Strip cards + legacy Activity24hFeed card variant) */
 .mo-panel { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
 .mo-panel.span-2 { grid-column: span 2; }
 .mo-panel-head { display: flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
@@ -516,7 +514,6 @@
 .mo-panel-head .right.link:hover { text-decoration: underline; }
 
 @media (max-width: 767px) {
-  .mo-intel-col { grid-template-columns: 1fr; }
   .mo-panel.span-2 { grid-column: auto; }
 }
 
@@ -553,15 +550,6 @@
 .mo-eta-footer { font-size: 10.5px; color: var(--text-muted); margin-top: 10px; }
 .mo-eta-footer .gap-neg { color: var(--danger-600); font-weight: 600; }
 .mo-eta-footer .gap-pos { color: var(--success-600); font-weight: 600; }
-
-/* AI Risk Insight */
-.mo-ai-insight { background: linear-gradient(180deg, #f5f3ff 0%, #eef2ff 100%); border: 1px solid #ddd6fe; padding: 10px 12px; border-radius: 10px; grid-column: span 2; }
-.mo-ai-insight-head { display: flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--violet); margin-bottom: 8px; }
-.mo-ai-insight-head .conf { margin-left: auto; font-size: 9.5px; font-weight: 500; color: var(--violet); background: #fff; border: 1px solid #ddd6fe; padding: 1px 5px; border-radius: 3px; text-transform: none; letter-spacing: 0; }
-.mo-ai-bullet { font-size: 11.5px; color: var(--text); line-height: 1.45; padding: 5px 0; border-top: 1px solid #ede9fe; }
-.mo-ai-bullet:first-of-type { border-top: 0; }
-.mo-ai-bullet b { color: var(--violet); font-weight: 600; }
-@media (max-width: 767px) { .mo-ai-insight { grid-column: auto; } }
 
 /* Activity 24h feed */
 .mo-feed { font-size: 11.5px; }
