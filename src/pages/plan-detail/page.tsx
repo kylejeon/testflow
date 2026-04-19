@@ -1226,26 +1226,56 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCo
     return logs.filter(l => new Date(l.created_at) >= cutoff);
   }, [logs, dateRange]);
 
+  const isResultEvent = (t: string) => t.includes('test_result') || t.includes('result');
+  const isRunEvent = (t: string) => t.includes('run') && !t.includes('result');
+  const isTcEvent = (t: string) => t.includes('tc_') || t.includes('test_case');
+  const isAiEvent = (t: string) => t.includes('ai');
+  const isStatusEvent = (t: string) => t.includes('status') || t.includes('snapshot') || t.includes('lock') || t.includes('plan_') || t.includes('criteria') || t.includes('update');
+
   const filters = [
     { key: 'all',     label: 'All',      dot: '', count: dateLogs.length },
-    { key: 'results', label: 'Results',  dot: 'var(--success)', count: dateLogs.filter(l=>l.event_type?.includes('result')||l.event_type?.includes('run')).length },
-    { key: 'tc',      label: 'TC Edits', dot: 'var(--warning)', count: dateLogs.filter(l=>l.event_type?.includes('tc')||l.event_type?.includes('test_case')).length },
-    { key: 'ai',      label: 'AI',       dot: 'var(--violet)', count: dateLogs.filter(l=>l.event_type?.includes('ai')).length },
-    { key: 'status',  label: 'Status',   dot: 'var(--text-subtle)', count: dateLogs.filter(l=>l.event_type?.includes('status')||l.event_type?.includes('snapshot')||l.event_type?.includes('lock')||l.event_type?.includes('plan_')||l.event_type?.includes('criteria')).length },
+    { key: 'results', label: 'Results',  dot: 'var(--success)', count: dateLogs.filter(l=>isResultEvent(l.event_type||'')).length },
+    { key: 'runs',    label: 'Runs',     dot: 'var(--blue,#3B82F6)', count: dateLogs.filter(l=>isRunEvent(l.event_type||'')).length },
+    { key: 'tc',      label: 'TC Edits', dot: 'var(--warning)', count: dateLogs.filter(l=>isTcEvent(l.event_type||'')).length },
+    { key: 'ai',      label: 'AI',       dot: 'var(--violet)', count: dateLogs.filter(l=>isAiEvent(l.event_type||'')).length },
+    { key: 'status',  label: 'Status',   dot: 'var(--text-subtle)', count: dateLogs.filter(l=>isStatusEvent(l.event_type||'')).length },
   ];
 
   const filtered = activeFilter === 'all' ? dateLogs
-    : activeFilter === 'results' ? dateLogs.filter(l=>l.event_type?.includes('run')||l.event_type?.includes('result'))
-    : activeFilter === 'tc' ? dateLogs.filter(l=>l.event_type?.includes('tc')||l.event_type?.includes('test_case'))
-    : activeFilter === 'ai' ? dateLogs.filter(l=>l.event_type?.includes('ai'))
-    : dateLogs.filter(l=>l.event_type?.includes('status')||l.event_type?.includes('snapshot')||l.event_type?.includes('lock')||l.event_type?.includes('plan_')||l.event_type?.includes('criteria'));
+    : activeFilter === 'results' ? dateLogs.filter(l=>isResultEvent(l.event_type||''))
+    : activeFilter === 'runs' ? dateLogs.filter(l=>isRunEvent(l.event_type||''))
+    : activeFilter === 'tc' ? dateLogs.filter(l=>isTcEvent(l.event_type||''))
+    : activeFilter === 'ai' ? dateLogs.filter(l=>isAiEvent(l.event_type||''))
+    : dateLogs.filter(l=>isStatusEvent(l.event_type||''));
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    // Fetch user timezone/format preferences
+    let tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    let dateFmt = 'YYYY-MM-DD';
+    let timeFmt: '24h' | '12h' = '24h';
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: prefs } = await supabase.from('profiles')
+          .select('timezone, date_format, time_format, auto_detect_tz')
+          .eq('id', user.id).maybeSingle();
+        if (prefs) {
+          if (!prefs.auto_detect_tz && prefs.timezone) tz = prefs.timezone;
+          if (prefs.date_format) dateFmt = prefs.date_format;
+          if (prefs.time_format) timeFmt = prefs.time_format as '24h' | '12h';
+        }
+      }
+    } catch { /* use defaults */ }
+    const fmtDate = (iso: string) => {
+      const d = new Date(iso);
+      const opts: Intl.DateTimeFormatOptions = { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: timeFmt === '12h' };
+      return new Intl.DateTimeFormat('en-US', opts).format(d);
+    };
     const rows = filtered.map(l => ({
-      date: new Date(l.created_at).toISOString(),
+      date: fmtDate(l.created_at),
       event: l.event_type,
       actor: profiles.get(l.actor_id)?.full_name || profiles.get(l.actor_id)?.email || '',
-      details: l.metadata?.details || l.metadata?.name || '',
+      details: l.metadata?.details || l.metadata?.tc_title || l.metadata?.name || '',
     }));
     const csv = ['Date,Event,Actor,Details', ...rows.map(r => `${r.date},"${r.event}","${r.actor}","${r.details}"`)].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -1367,7 +1397,14 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCo
 
                   // Human-readable description
                   let desc = '';
-                  if (evtType.includes('tc_added')) desc = 'added test cases to the plan';
+                  let metaLine = metaDetails || '';
+                  const md = log.metadata || {};
+                  if (evtType.includes('test_result_passed')) { desc = 'recorded'; metaLine = `${md.tc_custom_id || ''} ${md.tc_title || ''} · ${md.run_name || ''}`.trim(); }
+                  else if (evtType.includes('test_result_failed')) { desc = 'recorded'; metaLine = `${md.tc_custom_id || ''} ${md.tc_title || ''} · ${md.run_name || ''} · ${md.priority || ''}`.trim(); }
+                  else if (evtType.includes('test_result_blocked')) { desc = 'recorded'; metaLine = `${md.tc_custom_id || ''} ${md.tc_title || ''} · ${md.run_name || ''}`.trim(); }
+                  else if (evtType.includes('test_result_retest')) { desc = 'recorded'; metaLine = `${md.tc_custom_id || ''} ${md.tc_title || ''} · ${md.run_name || ''}`.trim(); }
+                  else if (evtType.includes('run_status')) { desc = `changed run status`; metaLine = md.run_name || md.name || ''; }
+                  else if (evtType.includes('tc_added')) desc = 'added test cases to the plan';
                   else if (evtType.includes('tc_removed')) desc = 'removed a test case from the plan';
                   else if (evtType.includes('snapshot_locked')) desc = 'locked the snapshot';
                   else if (evtType.includes('snapshot_unlocked')) desc = 'unlocked the snapshot';
@@ -1376,8 +1413,12 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCo
                   else if (evtType.includes('criteria_updated')) desc = 'updated entry/exit criteria';
                   else if (evtType.includes('plan_updated')) desc = 'updated plan settings';
                   else if (evtType.includes('plan_deleted')) desc = 'deleted the plan';
-                  else if (evtType.includes('plan_created')) desc = 'created the plan';
+                  else if (evtType.includes('plan_created') || evtType.includes('test_plan_created')) desc = 'created the plan';
+                  else if (evtType.includes('milestone')) desc = evtType.replace(/_/g, ' ');
                   else desc = evtType.replace(/_/g, ' ');
+
+                  // Status from metadata
+                  const displayStatus = metaStatus || md.status;
 
                   return (
                     <div key={log.id} className={`t-event ${cls}`}>
@@ -1385,10 +1426,11 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCo
                       <div className="t-event-body">
                         <div className="what">
                           <b>{actorName}</b> {desc}
-                          {metaStatus && <> → <span className={`pill ${metaStatus === 'passed' || metaStatus === 'completed' ? 'success' : metaStatus === 'failed' ? 'danger' : metaStatus === 'active' ? 'violet' : ''}`}>{metaStatus}</span></>}
+                          {displayStatus && <> <span className={`pill ${displayStatus === 'passed' || displayStatus === 'completed' ? 'success' : displayStatus === 'failed' ? 'danger' : displayStatus === 'blocked' ? 'danger' : displayStatus === 'active' || displayStatus === 'in_progress' ? 'violet' : ''}`}>{displayStatus.replace(/_/g,' ')}</span></>}
+                          {md.tc_custom_id && !metaLine && <> on <span className="pill">{md.tc_custom_id}</span></>}
                         </div>
-                        {metaDetails && (
-                          <div className="meta">{metaDetails}</div>
+                        {metaLine && (
+                          <div className="meta">{metaLine}</div>
                         )}
                       </div>
                       <div className="when">{formatTime(log.created_at)}</div>
@@ -2337,12 +2379,36 @@ export default function PlanDetailPage() {
         }
       }
 
-      // Activity logs
-      const { data: logs } = await supabase
-        .from('activity_logs').select('*')
-        .eq('target_id', planId!).eq('target_type', 'test_plan')
-        .order('created_at', { ascending: false }).limit(50);
-      setActivityLogs(logs || []);
+      // Activity logs — Plan direct events + linked Run/Result events
+      const runIds = allRuns.map((r: any) => r.id);
+      const logQueries: Promise<any>[] = [
+        // Plan-specific events (TC added/removed, snapshot, settings)
+        supabase.from('activity_logs').select('*')
+          .eq('target_id', planId!).eq('target_type', 'test_plan')
+          .order('created_at', { ascending: false }).limit(50),
+      ];
+      if (runIds.length > 0) {
+        // Test result events from linked runs
+        logQueries.push(
+          supabase.from('activity_logs').select('*')
+            .in('target_type', ['test_result', 'test_run'])
+            .order('created_at', { ascending: false }).limit(100)
+            .then(res => {
+              // Filter to only runs linked to this plan (metadata.run_id)
+              const runIdSet = new Set(runIds);
+              return { ...res, data: (res.data || []).filter((l: any) =>
+                runIdSet.has(l.metadata?.run_id) || runIdSet.has(l.target_id)
+              )};
+            })
+        );
+      }
+      const logResults = await Promise.all(logQueries);
+      const allLogs = [...(logResults[0]?.data || []), ...(logResults[1]?.data || [])];
+      // Deduplicate and sort
+      const logMap = new Map<string, any>();
+      allLogs.forEach(l => logMap.set(l.id, l));
+      const logs = [...logMap.values()].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 100);
+      setActivityLogs(logs);
 
       // Test results for TC execution status + assignee
       const runIds = allRuns.map((r: any) => r.id);
@@ -2469,11 +2535,8 @@ export default function PlanDetailPage() {
         target_id: planId,
         metadata: { name: plan?.name, ...metadata },
       }).then(() => {
-        // Refresh activity logs in state
-        supabase.from('activity_logs').select('*')
-          .eq('target_id', planId!).eq('target_type', 'test_plan')
-          .order('created_at', { ascending: false }).limit(50)
-          .then(({ data }) => { if (data) setActivityLogs(data); });
+        // Refresh activity logs — re-fetch all plan + linked run events
+        fetchData();
       });
     });
   };
