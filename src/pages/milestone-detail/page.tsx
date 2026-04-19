@@ -1,12 +1,13 @@
 import PageLoader from '../../components/PageLoader';
 import { useToast } from '../../components/Toast';
 import { StatusBadge, type TestStatus } from '../../components/StatusBadge';
-import { useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import ProjectHeader from '../../components/ProjectHeader';
-import { AvatarStack } from '../../components/Avatar';
+import OverviewTab from './OverviewTab';
+import IssuesList from '../../components/issues/IssuesList';
 
 interface Milestone {
   id: string;
@@ -478,12 +479,33 @@ export default function MilestoneDetail() {
   const { showToast } = useToast();
 
   // ── UI state (user-interactive) ─────────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState<'results' | 'status' | 'activity' | 'issues' | 'burndown'>('results');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawTab = searchParams.get('tab');
+  type OverviewTabKey = 'overview' | 'activity' | 'issues';
+  // Map legacy URL params (results/status/burndown) → overview, with replace:true (AC-C2)
+  const legacyTabs = new Set(['results', 'status', 'burndown']);
+  const activeTab: OverviewTabKey = (rawTab === 'activity' || rawTab === 'issues') ? rawTab : 'overview';
+
+  useEffect(() => {
+    if (rawTab && legacyTabs.has(rawTab)) {
+      setSearchParams({ tab: 'overview' }, { replace: true });
+    } else if (rawTab && rawTab !== 'overview' && rawTab !== 'activity' && rawTab !== 'issues') {
+      // Unknown tab — redirect to overview
+      setSearchParams({ tab: 'overview' }, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawTab]);
+
+  const setActiveTab = (tab: OverviewTabKey) => {
+    setSearchParams({ tab });
+  };
+
   const [showEditModal, setShowEditModal] = useState(false);
   const [editFormData, setEditFormData] = useState({ name: '', start_date: '', end_date: '' });
   const [activityStatusFilter, setActivityStatusFilter] = useState<string>('all');
   const [activityPage, setActivityPage] = useState(1);
   const activityPerPage = 10;
+  const [issuesCount, setIssuesCount] = useState<number | null>(null);
 
   // ── React Query ─────────────────────────────────────────────────────────────
   const { data, isLoading } = useQuery({
@@ -498,12 +520,9 @@ export default function MilestoneDetail() {
   const subMilestones = data?.subMilestones ?? [];
   const runs = data?.runs ?? [];
   const sessions = data?.sessions ?? [];
-  const issues = data?.issues ?? [];
   const activityLogs = data?.activityLogs ?? [];
   const activityStats = data?.activityStats ?? { notes: 0, passed: 0, failed: 0, retest: 0 };
   const contributorProfiles = data?.contributorProfiles ?? new Map();
-  const assigneeProfiles = data?.assigneeProfiles ?? new Map();
-  const runAssigneeMap = data?.runAssigneeMap ?? new Map();
   const tcStats = data?.tcStats ?? { passed: 0, failed: 0, blocked: 0, retest: 0, untested: 0, total: 0, passRate: 0 };
   const failedBlockedTcs = data?.failedBlockedTcs ?? [];
   const subMilestoneProgress = data?.subMilestoneProgress ?? new Map();
@@ -522,18 +541,6 @@ export default function MilestoneDetail() {
     const start = formatDate(startDate);
     if (!endDate) return `Starts ${start}`;
     return `${start} – ${formatDate(endDate)}`;
-  };
-
-  const calculateRunProgress = (run: Run) => {
-    const total = (run.passed_count || 0) + (run.failed_count || 0) + (run.blocked_count || 0) + (run.retest_count || 0) + (run.untested_count || 0);
-    if (total === 0) return { passed: 0, failed: 0, blocked: 0, retest: 0, untested: 100 };
-    return {
-      passed: Math.round(((run.passed_count || 0) / total) * 100),
-      failed: Math.round(((run.failed_count || 0) / total) * 100),
-      blocked: Math.round(((run.blocked_count || 0) / total) * 100),
-      retest: Math.round(((run.retest_count || 0) / total) * 100),
-      untested: Math.round(((run.untested_count || 0) / total) * 100),
-    };
   };
 
   const calculateMilestoneProgress = () => {
@@ -646,11 +653,6 @@ export default function MilestoneDetail() {
     }).join(' ');
   };
 
-  const getContributorColor = (index: number) => {
-    const colors = ['from-indigo-400 to-indigo-600', 'from-orange-400 to-orange-600', 'from-green-400 to-green-600', 'from-pink-400 to-pink-600', 'from-amber-400 to-amber-600', 'from-cyan-400 to-cyan-600', 'from-rose-400 to-rose-600', 'from-indigo-400 to-indigo-600'];
-    return colors[index % colors.length];
-  };
-
   const getContributorInitials = (author: string) => {
     if (!author || author === 'Unknown') return 'UN';
     const parts = author.trim().split(/\s+/);
@@ -684,16 +686,6 @@ export default function MilestoneDetail() {
   const msBadge = getStatusBadgeStyle(milestone.status);
   const dday = getDDayBadge(milestone.end_date);
   const progressColor = milestone.status === 'past_due' ? '#F97316' : milestone.status === 'completed' ? '#94A3B8' : '#22C55E';
-
-  // For Status tab: risk detection
-  const daysLeft = milestone.end_date ? (() => {
-    const [ey, em, ed] = milestone.end_date.split('T')[0].split('-').map(Number);
-    const end = new Date(ey, em - 1, ed);
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    return Math.round((end.getTime() - today.getTime()) / 86400000);
-  })() : null;
-  const isAtRisk = daysLeft !== null && daysLeft <= 7 && daysLeft >= 0 && tcStats.passRate < 70;
-  const isCritical = daysLeft !== null && daysLeft <= 3 && daysLeft >= 0 && tcStats.passRate < 50;
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#F8FAFC', fontFamily: 'inherit', overflow: 'hidden' }}>
@@ -820,11 +812,9 @@ export default function MilestoneDetail() {
       {/* ── Row 3: Content Tab Row (42px) ── */}
       <div style={{ display: 'flex', alignItems: 'center', padding: '0 1.5rem', background: '#fff', borderBottom: '1px solid #E2E8F0', height: '2.625rem', flexShrink: 0 }}>
         {([
-          { key: 'results',  icon: 'ri-bar-chart-box-fill', iconColor: '#6366F1', label: 'Results',  badge: runs.length > 0 ? runs.length : null },
-          { key: 'status',   icon: 'ri-pie-chart-2-fill',   iconColor: '#3B82F6', label: 'Status',   badge: null },
+          { key: 'overview', icon: 'ri-dashboard-line',      iconColor: '#6366F1', label: 'Overview', badge: null as number | null },
           { key: 'activity', icon: 'ri-history-fill',        iconColor: '#8B5CF6', label: 'Activity', badge: activityLogs.length > 0 ? activityLogs.length : null },
-          { key: 'burndown', icon: 'ri-line-chart-line',     iconColor: '#22C55E', label: 'Burndown', badge: null },
-          { key: 'issues',   icon: 'ri-bug-fill',            iconColor: '#EF4444', label: 'Issues',   badge: failedBlockedTcs.length > 0 ? failedBlockedTcs.length : null },
+          { key: 'issues',   icon: 'ri-bug-fill',            iconColor: '#EF4444', label: 'Issues',   badge: issuesCount ?? null },
         ] as const).map(tab => {
           const isActive = activeTab === tab.key;
           return (
@@ -857,297 +847,29 @@ export default function MilestoneDetail() {
       {/* ── Scrollable Content Area ── */}
       <div style={{ flex: 1, overflowY: 'auto', background: '#F8FAFC', padding: '1.25rem 1.5rem' }}>
 
-        {/* ════ RESULTS TAB ════ */}
-        {activeTab === 'results' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-
-            {/* Sub Milestones */}
-            {subMilestones.length > 0 && (
-              <div>
-                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                  <i className="ri-git-branch-line" style={{ fontSize: '0.8125rem' }} /> Sub Milestones
-                  <span style={{ fontSize: '0.625rem', fontWeight: 700, background: '#F1F5F9', color: '#94A3B8', padding: '0.0625rem 0.375rem', borderRadius: '9999px' }}>{subMilestones.length}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {subMilestones.map(sub => {
-                    const subBadge = getStatusBadgeStyle(sub.status);
-                    return (
-                      <Link
-                        key={sub.id}
-                        to={`/projects/${projectId}/milestones/${sub.id}`}
-                        style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.625rem', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', cursor: 'pointer', transition: 'all 0.15s' }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#C7D2FE'; (e.currentTarget as HTMLElement).style.boxShadow = '0 1px 4px rgba(99,102,241,0.08)'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#E2E8F0'; (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}
-                      >
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub.name}</div>
-                          <div style={{ fontSize: '0.6875rem', color: '#94A3B8', marginTop: '0.125rem' }}>{formatDateRange(sub.start_date, sub.end_date)}</div>
-                        </div>
-                        <span style={{ fontSize: '0.625rem', fontWeight: 600, padding: '0.125rem 0.4375rem', borderRadius: '9999px', background: subBadge.bg, color: subBadge.color, whiteSpace: 'nowrap', flexShrink: 0 }}>{subBadge.label}</span>
-                        <div style={{ width: 120, display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
-                          <div style={{ flex: 1, height: 6, background: '#F1F5F9', borderRadius: 3, overflow: 'hidden' }}>
-                            <div style={{ height: '100%', width: `${subMilestoneProgress.get(sub.id) ?? 0}%`, background: '#22C55E', borderRadius: 3 }} />
-                          </div>
-                          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', whiteSpace: 'nowrap' }}>
-                            {subMilestoneProgress.get(sub.id) ?? 0}%
-                          </span>
-                        </div>
-                        <i className="ri-arrow-right-s-line" style={{ fontSize: '0.875rem', color: '#CBD5E1', flexShrink: 0 }} />
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Runs */}
-            <div>
-              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                <i className="ri-play-circle-line" style={{ fontSize: '0.8125rem' }} /> Runs
-                <span style={{ fontSize: '0.625rem', fontWeight: 700, background: '#F1F5F9', color: '#94A3B8', padding: '0.0625rem 0.375rem', borderRadius: '9999px' }}>{runs.length}</span>
-              </div>
-              {runs.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '2rem', color: '#94A3B8', fontSize: '0.875rem' }}>No runs yet</div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {runs.map(run => {
-                    const rp = calculateRunProgress(run);
-                    const _total = run.test_case_ids.length;
-                    const _completed = (run.passed_count || 0) + (run.failed_count || 0) + (run.blocked_count || 0) + (run.retest_count || 0);
-                    const completionRate = _total > 0 ? Math.round((_completed / _total) * 100) : 0;
-                    const untestedPct = Math.max(0, 100 - completionRate);
-                    const runStyle = getRunStatusStyle(run.status);
-                    return (
-                      <Link
-                        key={run.id}
-                        to={`/projects/${projectId}/runs/${run.id}`}
-                        style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.625rem', padding: '0.875rem 1rem', textDecoration: 'none', cursor: 'pointer', transition: 'all 0.15s', display: 'block' }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#C7D2FE'; (e.currentTarget as HTMLElement).style.boxShadow = '0 1px 4px rgba(99,102,241,0.08)'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#E2E8F0'; (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}
-                      >
-                        {/* Row 1: Name + Status badge */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A', flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{run.name}</span>
-                          <span style={{ fontSize: '0.6875rem', fontWeight: 600, padding: '0.125rem 0.5rem', borderRadius: '0.25rem', background: runStyle.bg, color: runStyle.color, whiteSpace: 'nowrap', flexShrink: 0 }}>{runStyle.label}</span>
-                        </div>
-                        {/* Row 2: Progress bar */}
-                        <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-                          <div style={{ flex: 1, height: 6, background: (run.untested_count || 0) > 0 ? '#F1F5F9' : 'transparent', borderRadius: 3, overflow: 'hidden', display: 'flex' }}>
-                            {(run.passed_count || 0) > 0 && <div style={{ flex: run.passed_count, background: '#22C55E', height: '100%' }} />}
-                            {(run.failed_count || 0) > 0 && <div style={{ flex: run.failed_count, background: '#EF4444', height: '100%' }} />}
-                            {(run.blocked_count || 0) > 0 && <div style={{ flex: run.blocked_count, background: '#F59E0B', height: '100%' }} />}
-                            {(run.retest_count || 0) > 0 && <div style={{ flex: run.retest_count, background: '#FBBF24', height: '100%' }} />}
-                            {(run.untested_count || 0) > 0 && <div style={{ flex: run.untested_count, background: '#E2E8F0', height: '100%' }} />}
-                          </div>
-                          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', whiteSpace: 'nowrap', minWidth: '2rem' }}>{completionRate}%</span>
-                        </div>
-                        {/* Row 3: TC stats + avatars */}
-                        <div style={{ marginTop: '0.375rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                          {[
-                            { dot: '#22C55E', n: run.passed_count || 0, label: 'passed' },
-                            { dot: '#EF4444', n: run.failed_count || 0, label: 'failed' },
-                            { dot: '#F59E0B', n: run.blocked_count || 0, label: 'blocked' },
-                            { dot: '#CBD5E1', n: run.untested_count || 0, label: 'untested' },
-                          ].map(s => (
-                            <span key={s.label} style={{ fontSize: '0.6875rem', display: 'inline-flex', alignItems: 'center', gap: '0.1875rem', color: '#64748B' }}>
-                              <span style={{ width: 6, height: 6, borderRadius: 1.5, background: s.dot, flexShrink: 0, display: 'inline-block' }} />
-                              <span style={{ fontWeight: 600, color: '#334155' }}>{s.n}</span> {s.label}
-                            </span>
-                          ))}
-                          {(() => {
-                            const assigneeIds = runAssigneeMap.get(run.id) || [];
-                            if (assigneeIds.length === 0) return null;
-                            const members = assigneeIds.map((nameOrId: string) => {
-                              const p = assigneeProfiles.get(nameOrId);
-                              const isEmail = nameOrId.includes('@');
-                              return {
-                                userId: nameOrId,
-                                name: p?.name ?? (isEmail ? undefined : nameOrId),
-                                email: p?.email || (isEmail ? nameOrId : undefined),
-                                photoUrl: p?.url ?? undefined,
-                              };
-                            });
-                            return (
-                              <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
-                                <AvatarStack size="sm" max={4} members={members} style={{ gap: 0 }} />
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Exploratory */}
-            <div>
-              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                <i className="ri-search-eye-line" style={{ fontSize: '0.8125rem' }} /> Exploratory
-                <span style={{ fontSize: '0.625rem', fontWeight: 700, background: '#F1F5F9', color: '#94A3B8', padding: '0.0625rem 0.375rem', borderRadius: '9999px' }}>{sessions.length}</span>
-              </div>
-              {sessions.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '2rem', color: '#94A3B8', fontSize: '0.875rem' }}>No discovery logs yet</div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {sessions.map(session => (
-                    <Link
-                      key={session.id}
-                      to={`/projects/${projectId}/discovery-logs/${session.id}`}
-                      style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.625rem', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', cursor: 'pointer', transition: 'all 0.15s' }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#C7D2FE'; (e.currentTarget as HTMLElement).style.boxShadow = '0 1px 4px rgba(99,102,241,0.08)'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#E2E8F0'; (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}
-                    >
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A' }}>{session.name}</div>
-                        <div style={{ fontSize: '0.6875rem', color: '#94A3B8', marginTop: '0.125rem' }}>
-                          {new Date(session.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        </div>
-                      </div>
-                      <span style={{
-                        fontSize: '0.625rem', fontWeight: 600, padding: '0.125rem 0.4375rem', borderRadius: '9999px', whiteSpace: 'nowrap', flexShrink: 0,
-                        background: session.actualStatus === 'in_progress' ? '#DBEAFE' : session.actualStatus === 'done' ? '#DCFCE7' : '#F1F5F9',
-                        color: session.actualStatus === 'in_progress' ? '#1E40AF' : session.actualStatus === 'done' ? '#166534' : '#475569',
-                      }}>
-                        {session.actualStatus === 'in_progress' ? 'In Progress' : session.actualStatus === 'done' ? 'Done' : 'New'}
-                      </span>
-                      <div style={{ width: 80, height: 8, display: 'flex', borderRadius: 4, overflow: 'hidden', flexShrink: 0 }}>
-                        {session.activityData && session.activityData.map((seg: { color: string; pct: number }, i: number) => (
-                          <div key={i} style={{ width: `${seg.pct}%`, height: '100%', background: seg.color }} />
-                        ))}
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ════ STATUS TAB ════ */}
-        {activeTab === 'status' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-
-            {/* Risk Banner */}
-            {(isCritical || isAtRisk) && (
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: '0.5rem',
-                padding: '0.625rem 1rem', borderRadius: '0.5rem',
-                background: isCritical ? '#FEE2E2' : '#FEF3C7',
-                color: isCritical ? '#991B1B' : '#92400E',
-                border: `1px solid ${isCritical ? '#FECACA' : '#FDE68A'}`,
-                fontSize: '0.8125rem', fontWeight: 600,
-              }}>
-                <i className={`${isCritical ? 'ri-alarm-warning-line' : 'ri-error-warning-line'}`} style={{ fontSize: '1rem' }} />
-                {isCritical
-                  ? `Critical: ${daysLeft} day${daysLeft === 1 ? '' : 's'} left with ${tcStats.passRate}% pass rate`
-                  : `At Risk: ${daysLeft} day${daysLeft === 1 ? '' : 's'} left with ${tcStats.passRate}% pass rate`}
-              </div>
-            )}
-
-            {/* TC Distribution Widget */}
-            <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.625rem', padding: '1rem 1.25rem' }}>
-              <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                <i className="ri-pie-chart-2-fill" style={{ fontSize: '0.9375rem', color: '#3B82F6' }} /> TC Status Distribution
-              </div>
-              {tcStats.total > 0 ? (
-                <>
-                  {/* Stacked bar */}
-                  <div style={{ display: 'flex', height: '1.5rem', borderRadius: '0.375rem', overflow: 'hidden', width: '100%', marginBottom: '0.75rem' }}>
-                    {tcStats.passed > 0 && <div style={{ width: `${(tcStats.passed / tcStats.total) * 100}%`, background: '#22C55E', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5625rem', fontWeight: 700, color: '#fff', minWidth: '1.5rem' }}>{tcStats.passed}</div>}
-                    {tcStats.failed > 0 && <div style={{ width: `${(tcStats.failed / tcStats.total) * 100}%`, background: '#EF4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5625rem', fontWeight: 700, color: '#fff', minWidth: '1.5rem' }}>{tcStats.failed}</div>}
-                    {tcStats.blocked > 0 && <div style={{ width: `${(tcStats.blocked / tcStats.total) * 100}%`, background: '#F59E0B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5625rem', fontWeight: 700, color: '#fff', minWidth: '1.5rem' }}>{tcStats.blocked}</div>}
-                    {tcStats.untested > 0 && <div style={{ width: `${(tcStats.untested / tcStats.total) * 100}%`, background: '#E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5625rem', fontWeight: 700, color: '#94A3B8', minWidth: '1.5rem' }}>{tcStats.untested}</div>}
-                  </div>
-                  {/* Table */}
-                  <table style={{ width: '100%' }}>
-                    <tbody>
-                      {[
-                        { dot: '#22C55E', label: 'Passed',   value: tcStats.passed },
-                        { dot: '#EF4444', label: 'Failed',   value: tcStats.failed },
-                        { dot: '#F59E0B', label: 'Blocked',  value: tcStats.blocked },
-                        { dot: '#CBD5E1', label: 'Untested', value: tcStats.untested },
-                      ].map(row => (
-                        <tr key={row.label} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                          <td style={{ padding: '0.375rem 0.5rem', fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: '0.375rem', color: '#475569', fontWeight: 500 }}>
-                            <span style={{ width: 8, height: 8, borderRadius: 2, background: row.dot, flexShrink: 0, display: 'inline-block' }} />
-                            {row.label}
-                          </td>
-                          <td style={{ padding: '0.375rem 0.5rem', fontSize: '0.8125rem', textAlign: 'right', fontWeight: 600, color: '#0F172A' }}>
-                            {row.value} <span style={{ fontWeight: 400, color: '#94A3B8', fontSize: '0.75rem' }}>({tcStats.total > 0 ? Math.round((row.value / tcStats.total) * 100) : 0}%)</span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '1.5rem', color: '#94A3B8', fontSize: '0.875rem' }}>No test cases yet</div>
-              )}
-            </div>
-
-            {/* Sub-milestone progress (if any) */}
-            {subMilestones.length > 0 && (
-              <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.625rem', padding: '1rem 1.25rem' }}>
-                <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                  <i className="ri-git-branch-line" style={{ fontSize: '0.9375rem', color: '#3B82F6' }} /> Sub-Milestone Progress
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-                  {subMilestones.map(sub => {
-                    const subBadge = getStatusBadgeStyle(sub.status);
-                    return (
-                      <div key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#0F172A', minWidth: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub.name}</span>
-                        <span style={{ fontSize: '0.625rem', fontWeight: 600, padding: '0.125rem 0.4375rem', borderRadius: '9999px', background: subBadge.bg, color: subBadge.color, whiteSpace: 'nowrap', flexShrink: 0 }}>{subBadge.label}</span>
-                        <div style={{ width: 100, height: 6, background: '#F1F5F9', borderRadius: 3, overflow: 'hidden', flexShrink: 0 }}>
-                          <div style={{ height: '100%', width: `${subMilestoneProgress.get(sub.id) ?? 0}%`, background: '#22C55E', borderRadius: 3 }} />
-                        </div>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', whiteSpace: 'nowrap', flexShrink: 0 }}>{subMilestoneProgress.get(sub.id) ?? 0}%</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Contributors */}
-            {(() => {
-              const contributorMap = new Map<string, number>();
-              activityLogs.forEach(log => {
-                if (log.type !== 'note' && log.author && log.author !== 'Unknown') {
-                  contributorMap.set(log.author, (contributorMap.get(log.author) || 0) + 1);
-                }
-              });
-              const contributors = Array.from(contributorMap.entries())
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 5);
-              if (contributors.length === 0) return null;
-              const avatarColors = ['#6366F1', '#EC4899', '#F59E0B', '#22C55E', '#3B82F6', '#8B5CF6', '#EF4444', '#14B8A6'];
-              return (
-                <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.625rem', padding: '1rem 1.25rem' }}>
-                  <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                    <i className="ri-team-line" style={{ fontSize: '0.9375rem', color: '#6366F1' }} /> Contributors
-                  </div>
-                  {contributors.map(([author, count], idx) => (
-                    <div key={author} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0', borderBottom: idx < contributors.length - 1 ? '1px solid #F1F5F9' : 'none' }}>
-                      {contributorProfiles.get(author)?.url ? (
-                        <img src={contributorProfiles.get(author)!.url!} alt={author} style={{ width: '2rem', height: '2rem', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
-                      ) : (
-                        <div style={{ width: '2rem', height: '2rem', borderRadius: '50%', background: getAuthorColor(author), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5625rem', fontWeight: 700, color: '#fff', flexShrink: 0 }}>
-                          {contributorProfiles.get(author)?.name ? getContributorInitials(contributorProfiles.get(author)!.name!) : getContributorInitials(author)}
-                        </div>
-                      )}
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A' }}>{author}</div>
-                      </div>
-                      <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#475569' }}>{count} TCs executed</span>
-                    </div>
-                  ))}
-                </div>
-              );
-            })()}
-          </div>
+        {/* ════ OVERVIEW TAB ════ */}
+        {activeTab === 'overview' && (
+          <OverviewTab
+            projectId={projectId!}
+            milestoneId={milestoneId!}
+            milestoneStart={milestone.start_date}
+            milestoneEnd={milestone.end_date}
+            tcStats={tcStats}
+            failedBlockedTcs={failedBlockedTcs}
+            activityLogs={activityLogs}
+            runs={runs}
+            sessions={sessions}
+            subMilestones={subMilestones}
+            subMilestoneProgress={subMilestoneProgress}
+            contributorProfiles={contributorProfiles}
+            getSubBadge={getStatusBadgeStyle}
+            getRunStatusStyle={getRunStatusStyle}
+            formatDateRange={formatDateRange}
+            getAuthorColor={getAuthorColor}
+            getContributorInitials={getContributorInitials}
+            onGoActivity={() => setActiveTab('activity')}
+            onGoIssues={() => setActiveTab('issues')}
+          />
         )}
 
         {/* ════ ACTIVITY TAB ════ */}
@@ -1318,241 +1040,12 @@ export default function MilestoneDetail() {
         )}
 
         {/* ════ ISSUES TAB ════ */}
-        {/* ════ BURNDOWN TAB ════ */}
-        {activeTab === 'burndown' && (() => {
-          const startDate = milestone?.start_date ? new Date(milestone.start_date.split('T')[0]) : null;
-          const endDate   = milestone?.end_date   ? new Date(milestone.end_date.split('T')[0])   : null;
-          const today = new Date(); today.setHours(0,0,0,0);
-          const total = tcStats.total || 1;
-          const remaining = tcStats.untested;
-          const executed = total - remaining;
-          // SVG chart constants
-          const CX1=32,CX2=500,CY1=16,CY2=154,CW=CX2-CX1,CH=CY2-CY1;
-          const scaleX = (d: Date) => {
-            if (!startDate||!endDate) return CX1;
-            const span = endDate.getTime()-startDate.getTime();
-            if (span<=0) return CX1;
-            return CX1+Math.max(0,Math.min(1,(d.getTime()-startDate.getTime())/span))*CW;
-          };
-          const scaleY = (tc: number) => CY2-(tc/total)*CH;
-          const todayX = startDate ? scaleX(today) : CX1+(CW*0.6);
-          const todayY = scaleY(remaining);
-          const idealTodayY = startDate&&endDate ? scaleY(Math.max(0, total*(1-(today.getTime()-startDate.getTime())/(endDate.getTime()-startDate.getTime())))) : scaleY(total/2);
-          const gap = todayY - idealTodayY; // positive = behind ideal
-          // X-axis date labels (5 points)
-          const xLabels: Array<{label:string; x:number}> = [];
-          if (startDate && endDate) {
-            const span = endDate.getTime()-startDate.getTime();
-            for (let i=0;i<=4;i++) {
-              const d = new Date(startDate.getTime() + (span*i/4));
-              xLabels.push({ label: d.toLocaleDateString('en-US',{month:'short',day:'numeric'}), x: CX1+CW*(i/4) });
-            }
-          }
-          // Y-axis labels
-          const yStep = Math.ceil(total/4/10)*10 || 1;
-          const yLabels: Array<{v:number;y:number}> = [];
-          for (let v=0;v<=total;v+=yStep) yLabels.push({v,y:scaleY(v)});
-          // Ideal line
-          const idealStart = startDate ? scaleX(startDate) : CX1;
-          const idealEnd   = endDate   ? scaleX(endDate)   : CX2;
-          // Days elapsed vs total for velocity sparkline
-          const sparkRuns = runs.slice(0,7).reverse();
-          // KPI calculations
-          const daysElapsed = startDate ? Math.max(0,Math.floor((today.getTime()-startDate.getTime())/(1000*60*60*24))) : 0;
-          const daysTotal   = (startDate&&endDate) ? Math.max(1,Math.ceil((endDate.getTime()-startDate.getTime())/(1000*60*60*24))) : 60;
-          const daysLeft    = Math.max(0, daysTotal-daysElapsed);
-          const velocity    = daysElapsed>0 ? (executed/daysElapsed).toFixed(1) : '—';
-          const projDays    = parseFloat(velocity as string)>0 ? Math.ceil(remaining/parseFloat(velocity as string)) : null;
-          const onTrack     = gap<=0;
-          return (
-            <div style={{display:'flex',flexDirection:'column',gap:14}}>
-              {/* Overview row: chart + intel */}
-              <div style={{display:'grid',gridTemplateColumns:'minmax(0,1.55fr) minmax(0,1fr)',gap:14}}>
-                {/* Burndown Chart Card */}
-                <div style={{background:'#fff',border:'1px solid #E2E8F0',borderRadius:10,overflow:'hidden',display:'flex',flexDirection:'column'}}>
-                  <div style={{padding:'9px 12px',display:'flex',alignItems:'center',gap:10,borderBottom:'1px solid #E2E8F0'}}>
-                    <div style={{fontSize:11,fontWeight:600,color:'#64748B',textTransform:'uppercase',letterSpacing:'0.05em',display:'flex',alignItems:'center',gap:6}}>
-                      <i className="ri-line-chart-line" style={{color:'#6366F1'}} />
-                      Burndown
-                    </div>
-                    <div style={{display:'flex',gap:10,fontSize:10,color:'#9CA3AF',marginLeft:8}}>
-                      <span><span style={{display:'inline-block',width:14,height:2,background:'#9CA3AF',borderRadius:1,verticalAlign:'middle',marginRight:4}}/>Ideal</span>
-                      <span><span style={{display:'inline-block',width:14,height:2,background:'#6366F1',borderRadius:1,verticalAlign:'middle',marginRight:4}}/>Actual</span>
-                      <span><span style={{display:'inline-block',width:14,height:2,background:'#a5b4fc',borderRadius:1,verticalAlign:'middle',marginRight:4}}/>Projected</span>
-                    </div>
-                  </div>
-                  <div style={{padding:'4px 8px 4px',flex:1}}>
-                    <svg viewBox="0 0 520 180" style={{width:'100%',height:'auto',display:'block'}}>
-                      {/* Grid lines */}
-                      {yLabels.map(({y},i) => <line key={i} x1={CX1} y1={y} x2={CX2} y2={y} stroke="#F3F4F6" strokeWidth="1"/>)}
-                      {/* Axes */}
-                      <line x1={CX1} y1={CY1} x2={CX1} y2={CY2} stroke="#D1D5DB"/>
-                      <line x1={CX1} y1={CY2} x2={CX2} y2={CY2} stroke="#D1D5DB"/>
-                      {/* Y labels */}
-                      {yLabels.map(({v,y}) => <text key={v} x={CX1-4} y={y+3} fontFamily="Inter,sans-serif" fontSize="8" fill="#9CA3AF" textAnchor="end">{v}</text>)}
-                      {/* X labels */}
-                      {xLabels.map(({label,x}) => <text key={label} x={x} y={CY2+14} fontFamily="Inter,sans-serif" fontSize="8" fill="#9CA3AF" textAnchor="middle">{label}</text>)}
-                      {/* Ideal line */}
-                      <line x1={idealStart} y1={scaleY(total)} x2={idealEnd} y2={scaleY(0)} stroke="#9CA3AF" strokeWidth="1.2" strokeDasharray="4 3"/>
-                      {/* Actual line (start to today) */}
-                      <path d={`M${CX1},${scaleY(total)} L${todayX},${todayY}`} fill="none" stroke="#6366F1" strokeWidth="2" strokeLinecap="round"/>
-                      {/* Today vertical marker */}
-                      <line x1={todayX} y1={CY1} x2={todayX} y2={CY2} stroke="#6366F1" strokeWidth="0.8" strokeDasharray="2 2" opacity="0.4"/>
-                      <rect x={todayX-20} y={CY1-12} width="40" height="12" rx="2.5" fill="#6366F1"/>
-                      <text x={todayX} y={CY1-3} fontFamily="Inter" fontSize="8" fill="#fff" textAnchor="middle" fontWeight="600">Today</text>
-                      {/* Today point + callout */}
-                      <circle cx={todayX} cy={todayY} r="3" fill="#fff" stroke="#6366F1" strokeWidth="2"/>
-                      <rect x={todayX+8} y={todayY-14} width="120" height="28" rx="3" fill="#111827"/>
-                      <text x={todayX+14} y={todayY-2} fontFamily="Inter" fontSize="8.5" fill="#fff" fontWeight="600">{remaining} remaining</text>
-                      <text x={todayX+14} y={todayY+9} fontFamily="Inter" fontSize="7.5" fill={onTrack?'#86efac':'#fca5a5'}>
-                        {onTrack ? `on track · gap ${Math.abs(Math.round((gap/CH)*total))}` : `behind ideal · gap +${Math.abs(Math.round((gap/CH)*total))}`}
-                      </text>
-                      {/* Projected line */}
-                      {projDays != null && <path d={`M${todayX},${todayY} L${Math.min(CX2,todayX+(projDays/daysTotal)*CW)},${scaleY(0)}`} stroke="#a5b4fc" strokeWidth="1.2" strokeDasharray="2 2" fill="none"/>}
-                    </svg>
-                  </div>
-                  {/* KPI strip */}
-                  <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',borderTop:'1px solid #E2E8F0'}}>
-                    {[
-                      { l:'Remaining', v:remaining, sub:`${daysLeft}d left`, color:remaining>0?'#0F172A':'#22C55E' },
-                      { l:'Executed',  v:executed, sub:`of ${total} total`, color:'#6366F1' },
-                      { l:'Velocity',  v:velocity, sub:'TCs / day', color:'#0F172A' },
-                      { l:'Pass Rate', v:`${tcStats.passRate}%`, sub:`${tcStats.passed} passed`, color:tcStats.passRate>=70?'#22C55E':tcStats.passRate>=40?'#F59E0B':'#EF4444' },
-                    ].map((k,i) => (
-                      <div key={i} style={{padding:'8px 10px',borderLeft:i>0?'1px solid #E2E8F0':'none'}}>
-                        <div style={{fontSize:'9.5px',color:'#9CA3AF',textTransform:'uppercase',letterSpacing:'0.04em',fontWeight:500}}>{k.l}</div>
-                        <div style={{fontSize:17,fontWeight:700,lineHeight:1.1,marginTop:2,color:k.color}}>{k.v}</div>
-                        <div style={{fontSize:'10.5px',color:'#9CA3AF',marginTop:1}}>{k.sub}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                {/* Intel column */}
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gridAutoRows:'min-content',gap:10}}>
-                  {/* Blocked/Stuck */}
-                  <div style={{background:'#fff',border:'1px solid #E2E8F0',borderRadius:10,padding:'10px 12px',gridColumn:'span 2'}}>
-                    <div style={{display:'flex',alignItems:'center',gap:6,fontSize:10,fontWeight:600,color:'#64748B',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:8}}>
-                      <i className="ri-error-warning-line" style={{color:'#EF4444'}}/>
-                      Failed &amp; Blocked
-                    </div>
-                    {failedBlockedTcs.length===0 ? (
-                      <div style={{fontSize:12,color:'#94A3B8',textAlign:'center',padding:'8px 0'}}>No blocked items 🎉</div>
-                    ) : (
-                      failedBlockedTcs.slice(0,4).map((tc,i) => (
-                        <div key={i} style={{display:'grid',gridTemplateColumns:'18px 1fr auto',gap:8,alignItems:'center',fontSize:'11.5px',padding:'4px 0'}}>
-                          <div style={{background:tc.status==='failed'?'#FEE2E2':'#FEF3C7',color:tc.status==='failed'?'#991B1B':'#92400E',fontWeight:700,fontSize:10,width:18,height:18,borderRadius:4,display:'flex',alignItems:'center',justifyContent:'center'}}>
-                            {tc.status==='failed'?'F':'B'}
-                          </div>
-                          <span style={{color:'#0F172A',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{tc.tcName}</span>
-                          <span style={{fontWeight:600,color:'#0F172A',fontSize:11}}>{tc.runName?.slice(0,10)}</span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                  {/* Velocity sparkline */}
-                  <div style={{background:'#fff',border:'1px solid #E2E8F0',borderRadius:10,padding:'10px 12px'}}>
-                    <div style={{fontSize:10,fontWeight:600,color:'#64748B',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:8}}>Velocity</div>
-                    <div style={{display:'flex',alignItems:'flex-end',gap:3,height:42}}>
-                      {(sparkRuns.length>0?sparkRuns:[{passed_count:0},{passed_count:0},{passed_count:0}]).map((r,i) => {
-                        const cnt = (r as any).passed_count||0;
-                        const maxCnt = Math.max(...(sparkRuns.length>0?sparkRuns:[{passed_count:1}]).map((x:any)=>x.passed_count||1));
-                        const h = maxCnt>0 ? Math.max(4,(cnt/maxCnt)*36) : 4;
-                        return <div key={i} style={{flex:1,background:i===sparkRuns.length-1?'#6366F1':'#C7D2FE',borderRadius:2,height:`${h}px`}}/>;
-                      })}
-                    </div>
-                    <div style={{display:'flex',gap:3,marginTop:4,fontSize:9,color:'#9CA3AF'}}>
-                      {sparkRuns.map((_,i)=><span key={i} style={{flex:1,textAlign:'center'}}>R{i+1}</span>)}
-                    </div>
-                  </div>
-                  {/* ETA */}
-                  <div style={{background:'#fff',border:'1px solid #E2E8F0',borderRadius:10,padding:'10px 12px'}}>
-                    <div style={{fontSize:10,fontWeight:600,color:'#64748B',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:6}}>ETA</div>
-                    {projDays != null ? (
-                      <>
-                        <div style={{fontSize:22,fontWeight:700,color:projDays<=daysLeft?'#22C55E':'#EF4444'}}>D-{daysLeft}</div>
-                        <div style={{fontSize:'10.5px',color:'#9CA3AF',marginTop:2}}>
-                          {projDays<=daysLeft?'On track':'Behind · +'+Math.ceil(projDays-daysLeft)+'d'}
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div style={{fontSize:22,fontWeight:700,color:'#64748B'}}>D-{daysLeft}</div>
-                        <div style={{fontSize:'10.5px',color:'#9CA3AF',marginTop:2}}>No runs yet</div>
-                      </>
-                    )}
-                    <div style={{height:8,background:'#F1F5F9',borderRadius:4,position:'relative',margin:'8px 0 4px'}}>
-                      <div style={{position:'absolute',left:0,top:0,bottom:0,width:`${Math.min(100,(daysElapsed/daysTotal)*100)}%`,background:`linear-gradient(90deg,#22C55E,${onTrack?'#22C55E':'#EF4444'})`,borderRadius:4}}/>
-                    </div>
-                    <div style={{fontSize:'9.5px',color:'#9CA3AF'}}>{daysElapsed}d elapsed of {daysTotal}d</div>
-                  </div>
-                  {/* AI insight */}
-                  <div style={{background:'linear-gradient(180deg,#f5f3ff 0%,#eef2ff 100%)',border:'1px solid #ddd6fe',borderRadius:10,padding:'10px 12px',gridColumn:'span 2'}}>
-                    <div style={{display:'flex',alignItems:'center',gap:6,fontSize:10,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.05em',color:'#6D28D9',marginBottom:8}}>
-                      <i className="ri-sparkling-2-line"/>AI Insight
-                    </div>
-                    {[
-                      onTrack
-                        ? { text: <>Progress is <b>on track</b>. Current velocity suggests completion before the deadline.</> }
-                        : { text: <>You're <b>behind the ideal burndown</b>. Consider increasing run frequency or reducing scope.</> },
-                      { text: tcStats.failed > 0
-                        ? <><b>{tcStats.failed} failing TCs</b> are slowing the burn. Prioritise fixing critical failures first.</>
-                        : <>No failing TCs right now — keep the momentum going!</> },
-                    ].map((b,i) => (
-                      <div key={i} style={{fontSize:'11.5px',color:'#0F172A',lineHeight:1.45,padding:'5px 0',borderTop:i>0?'1px solid #ede9fe':'none'}}>{b.text}</div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* ════ ISSUES TAB ════ */}
         {activeTab === 'issues' && (
-          <div>
-            {failedBlockedTcs.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '3rem 0' }}>
-                <div style={{ width: '4rem', height: '4rem', background: '#F1F5F9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
-                  <i className="ri-bug-line" style={{ fontSize: '1.875rem', color: '#94A3B8' }} />
-                </div>
-                <div style={{ fontSize: '1.125rem', fontWeight: 600, color: '#0F172A', marginBottom: '0.5rem' }}>No failed or blocked test cases</div>
-                <div style={{ color: '#64748B', fontSize: '0.875rem' }}>All test cases are passing or untested.</div>
-              </div>
-            ) : (
-              <>
-                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                  <i className="ri-bug-line" style={{ fontSize: '0.8125rem' }} /> Failed &amp; Blocked Test Cases
-                  <span style={{ fontSize: '0.625rem', fontWeight: 700, background: '#FEE2E2', color: '#991B1B', padding: '0.0625rem 0.375rem', borderRadius: '9999px' }}>{failedBlockedTcs.length}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {failedBlockedTcs.map(tc => (
-                    <div
-                      key={tc.tcId}
-                      style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.625rem', padding: '0.75rem 1rem', transition: 'all 0.15s', cursor: 'default' }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#FECACA'; (e.currentTarget as HTMLElement).style.boxShadow = '0 1px 4px rgba(239,68,68,0.08)'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#E2E8F0'; (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <i
-                          className={tc.status === 'failed' ? 'ri-close-circle-fill' : 'ri-error-warning-fill'}
-                          style={{ fontSize: '0.875rem', color: tc.status === 'failed' ? '#EF4444' : '#F59E0B', flexShrink: 0 }}
-                        />
-                        <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A', flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tc.tcName}</span>
-                        <span style={{ fontSize: '0.625rem', fontWeight: 600, padding: '0.125rem 0.4375rem', borderRadius: '9999px', whiteSpace: 'nowrap', flexShrink: 0, background: tc.status === 'failed' ? '#FEE2E2' : '#FEF3C7', color: tc.status === 'failed' ? '#991B1B' : '#92400E' }}>
-                          {tc.status === 'failed' ? 'Failed' : 'Blocked'}
-                        </span>
-                      </div>
-                      <div style={{ marginTop: '0.375rem', display: 'flex', alignItems: 'center', gap: '0.625rem', fontSize: '0.6875rem', color: '#94A3B8', flexWrap: 'wrap' }}>
-                        {tc.runName && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.1875rem' }}><i className="ri-play-circle-line" style={{ fontSize: '0.75rem' }} />{tc.runName}</span>}
-                        {tc.author && tc.author !== 'Unknown' && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.1875rem' }}><i className="ri-user-line" style={{ fontSize: '0.75rem' }} />{tc.author}</span>}
-                        {tc.createdAt && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.1875rem' }}><i className="ri-time-line" style={{ fontSize: '0.75rem' }} />{formatDate(tc.createdAt)}</span>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+          <IssuesList
+            runIds={runs.map(r => r.id)}
+            onCountChange={setIssuesCount}
+            allowRefresh={true}
+          />
         )}
 
       </div>
