@@ -2411,7 +2411,6 @@ export default function PlanDetailPage() {
       setActivityLogs(logs);
 
       // Test results for TC execution status + assignee
-      const runIds = allRuns.map((r: any) => r.id);
       let resultAssigneeIds: string[] = [];
       if (runIds.length > 0) {
         const { data: results } = await supabase
