@@ -219,3 +219,72 @@
 - AC-16 sub-milestone progress 프롬프트 포함
 - **Blocked Reasons 구조화 필드** (옵션 A) — test_results.block_reason enum + UI 강제 + 마이그레이션 전략 (이슈 2 후속)
 - 기존 follow-up 8건 (H-1/H-2/H-3/AC-B4/AC-A6/플랜 제한/AC-A5 DLQ/M-2) — M-2는 이번에 해결
+
+---
+
+2026-04-19 (v3): Milestone Detail Rollup 일관성 + Overview v3 (공백 제거) @developer 구현 완료
+
+## 뭘 했냐 (claude 브랜치, 커밋 4개)
+
+### Commit 2867a6f — feat(milestone-detail): Rollup 일관성 — tcStats 단일화
+- loadMilestoneDetailData (page.tsx):
+  - sub test_runs select에 name 추가
+  - sub test_results select에 note, author 추가
+  - sub 결과를 allRawResults / globalTcStatusMap / allActivityLogs / testCaseNameMap에 머지
+    → Failed & Blocked, Activity 24h, Contributors가 rollup 값 자동 반영
+  - isAggregated일 때 tcStats를 rollup 값으로 주입 (dev-spec §6-1 option 가)
+  - Header Progress bar는 rollup 시 rollupStats.coverage 사용
+- MilestoneDetailData.aggregatedRunIds 필드 추가, OverviewTab에 prop 전달
+- loadOverviewExtra(milestoneId, runIds, aggregatedRunIds?) 확장
+  → failedResults/execResults 쿼리 범위가 parent+sub runs 합산 범위로 동작
+- Roll-up Mode 배너 카드 JSX (page.tsx 816-838) 완전 삭제
+
+### Commit c503c57 — feat(overview-v3): 레이아웃 재조립
+- Hero Row: Chart+KPI 1.7fr : Risk 1fr, align stretch, min-height 288
+- .mo-chart-stack: display:grid 1fr auto → ResponsiveContainer height="100%" 안정
+- BurndownChart: margin {4,6,-4,0}, YAxis width 26 + tickCount 4 + k 축약
+- KpiStrip 4→5 col: ETA 흡수 (etaDaysLeft/etaProjDays/etaOnTrack prop)
+- Utility Row (신규): Intel Strip 3-col + Contributors sidebar 240px
+- Bottom Row: Execution 풀폭 단독 (Contributors 이동)
+- ExecutionSections: 섹션별 0개 시 DOM 제거, 전 섹션 0개 시 .mo-exec-empty 단일
+- Activity Strip: padding 6/12, height 36
+- index.css 5티어 breakpoint (≥1440/1280-1439/1024-1279/768-1023/<768)
+
+### Commit 53a6c3f — feat(rollup-badge): Header Roll-up 뱃지
+- src/pages/milestone-detail/RollupBadge.tsx 신규
+- Status badge 다음 위치에 <RollupBadge count visible={isAggregated}>
+- 정적 뱃지 (cursor:default, 클릭 no-op), role="img" + aria-label
+- 모바일 <768px는 아이콘+숫자만 ::after로 표시
+- i18n en/ko: rollupBadgeSingular / rollupBadgePlural 추가
+- .mo-rollup-badge CSS 블록 index.css 말미에 append
+
+### Commit a5c4e84 — chore(cleanup): EtaCard.tsx 삭제 + 구 CSS 재정의
+- src/pages/milestone-detail/EtaCard.tsx 삭제
+- index.css .mo-eta-* 블록 전부 제거 (KPI Strip에 흡수됨)
+- .mo-overview-row / .mo-intel-col deprecation 주석 cleanup
+
+## 어디까지 됐냐
+- TypeScript 빌드 PASS (tsc --noEmit + npm run build 6.38s 성공)
+- 커밋 4개 claude 브랜치에 있음, push 대기
+- 기존 화면 회귀 영향 없음:
+  - plan-detail의 risk-predictor (별개 Edge Function) 영향 없음
+  - milestone-detail Activity/Issues 탭 로직 영향 없음
+  - Header Progress bar / TC Summary가 rollup 시 rollupStats 기반으로 일관
+
+## 절감 높이 추정 (design-spec v3 §1-4)
+- v2 대비 약 370px (37%) 절감 (1280×800 / sub 1 + plans 0 시나리오)
+- 주요 원인:
+  - Roll-up 배너 카드 -110px
+  - Hero stretch 정렬 -32px
+  - Intel Strip ETA 흡수 + 3-col 안정 -142px
+  - Section gap 14→10 -24px
+  - Execution 섹션 별 empty 제거 -70px
+
+## 다음에 할 것
+- 메인 에이전트가 push origin claude 수행
+- Out of Scope (follow-up 티켓 분리):
+  - Activity 탭의 rollup 반영
+  - Issues 탭의 rollup 반영
+  - Roll-up 뱃지 클릭 시 팝오버 (v4에서 재평가)
+  - 기존 i18n 키 cleanup (rollupMode/rollupTotal 등 미사용 키)
+  - pre-existing: page.tsx line 615 'navigate' unused 경고
