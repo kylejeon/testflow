@@ -4,6 +4,7 @@ import {
   PLAN_LIMITS,
   TIER_NAMES,
 } from '../_shared/ai-config.ts';
+import { checkRateLimit, rateLimitResponse } from '../_shared/rate-limit.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -240,6 +241,17 @@ Deno.serve(async (req: Request) => {
           latency_ms: Date.now() - startTime,
         },
       });
+    }
+
+    // ── Rate limit (5 req/min per user, burst 5) ─────────────────────────────
+    // Applied AFTER cache hit check so that fresh-cache responses don't consume a token.
+    // Applied BEFORE monthly credit check to block runaway Claude API loops before any cost is counted.
+    const rlResult = await checkRateLimit(supabase, user.id, 'milestone_risk', {
+      capacity: 5,
+      refillRate: 1 / 12, // 1 token every 12s ≈ 5 tokens/min steady-state
+    });
+    if (!rlResult.allowed) {
+      return rateLimitResponse(rlResult, corsHeaders);
     }
 
     // ── Monthly credit check (AC-11) ─────────────────────────────────────────
