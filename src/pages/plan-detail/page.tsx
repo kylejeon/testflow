@@ -2351,6 +2351,28 @@ export default function PlanDetailPage() {
     }
   };
 
+  // Activity log helper — fire-and-forget
+  const logActivity = (eventType: string, eventCategory: string, metadata?: Record<string, any>) => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user || !projectId || !planId) return;
+      supabase.from('activity_logs').insert({
+        project_id: projectId,
+        actor_id: user.id,
+        event_type: eventType,
+        event_category: eventCategory,
+        target_type: 'test_plan',
+        target_id: planId,
+        metadata: { name: plan?.name, ...metadata },
+      }).then(() => {
+        // Refresh activity logs in state
+        supabase.from('activity_logs').select('*')
+          .eq('target_id', planId!).eq('target_type', 'test_plan')
+          .order('created_at', { ascending: false }).limit(50)
+          .then(({ data }) => { if (data) setActivityLogs(data); });
+      });
+    });
+  };
+
   const handleUpdateCriteriaMet = async (type: 'entry' | 'exit', met: boolean[]) => {
     const field = type === 'entry' ? 'entry_criteria_met' : 'exit_criteria_met';
     const { error } = await supabase.from('test_plans').update({ [field]: met }).eq('id', planId!);
@@ -2375,6 +2397,7 @@ export default function PlanDetailPage() {
     const tc = allTcs.find(t => t.id === tcId);
     if (tc) setPlanTcs(prev => [...prev, { test_plan_id: planId!, test_case_id: tcId, added_at: new Date().toISOString(), test_case: tc } as PlanTestCase]);
     showToast('Test case added', 'success');
+    logActivity('tc_added', 'test_case', { details: `Added TC "${tc?.title || tcId}"` });
   };
 
   const handleAddTcs = async (ids: string[]) => {
@@ -2389,6 +2412,7 @@ export default function PlanDetailPage() {
         added_at: new Date().toISOString(), test_case: tc,
       } as PlanTestCase))]);
       showToast(`Added ${ids.length} test case${ids.length > 1 ? 's' : ''}`, 'success');
+      logActivity('tc_added', 'test_case', { details: `Added ${ids.length} TCs to plan` });
     } catch (err) {
       console.error('handleAddTcs error:', err);
       showToast('Failed to add test cases', 'error');
@@ -2398,8 +2422,10 @@ export default function PlanDetailPage() {
   const handleRemoveTc = async (tcId: string) => {
     const { error } = await supabase.from('test_plan_test_cases').delete().eq('test_plan_id', planId!).eq('test_case_id', tcId);
     if (error) { showToast('Failed to remove test case', 'error'); return; }
+    const removed = planTcs.find(p => p.test_case_id === tcId);
     setPlanTcs(prev => prev.filter(p => p.test_case_id !== tcId));
     showToast('Test case removed', 'success');
+    logActivity('tc_removed', 'test_case', { details: `Removed TC "${removed?.test_case?.title || tcId}"` });
   };
 
   const handleLock = async () => {
@@ -2411,6 +2437,7 @@ export default function PlanDetailPage() {
     if (error) { showToast('Failed to lock snapshot', 'error'); return; }
     setPlan(p => p ? { ...p, is_locked: true, snapshot_id: snapId, snapshot_locked_at: now } : p);
     showToast('Snapshot locked', 'success');
+    logActivity('snapshot_locked', 'status', { details: 'Snapshot locked — TC scope is fixed' });
   };
 
   const handleUnlockRequest = () => setShowUnlockConfirm(true);
@@ -2423,6 +2450,7 @@ export default function PlanDetailPage() {
     if (error) { showToast('Failed to unlock snapshot', 'error'); return; }
     setPlan(p => p ? { ...p, is_locked: false, snapshot_id: null, snapshot_locked_at: null } : p);
     showToast('Snapshot unlocked', 'success');
+    logActivity('snapshot_unlocked', 'status', { details: 'Snapshot unlocked — TC scope is open' });
   };
 
   const handleRebase = async () => {
@@ -2433,17 +2461,28 @@ export default function PlanDetailPage() {
     if (error) { showToast('Failed to rebase snapshot', 'error'); return; }
     setPlan(p => p ? { ...p, snapshot_locked_at: now } : p);
     showToast('Snapshot rebased to latest', 'success');
+    logActivity('snapshot_rebased', 'status', { details: 'Snapshot rebased to latest TC revisions' });
   };
 
   const handleUpdate = async (data: Partial<TestPlan>) => {
     const { error } = await supabase.from('test_plans').update(data).eq('id', planId!);
     if (error) { showToast('Failed to update plan', 'error'); throw error; }
+    const prev = plan;
     setPlan(p => p ? { ...p, ...data } : p);
+    // Log significant changes
+    if (data.status && data.status !== prev?.status) {
+      logActivity('status_changed', 'status', { details: `Status changed: ${prev?.status} → ${data.status}`, status: data.status });
+    } else if (data.entry_criteria || data.exit_criteria) {
+      logActivity('criteria_updated', 'update', { details: 'Entry/Exit criteria updated' });
+    } else {
+      logActivity('plan_updated', 'update', { details: 'Plan settings updated' });
+    }
   };
 
   const handleDelete = async () => {
     const { error } = await supabase.from('test_plans').delete().eq('id', planId!);
     if (error) { showToast('Failed to delete plan', 'error'); return; }
+    logActivity('plan_deleted', 'status', { details: `Plan "${plan?.name}" deleted` });
     navigate(`/projects/${projectId}/milestones`);
     showToast('Plan deleted', 'success');
   };
