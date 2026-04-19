@@ -1,38 +1,70 @@
-2026-04-19: Milestone Overview Redesign + Issues 탭 메타데이터 (Option B)
+2026-04-19: Milestone Overview 전면 재편 + Issues 탭 메타데이터(Option B) + QA Blocker 2건 수정
 
-## 뭘 했냐
-- Milestone Detail 탭 5개(Results/Status/Activity/Burndown/Issues) → 3개(Overview/Activity/Issues)로 재편
-- Overview 탭 신규 구현: Burndown(Recharts) + 4 KPI strip + Intel 6-card grid + Execution sections + Contributors Top 5
-- Intel 6 카드: Failed&Blocked (span 2) / Velocity 7d / Top-Fail Tags (신규) / ETA vs Target / AI Risk Insight (span 2) / Activity 24h (span 2)
-- Execution Sections: Sub Milestones / Test Plans (신규) / Runs (Planned vs Direct 뱃지 구분) / Exploratory
-- `?tab=results|status|burndown` → `?tab=overview` replace:true 리다이렉트 (AC-C2)
-- MilestonePlanList 헤더에 "Open detailed view →" 버튼 추가 (Edit 왼쪽)
-- Plan Detail / Milestone Detail Issues 탭이 공통 <IssuesList /> 컴포넌트 사용 (priority/status/assignee 메타데이터 표시)
-- 이슈 메타데이터 Option B DB 저장:
-  - 신규 `test_results.jira_issues_meta` JSONB 컬럼 + 기존 `github_issues` 필드 확장
-  - `create-jira-issue` 확장: 생성 후 REST API로 priority/status/assignee fetch → JSONB append
-  - `create-github-issue` 확장: 응답 파싱 → JSONB append
-  - `sync-jira-metadata` 신규 (sync-jira-status 폐기, 스텁은 deprecated 주석)
-  - `sync-github-metadata` 신규 (지수백오프 + rate limit 처리)
-  - `github_sync_log` 테이블 + RLS 신설
-- i18n: `milestones.detail.overview.*` 네임스페이스 / `common.issues.*` 네임스페이스 추가 (en/ko)
-- CSS: src/index.css 맨 아래 `.mo-*` 블록 전체 추가 (250+줄)
+## 뭘 했냐 (풀 파이프라인: @planner → @designer → @developer → @qa → Blocker fix)
+
+### 기획/디자인/QA 산출물
+- docs/specs/dev-spec-milestone-overview-redesign.md (757줄) — DB 스키마/RLS/Edge Func/AC 27개/엣지케이스 16개
+- docs/specs/design-spec-milestone-overview-redesign.md (~700줄) — .mo-* 네임스페이스, 공통 <IssuesList /> 컴포넌트 스펙
+- docs/qa/qa-report-milestone-overview-redesign.md — Ship with fixes 판정, AC 대조표, Blocker 2건 식별 (이후 수정 완료)
+
+### 기능 A — Issues 탭 priority/status/assignee 메타데이터 (Option B)
+- migration 20260419_issue_metadata.sql — test_results.jira_issues_meta JSONB + github_issues JSONB 확장 + github_sync_log 테이블 + GIN 인덱스 + RLS
+- Edge Functions:
+  - sync-jira-metadata (신규) — 6h JQL bulk sync, 지수백오프 3회
+  - sync-github-metadata (신규) — issue별 개별 호출 sync
+  - create-jira-issue / create-github-issue (확장) — 생성 즉시 메타 fetch + JSONB append
+  - sync-jira-status (@deprecated 스텁 유지)
+- 공통 컴포넌트: src/components/issues/IssuesList.tsx + IssuePriorityBadge + IssueStatusBadge + IssueAssignee + LastSyncedLabel
+- plan-detail IssuesTab 내부 로직 삭제 후 <IssuesList /> 단일 호출로 치환
+
+### 기능 B — MilestonePlanList "Open detailed view →" 버튼
+- 상단 헤더 Edit 버튼 왼쪽에 배치, 클릭 시 /projects/:pid/milestones/:mid navigate
+
+### 기능 C — Milestone Detail 탭 5→3 재편 (Overview/Activity/Issues)
+- Overview 신설 (Results + Status + Burndown 통합):
+  - 상단: BurndownChart(Recharts) + 4 KPI strip
+  - Intel 2×N: FailedBlockedCard(span-2) / VelocitySparkline / TopFailTagsCard(신규) / EtaCard / AiRiskInsight(span-2) / Activity24hFeed(신규, span-2)
+  - 하단 실행 목록: Sub/TestPlans(신규)/Runs(Planned vs Direct 시각 구분)/Exploratory
+  - 풀폭: ContributorsCard (기존 Status 탭에서 분리)
+- Activity/Issues 탭 기존 유지, Issues는 <IssuesList /> 호출로 교체
+- 구 ?tab=results|status|burndown → overview replace:true 리다이렉트
+
+### QA Blocker 2건 즉시 수정
+- Security: sync-* 인증 추가 — 하이브리드 방식(JWT + project_members Tester+ 권한 확인 / pg_cron은 x-cron-secret 헤더)
+  - 신규 공통 모듈: supabase/functions/_shared/auth.ts
+  - CRON_SECRET 환경변수 등록 필요 (배포 절차 참조)
+- 기능: run-detail 6개 호출부에 test_result_id/run_id/project_id 전달 → 이슈 생성 직후 priority/status/assignee 즉시 렌더
 
 ## 어디까지 됐냐
-- 마이그레이션: supabase/migrations/20260419_issue_metadata.sql 작성 (배포 필요)
-- Edge Functions: 4개 작성/수정 (배포 필요)
-  - create-jira-issue (확장)
-  - create-github-issue (확장)
-  - sync-jira-metadata (신규)
-  - sync-github-metadata (신규)
-- 프론트 코드: tsc --noEmit 통과, vite build 성공
-- Pg_cron 스케줄 등록: Supabase Dashboard에서 수동 등록 필요 (migration 파일 주석 참조)
+- TypeScript 빌드 PASS (tsc --noEmit 에러 0개 + npm run build 6.85s 성공)
+- claude 브랜치 커밋 6개 + auto-commit 1개 완료, origin/claude push 준비 완료:
+  - fa74273 feat(db/edge): issue 메타데이터 Option B
+  - 7a6fa98 feat(issues): 공통 <IssuesList />
+  - d4055c7 feat(milestone-detail): Overview 탭 + 탭 재편 + 리다이렉트
+  - 442ba4f feat(milestones): Open detailed view 버튼
+  - 70d0a46 fix(sync-functions): 인증 검증 추가
+  - 83cf105 fix(issue-create): test_result_id 전달
 
 ## 다음에 할 것
-- supabase db push (20260419_issue_metadata.sql 배포)
-- supabase functions deploy (sync-jira-metadata, sync-github-metadata, create-jira-issue, create-github-issue)
-- Supabase Dashboard에서 pg_cron 등록 (6시간 주기, 위 migration 파일 주석 참조)
-- create-jira-issue/create-github-issue 호출 부분 프론트에서 `test_result_id`/`run_id`/`project_id` 전달 (optional — 현재 없으면 메타데이터는 다음 cron 주기에 채워짐)
-- 기존 `sync-jira-status` 폴더는 배포 후 삭제 고려 (CLAUDE.md: 허락 없이 삭제 금지)
-- dev-spec AC-A5 지수백오프: jira_sync_log에 failed keys 기록 부분은 기본 로직만 구현 (상세 로그 구조는 필요 시 보강)
-- Overview: mockup_3의 "Behind ideal" KPI 대신 ETA 카드로 분리한 디자인 명세 차이는 디자이너 의도대로 반영
+
+### 배포 절차 (즉시 실행 필요)
+1. Supabase 마이그레이션 적용: supabase db push (20260419_issue_metadata.sql)
+2. Edge Functions 배포: sync-jira-metadata, sync-github-metadata, create-jira-issue, create-github-issue, _shared/auth.ts
+3. Supabase Dashboard → Edge Function Settings에 CRON_SECRET 환경변수 등록
+4. pg_cron 스케줄 등록 (SQL 템플릿은 20260419_issue_metadata.sql:84-99 주석):
+   - sync-jira-metadata-6h — headers jsonb_build_object('x-cron-secret', '<same-value>')
+   - sync-github-metadata-6h — 동일
+
+### QA Follow-up (배포 차단 아님, 별도 티켓으로 분리)
+- H-1: any 타입 캐스팅 남용 정리 (IssuesList, sync-*)
+- H-2: plan-detail IssuesTab의 미사용 파라미터(tcResultMap, dailyExecCounts, planTcs) 제거
+- H-3: GitHub assignee_display_name이 login(username) 저장 중 — .name(실명) 사용으로 변경
+- AC-B4: MilestonePlanList "Open detailed view" i18n 하드코딩 → useTranslation + t() 적용
+- AC-A6: Refresh 버튼 권한별 분기 (현재 canRefresh={true} 고정 → Viewer에도 노출) → Tester+ 조건 추가
+- 플랜별 제한: Free 12h / Hobby 일 3회 Refresh 제한 (현재 미구현)
+- AC-A5: DLQ 큐 또는 자동 재시도 로직 (현재 sync_log에 failed_keys 기록만)
+- M-2: OverviewTab queryKey의 runIds.sort() 사이드이펙트 → [...runIds].sort()
+
+### 기능 외 미완 (이번 scope 밖)
+- FocusMode / AIRunSummaryPanel / FlakyDetector의 이슈 생성 호출부는 test_result가 특정되지 않는 컨텍스트라 test_result_id 전달 제외
+- sync-jira-status 폴더는 배포 완료 후 삭제 고려 (현재 @deprecated 스텁)
