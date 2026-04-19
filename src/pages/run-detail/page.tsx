@@ -1437,6 +1437,9 @@ export default function RunDetail() {
                     : buildAutoJiraDescription(tc),
                   issueType: jiraSettings.issue_type || 'Bug',
                   priority: mapTestPriorityToJira(tc.priority),
+                  test_result_id: newResultData?.id,
+                  run_id: runId,
+                  project_id: projectId,
                 },
               });
               if (jiraData?.success && jiraData?.issue?.key && newResultData?.id) {
@@ -1468,6 +1471,9 @@ export default function RunDetail() {
                 body: `**Auto-created by Testably**\n\nTest Case: ${tc.title}\nPriority: ${tc.priority}\n\n---\n${tc.description || ''}`,
                 labels: githubSettings.default_labels.length > 0 ? githubSettings.default_labels : ['bug'],
                 assignee: githubSettings.auto_assign_enabled && githubSettings.assignee_username ? githubSettings.assignee_username : undefined,
+                test_result_id: newResultData?.id,
+                run_id: runId,
+                project_id: projectId,
               },
             });
             if (ghData?.success && ghData?.issue?.number) {
@@ -1805,6 +1811,9 @@ export default function RunDetail() {
                     : buildAutoJiraDescription(tc),
                   issueType: jiraSettings.issue_type || 'Bug',
                   priority: mapTestPriorityToJira(tc.priority),
+                  test_result_id: data?.id,
+                  run_id: runId,
+                  project_id: projectId,
                 },
               });
               if (jiraData?.success && jiraData?.issue?.key && data?.id) {
@@ -1836,6 +1845,9 @@ export default function RunDetail() {
                 body: `**Auto-created by Testably**\n\nTest Case: ${tc.title}\nPriority: ${tc.priority}\n\n---\n${tc.description || ''}`,
                 labels: githubSettings.default_labels.length > 0 ? githubSettings.default_labels : ['bug'],
                 assignee: githubSettings.auto_assign_enabled && githubSettings.assignee_username ? githubSettings.assignee_username : undefined,
+                test_result_id: data?.id,
+                run_id: runId,
+                project_id: projectId,
               },
             });
             if (ghData?.success && ghData?.issue?.number && data?.id) {
@@ -2464,6 +2476,11 @@ export default function RunDetail() {
         .map(c => c.trim())
         .filter(c => c);
 
+      // Attach to latest existing test_result when Issues tab flow (not Add Result modal).
+      // When Add Result modal is open, no result exists yet → server-side persist skipped
+      // and the issue key goes to pendingJiraIssues so it joins the new result on save.
+      const attachedResultId = !showAddResultModal && testResults.length > 0 ? testResults[0].id : undefined;
+
       const { data, error } = await supabase.functions.invoke('create-jira-issue', {
         body: {
           domain: jiraSettings.domain,
@@ -2477,6 +2494,9 @@ export default function RunDetail() {
           labels: labelsArray,
           assignee: issueFormData.assignee || undefined,
           components: componentsArray.length > 0 ? componentsArray : undefined,
+          test_result_id: attachedResultId,
+          run_id: runId,
+          project_id: projectId,
         },
       });
 
@@ -2553,6 +2573,10 @@ export default function RunDetail() {
         .map(l => l.trim())
         .filter(l => l);
 
+      // Attach to latest existing test_result when Issues tab flow (not Add Result modal).
+      // When Add Result modal is open, no result exists yet → goes to pendingGithubIssues.
+      const attachedResultId = !showAddResultModal && testResults.length > 0 ? testResults[0].id : undefined;
+
       const { data, error } = await supabase.functions.invoke('create-github-issue', {
         body: {
           token: githubSettings.token,
@@ -2562,6 +2586,9 @@ export default function RunDetail() {
           body: githubIssueFormData.body || undefined,
           labels: labelsArray.length > 0 ? labelsArray : (githubSettings.default_labels.length > 0 ? githubSettings.default_labels : undefined),
           assignee: githubIssueFormData.assignee || undefined,
+          test_result_id: attachedResultId,
+          run_id: runId,
+          project_id: projectId,
         },
       });
 
