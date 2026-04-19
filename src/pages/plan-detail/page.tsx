@@ -1308,20 +1308,34 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCo
                   const actor = profiles.get(log.actor_id);
                   const actorName = actor?.full_name || actor?.email || 'System';
                   const { cls, iconCls, icon } = eventStyle(log.event_type || '');
-                  const desc = log.event_type?.replace(/_/g, ' ') || '';
-                  const metaName = log.metadata?.name;
+                  const evtType = log.event_type || '';
+                  const metaDetails = log.metadata?.details;
                   const metaStatus = log.metadata?.status;
+
+                  // Human-readable description
+                  let desc = '';
+                  if (evtType.includes('tc_added')) desc = 'added test cases to the plan';
+                  else if (evtType.includes('tc_removed')) desc = 'removed a test case from the plan';
+                  else if (evtType.includes('snapshot_locked')) desc = 'locked the snapshot';
+                  else if (evtType.includes('snapshot_unlocked')) desc = 'unlocked the snapshot';
+                  else if (evtType.includes('snapshot_rebased')) desc = 'rebased snapshot to latest';
+                  else if (evtType.includes('status_changed')) desc = 'changed plan status';
+                  else if (evtType.includes('criteria_updated')) desc = 'updated entry/exit criteria';
+                  else if (evtType.includes('plan_updated')) desc = 'updated plan settings';
+                  else if (evtType.includes('plan_deleted')) desc = 'deleted the plan';
+                  else if (evtType.includes('plan_created')) desc = 'created the plan';
+                  else desc = evtType.replace(/_/g, ' ');
+
                   return (
-                    <div key={log.id} className={`event ${cls}`}>
-                      <div className={`event-icon ${iconCls}`}>{icon}</div>
-                      <div className="event-body">
+                    <div key={log.id} className={`t-event ${cls}`}>
+                      <div className={`t-event-icon ${iconCls}`}>{icon}</div>
+                      <div className="t-event-body">
                         <div className="what">
                           <b>{actorName}</b> {desc}
-                          {metaName && <> — "<i>{metaName}</i>"</>}
-                          {metaStatus && <> → <span className="pill" style={metaStatus === 'passed' ? {background:'var(--success-50)',color:'var(--success-600)'} : metaStatus === 'failed' ? {background:'var(--danger-50)',color:'var(--danger-600)'} : {}}>{metaStatus}</span></>}
+                          {metaStatus && <> → <span className={`pill ${metaStatus === 'passed' || metaStatus === 'completed' ? 'success' : metaStatus === 'failed' ? 'danger' : metaStatus === 'active' ? 'violet' : ''}`}>{metaStatus}</span></>}
                         </div>
-                        {log.metadata?.details && (
-                          <div className="meta">{log.metadata.details}</div>
+                        {metaDetails && (
+                          <div className="meta">{metaDetails}</div>
                         )}
                       </div>
                       <div className="when">{formatTime(log.created_at)}</div>
