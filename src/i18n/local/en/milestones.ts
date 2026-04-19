@@ -26,6 +26,8 @@ export const milestones = {
   rollupFailed: 'Failed',
   rollupCoverage: 'Coverage',
   rollupPassRate: 'Pass Rate',
+  rollupBadgeSingular: 'Roll-up · {{n}} sub',
+  rollupBadgePlural: 'Roll-up · {{n}} subs',
   dateMode: 'Date Mode',
   dateModeAuto: '🔄 Auto (from sub milestones)',
   dateModeManual: '✏️ Manual',

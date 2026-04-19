@@ -1037,3 +1037,40 @@
   .mo-risk-card .mo-risk-meta .refresh.loading i,
   .mo-risk-card .mo-risk-head i.mo-risk-head-spin { animation: none; }
 }
+
+/* =========================================================
+   Roll-up badge (Header-level, milestone-name 옆) — v3 §3-2
+   ========================================================= */
+
+.mo-rollup-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  min-height: 22px;
+  background: #EEF2FF;
+  border: 1px solid #C7D2FE;
+  border-radius: 9999px;
+  color: #3730A3;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+.mo-rollup-badge i {
+  font-size: 12px;
+  color: #6366F1;
+  line-height: 1;
+}
+.mo-rollup-badge:hover { background: #E0E7FF; }
+
+@media (max-width: 767px) {
+  .mo-rollup-badge .label-text { display: none; }
+  .mo-rollup-badge::after {
+    content: attr(data-count);
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .mo-rollup-badge { padding: 3px 6px; min-height: 22px; }
+}

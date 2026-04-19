@@ -8,6 +8,7 @@ import { supabase } from '../../lib/supabase';
 import ProjectHeader from '../../components/ProjectHeader';
 import OverviewTab from './OverviewTab';
 import IssuesList from '../../components/issues/IssuesList';
+import RollupBadge from './RollupBadge';
 
 interface Milestone {
   id: string;
@@ -859,6 +860,7 @@ export default function MilestoneDetail() {
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: msBadge.dot }} />
             {msBadge.label}
           </span>
+          <RollupBadge count={subMilestones.length} visible={isAggregated} />
           {(milestone.start_date || milestone.end_date) && (
             <span style={{ fontSize: '0.8125rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
               <i className="ri-calendar-line" style={{ fontSize: '0.875rem' }} />

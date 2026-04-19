@@ -26,6 +26,8 @@ export const milestones = {
   rollupFailed: '실패',
   rollupCoverage: '커버리지',
   rollupPassRate: '통과율',
+  rollupBadgeSingular: '롤업 · 하위 {{n}}개',
+  rollupBadgePlural: '롤업 · 하위 {{n}}개',
   dateMode: '기간 모드',
   dateModeAuto: '🔄 Auto (sub 기간 자동)',
   dateModeManual: '✏️ Manual (수동 입력)',
