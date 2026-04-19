@@ -1451,12 +1451,13 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCo
 
 // ─── Tab: Issues ──────────────────────────────────────────────────────────────
 
-function IssuesTab({ runs, plan, planTcs, milestone, parentMilestone, profiles, driftCount, onLock, onUnlock, onRebase, tcResultMap, dailyExecCounts, currentUserProfile }: {
+function IssuesTab({ runs, plan, planTcs, milestone, parentMilestone, profiles, driftCount, onLock, onUnlock, onRebase, tcResultMap, dailyExecCounts, currentUserProfile, onIssuesCount }: {
   runs: PlanRun[]; plan: TestPlan; planTcs: PlanTestCase[];
   milestone: Milestone | null; parentMilestone: Milestone | null; profiles: Map<string, Profile>;
   driftCount: number; onLock: () => Promise<void>; onUnlock: () => Promise<void>; onRebase: () => Promise<void>;
   tcResultMap: Map<string, { result: string; assignee: string | null }>; dailyExecCounts: number[];
   currentUserProfile: Profile | null;
+  onIssuesCount?: (count: number) => void;
 }) {
   const [issues, setIssues] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1496,6 +1497,7 @@ function IssuesTab({ runs, plan, planTcs, milestone, parentMilestone, profiles, 
 
       allIssues.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       setIssues(allIssues);
+      onIssuesCount?.(allIssues.length);
       setLoading(false);
     };
     load();
@@ -1605,21 +1607,12 @@ function IssuesTab({ runs, plan, planTcs, milestone, parentMilestone, profiles, 
           </div>
         )}
 
-        {/* AI insight */}
+        {/* Summary */}
         {issues.length > 0 && (
-          <div className="iss-ai" style={{margin:'14px 0 0'}}>
-            <div style={{width:32,height:32,borderRadius:8,background:'#fff',color:'var(--violet)',display:'flex',alignItems:'center',justifyContent:'center',flex:'none'}}>
-              <svg style={{width:16,height:16}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2"/></svg>
-            </div>
-            <div>
-              <h4 style={{margin:'0 0 4px',fontSize:13,color:'var(--violet)'}}>AI Analysis · {issues.length} issues linked</h4>
-              <p style={{margin:0,fontSize:12.5,color:'var(--text)',lineHeight:1.5}}>
-                {linkedTcIds.size} TCs have linked issues ({totalTCs > 0 ? Math.round(linkedTcIds.size / totalTCs * 100) : 0}% of plan).
-                {jiraCount > 0 && ` ${jiraCount} Jira issues tracked.`}
-                {ghCount > 0 && ` ${ghCount} GitHub issues tracked.`}
-                {' '}Resolve open issues before marking the plan as completed.
-              </p>
-            </div>
+          <div style={{margin:'14px 0 0', padding:'10px 14px', background:'var(--bg-subtle)', borderRadius:8, fontSize:12.5, color:'var(--text-muted)', lineHeight:1.5}}>
+            {linkedTcIds.size} TC{linkedTcIds.size !== 1 ? 's' : ''} with linked issues ({totalTCs > 0 ? Math.round(linkedTcIds.size / totalTCs * 100) : 0}% of plan).
+            {jiraCount > 0 && ` ${jiraCount} Jira.`}
+            {ghCount > 0 && ` ${ghCount} GitHub.`}
           </div>
         )}
       </div>
@@ -2252,6 +2245,7 @@ export default function PlanDetailPage() {
   const [activeTab, setActiveTab] = useState<TabKey>('testcases');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showAIModal, setShowAIModal] = useState(false);
+  const [issuesCount, setIssuesCount] = useState(0);
   const [showUnlockConfirm, setShowUnlockConfirm] = useState(false);
 
   // Story 4: Drift count — TCs modified after snapshot was locked
@@ -2842,6 +2836,7 @@ export default function PlanDetailPage() {
               {tab.key === 'testcases' && <span className="count">{totalTCs}</span>}
               {tab.key === 'runs' && <span className="count">{runs.length}</span>}
               {tab.key === 'activity' && <span className="count">{activityLogs.length}</span>}
+              {tab.key === 'issues' && issuesCount > 0 && <span className="count">{issuesCount}</span>}
             </button>
           ))}
         </div>
@@ -2878,7 +2873,7 @@ export default function PlanDetailPage() {
         {activeTab === 'issues' && (
           <IssuesTab runs={runs} plan={plan} planTcs={planTcs} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles}
             driftCount={driftCount} onLock={handleLock} onUnlock={handleUnlockRequest} onRebase={handleRebase}
-            tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts} currentUserProfile={currentUserProfile} />
+            tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts} currentUserProfile={currentUserProfile} onIssuesCount={setIssuesCount} />
         )}
         {activeTab === 'environments' && (
           <EnvironmentsTab plan={plan} />
