@@ -6,10 +6,11 @@ import FailedBlockedCard from './FailedBlockedCard';
 import VelocitySparkline from './VelocitySparkline';
 import TopFailTagsCard from './TopFailTagsCard';
 import EtaCard from './EtaCard';
-import AiRiskInsight from './AiRiskInsight';
+import RiskInsightContainer from './RiskInsightContainer';
 import Activity24hFeed from './Activity24hFeed';
 import ExecutionSections from './ExecutionSections';
 import ContributorsCard from './ContributorsCard';
+import type { MilestoneAiRiskCache } from './useMilestoneAiRisk';
 
 interface TcStats {
   passed: number;
@@ -80,6 +81,7 @@ interface OverviewTabProps {
   subMilestones: SubMilestoneItem[];
   subMilestoneProgress: Map<string, number>;
   contributorProfiles: Map<string, { name: string | null; url: string | null }>;
+  aiRiskCache: MilestoneAiRiskCache | null;
   getSubBadge: (status: string) => { bg: string; color: string; label: string; dot: string };
   getRunStatusStyle: (status: string) => { bg: string; color: string; label: string };
   formatDateRange: (s: string | null, e: string | null) => string;
@@ -164,6 +166,7 @@ export default function OverviewTab(props: OverviewTabProps) {
   const {
     projectId, milestoneId, milestoneStart, milestoneEnd, tcStats, failedBlockedTcs,
     activityLogs, runs, sessions, subMilestones, subMilestoneProgress, contributorProfiles,
+    aiRiskCache,
     getSubBadge, getRunStatusStyle, formatDateRange, getAuthorColor, getContributorInitials,
     onGoActivity, onGoIssues,
   } = props;
@@ -171,7 +174,7 @@ export default function OverviewTab(props: OverviewTabProps) {
   const runIds = runs.map(r => r.id);
 
   const { data: extra, isLoading: extraLoading } = useQuery({
-    queryKey: ['milestone-overview-extra', milestoneId, runIds.sort().join(',')],
+    queryKey: ['milestone-overview-extra', milestoneId, [...runIds].sort().join(',')],
     queryFn: () => loadOverviewExtra(milestoneId, runIds),
     staleTime: 60_000,
   });
@@ -204,24 +207,24 @@ export default function OverviewTab(props: OverviewTabProps) {
   const projDays = velocityAvg != null && velocityAvg > 0 ? Math.ceil(remaining / velocityAvg) : null;
   const onTrack = projDays != null && daysLeft != null ? projDays <= daysLeft : true;
 
-  // Risk level
+  // Risk level (rule-based)
   const isCritical = daysLeft !== null && daysLeft <= 3 && daysLeft >= 0 && tcStats.passRate < 50;
   const isAtRisk = daysLeft !== null && daysLeft <= 7 && daysLeft >= 0 && tcStats.passRate < 70;
   const riskLevel: 'on_track' | 'at_risk' | 'critical' = isCritical ? 'critical' : isAtRisk ? 'at_risk' : 'on_track';
 
-  const aiBullets: React.ReactNode[] = [];
+  const riskBullets: React.ReactNode[] = [];
   if (riskLevel === 'on_track') {
-    aiBullets.push(<>Progress is <b>on track</b>. Current velocity suggests completion before the deadline.</>);
+    riskBullets.push(<>Progress is <b>on track</b>. Current velocity suggests completion before the deadline.</>);
   } else {
-    aiBullets.push(<>You're <b>behind the ideal burndown</b>. Consider increasing run frequency or reducing scope.</>);
+    riskBullets.push(<>You're <b>behind the ideal burndown</b>. Consider increasing run frequency or reducing scope.</>);
   }
   if (tcStats.failed > 0) {
-    aiBullets.push(<><b>{tcStats.failed} failing TCs</b> are slowing the burn. Prioritise fixing critical failures first.</>);
-  } else {
-    aiBullets.push(<>No failing TCs right now — keep the momentum going!</>);
+    riskBullets.push(<><b>{tcStats.failed} failing TCs</b> are slowing the burn. Prioritise fixing critical failures first.</>);
+  } else if (tcStats.total > 0) {
+    riskBullets.push(<>No failing TCs right now — keep the momentum going!</>);
   }
   if (topFailTags.length > 0) {
-    aiBullets.push(<>Top fail tag: <b>#{topFailTags[0].name}</b> ({topFailTags[0].count} fails). Investigate this area first.</>);
+    riskBullets.push(<>Top fail tag: <b>#{topFailTags[0].name}</b> ({topFailTags[0].count} fails). Investigate this area first.</>);
   }
 
   // Last 24h activity
@@ -240,9 +243,9 @@ export default function OverviewTab(props: OverviewTabProps) {
     .slice(0, 5);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      {/* Top: Chart + Intel */}
-      <div className="mo-overview-row">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+      {/* ── Hero Row: Chart (2fr) + Risk Insight (1fr) ── */}
+      <div className="mo-hero-row">
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <BurndownChart
             startDate={startDate}
@@ -259,49 +262,62 @@ export default function OverviewTab(props: OverviewTabProps) {
             passRate={tcStats.passRate}
           />
         </div>
-        <div className="mo-intel-col">
-          <FailedBlockedCard
-            tcs={failedBlockedTcs}
-            totalCount={failedBlockedTcs.length}
-            onViewAll={onGoIssues}
-          />
-          <VelocitySparkline weekCounts={velocity7d} />
-          <TopFailTagsCard tags={topFailTags} totalFails={totalFails} />
-          <EtaCard
-            daysLeft={daysLeft}
-            daysElapsed={daysElapsed}
-            daysTotal={daysTotal}
-            projDays={projDays}
-            onTrack={onTrack}
-          />
-          <AiRiskInsight riskLevel={riskLevel} bullets={aiBullets} />
-          <Activity24hFeed logs={activity24h} onViewAll={onGoActivity} />
-        </div>
+        <RiskInsightContainer
+          projectId={projectId}
+          milestoneId={milestoneId}
+          riskLevel={riskLevel}
+          bullets={riskBullets}
+          aiCache={aiRiskCache}
+          hasTcs={tcStats.total > 0}
+        />
       </div>
 
-      {/* Execution Sections */}
-      <ExecutionSections
-        projectId={projectId}
-        subMilestones={subMilestones}
-        subMilestoneProgress={subMilestoneProgress}
-        plans={plans}
-        plansLoading={extraLoading}
-        plansError={plansError}
-        runs={runs}
-        sessions={sessions}
-        planMap={planMap}
-        getSubBadge={getSubBadge}
-        getRunStatusStyle={getRunStatusStyle}
-        formatDateRange={formatDateRange}
-      />
+      {/* ── Intel Strip: 4 columns (Failed&Blocked / Velocity / TopFailTags / ETA) ── */}
+      <div className="mo-intel-strip">
+        <FailedBlockedCard
+          tcs={failedBlockedTcs}
+          totalCount={failedBlockedTcs.length}
+          onViewAll={onGoIssues}
+        />
+        <VelocitySparkline weekCounts={velocity7d} />
+        <TopFailTagsCard tags={topFailTags} totalFails={totalFails} />
+        <EtaCard
+          daysLeft={daysLeft}
+          daysElapsed={daysElapsed}
+          daysTotal={daysTotal}
+          projDays={projDays}
+          onTrack={onTrack}
+        />
+      </div>
 
-      {/* Contributors */}
-      <ContributorsCard
-        contributors={contributors}
-        contributorProfiles={contributorProfiles}
-        getAuthorColor={getAuthorColor}
-        getContributorInitials={getContributorInitials}
-      />
+      {/* ── 24h Activity inline strip ── */}
+      <Activity24hFeed logs={activity24h} onViewAll={onGoActivity} variant="strip" />
+
+      {/* ── Bottom Row: Execution (1.55fr) + Contributors sidebar (240px) ── */}
+      <div className="mo-bottom-row">
+        <div>
+          <ExecutionSections
+            projectId={projectId}
+            subMilestones={subMilestones}
+            subMilestoneProgress={subMilestoneProgress}
+            plans={plans}
+            plansLoading={extraLoading}
+            plansError={plansError}
+            runs={runs}
+            sessions={sessions}
+            planMap={planMap}
+            getSubBadge={getSubBadge}
+            getRunStatusStyle={getRunStatusStyle}
+            formatDateRange={formatDateRange}
+          />
+        </div>
+        <ContributorsCard
+          contributors={contributors}
+          contributorProfiles={contributorProfiles}
+          getAuthorColor={getAuthorColor}
+          getContributorInitials={getContributorInitials}
+        />
+      </div>
     </div>
   );
 }

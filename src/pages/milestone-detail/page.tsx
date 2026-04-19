@@ -20,6 +20,16 @@ interface Milestone {
   created_at: string;
   updated_at: string;
   parent_milestone_id: string | null;
+  ai_risk_cache?: {
+    generated_at: string;
+    stale_after?: string;
+    risk_level: 'on_track' | 'at_risk' | 'critical';
+    confidence: number;
+    summary: string;
+    bullets: string[];
+    recommendations: string[];
+    meta?: any;
+  } | null;
 }
 
 interface Run {
@@ -881,6 +891,7 @@ export default function MilestoneDetail() {
             subMilestones={subMilestones}
             subMilestoneProgress={subMilestoneProgress}
             contributorProfiles={contributorProfiles}
+            aiRiskCache={milestone.ai_risk_cache ?? null}
             getSubBadge={getStatusBadgeStyle}
             getRunStatusStyle={getRunStatusStyle}
             formatDateRange={formatDateRange}

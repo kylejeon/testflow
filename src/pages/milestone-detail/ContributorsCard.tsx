@@ -6,35 +6,46 @@ interface ContributorsCardProps {
 }
 
 /**
- * Contributors Top 5 card — moved from old Status tab.
- * Design-spec §6.
+ * Contributors Top 5 sidebar (design-spec v2 §1-2 / §9-2).
+ * .mo-contrib-side is a narrow 240px sidebar that sits to the right of the Bottom Row's
+ * Execution sections on ≥1280px. On ≤1279px the Bottom Row collapses to a single column,
+ * at which point .mo-contrib-side stays static (no sticky) and flows underneath.
  */
-export default function ContributorsCard({ contributors, contributorProfiles, getAuthorColor, getContributorInitials }: ContributorsCardProps) {
-  if (contributors.length === 0) return null;
-
+export default function ContributorsCard({
+  contributors,
+  contributorProfiles,
+  getAuthorColor,
+  getContributorInitials,
+}: ContributorsCardProps) {
   return (
-    <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 10, padding: '1rem 1.25rem' }}>
-      <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-        <i className="ri-team-line" style={{ fontSize: '0.9375rem', color: 'var(--primary)' }} /> Contributors — Top 5
+    <aside className="mo-contrib-side" aria-label="Top contributors">
+      <div className="mo-contrib-head">
+        <i className="ri-team-line" style={{ fontSize: '13px', color: 'var(--primary)' }} aria-hidden="true" />
+        Contributors — Top 5
       </div>
-      {contributors.map(([author, count], idx) => {
-        const profile = contributorProfiles.get(author);
-        return (
-          <div key={author} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0', borderBottom: idx < contributors.length - 1 ? '1px solid #F1F5F9' : 'none' }}>
-            {profile?.url ? (
-              <img src={profile.url} alt={author} style={{ width: '2rem', height: '2rem', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
-            ) : (
-              <div style={{ width: '2rem', height: '2rem', borderRadius: '50%', background: getAuthorColor(author), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5625rem', fontWeight: 700, color: '#fff', flexShrink: 0 }}>
-                {profile?.name ? getContributorInitials(profile.name) : getContributorInitials(author)}
-              </div>
-            )}
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text)' }}>{author}</div>
+      {contributors.length === 0 ? (
+        <div className="mo-contrib-empty">No contributors yet</div>
+      ) : (
+        contributors.map(([author, count]) => {
+          const profile = contributorProfiles.get(author);
+          return (
+            <div key={author} className="mo-contrib-row">
+              {profile?.url ? (
+                <img src={profile.url} alt={author} className="av" />
+              ) : (
+                <div
+                  className="av initials"
+                  style={{ background: getAuthorColor(author) }}
+                >
+                  {profile?.name ? getContributorInitials(profile.name) : getContributorInitials(author)}
+                </div>
+              )}
+              <div className="name" title={profile?.name || author}>{profile?.name || author}</div>
+              <span className="cnt">{count} TCs</span>
             </div>
-            <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-muted)' }}>{count} TCs executed</span>
-          </div>
-        );
-      })}
-    </div>
+          );
+        })
+      )}
+    </aside>
   );
 }
