@@ -1229,7 +1229,7 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCo
   const isResultEvent = (t: string) => t.includes('test_result') || t.includes('result');
   const isRunEvent = (t: string) => t.includes('run') && !t.includes('result');
   const isTcEvent = (t: string) => t.includes('tc_') || t.includes('test_case');
-  const isAiEvent = (t: string) => t.includes('ai');
+  const isAiEvent = (t: string) => t.startsWith('ai_') || t.includes('_ai_') || t === 'ai';
   const isStatusEvent = (t: string) => t.includes('status') || t.includes('snapshot') || t.includes('lock') || t.includes('plan_') || t.includes('criteria') || t.includes('update');
 
   const filters = [
