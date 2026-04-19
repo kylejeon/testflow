@@ -2513,6 +2513,23 @@ export default function PlanDetailPage() {
         setEntryPresets((presets || []).filter((p: any) => p.type === 'entry').map((p: any) => p.text));
         setExitPresets((presets || []).filter((p: any) => p.type === 'exit').map((p: any) => p.text));
       } catch { /* presets table may not exist yet */ }
+
+      // Issues count (pre-load for tab badge)
+      if (runIds.length > 0) {
+        try {
+          const { data: issueResults } = await supabase
+            .from('test_results')
+            .select('issues, github_issues')
+            .in('run_id', runIds)
+            .limit(200);
+          let count = 0;
+          for (const r of (issueResults || [])) {
+            if (Array.isArray(r.issues)) count += r.issues.filter(Boolean).length;
+            if (Array.isArray(r.github_issues)) count += r.github_issues.length;
+          }
+          setIssuesCount(count);
+        } catch { /* ignore */ }
+      }
     } catch (err: any) {
       setLoadError(true);
     } finally {
