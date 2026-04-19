@@ -14,10 +14,10 @@ interface RollupBadgeProps {
  * — relies on the page-level skeleton (§12-2 #3).
  */
 export default function RollupBadge({ count, visible }: RollupBadgeProps) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('milestones');
   if (!visible || count < 1) return null;
 
-  const key = count === 1 ? 'milestones.rollupBadgeSingular' : 'milestones.rollupBadgePlural';
+  const key = count === 1 ? 'rollupBadgeSingular' : 'rollupBadgePlural';
   const label = t(key, { n: count });
 
   return (

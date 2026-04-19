@@ -287,4 +287,47 @@
   - Issues 탭의 rollup 반영
   - Roll-up 뱃지 클릭 시 팝오버 (v4에서 재평가)
   - 기존 i18n 키 cleanup (rollupMode/rollupTotal 등 미사용 키)
-  - pre-existing: page.tsx line 615 'navigate' unused 경고
+
+---
+
+2026-04-19 (v3 최종): @qa 검수 + High 3건 수정 + RollupBadge i18n 버그 수정
+
+## QA 결과 요약
+- 리포트: docs/qa/qa-report-milestone-rollup-v3.md
+- 판정: Ship with fixes
+- Blocker 0건, High 3건 (H-1/H-2/H-3), Critical-1 (수치 검증 필요 → 별도 Follow-up)
+- 레이아웃 공백 절감 목표 -372px은 코드 수준 달성 ✓
+- AC 대부분 Pass, 일부 Partial (C-1 rollupStats.passed 산출 기준 parent run×tcId vs sub run×tcId 불일치 — 실제 데이터 검증 필요)
+
+## High 3건 + W-1 즉시 수정 (옵션 A 선택)
+- **132d90a** fix(kpi-strip): ETA 서브텍스트 i18n 적용
+  - 5개 신규 키 추가: detail.overview.kpi.eta / etaNoDate / etaOnTrack / etaOffTrack / detail.overview.executionEmpty
+  - 한국어 번역: "예상 완료일" / "날짜 미설정" / "정상 · {days}일 예상" / "+{days}일 지연" / "실행 기록 없음"
+  - KpiStrip.tsx + ExecutionSections.tsx 하드코딩 → useTranslation('milestones') + t()
+- **94745ab** chore(page): unused navigate 변수 제거 (H-3) + RollupBadge cursor default (W-1)
+
+## RollupBadge i18n 키 파싱 버그 수정 (추가 발견)
+- RollupBadge.tsx에서 useTranslation() 기본 네임스페이스로 호출하면서 키를 'milestones.rollupBadgeSingular'로 전달 → i18next가 translation 네임스페이스로 해석하여 키 원문이 raw 문자열로 렌더됨
+- 수정: useTranslation('milestones') + key를 relative(rollupBadgeSingular)로 변경
+- 이 버그가 있었으면 Roll-up 뱃지 자리에 "milestones.rollupBadgeSingular" 그대로 표시되었을 것
+
+## 최종 커밋 리스트 (claude 브랜치, push 대기)
+- 2867a6f feat(milestone-detail): Rollup 일관성 — tcStats 단일화
+- c503c57 feat(overview-v3): Hero 1.7:1 + KPI 5-col + Utility Row + Bottom 풀폭 Execution
+- 53a6c3f feat(rollup-badge): Header Roll-up 뱃지 신규 컴포넌트
+- a5c4e84 chore(cleanup): EtaCard.tsx 삭제 + 구 CSS v2 규칙 v3으로 재정의
+- 86e0126 chore(progress): @developer 구현 기록
+- 132d90a fix(kpi-strip): ETA 서브텍스트 i18n 적용
+- 94745ab chore(page): unused navigate 제거 + RollupBadge cursor default
+- (아래 커밋 1개 추가 예정) fix(rollup-badge): i18n 네임스페이스 버그 수정
+
+## CEO 확인 사항 (배포 후)
+- Milestone detail 진입 시 Header에 Roll-up 뱃지가 "Roll-up · N subs" 텍스트로 올바르게 표시되는지
+- Overview에서 Hero(Chart+KPI 5-col) + Utility(Intel 3-col + Contributors) + Execution 풀폭 순서로 공백 없이 배치되는지
+- 사용자 스크린샷에서 보였던 공백 3구간 개선 확인
+
+## 알려진 Follow-up (배포 차단 아님)
+- C-1: rollupStats.passed 산출 기준 검증 (parent tcId unique vs sub run×tcId 쌍) — 실제 데이터 필요
+- H-2: ExecutionSections plansLoading 중 empty 메시지 깜빡임 — UX 미세
+- i18n 구 키 cleanup (rollupMode/rollupTotal/rollupPassed/rollupFailed/rollupCoverage/rollupPassRate 6개 미사용)
+- 시각 검증 스크린샷 미수행
