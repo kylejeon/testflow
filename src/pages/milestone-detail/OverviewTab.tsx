@@ -82,6 +82,8 @@ interface OverviewTabProps {
   subMilestoneProgress: Map<string, number>;
   contributorProfiles: Map<string, { name: string | null; url: string | null }>;
   aiRiskCache: MilestoneAiRiskCache | null;
+  /** Parent runIds + sub milestones' runIds when rollup is active. Undefined = parent-only. */
+  aggregatedRunIds?: string[];
   getSubBadge: (status: string) => { bg: string; color: string; label: string; dot: string };
   getRunStatusStyle: (status: string) => { bg: string; color: string; label: string };
   formatDateRange: (s: string | null, e: string | null) => string;
@@ -102,18 +104,27 @@ interface OverviewExtra {
 
 /**
  * Single queryFn bundling additional Overview data (AC-C10: 1.5s init).
+ *
+ * When `aggregatedRunIds` is provided (rollup active), the test_results queries
+ * use the aggregated set (parent + sub runs). Plans query stays milestone-scoped
+ * (sub plans are out of scope per dev-spec §9).
  */
-async function loadOverviewExtra(milestoneId: string, runIds: string[]): Promise<OverviewExtra> {
+async function loadOverviewExtra(
+  milestoneId: string,
+  runIds: string[],
+  aggregatedRunIds?: string[],
+): Promise<OverviewExtra> {
+  const queryRunIds = aggregatedRunIds && aggregatedRunIds.length > 0 ? aggregatedRunIds : runIds;
   const [plansRes, failedResultsRes, execResultsRes] = await Promise.allSettled([
     supabase.from('test_plans')
       .select('id, name, status, priority, target_date, owner_id, milestone_id')
       .eq('milestone_id', milestoneId)
       .order('created_at', { ascending: false }),
-    runIds.length > 0
-      ? supabase.from('test_results').select('test_case_id, status').in('run_id', runIds).eq('status', 'failed')
+    queryRunIds.length > 0
+      ? supabase.from('test_results').select('test_case_id, status').in('run_id', queryRunIds).eq('status', 'failed')
       : Promise.resolve({ data: [], error: null } as any),
-    runIds.length > 0
-      ? supabase.from('test_results').select('status, created_at').in('run_id', runIds).in('status', ['passed', 'failed', 'blocked', 'retest'])
+    queryRunIds.length > 0
+      ? supabase.from('test_results').select('status, created_at').in('run_id', queryRunIds).in('status', ['passed', 'failed', 'blocked', 'retest'])
       : Promise.resolve({ data: [], error: null } as any),
   ]);
 
@@ -166,16 +177,17 @@ export default function OverviewTab(props: OverviewTabProps) {
   const {
     projectId, milestoneId, milestoneStart, milestoneEnd, tcStats, failedBlockedTcs,
     activityLogs, runs, sessions, subMilestones, subMilestoneProgress, contributorProfiles,
-    aiRiskCache,
+    aiRiskCache, aggregatedRunIds,
     getSubBadge, getRunStatusStyle, formatDateRange, getAuthorColor, getContributorInitials,
     onGoActivity, onGoIssues,
   } = props;
 
   const runIds = runs.map(r => r.id);
+  const aggRunIdsKey = aggregatedRunIds ? [...aggregatedRunIds].sort().join(',') : '';
 
   const { data: extra, isLoading: extraLoading } = useQuery({
-    queryKey: ['milestone-overview-extra', milestoneId, [...runIds].sort().join(',')],
-    queryFn: () => loadOverviewExtra(milestoneId, runIds),
+    queryKey: ['milestone-overview-extra', milestoneId, [...runIds].sort().join(','), aggRunIdsKey],
+    queryFn: () => loadOverviewExtra(milestoneId, runIds, aggregatedRunIds),
     staleTime: 60_000,
   });
 

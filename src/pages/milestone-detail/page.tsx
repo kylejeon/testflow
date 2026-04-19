@@ -127,6 +127,7 @@ type MilestoneDetailData = {
   issuesCount: number;
   subMilestoneProgress: Map<string, number>;
   rollupStats: RollupStats | null;
+  aggregatedRunIds: string[];
 };
 
 async function loadMilestoneDetailData(projectId: string, milestoneId: string): Promise<MilestoneDetailData> {
@@ -255,40 +256,84 @@ async function loadMilestoneDetailData(projectId: string, milestoneId: string): 
   });
   const parentProgressPct = parentTotal > 0 ? Math.round((parentTested / parentTotal) * 100) : 0;
 
-  // Global TC stats — sub-milestone rollup 계산에 필요하므로 먼저 집계
-  const globalTcStatusMap = new Map<string, string>();
-  allRawResults.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-    .forEach(r => { globalTcStatusMap.set(r.tcId, r.status); });
-
-  let aggPassed = 0, aggFailed = 0, aggBlocked = 0, aggRetest = 0;
-  globalTcStatusMap.forEach(status => {
-    if (status === 'passed') aggPassed++;
-    else if (status === 'failed') aggFailed++;
-    else if (status === 'blocked') aggBlocked++;
-    else if (status === 'retest') aggRetest++;
-  });
-  const aggTotal = allTestCaseIds.size;
-  const aggTested = aggPassed + aggFailed + aggBlocked + aggRetest;
-  const aggUntested = aggTotal - Math.min(globalTcStatusMap.size, aggTotal);
-  const aggPassRate = aggTested > 0 ? Math.round((aggPassed / aggTested) * 100) : 0;
-
   const subMilestoneProgress = new Map<string, number>();
   let rollupStats: RollupStats | null = null;
+  // Sub aggregates computed inside the block below and finalized after
+  // parent-only counters are known.
+  let subTotals: { total: number; completed: number; passed: number; failed: number; blocked: number } | null = null;
 
+  let subRunIdsForAggregation: string[] = [];
   if (subMilestoneIds.length > 0) {
     const { data: subRunsData } = await supabase
-      .from('test_runs').select('id, milestone_id, test_case_ids').in('milestone_id', subMilestoneIds);
+      .from('test_runs').select('id, milestone_id, test_case_ids, name').in('milestone_id', subMilestoneIds);
 
     if (subRunsData && subRunsData.length > 0) {
       const subRunIds = subRunsData.map((r: any) => r.id);
+      subRunIdsForAggregation = subRunIds;
       const { data: subResultsData } = await supabase
-        .from('test_results').select('run_id, test_case_id, status, created_at').in('run_id', subRunIds).order('created_at', { ascending: false });
+        .from('test_results').select('run_id, test_case_id, status, created_at, note, author').in('run_id', subRunIds).order('created_at', { ascending: false });
+
+      // Fetch sub test case names for activity log display
+      const subTcIds = new Set<string>();
+      subRunsData.forEach((r: any) => (r.test_case_ids || []).forEach((id: string) => subTcIds.add(id)));
+      if (subTcIds.size > 0) {
+        const existingIds = new Set(testCaseNameMap.keys());
+        const missingIds = Array.from(subTcIds).filter(id => !existingIds.has(id));
+        if (missingIds.length > 0) {
+          const { data: subTcData } = await supabase
+            .from('test_cases').select('id, title').in('id', missingIds);
+          (subTcData || []).forEach((tc: any) => testCaseNameMap.set(tc.id, tc.title));
+        }
+      }
+
+      const subRunNameMap = new Map<string, string>();
+      subRunsData.forEach((r: any) => subRunNameMap.set(r.id, r.name || ''));
 
       const runStatusMaps = new Map<string, Map<string, string>>();
       (subResultsData || []).forEach((r: any) => {
         if (!runStatusMaps.has(r.run_id)) runStatusMaps.set(r.run_id, new Map());
         const sm = runStatusMaps.get(r.run_id)!;
         if (!sm.has(r.test_case_id)) sm.set(r.test_case_id, r.status);
+
+        // Merge into allRawResults / globalTcStatusMap / allActivityLogs (rollup 반영)
+        const runName = subRunNameMap.get(r.run_id) || '';
+        allRawResults.push({
+          tcId: r.test_case_id,
+          status: r.status,
+          createdAt: r.created_at,
+          runId: r.run_id,
+          runName,
+          author: r.author || '',
+        });
+
+        if (r.status && r.status !== 'untested') {
+          allActivityLogs.push({
+            id: `${r.run_id}-${r.test_case_id}-${r.created_at}-status`,
+            type: r.status as ActivityLog['type'],
+            testCaseName: testCaseNameMap.get(r.test_case_id) || 'Unknown Test Case',
+            runName,
+            timestamp: new Date(r.created_at),
+            author: r.author || 'Unknown',
+          });
+        }
+
+        const autoNotePatterns = ['Status changed to', 'Passed via', 'via Pass', 'via pass'];
+        const isAutoNote = autoNotePatterns.some(pattern => r.note?.includes(pattern));
+        if (r.note && r.note.trim() && !isAutoNote) {
+          allActivityLogs.push({
+            id: `${r.run_id}-${r.test_case_id}-${r.created_at}-note`,
+            type: 'note',
+            testCaseName: testCaseNameMap.get(r.test_case_id) || 'Unknown Test Case',
+            runName,
+            timestamp: new Date(r.created_at),
+            author: r.author || 'Unknown',
+          });
+          notesCount++;
+        }
+
+        if (r.status === 'passed') passedCount++;
+        if (r.status === 'failed') failedCount++;
+        if (r.status === 'retest') retestCount++;
       });
 
       const subProgressAccum = new Map<string, { tested: number; total: number }>();
@@ -317,23 +362,14 @@ async function loadMilestoneDetailData(projectId: string, milestoneId: string): 
         subMilestoneProgress.set(k, v.total > 0 ? Math.round((v.tested / v.total) * 100) : parentProgressPct);
       });
 
-      // Roll-up: parent 직속 + sub 합산
-      const rollupTotal = parentTotal + subTotal;
-      const rollupCompleted = parentTested + subCompleted;
-      const rollupPassed = aggPassed + subPassed;
-      const rollupFailed = aggFailed + subFailed;
-      const rollupBlocked = aggBlocked + subBlocked;
-      const rollupPassRate = rollupCompleted > 0 ? Math.round((rollupPassed / rollupCompleted) * 100) : 0;
-      const rollupCoverage = rollupTotal > 0 ? Math.round((rollupCompleted / rollupTotal) * 100) : 0;
-
-      rollupStats = {
-        total: rollupTotal,
-        completed: rollupCompleted,
-        passed: rollupPassed,
-        failed: rollupFailed,
-        blocked: rollupBlocked,
-        passRate: rollupPassRate,
-        coverage: rollupCoverage,
+      // Store sub aggregates for final rollup computation below (after parent-only
+      // counters are known).
+      subTotals = {
+        total: subTotal,
+        completed: subCompleted,
+        passed: subPassed,
+        failed: subFailed,
+        blocked: subBlocked,
       };
     }
 
@@ -341,6 +377,74 @@ async function loadMilestoneDetailData(projectId: string, milestoneId: string): 
       if (!subMilestoneProgress.has(id)) subMilestoneProgress.set(id, parentProgressPct);
     });
   }
+
+  // Build globalTcStatusMap and parent-only aggregates AFTER sub merge so that
+  // failedBlockedTcList reflects sub TCs as well (AC-13). Also compute
+  // parent-only tcStats values which are used when NOT aggregated.
+  const globalTcStatusMap = new Map<string, string>();
+  [...allRawResults].sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .forEach(r => { globalTcStatusMap.set(r.tcId, r.status); });
+
+  // parentOnly* series (for non-aggregated case AND for rollup parent portion)
+  const parentOnlyTcStatusMap = new Map<string, string>();
+  const parentRunIdSetForFinal = new Set(runsWithProgress.map(r => r.id));
+  [...allRawResults]
+    .filter(r => parentRunIdSetForFinal.has(r.runId))
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .forEach(r => { parentOnlyTcStatusMap.set(r.tcId, r.status); });
+  let aggPassed = 0, aggFailed = 0, aggBlocked = 0, aggRetest = 0;
+  parentOnlyTcStatusMap.forEach(status => {
+    if (status === 'passed') aggPassed++;
+    else if (status === 'failed') aggFailed++;
+    else if (status === 'blocked') aggBlocked++;
+    else if (status === 'retest') aggRetest++;
+  });
+  const aggTotal = allTestCaseIds.size;
+  const aggTested = aggPassed + aggFailed + aggBlocked + aggRetest;
+  const aggUntested = aggTotal - Math.min(parentOnlyTcStatusMap.size, aggTotal);
+  const aggPassRate = aggTested > 0 ? Math.round((aggPassed / aggTested) * 100) : 0;
+
+  // Finalize rollupStats now that parent-only counters are computed.
+  if (subTotals) {
+    const rollupTotal = parentTotal + subTotals.total;
+    const rollupCompleted = parentTested + subTotals.completed;
+    const rollupPassed = aggPassed + subTotals.passed;
+    const rollupFailed = aggFailed + subTotals.failed;
+    const rollupBlocked = aggBlocked + subTotals.blocked;
+    const rollupPassRate = rollupCompleted > 0 ? Math.round((rollupPassed / rollupCompleted) * 100) : 0;
+    const rollupCoverage = rollupTotal > 0 ? Math.round((rollupCompleted / rollupTotal) * 100) : 0;
+    rollupStats = {
+      total: rollupTotal,
+      completed: rollupCompleted,
+      passed: rollupPassed,
+      failed: rollupFailed,
+      blocked: rollupBlocked,
+      passRate: rollupPassRate,
+      coverage: rollupCoverage,
+    };
+  }
+
+  // tcStats — inject rollup values when isAggregated (dev-spec §6-1 option 가)
+  const isAggregated = (subMilestonesData || []).length > 0 && rollupStats !== null;
+  const finalTcStats: TcStats = isAggregated && rollupStats
+    ? {
+        passed: rollupStats.passed,
+        failed: rollupStats.failed,
+        blocked: rollupStats.blocked,
+        retest: Math.max(0, rollupStats.completed - rollupStats.passed - rollupStats.failed - rollupStats.blocked),
+        untested: Math.max(0, rollupStats.total - rollupStats.completed),
+        total: rollupStats.total,
+        passRate: rollupStats.passRate,
+      }
+    : {
+        passed: aggPassed,
+        failed: aggFailed,
+        blocked: aggBlocked,
+        retest: aggRetest,
+        untested: Math.max(0, aggUntested),
+        total: aggTotal,
+        passRate: aggPassRate,
+      };
 
   // Assignees
   const runIds = runsWithProgress.map(r => r.id);
@@ -480,6 +584,10 @@ async function loadMilestoneDetailData(projectId: string, milestoneId: string): 
     } catch { /* ignore — badge falls back to live onCountChange */ }
   }
 
+  const aggregatedRunIds = isAggregated
+    ? [...runIds, ...subRunIdsForAggregation]
+    : runIds;
+
   return {
     project: projectData,
     milestone: correctedMilestone,
@@ -492,10 +600,11 @@ async function loadMilestoneDetailData(projectId: string, milestoneId: string): 
     contributorProfiles,
     assigneeProfiles: assigneeProfilesMap,
     runAssigneeMap: newRunAssigneeMap,
-    tcStats: { passed: aggPassed, failed: aggFailed, blocked: aggBlocked, retest: aggRetest, untested: Math.max(0, aggUntested), total: aggTotal, passRate: aggPassRate },
+    tcStats: finalTcStats,
     failedBlockedTcs: failedBlockedTcList,
     subMilestoneProgress,
     rollupStats,
+    aggregatedRunIds,
     issuesCount: issuesCountPreload,
   };
 }
@@ -556,6 +665,7 @@ export default function MilestoneDetail() {
   const issuesCount = liveIssuesCount ?? data?.issuesCount ?? null;
   const subMilestoneProgress = data?.subMilestoneProgress ?? new Map();
   const rollupStats = data?.rollupStats ?? null;
+  const aggregatedRunIds = data?.aggregatedRunIds ?? [];
   const isAggregated = subMilestones.length > 0 && rollupStats !== null;
 
   const formatDate = (dateStr: string | null) => {
@@ -711,7 +821,8 @@ export default function MilestoneDetail() {
     );
   }
 
-  const progress = calculateMilestoneProgress();
+  // When aggregated, progress reflects rollup coverage (AC-4). Otherwise parent-only.
+  const progress = isAggregated && rollupStats ? rollupStats.coverage : calculateMilestoneProgress();
   const msBadge = getStatusBadgeStyle(milestone.status);
   const dday = getDDayBadge(milestone.end_date);
   const progressColor = milestone.status === 'past_due' ? '#F97316' : milestone.status === 'completed' ? '#94A3B8' : '#22C55E';
@@ -812,30 +923,6 @@ export default function MilestoneDetail() {
           <span style={{ width: 1, height: '1rem', background: '#E2E8F0', margin: '0 0.75rem', flexShrink: 0, display: 'inline-block' }} />
           <span style={{ color: '#64748B' }}>Total TCs</span>&nbsp;<span style={{ fontWeight: 700, color: '#0F172A' }}>{tcStats.total}</span>
         </div>
-
-        {/* Roll-up 배너 (sub milestone이 있는 parent일 때만 표시) */}
-        {isAggregated && rollupStats && (
-          <div style={{ marginTop: '0.75rem', background: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: '0.5rem', padding: '0.75rem 1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.625rem' }}>
-              <i className="ri-loop-left-line" style={{ color: '#6366F1', fontSize: '0.875rem' }} />
-              <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#3730A3' }}>Roll-up Mode</span>
-              <span style={{ fontSize: '0.6875rem', color: '#6366F1', marginLeft: 'auto' }}>{subMilestones.length} sub milestone{subMilestones.length !== 1 ? 's' : ''} + direct runs aggregated</span>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', textAlign: 'center' }}>
-              {[
-                { label: 'Total TCs', value: rollupStats.total, color: '#0F172A' },
-                { label: 'Passed', value: rollupStats.passed, color: '#16A34A' },
-                { label: 'Failed', value: rollupStats.failed, color: '#DC2626' },
-                { label: 'Coverage', value: `${rollupStats.coverage}%`, color: '#6366F1' },
-              ].map((kpi, i) => (
-                <div key={i} style={{ background: '#fff', borderRadius: '0.375rem', padding: '0.5rem' }}>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 700, color: kpi.color }}>{kpi.value}</div>
-                  <div style={{ fontSize: '0.6875rem', color: '#64748B', marginTop: '0.125rem' }}>{kpi.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* ── Row 3: Content Tab Row (42px) ── */}
@@ -892,6 +979,7 @@ export default function MilestoneDetail() {
             subMilestoneProgress={subMilestoneProgress}
             contributorProfiles={contributorProfiles}
             aiRiskCache={milestone.ai_risk_cache ?? null}
+            aggregatedRunIds={isAggregated ? aggregatedRunIds : undefined}
             getSubBadge={getStatusBadgeStyle}
             getRunStatusStyle={getRunStatusStyle}
             formatDateRange={formatDateRange}
