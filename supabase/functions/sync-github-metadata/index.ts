@@ -115,11 +115,39 @@ serve(async (req) => {
     });
 
     for (const [projectId, projRows] of byProject.entries()) {
-      const { data: settings } = await admin
-        .from('github_settings')
-        .select('token, owner, repo')
-        .eq('project_id', projectId)
-        .maybeSingle();
+      // github_settings is per-user (user_id keyed), not per-project.
+      // Find a project member whose github_settings are configured — prefer
+      // owner/admin roles so the "official" integration owner is used.
+      const { data: memberRows } = await admin
+        .from('project_members')
+        .select('user_id, role')
+        .eq('project_id', projectId);
+
+      const memberIds = (memberRows || [])
+        .sort((a: any, b: any) => {
+          const rank: Record<string, number> = { owner: 0, admin: 1, manager: 2, tester: 3, viewer: 4, guest: 5 };
+          return (rank[a.role] ?? 99) - (rank[b.role] ?? 99);
+        })
+        .map((r: any) => r.user_id);
+
+      let settings: { token: string; owner: string; repo: string } | null = null;
+      if (memberIds.length > 0) {
+        const { data: candidateSettings } = await admin
+          .from('github_settings')
+          .select('user_id, token, owner, repo')
+          .in('user_id', memberIds);
+        if (Array.isArray(candidateSettings) && candidateSettings.length > 0) {
+          // Preserve member rank order
+          const byUser = new Map(candidateSettings.map((s: any) => [s.user_id, s]));
+          for (const uid of memberIds) {
+            const s: any = byUser.get(uid);
+            if (s?.token && s?.owner && s?.repo) {
+              settings = { token: s.token, owner: s.owner, repo: s.repo };
+              break;
+            }
+          }
+        }
+      }
 
       if (!settings?.token) {
         // Skip all rows for this project

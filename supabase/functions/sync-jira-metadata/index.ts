@@ -135,11 +135,38 @@ serve(async (req) => {
     const failed: string[] = [];
 
     for (const [projectId, items] of byProject.entries()) {
-      const { data: settings } = await admin
-        .from('jira_settings')
-        .select('domain, email, api_token')
-        .eq('project_id', projectId)
-        .maybeSingle();
+      // jira_settings is per-user (user_id keyed), not per-project.
+      // Find a project member whose jira_settings are configured — prefer
+      // owner/admin roles so the "official" integration owner is used.
+      const { data: memberRows } = await admin
+        .from('project_members')
+        .select('user_id, role')
+        .eq('project_id', projectId);
+
+      const memberIds = (memberRows || [])
+        .sort((a: any, b: any) => {
+          const rank: Record<string, number> = { owner: 0, admin: 1, manager: 2, tester: 3, viewer: 4, guest: 5 };
+          return (rank[a.role] ?? 99) - (rank[b.role] ?? 99);
+        })
+        .map((r: any) => r.user_id);
+
+      let settings: { domain: string; email: string; api_token: string } | null = null;
+      if (memberIds.length > 0) {
+        const { data: candidateSettings } = await admin
+          .from('jira_settings')
+          .select('user_id, domain, email, api_token')
+          .in('user_id', memberIds);
+        if (Array.isArray(candidateSettings) && candidateSettings.length > 0) {
+          const byUser = new Map(candidateSettings.map((s: any) => [s.user_id, s]));
+          for (const uid of memberIds) {
+            const s: any = byUser.get(uid);
+            if (s?.domain && s?.email && s?.api_token) {
+              settings = { domain: s.domain, email: s.email, api_token: s.api_token };
+              break;
+            }
+          }
+        }
+      }
 
       if (!settings?.domain || !settings?.email || !settings?.api_token) {
         failed.push(...items.map(it => `${it.key}(no jira_settings)`));
