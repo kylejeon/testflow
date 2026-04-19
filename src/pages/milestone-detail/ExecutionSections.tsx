@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 interface SubMilestoneItem {
   id: string;
@@ -62,6 +63,7 @@ export default function ExecutionSections({
   projectId, subMilestones, subMilestoneProgress, plans, plansLoading, plansError,
   runs, sessions, planMap, getSubBadge, getRunStatusStyle, formatDateRange,
 }: Props) {
+  const { t } = useTranslation('milestones');
   const hasSubs = subMilestones.length > 0;
   const hasPlans = plans.length > 0;
   const hasRuns = runs.length > 0;
@@ -73,7 +75,7 @@ export default function ExecutionSections({
     return (
       <div className="mo-exec-empty" role="status">
         <i className="ri-flag-line" aria-hidden="true" />
-        <span>Nothing scheduled yet — create your first test plan or run to get going.</span>
+        <span>{t('detail.overview.executionEmpty')}</span>
       </div>
     );
   }

@@ -54,7 +54,12 @@ export const milestones = {
         executed: 'Executed',
         velocity: 'Velocity',
         passRate: 'Pass Rate',
+        eta: 'ETA',
+        etaNoDate: 'No date set',
+        etaOnTrack: 'on track · {{days}}d proj',
+        etaOffTrack: '+{{days}}d gap',
       },
+      executionEmpty: 'No activity yet',
       intel: {
         failedBlocked: 'Failed & Blocked',
         viewAllInIssues: 'View all in Issues →',

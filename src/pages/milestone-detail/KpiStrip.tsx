@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 interface KpiStripProps {
   remaining: number;
   executed: number;
@@ -21,6 +23,7 @@ export default function KpiStrip({
   remaining, executed, total, velocityPerDay, passed, passRate,
   etaDaysLeft, etaProjDays, etaOnTrack,
 }: KpiStripProps) {
+  const { t } = useTranslation('milestones');
   // ETA cell derived display
   const etaHasDate = etaDaysLeft !== null;
   const etaGap = etaHasDate && etaProjDays != null ? etaProjDays - etaDaysLeft! : null;
@@ -30,13 +33,13 @@ export default function KpiStrip({
       ? `D+${Math.abs(etaDaysLeft!)}`
       : `D-${etaDaysLeft!}`;
   const etaSubText = !etaHasDate
-    ? 'No date set'
+    ? t('detail.overview.kpi.etaNoDate')
     : etaProjDays == null
       ? `${etaDaysLeft}d target`
       : etaOnTrack
-        ? `on track · ${etaProjDays}d proj`
+        ? t('detail.overview.kpi.etaOnTrack', { days: etaProjDays })
         : etaGap != null && etaGap > 0
-          ? `+${etaGap}d gap`
+          ? t('detail.overview.kpi.etaOffTrack', { days: etaGap })
           : `${etaProjDays}d proj`;
   const etaColorClass = etaHasDate ? (etaOnTrack ? 'on-track' : 'off-track') : '';
 
@@ -63,7 +66,7 @@ export default function KpiStrip({
         <div className="sub">{passed} passed</div>
       </div>
       <div className="mo-kpi eta">
-        <div className="l">ETA</div>
+        <div className="l">{t('detail.overview.kpi.eta')}</div>
         <div className={`v ${etaColorClass}`}>{etaPrimary}</div>
         <div className="sub">{etaSubText}</div>
       </div>

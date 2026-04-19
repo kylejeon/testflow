@@ -52,7 +52,12 @@ export const milestones = {
         executed: '실행됨',
         velocity: '속도',
         passRate: '통과율',
+        eta: '예상 완료일',
+        etaNoDate: '날짜 미설정',
+        etaOnTrack: '정상 · {{days}}일 예상',
+        etaOffTrack: '+{{days}}일 지연',
       },
+      executionEmpty: '실행 기록 없음',
       intel: {
         failedBlocked: '실패 & 차단',
         viewAllInIssues: 'Issues 탭에서 전체 보기 →',
