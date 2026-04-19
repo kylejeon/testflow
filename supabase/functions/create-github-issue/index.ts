@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
 
     // ── 요청 파싱 ──────────────────────────────────────────────────────────────
     const body = await req.json();
-    const { token: ghToken, owner, repo, title, body: issueBody, labels, assignee } = body as {
+    const { token: ghToken, owner, repo, title, body: issueBody, labels, assignee, test_result_id, run_id, project_id } = body as {
       token: string;
       owner: string;
       repo: string;
@@ -90,6 +90,9 @@ Deno.serve(async (req) => {
       body?: string;
       labels?: string[];
       assignee?: string;
+      test_result_id?: string;
+      run_id?: string;
+      project_id?: string;
     };
 
     if (!ghToken) return jsonResp({ error: 'Missing required field: token' }, 400);
@@ -123,12 +126,66 @@ Deno.serve(async (req) => {
     if (response.ok) {
       let data: any = {};
       try { data = JSON.parse(responseText); } catch (_) { /* ignore */ }
+
+      const labelList: any[] = Array.isArray(data.labels) ? data.labels : [];
+      let priority: string | null = null;
+      for (const l of labelList) {
+        const n: string = (typeof l === 'string' ? l : l?.name || '').toLowerCase();
+        if (n.startsWith('priority/') || n.startsWith('priority-')) {
+          priority = n.split(/[/-]/)[1] || null;
+          break;
+        }
+      }
+      const assigneeObj = Array.isArray(data.assignees) && data.assignees.length > 0 ? data.assignees[0] : null;
+      const metadata = {
+        number: data.number,
+        url: data.html_url,
+        repo: `${owner}/${repo}`,
+        state: data.state || null,
+        priority,
+        assignee_login: assigneeObj?.login || null,
+        assignee_display_name: assigneeObj?.login || null,
+        assignee_avatar_url: assigneeObj?.avatar_url || null,
+        last_synced_at: new Date().toISOString(),
+      };
+
+      if (test_result_id) {
+        try {
+          const { data: existing } = await adminClient
+            .from('test_results')
+            .select('github_issues')
+            .eq('id', test_result_id)
+            .maybeSingle();
+          const existingGh: any[] = Array.isArray(existing?.github_issues) ? existing!.github_issues : [];
+          const next = existingGh.some((g: any) => g?.number === data.number && g?.repo === metadata.repo)
+            ? existingGh
+            : [...existingGh, metadata];
+          await adminClient
+            .from('test_results')
+            .update({ github_issues: next })
+            .eq('id', test_result_id);
+          if (project_id) {
+            await adminClient.from('github_sync_log').insert({
+              project_id,
+              github_issue_number: String(data.number),
+              github_repo: metadata.repo,
+              direction: 'outbound',
+              success: true,
+              testably_run_id: run_id ?? null,
+            }).then(() => null, () => null);
+          }
+        } catch (persistErr) {
+          console.warn('[create-github-issue] persist error:', persistErr);
+        }
+      }
+
       return jsonResp({
         success: true,
         issue: {
           number: data.number,
           html_url: data.html_url,
           title: data.title,
+          metadata,
         },
       });
     }

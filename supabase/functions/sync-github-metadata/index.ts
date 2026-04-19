@@ -1,0 +1,204 @@
+// sync-github-metadata Edge Function
+// -----------------------------------------------------------------------------
+// Pulls state / labels / assignee metadata from GitHub for test_results whose
+// `github_issues` JSONB contains {number, repo} objects, then merges the fresh
+// values back into the JSONB with a `last_synced_at` timestamp.
+//
+// Related spec: dev-spec §4-1-A, §6-1 (D).
+// -----------------------------------------------------------------------------
+
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+interface SyncBody {
+  scope?: 'all' | 'run_ids' | 'project_id';
+  run_ids?: string[];
+  project_id?: string;
+  only_stale?: boolean;
+}
+
+const STALE_THRESHOLD_MS = 6 * 60 * 60 * 1000;
+
+async function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const admin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    const body: SyncBody = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
+    const scope = body.scope || 'all';
+    const onlyStale = body.only_stale !== false;
+
+    let query = admin
+      .from('test_results')
+      .select('id, run_id, github_issues, test_runs!inner(project_id)')
+      .not('github_issues', 'is', null);
+    if (scope === 'run_ids' && Array.isArray(body.run_ids) && body.run_ids.length > 0) {
+      query = query.in('run_id', body.run_ids);
+    } else if (scope === 'project_id' && body.project_id) {
+      query = query.eq('test_runs.project_id', body.project_id);
+    }
+    query = query.limit(500);
+
+    const { data: rows, error: rowsErr } = await query;
+    if (rowsErr) {
+      console.error('[sync-github-metadata] select error:', rowsErr);
+      return jsonResp({ success: false, error: rowsErr.message }, 500);
+    }
+
+    const now = Date.now();
+    const nowIso = new Date().toISOString();
+    let synced = 0;
+    const failed: string[] = [];
+
+    // Group by project to re-use github_settings lookups
+    const byProject = new Map<string, any[]>();
+    (rows || []).forEach((row: any) => {
+      const projectId: string = row.test_runs?.project_id;
+      if (!projectId) return;
+      const arr = byProject.get(projectId) || [];
+      arr.push(row);
+      byProject.set(projectId, arr);
+    });
+
+    for (const [projectId, projRows] of byProject.entries()) {
+      const { data: settings } = await admin
+        .from('github_settings')
+        .select('token, owner, repo')
+        .eq('project_id', projectId)
+        .maybeSingle();
+
+      if (!settings?.token) {
+        // Skip all rows for this project
+        projRows.forEach((row: any) => {
+          const gi = Array.isArray(row.github_issues) ? row.github_issues : [];
+          gi.forEach((i: any) => i?.number && failed.push(String(i.number)));
+        });
+        continue;
+      }
+
+      for (const row of projRows) {
+        const gi: any[] = Array.isArray(row.github_issues) ? row.github_issues : [];
+        if (gi.length === 0) continue;
+
+        const merged: any[] = [];
+        for (const item of gi) {
+          if (!item?.number) { merged.push(item); continue; }
+          if (onlyStale && item.last_synced_at) {
+            const lastSync = new Date(item.last_synced_at).getTime();
+            if (!isNaN(lastSync) && now - lastSync < STALE_THRESHOLD_MS) {
+              merged.push(item);
+              continue;
+            }
+          }
+          const owner = item.owner || settings.owner;
+          const repo = item.repo || settings.repo;
+          if (!owner || !repo) { merged.push(item); continue; }
+
+          const url = `https://api.github.com/repos/${owner}/${repo}/issues/${item.number}`;
+          let attempt = 0;
+          let res: Response | null = null;
+          while (attempt < 3) {
+            res = await fetch(url, {
+              headers: {
+                'Authorization': `Bearer ${settings.token}`,
+                'Accept': 'application/vnd.github+json',
+                'X-GitHub-Api-Version': '2022-11-28',
+              },
+            });
+            if (res.status !== 429 && res.status !== 403) break;
+            // 403 with X-RateLimit-Remaining: 0 → backoff
+            await sleep(1000 * Math.pow(2, attempt));
+            attempt++;
+          }
+
+          if (!res || !res.ok) {
+            const err = res?.status === 404 ? 'not_found' : res?.status === 403 ? 'forbidden' : 'api_error';
+            merged.push({ ...item, error: err, last_synced_at: nowIso });
+            failed.push(String(item.number));
+            // log failure
+            await admin.from('github_sync_log').insert({
+              project_id: projectId,
+              github_issue_number: String(item.number),
+              github_repo: `${owner}/${repo}`,
+              direction: 'inbound',
+              success: false,
+              error_message: err,
+              testably_run_id: row.run_id,
+            }).then(() => null, () => null);
+            // 100ms between calls (BR-6 rate limit)
+            await sleep(100);
+            continue;
+          }
+
+          const data = await res.json();
+          const assignee = Array.isArray(data.assignees) && data.assignees.length > 0 ? data.assignees[0] : null;
+          const labels: any[] = Array.isArray(data.labels) ? data.labels : [];
+          let priority: string | null = null;
+          for (const l of labels) {
+            const n: string = (typeof l === 'string' ? l : l?.name || '').toLowerCase();
+            if (n.startsWith('priority/') || n.startsWith('priority-')) {
+              priority = n.split(/[/-]/)[1] || null;
+              break;
+            }
+          }
+
+          const { error: _omitErr, ...rest } = item as any;
+          merged.push({
+            ...rest,
+            state: data.state || null,
+            priority,
+            assignee_login: assignee?.login || null,
+            assignee_display_name: assignee?.login || null,
+            assignee_avatar_url: assignee?.avatar_url || null,
+            url: data.html_url || item.url || null,
+            last_synced_at: nowIso,
+          });
+
+          await admin.from('github_sync_log').insert({
+            project_id: projectId,
+            github_issue_number: String(item.number),
+            github_repo: `${owner}/${repo}`,
+            direction: 'inbound',
+            success: true,
+            testably_run_id: row.run_id,
+          }).then(() => null, () => null);
+          await sleep(100);
+        }
+
+        const { error: updErr } = await admin
+          .from('test_results')
+          .update({ github_issues: merged })
+          .eq('id', row.id);
+        if (!updErr) synced += 1;
+      }
+    }
+
+    return jsonResp({ success: true, synced_count: synced, failed_keys: failed, skipped_fresh: 0 });
+  } catch (err: any) {
+    console.error('[sync-github-metadata] unhandled:', err);
+    return jsonResp({ success: false, error: err?.message || 'Internal error' }, 500);
+  }
+});
+
+function jsonResp(body: object, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}

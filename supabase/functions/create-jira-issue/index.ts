@@ -71,6 +71,8 @@ serve(async (req) => {
       components,
       fieldMappings,
       fieldContext,
+      test_result_id,
+      run_id,
     } = body;
 
     // Log received params for debugging (masks token)
@@ -177,8 +179,70 @@ serve(async (req) => {
     if (response.ok) {
       let data: any = {};
       try { data = JSON.parse(responseText); } catch (_) { /* ignore */ }
+
+      // ── Fetch metadata (priority/status/assignee) for the new issue ──────
+      let metadata: any = null;
+      try {
+        const metaUrl = `https://${cleanDomain}/rest/api/3/issue/${data.key}?fields=priority,status,assignee`;
+        const metaRes = await fetch(metaUrl, {
+          headers: { 'Authorization': `Basic ${auth}`, 'Accept': 'application/json' },
+        });
+        if (metaRes.ok) {
+          const metaJson = await metaRes.json();
+          metadata = {
+            priority: metaJson?.fields?.priority?.name || null,
+            status: metaJson?.fields?.status?.name || null,
+            assignee_account_id: metaJson?.fields?.assignee?.accountId || null,
+            assignee_display_name: metaJson?.fields?.assignee?.displayName || null,
+            assignee_avatar_url: metaJson?.fields?.assignee?.avatarUrls?.['48x48'] || null,
+          };
+        }
+      } catch (metaErr) {
+        console.warn('[create-jira-issue] metadata fetch failed:', metaErr);
+      }
+
+      // ── Persist metadata to test_results.jira_issues_meta ────────────────
+      if (test_result_id) {
+        try {
+          const { data: existing } = await adminClient
+            .from('test_results')
+            .select('jira_issues_meta, issues')
+            .eq('id', test_result_id)
+            .maybeSingle();
+          const existingMeta: any[] = Array.isArray(existing?.jira_issues_meta) ? existing!.jira_issues_meta : [];
+          const existingIssues: string[] = Array.isArray(existing?.issues) ? existing!.issues : [];
+          const newEntry = {
+            key: data.key,
+            url: `https://${cleanDomain}/browse/${data.key}`,
+            priority: metadata?.priority ?? priority ?? null,
+            status: metadata?.status ?? null,
+            assignee_account_id: metadata?.assignee_account_id ?? null,
+            assignee_display_name: metadata?.assignee_display_name ?? null,
+            assignee_avatar_url: metadata?.assignee_avatar_url ?? null,
+            last_synced_at: new Date().toISOString(),
+          };
+          // Avoid dup by key
+          const nextMeta = existingMeta.some((m: any) => m?.key === data.key)
+            ? existingMeta
+            : [...existingMeta, newEntry];
+          const nextIssues = existingIssues.includes(data.key)
+            ? existingIssues
+            : [...existingIssues, data.key];
+          await adminClient
+            .from('test_results')
+            .update({ jira_issues_meta: nextMeta, issues: nextIssues })
+            .eq('id', test_result_id);
+        } catch (persistErr) {
+          console.warn('[create-jira-issue] persist error:', persistErr);
+        }
+      }
+
       return new Response(
-        JSON.stringify({ success: true, issue: { key: data.key, id: data.id, self: data.self } }),
+        JSON.stringify({
+          success: true,
+          issue: { key: data.key, id: data.id, self: data.self, metadata },
+          run_id: run_id ?? null,
+        }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }

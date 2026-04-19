@@ -6,12 +6,12 @@ const corsHeaders = {
 };
 
 /**
- * Sync Jira Status (Outbound: Testably → Jira)
+ * @deprecated Use `sync-jira-metadata` instead.
  *
- * When a test case status changes in Testably, this function
- * transitions the linked Jira issue to the mapped status.
+ * This stub is kept for backwards compatibility. Once all callers migrate
+ * (dev-spec §7), this directory can be removed.
  *
- * Phase 2 implementation — currently returns 200 OK with logging.
+ * Sync Jira Status (Outbound: Testably → Jira) — legacy placeholder.
  */
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
