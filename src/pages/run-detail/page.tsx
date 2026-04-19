@@ -1928,7 +1928,8 @@ export default function RunDetail() {
       await updateRunStatus(runId!, updatedTestCases);
 
       // Email notification: run_completed when all TCs are done (fire-and-forget)
-      if (untestedCount === 0) {
+      const untestedRemaining = updatedTestCases.filter(tc => tc.runStatus === 'untested').length;
+      if (untestedRemaining === 0) {
         void (async () => {
           try {
             const recipients = projectMembers
