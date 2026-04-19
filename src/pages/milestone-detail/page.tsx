@@ -2,7 +2,7 @@ import PageLoader from '../../components/PageLoader';
 import { useToast } from '../../components/Toast';
 import { StatusBadge, type TestStatus } from '../../components/StatusBadge';
 import { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import ProjectHeader from '../../components/ProjectHeader';
@@ -612,7 +612,6 @@ async function loadMilestoneDetailData(projectId: string, milestoneId: string): 
 
 export default function MilestoneDetail() {
   const { projectId, milestoneId } = useParams();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
 

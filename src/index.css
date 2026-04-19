@@ -1041,6 +1041,7 @@
   font-weight: 600;
   white-space: nowrap;
   flex-shrink: 0;
+  cursor: default;
   transition: background 0.15s ease;
 }
 .mo-rollup-badge i {
