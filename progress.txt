@@ -1,23 +1,38 @@
-2026-04-19: Plan Detail 전면 개선 + Activity 탭 mockup_10 반영
+2026-04-19: Milestone Overview Redesign + Issues 탭 메타데이터 (Option B)
 
 ## 뭘 했냐
-- Entry/Exit Criteria: 프리셋 템플릿 + 자동 판정(Auto) + 체크 상태 DB 저장
-- Snapshot UI 정리: Settings 토글 제거, Overview strip에서 snap_id 제거, TC revision만 표시
-- Runs 탭: mockup_9 기준 전면 개선 (summary strip 실제 데이터, Run 카드 그리드, Run #순번)
-- Run TC assignee: test_cases.assignee fallback 제거, run_testcase_assignees만 사용
-- Run 생성 시 assignee 초기화 (이전 값 유지 버그 수정)
-- Avatar 색상 일관성: run-detail에서 userId 전달하여 동일 색상
-- Activity 탭: mockup_10 기준 이벤트별 아이콘, Today/Yesterday 헤더, 3열 그리드
-- Milestones Plan 카드: blocked/retest 포함 정확한 진행률
-- Owner 표시: full name 통일 (Locked by, Milestones Plan 카드, Settings 드롭다운)
+- Milestone Detail 탭 5개(Results/Status/Activity/Burndown/Issues) → 3개(Overview/Activity/Issues)로 재편
+- Overview 탭 신규 구현: Burndown(Recharts) + 4 KPI strip + Intel 6-card grid + Execution sections + Contributors Top 5
+- Intel 6 카드: Failed&Blocked (span 2) / Velocity 7d / Top-Fail Tags (신규) / ETA vs Target / AI Risk Insight (span 2) / Activity 24h (span 2)
+- Execution Sections: Sub Milestones / Test Plans (신규) / Runs (Planned vs Direct 뱃지 구분) / Exploratory
+- `?tab=results|status|burndown` → `?tab=overview` replace:true 리다이렉트 (AC-C2)
+- MilestonePlanList 헤더에 "Open detailed view →" 버튼 추가 (Edit 왼쪽)
+- Plan Detail / Milestone Detail Issues 탭이 공통 <IssuesList /> 컴포넌트 사용 (priority/status/assignee 메타데이터 표시)
+- 이슈 메타데이터 Option B DB 저장:
+  - 신규 `test_results.jira_issues_meta` JSONB 컬럼 + 기존 `github_issues` 필드 확장
+  - `create-jira-issue` 확장: 생성 후 REST API로 priority/status/assignee fetch → JSONB append
+  - `create-github-issue` 확장: 응답 파싱 → JSONB append
+  - `sync-jira-metadata` 신규 (sync-jira-status 폐기, 스텁은 deprecated 주석)
+  - `sync-github-metadata` 신규 (지수백오프 + rate limit 처리)
+  - `github_sync_log` 테이블 + RLS 신설
+- i18n: `milestones.detail.overview.*` 네임스페이스 / `common.issues.*` 네임스페이스 추가 (en/ko)
+- CSS: src/index.css 맨 아래 `.mo-*` 블록 전체 추가 (250+줄)
 
 ## 어디까지 됐냐
-- 마이그레이션: 20260418_criteria_presets.sql (배포 필요)
-- 코드: tsc 빌드 성공, claude 브랜치 커밋 완료
-- Run 카드 assignee 다수 표시: assignees 파싱 강화 (JSON string fallback 추가)
+- 마이그레이션: supabase/migrations/20260419_issue_metadata.sql 작성 (배포 필요)
+- Edge Functions: 4개 작성/수정 (배포 필요)
+  - create-jira-issue (확장)
+  - create-github-issue (확장)
+  - sync-jira-metadata (신규)
+  - sync-github-metadata (신규)
+- 프론트 코드: tsc --noEmit 통과, vite build 성공
+- Pg_cron 스케줄 등록: Supabase Dashboard에서 수동 등록 필요 (migration 파일 주석 참조)
 
 ## 다음에 할 것
-- supabase db push (criteria_presets 마이그레이션)
-- Run assignee 2명 표시 실제 확인 (DB에 2명 저장되는지 검증)
-- Activity 탭 실제 데이터 검증 (activity_logs 테이블 데이터 확인)
-- mockup 기반 추가 정렬 필요 시 진행
+- supabase db push (20260419_issue_metadata.sql 배포)
+- supabase functions deploy (sync-jira-metadata, sync-github-metadata, create-jira-issue, create-github-issue)
+- Supabase Dashboard에서 pg_cron 등록 (6시간 주기, 위 migration 파일 주석 참조)
+- create-jira-issue/create-github-issue 호출 부분 프론트에서 `test_result_id`/`run_id`/`project_id` 전달 (optional — 현재 없으면 메타데이터는 다음 cron 주기에 채워짐)
+- 기존 `sync-jira-status` 폴더는 배포 후 삭제 고려 (CLAUDE.md: 허락 없이 삭제 금지)
+- dev-spec AC-A5 지수백오프: jira_sync_log에 failed keys 기록 부분은 기본 로직만 구현 (상세 로그 구조는 필요 시 보강)
+- Overview: mockup_3의 "Behind ideal" KPI 대신 ETA 카드로 분리한 디자인 명세 차이는 디자이너 의도대로 반영

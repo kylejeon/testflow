@@ -6,12 +6,12 @@ export const milestones = {
   milestoneName: '마일스톤 이름',
   milestoneDescription: '설명',
   noMilestones: '마일스톤이 없습니다',
-  
+
   // Milestone Details
   milestoneDetails: '마일스톤 상세',
   relatedTestCases: '관련 테스트 케이스',
   progress: '진행률',
-  
+
   // Messages
   milestoneCreated: '마일스톤이 생성되었습니다',
   milestoneUpdated: '마일스톤이 수정되었습니다',
@@ -34,6 +34,65 @@ export const milestones = {
   noSubMilestones: 'Sub 마일스톤 없음',
   preventThreeLevelNesting: 'Sub milestone 아래에는 추가 하위 milestone을 생성할 수 없습니다.',
   rollupUpdated: 'Roll-up 재집계 완료',
+
+  openDetailedView: '상세 보기 열기 →',
+
+  detail: {
+    tabs: {
+      overview: '개요',
+      activity: '활동',
+      issues: '이슈',
+    },
+    overview: {
+      burndown: '번다운',
+      kpi: {
+        remaining: '남은 TCs',
+        executed: '실행됨',
+        velocity: '속도',
+        passRate: '통과율',
+      },
+      intel: {
+        failedBlocked: '실패 & 차단',
+        viewAllInIssues: 'Issues 탭에서 전체 보기 →',
+        velocity7d: '속도 (최근 7일)',
+        topFailTags: '실패 상위 태그',
+        noFailedTags: '실패한 테스트 케이스에 태그 없음',
+        eta: '예상 완료',
+        etaOnTrack: '정상 진행',
+        etaBehind: '지연',
+        aiInsight: 'AI 리스크 인사이트',
+        aiOnTrack: '진행이 정상 궤도입니다. 현재 속도로는 마감 전 완료가 예상됩니다.',
+        aiBehind: '이상적인 번다운보다 지연되고 있습니다. 실행 빈도를 늘리거나 범위를 줄이는 것을 고려하세요.',
+        last24h: '활동 — 최근 24시간',
+        viewFullActivity: '전체 활동 보기 →',
+        noRecentActivity: '최근 24시간 활동 없음',
+        confidenceLabel: '신뢰도 {{value}}%',
+        avgPerDay: '평균 {{value}}',
+      },
+      sections: {
+        subMilestones: '하위 마일스톤',
+        testPlans: '테스트 플랜',
+        runs: '런',
+        exploratory: '탐색',
+        noPlans: '이 마일스톤에 연결된 테스트 플랜 없음',
+        emptyAll: '런이나 플랜이 없습니다. 플랜을 만들어 실행 추적을 시작하세요.',
+        createPlan: '+ 플랜 만들기',
+        upgradeToPlan: '플랜 생성은 Hobby 이상 플랜에서 가능합니다',
+      },
+      runBadge: {
+        direct: '직접 실행',
+        plan: '플랜',
+      },
+      contributors: '기여자 — Top 5',
+      chart: {
+        range: { '7d': '7일', '30d': '30일', all: '전체' },
+        legend: { ideal: '이상적', actual: '실제', projected: '예측' },
+        today: '오늘',
+        target: '목표',
+        emptyBurndown: '테스트를 실행하면 번다운이 표시됩니다',
+      },
+    },
+  },
 };
 
 export default milestones;

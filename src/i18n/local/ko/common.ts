@@ -81,6 +81,30 @@ export const common = {
   daysAgo: '{{count}}일 전',
   weeksAgo: '{{count}}주 전',
   monthsAgo: '{{count}}개월 전',
+
+  issues: {
+    priority: {
+      critical: '심각',
+      high: '높음',
+      medium: '보통',
+      low: '낮음',
+      none: '—',
+    },
+    status: {
+      open: '오픈',
+      inProgress: '진행 중',
+      resolved: '해결됨',
+      closed: '닫힘',
+    },
+    assignee: {
+      unassigned: '미지정',
+    },
+    lastSynced: '{{time}} 전 동기화됨',
+    refreshNow: '지금 새로고침',
+    refreshSuccess: '{{count}}개 이슈 동기화 완료',
+    refreshError: '이슈 새로고침 실패',
+    metaUnavailable: '메타데이터 없음',
+  },
 };
 
 export default common;

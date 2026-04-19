@@ -190,6 +190,17 @@ export default function MilestonePlanList({ projectId, milestone, plans, directR
           </div>
           <span className={msStatus.cls}>{msStatus.label}</span>
           <div className="ms-header-actions">
+            <button
+              className="btn btn-sm"
+              onClick={() => navigate(`/projects/${projectId}/milestones/${milestone.id}`)}
+              aria-label="Open milestone detailed view"
+            >
+              Open detailed view
+              <svg className="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+              </svg>
+            </button>
             <button className="btn btn-sm" onClick={onEdit}>
               <svg className="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />

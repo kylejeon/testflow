@@ -81,6 +81,31 @@ export const common = {
   daysAgo: '{{count}} days ago',
   weeksAgo: '{{count}} weeks ago',
   monthsAgo: '{{count}} months ago',
+
+  // Issues (shared across Plan Detail / Milestone Detail Issues tabs)
+  issues: {
+    priority: {
+      critical: 'Critical',
+      high: 'High',
+      medium: 'Medium',
+      low: 'Low',
+      none: '—',
+    },
+    status: {
+      open: 'Open',
+      inProgress: 'In Progress',
+      resolved: 'Resolved',
+      closed: 'Closed',
+    },
+    assignee: {
+      unassigned: 'Unassigned',
+    },
+    lastSynced: 'Last synced {{time}} ago',
+    refreshNow: 'Refresh now',
+    refreshSuccess: 'Synced {{count}} issues',
+    refreshError: 'Failed to refresh issues',
+    metaUnavailable: 'Metadata unavailable',
+  },
 };
 
 export default common;
