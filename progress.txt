@@ -1,3 +1,51 @@
+2026-04-20: Milestone Overview UI 후속 — Test Plan progress 집계 + 5색 배지 통일
+
+## 뭘 했냐
+
+### Task 1: Milestone Overview Test Plan progress bar 실제 집계
+- src/pages/milestone-detail/OverviewTab.tsx
+  - `loadOverviewExtra` 확장 — planIds 기반 `test_plan_test_cases` / `test_runs` / `test_results` 쿼리 추가해 planId→pct Map 생성
+  - 집계 공식: executed TC 수(passed/failed/blocked/retest distinct) / total TC 수 × 100 (plan-detail/page.tsx:541 `completionRate` 로직과 동일)
+  - 3개 쿼리로 N+1 방지
+  - OverviewExtra 인터페이스에 `planProgressMap: Map<string, number>` 추가
+- src/pages/milestone-detail/ExecutionSections.tsx
+  - Props에 `planProgressMap?: Map<string, number>` 추가
+  - Test Plans 섹션의 하드코딩 `planProgressPct = 0` 제거 → `planProgressMap?.get(plan.id) ?? 0`
+  - AC-11 적용: pct >= 100 → green (완료 vs 상태 충돌 시 green 우선)
+
+### Task 2: 5색 배지 통일 (후속 PR, dev-spec §4 follow-up 범위)
+- src/pages/project-runs/page.tsx
+  - `getStatusBadge` / `getMilestoneStatus` (dead code) 제거 → `<StatusPill>` 사용
+  - in_progress pulse dot 유지 (StatusPill 옆에 sibling element로)
+- src/pages/project-milestones/MilestoneCard.tsx — `STATUS_BADGE` 맵 제거, `<StatusPill>` 호출
+- src/pages/project-milestones/MilestonePlanList.tsx — `PLAN_STATUS` / `RUN_STATUS_BADGE` / `MS_STATUS` 3개 맵 제거, `<StatusPill>` 호출, `running` → `in_progress` 정규화
+- src/pages/project-milestones/AdhocRunCard.tsx — `RUN_STATUS_BADGE` 맵 제거, `<StatusPill>` 호출
+- src/pages/project-milestones/AdhocPanel.tsx — `RUN_STATUS_BADGE` 맵 제거, `<StatusPill>` 호출
+
+### Task 3: StatusPill 접근성 minor
+- src/components/StatusPill.tsx — `aria-label={\`Status: ${text}\`}` 추가
+
+### 명시적으로 건드리지 않은 것
+- src/pages/project-plans/AIPlanAssistantModal.tsx L47/49/51 — "최근 수정"/"Flaky"/"AI 분석"은 classification tag (status 아님)
+- src/pages/project-runs/page.tsx 내 priority/lifecycle/subscription plan 색상 — status 아님
+- src/components/StatusBadge.tsx — TC Run 결과 전용 (dev-spec §4 범위 외)
+- Exploratory Session progress 집계 — 세션 상태 모델 불명확 (별도 티켓)
+
+### 품질 검사
+- `npx tsc --noEmit` — 0 에러
+- `npm run build` — PASS (6.58s)
+- `grep "bg-orange-100|bg-yellow-100|bg-amber-100|bg-violet-" src/pages/project-milestones src/pages/project-runs src/pages/project-plans` — 잔존 히트는 모두 priority/lifecycle/plan color/classification (status 아님) 로 확인
+
+## 어디까지 됐냐
+- claude 브랜치에서 완료, commit 준비
+- main merge는 CEO 수동
+
+## 다음엔 뭘 해야해
+- Exploratory Session progress 집계 로직 (세션 데이터 모델 확정 후)
+- plan-detail/page.tsx 내 status 배지 통일 (또 다른 별도 PR)
+
+---
+
 2026-04-19: Milestone Overview 전면 재편 + Issues 탭 메타데이터(Option B) + QA Blocker 2건 수정
 
 ## 뭘 했냐 (풀 파이프라인: @planner → @designer → @developer → @qa → Blocker fix)

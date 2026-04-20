@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar } from '../../components/Avatar';
+import StatusPill from '../../components/StatusPill';
 import { MilestoneCardData } from './MilestoneCard';
 
 export interface TestPlanRow {
@@ -47,28 +48,14 @@ interface Props {
   onEdit: () => void;
 }
 
-const PLAN_STATUS: Record<string, { label: string; cls: string }> = {
-  planning:  { label: 'Planning',    cls: 'badge badge-blue' },
-  active:    { label: 'In Progress', cls: 'badge badge-orange' },
-  completed: { label: 'Completed',   cls: 'badge badge-success' },
-  cancelled: { label: 'Cancelled',   cls: 'badge' },
-};
-
-const RUN_STATUS_BADGE: Record<string, { label: string; cls: string }> = {
-  running:    { label: 'In Progress', cls: 'badge badge-orange' },
-  in_progress:{ label: 'In Progress', cls: 'badge badge-orange' },
-  completed:  { label: 'Completed',   cls: 'badge badge-success' },
-  paused:     { label: 'Paused',      cls: 'badge badge-warning' },
-  cancelled:  { label: 'Cancelled',   cls: 'badge' },
-  new:        { label: 'Not Started', cls: 'badge' },
-};
-
-const MS_STATUS: Record<string, { label: string; cls: string }> = {
-  started:   { label: 'In Progress', cls: 'badge badge-blue' },
-  past_due:  { label: 'Overdue',     cls: 'badge badge-danger' },
-  upcoming:  { label: 'Upcoming',    cls: 'badge' },
-  completed: { label: 'Completed',   cls: 'badge badge-success' },
-};
+// Local PLAN_STATUS / RUN_STATUS_BADGE / MS_STATUS maps removed.
+// Status badges now use the shared <StatusPill> component
+// (see /src/lib/statusPill.ts for the 5-color mapping).
+//
+// Legacy 'running' status → normalized to 'in_progress' for StatusPill resolution.
+// StatusPill maps: planning→gray, active/in_progress/started→blue, completed→green,
+// cancelled→red, past_due→red, paused→amber, upcoming/new→gray.
+const normalizeRunStatus = (s: string): string => (s === 'running' ? 'in_progress' : s);
 
 function fmtDate(d: string | null) {
   if (!d) return '';
@@ -116,7 +103,6 @@ export default function MilestonePlanList({ projectId, milestone, plans, directR
   const [filter, setFilter] = useState<FilterKey>('all');
   // AI Suggestion card removed
 
-  const msStatus = MS_STATUS[milestone.status] || MS_STATUS.upcoming;
   const hasSubs = (milestone.subMilestones?.length ?? 0) > 0;
   const isRollup = !!milestone.isAggregated;
 
@@ -188,7 +174,8 @@ export default function MilestonePlanList({ projectId, milestone, plans, directR
               </div>
             )}
           </div>
-          <span className={msStatus.cls}>{msStatus.label}</span>
+          <StatusPill status={milestone.status} />
+
           <div className="ms-header-actions">
             <button
               className="btn btn-sm"
@@ -313,7 +300,6 @@ export default function MilestonePlanList({ projectId, milestone, plans, directR
         )}
 
         {filteredPlans.map(plan => {
-          const statusInfo = PLAN_STATUS[plan.status] || PLAN_STATUS.planning;
           const planPassed = plan.passed ?? 0;
           const planFailed = plan.failed ?? 0;
           const planBlocked = (plan as any).blocked ?? 0;
@@ -339,7 +325,7 @@ export default function MilestonePlanList({ projectId, milestone, plans, directR
               <div className="plan-card-top">
                 <span className="plan-card-icon">📋</span>
                 <span className="plan-card-name">{plan.name}</span>
-                <span className={statusInfo.cls}>{statusInfo.label}</span>
+                <StatusPill status={plan.status} />
               </div>
               <div className="plan-card-meta">
                 {plan.tc_count !== undefined ? `${plan.tc_count} TCs` : '—'}
@@ -413,8 +399,6 @@ export default function MilestonePlanList({ projectId, milestone, plans, directR
             const runPassPct = total > 0 ? (runPassed / total * 100) : 0;
             const runFailPct = total > 0 ? (runFailed / total * 100) : 0;
             const runCompletePct = total > 0 ? Math.round(runExecuted / total * 100) : 0;
-            const statusInfo = RUN_STATUS_BADGE[run.status] || { label: 'Cancelled', cls: 'badge' };
-
             return (
               <div
                 key={run.id}
@@ -425,9 +409,7 @@ export default function MilestonePlanList({ projectId, milestone, plans, directR
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div className="adhoc-card-row1" style={{ marginBottom: 2 }}>
                     <span className="adhoc-card-name">{run.name}</span>
-                    <span className={statusInfo.cls} style={{ fontSize: 10, padding: '1px 5px', flexShrink: 0 }}>
-                      {statusInfo.label}
-                    </span>
+                    <StatusPill status={normalizeRunStatus(run.status)} />
                   </div>
                   {run.description && (
                     <div className="adhoc-card-sub">— {run.description}</div>

@@ -19,6 +19,7 @@ import SavedViewsDropdown from '../../components/SavedViewsDropdown';
 import { useSavedViews } from '../../hooks/useSavedViews';
 import { ExportModal, type ExportFormat } from '../../components/ExportModal';
 import { usePermission } from '../../hooks/usePermission';
+import StatusPill from '../../components/StatusPill';
 
 interface TestRun {
   id: string;
@@ -1434,31 +1435,9 @@ export default function ProjectRunsPage() {
     return `${formatDate(startDate)} - ${formatDate(endDate)}`;
   };
 
-  const getMilestoneStatus = (milestone: Milestone) => {
-    const now = new Date();
-    const endDate = new Date(milestone.end_date);
-    
-    if (milestone.status === 'completed') {
-      return { label: 'Completed', className: 'bg-gray-100 text-gray-700' };
-    }
-    
-    if (endDate < now) {
-      return { label: 'Overdue', className: 'bg-orange-100 text-orange-700' };
-    }
-
-    return { label: 'In Progress', className: 'bg-blue-100 text-blue-700' };
-  };
-
-  const getStatusBadge = (status: string) => {
-    const badges: Record<string, { label: string; className: string }> = {
-      new: { label: 'New', className: 'bg-yellow-100 text-yellow-700' },
-      in_progress: { label: 'In progress', className: 'bg-indigo-100 text-indigo-700' },
-      paused: { label: 'Paused', className: 'bg-amber-100 text-amber-700' },
-      under_review: { label: 'Under review', className: 'bg-purple-100 text-purple-700' },
-      completed: { label: 'Completed', className: 'bg-green-100 text-green-700' },
-    };
-    return badges[status] || badges.new;
-  };
+  // Status badges use the 5-color <StatusPill> system (see /src/lib/statusPill.ts).
+  // The `getMilestoneStatus` and `getStatusBadge` helpers were removed as part of
+  // the dev-spec-milestone-badge-progress-consistency follow-up PR.
 
   const getRunsByMilestone = (milestoneId: string) => {
     return testRuns.filter(run => {
@@ -1978,10 +1957,14 @@ export default function ProjectRunsPage() {
 
           {/* Col 5: Status badge + action button + ⋯ menu */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[0.625rem] font-semibold rounded-full ${getStatusBadge(run.status).className}`}>
-              {isInProgress && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse inline-block"></span>}
-              {getStatusBadge(run.status).label}
-            </span>
+            {isInProgress && (
+              <span
+                className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse inline-block"
+                aria-hidden="true"
+              />
+            )}
+            <StatusPill status={run.status} />
+
 
             {/* Promote button (ad-hoc, non-completed) */}
             {isAdhoc && !isCompleted && (

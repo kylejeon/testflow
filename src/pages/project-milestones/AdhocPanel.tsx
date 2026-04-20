@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AdhocRun } from './AdhocRunCard';
+import StatusPill from '../../components/StatusPill';
 
 interface Props {
   projectId: string;
@@ -8,12 +9,8 @@ interface Props {
   onPromote: (runId: string) => void;
 }
 
-const RUN_STATUS_BADGE: Record<string, { label: string; cls: string }> = {
-  running:   { label: 'In Progress', cls: 'badge badge-orange' },
-  completed: { label: 'Completed',   cls: 'badge badge-success' },
-  paused:    { label: 'Paused',      cls: 'badge badge-warning' },
-  cancelled: { label: 'Cancelled',   cls: 'badge' },
-};
+// Legacy 'running' status → normalize to 'in_progress' for StatusPill resolution.
+const normalizeRunStatus = (s: string): string => (s === 'running' ? 'in_progress' : s);
 
 function timeAgo(dateStr: string): string {
   const now = Date.now();
@@ -93,7 +90,6 @@ export default function AdhocPanel({ projectId, runs, onPromote }: Props) {
         )}
 
         {runs.map(run => {
-          const statusInfo = RUN_STATUS_BADGE[run.status] || RUN_STATUS_BADGE.cancelled;
           const tcTotal = run.test_case_ids?.length ?? 0;
           const passed = run.passed ?? 0;
           const failed = run.failed ?? 0;
@@ -128,7 +124,7 @@ export default function AdhocPanel({ projectId, runs, onPromote }: Props) {
                 <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {run.name}
                 </span>
-                <span className={statusInfo.cls}>{statusInfo.label}</span>
+                <StatusPill status={normalizeRunStatus(run.status)} />
               </div>
 
               {run.description && (

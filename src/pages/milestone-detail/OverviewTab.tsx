@@ -97,6 +97,15 @@ interface OverviewExtra {
   totalFails: number;
   executedPerDay: Map<string, number>;
   velocity7d: number[];
+  /**
+   * planId → progress percentage (0–100, rounded).
+   *
+   * Formula (matches plan-detail/page.tsx:541 completionRate logic):
+   *   totalTCs  = count(test_plan_test_cases WHERE test_plan_id = :planId)
+   *   executed  = distinct test_case_id with non-untested result across all runs of that plan
+   *   pct       = round(executed / totalTCs * 100), 0 when totalTCs = 0
+   */
+  planProgressMap: Map<string, number>;
 }
 
 /**
@@ -127,6 +136,60 @@ async function loadOverviewExtra(
 
   const plans = plansRes.status === 'fulfilled' ? (plansRes.value.data || []) : [];
   const plansError = plansRes.status === 'rejected';
+
+  // ── Plan progress aggregation (per-plan completionRate = executed / total) ──
+  // 3 flat queries → single client-side reduce. Avoids N+1 (one query per plan).
+  // Edge cases: totalTCs=0 → 0%, plan has no runs → 0%.
+  const planProgressMap = new Map<string, number>();
+  const planIds: string[] = plans.map((p: any) => p.id).filter(Boolean);
+  if (planIds.length > 0) {
+    const [planTcsRes, planRunsRes] = await Promise.all([
+      supabase.from('test_plan_test_cases')
+        .select('test_plan_id, test_case_id')
+        .in('test_plan_id', planIds),
+      supabase.from('test_runs')
+        .select('id, test_plan_id')
+        .in('test_plan_id', planIds),
+    ]);
+    const planTcRows = (planTcsRes.data || []) as Array<{ test_plan_id: string; test_case_id: string }>;
+    const planRunRows = (planRunsRes.data || []) as Array<{ id: string; test_plan_id: string }>;
+
+    // planId → total TC count
+    const totalByPlan = new Map<string, number>();
+    for (const row of planTcRows) {
+      totalByPlan.set(row.test_plan_id, (totalByPlan.get(row.test_plan_id) || 0) + 1);
+    }
+
+    // runId → planId (for joining test_results back to plan)
+    const runToPlan = new Map<string, string>();
+    for (const r of planRunRows) {
+      if (r.id && r.test_plan_id) runToPlan.set(r.id, r.test_plan_id);
+    }
+
+    // Pull test_results for these plan runs to find distinct executed TC IDs per plan.
+    const planRunIds = planRunRows.map(r => r.id);
+    const executedByPlan = new Map<string, Set<string>>();
+    if (planRunIds.length > 0) {
+      const { data: planResults } = await supabase
+        .from('test_results')
+        .select('run_id, test_case_id, status')
+        .in('run_id', planRunIds)
+        .in('status', ['passed', 'failed', 'blocked', 'retest']);
+      for (const r of (planResults || []) as Array<{ run_id: string; test_case_id: string; status: string }>) {
+        const planId = runToPlan.get(r.run_id);
+        if (!planId || !r.test_case_id) continue;
+        if (!executedByPlan.has(planId)) executedByPlan.set(planId, new Set());
+        executedByPlan.get(planId)!.add(r.test_case_id);
+      }
+    }
+
+    for (const pid of planIds) {
+      const total = totalByPlan.get(pid) || 0;
+      const executed = executedByPlan.get(pid)?.size || 0;
+      const pct = total > 0 ? Math.round((executed / total) * 100) : 0;
+      planProgressMap.set(pid, pct);
+    }
+  }
 
   const failedResults = failedResultsRes.status === 'fulfilled' ? ((failedResultsRes.value as any).data || []) : [];
   const failedTcIds = Array.from(new Set(failedResults.map((r: any) => r.test_case_id).filter(Boolean)));
@@ -167,7 +230,7 @@ async function loadOverviewExtra(
     velocity7d.push(executedPerDay.get(d.toISOString().slice(0, 10)) || 0);
   }
 
-  return { plans, plansError, topFailTags, totalFails, executedPerDay, velocity7d };
+  return { plans, plansError, topFailTags, totalFails, executedPerDay, velocity7d, planProgressMap };
 }
 
 export default function OverviewTab(props: OverviewTabProps) {
@@ -194,6 +257,7 @@ export default function OverviewTab(props: OverviewTabProps) {
   const totalFails = extra?.totalFails || 0;
   const executedPerDay = extra?.executedPerDay || new Map<string, number>();
   const velocity7d = extra?.velocity7d || [0, 0, 0, 0, 0, 0, 0];
+  const planProgressMap = extra?.planProgressMap || new Map<string, number>();
 
   const planMap = new Map(plans.map((p: any) => [p.id, p]));
 
@@ -310,6 +374,7 @@ export default function OverviewTab(props: OverviewTabProps) {
           plans={plans}
           plansLoading={extraLoading}
           plansError={plansError}
+          planProgressMap={planProgressMap}
           runs={runs}
           sessions={sessions}
           planMap={planMap}

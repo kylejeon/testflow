@@ -1,4 +1,5 @@
 import React from 'react';
+import StatusPill from '../../components/StatusPill';
 
 export interface MilestoneCardData {
   id: string;
@@ -56,12 +57,8 @@ const STATUS_DOT: Record<string, React.ReactNode> = {
   ),
 };
 
-const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
-  started:   { label: 'In Progress', cls: 'badge badge-blue' },
-  past_due:  { label: 'Overdue',     cls: 'badge badge-danger' },
-  upcoming:  { label: 'Upcoming',    cls: 'badge' },
-  completed: { label: 'Completed',   cls: 'badge badge-success' },
-};
+// Local STATUS_BADGE map removed — status rendering delegated to <StatusPill>
+// (see /src/lib/statusPill.ts for the 5-color mapping).
 
 function fmtDate(d: string | null) {
   if (!d) return '';
@@ -94,7 +91,6 @@ export default function MilestoneCard({ milestone, selectedId, expandedIds, onSe
   const isDone = milestone.status === 'completed';
   const dl = daysLeft(milestone.end_date);
 
-  const statusInfo = STATUS_BADGE[milestone.status] || STATUS_BADGE.upcoming;
   const statusDot = STATUS_DOT[milestone.status] || STATUS_DOT.upcoming;
 
   // Plan count from sub plan list - we don't have it here so omit
@@ -135,9 +131,7 @@ export default function MilestoneCard({ milestone, selectedId, expandedIds, onSe
           </button>
         )}
         <span className="ms-card-name">{milestone.name}</span>
-        <span className={statusInfo.cls} style={{ fontSize: 10, padding: '1px 5px', flexShrink: 0 }}>
-          {statusInfo.label}
-        </span>
+        <StatusPill status={milestone.status} className="flex-shrink-0" />
         {milestone.isAggregated && !isSub && (
           <span
             className="badge"

@@ -45,6 +45,11 @@ export default function StatusPill({
   const v: StatusVariant = variant ?? resolved.variant;
   const text = label ?? resolved.label;
   return (
-    <span className={`${BASE} ${VARIANT_CLASSES[v]} ${className}`}>{text}</span>
+    <span
+      className={`${BASE} ${VARIANT_CLASSES[v]} ${className}`}
+      aria-label={`Status: ${text}`}
+    >
+      {text}
+    </span>
   );
 }

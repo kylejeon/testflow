@@ -1,4 +1,5 @@
 import React from 'react';
+import StatusPill from '../../components/StatusPill';
 
 export interface AdhocRun {
   id: string;
@@ -17,12 +18,8 @@ interface Props {
   onSelect: (id: string) => void;
 }
 
-const RUN_STATUS_BADGE: Record<string, { label: string; cls: string }> = {
-  running:   { label: 'In Progress', cls: 'badge badge-orange' },
-  completed: { label: 'Completed',   cls: 'badge badge-success' },
-  paused:    { label: 'Paused',      cls: 'badge badge-warning' },
-  cancelled: { label: 'Cancelled',   cls: 'badge' },
-};
+// Legacy 'running' status → normalize to 'in_progress' for StatusPill resolution.
+const normalizeRunStatus = (s: string): string => (s === 'running' ? 'in_progress' : s);
 
 function timeAgo(dateStr: string): string {
   const now = Date.now();
@@ -46,7 +43,6 @@ export default function AdhocRunCard({ run, selectedId, onSelect }: Props) {
   const failed = run.failed ?? 0;
   const remaining = total - passed - failed;
   const passPct = total > 0 ? (passed / total) * 100 : 0;
-  const statusInfo = RUN_STATUS_BADGE[run.status] || RUN_STATUS_BADGE.cancelled;
 
   return (
     <div
@@ -57,9 +53,7 @@ export default function AdhocRunCard({ run, selectedId, onSelect }: Props) {
       <div className="adhoc-card-row1">
         <span className="adhoc-bolt">⚡</span>
         <span className="adhoc-card-name">{run.name}</span>
-        <span className={statusInfo.cls} style={{ fontSize: 10, padding: '1px 5px', flexShrink: 0 }}>
-          {statusInfo.label}
-        </span>
+        <StatusPill status={normalizeRunStatus(run.status)} />
       </div>
 
       {/* Description sub-line */}

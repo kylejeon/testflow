@@ -47,6 +47,11 @@ interface Props {
   plans: PlanItem[];
   plansLoading?: boolean;
   plansError?: boolean;
+  /**
+   * planId → progress % (0–100). Computed by `loadOverviewExtra` in OverviewTab.
+   * Undefined / missing entry → 0% (empty track).
+   */
+  planProgressMap?: Map<string, number>;
   runs: RunItem[];
   sessions: SessionItem[];
   planMap: Map<string, PlanItem>;
@@ -65,7 +70,7 @@ interface Props {
  */
 export default function ExecutionSections({
   projectId, subMilestones, subMilestoneProgress, plans, plansLoading, plansError,
-  runs, sessions, planMap, formatDateRange,
+  planProgressMap, runs, sessions, planMap, formatDateRange,
 }: Props) {
   const { t } = useTranslation('milestones');
   const hasSubs = subMilestones.length > 0;
@@ -146,15 +151,19 @@ export default function ExecutionSections({
           ) : (
             <div className="mo-sec-card">
               {plans.map(plan => {
-                // 1차 PR: plan progress 집계 쿼리 없음 → 0% 빈 트랙 (Dev Spec §6.2, Out of Scope 3).
-                const planProgressPct = 0;
-                const planTone = plan.status === 'completed'
+                // Plan progress aggregated in `loadOverviewExtra` (OverviewTab.tsx).
+                // completionRate = distinct executed TCs / total TCs (matches plan-detail/page.tsx:541).
+                const planProgressPct = planProgressMap?.get(plan.id) ?? 0;
+                // AC-11 rule: 100% → green wins over any other status.
+                const planTone = planProgressPct >= 100
                   ? 'green'
-                  : plan.status === 'cancelled'
-                    ? 'red'
-                    : plan.status === 'active'
-                      ? 'blue'
-                      : 'gray';
+                  : plan.status === 'completed'
+                    ? 'green'
+                    : plan.status === 'cancelled'
+                      ? 'red'
+                      : plan.status === 'active'
+                        ? 'blue'
+                        : 'gray';
                 return (
                   <Link key={plan.id} to={`/projects/${projectId}/plans/${plan.id}`} className="row">
                     <div className="mo-row-icon violet"><i className="ri-folder-chart-line" /></div>
