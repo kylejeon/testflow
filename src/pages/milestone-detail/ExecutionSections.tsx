@@ -103,11 +103,13 @@ export default function ExecutionSections({
               // AC-11: green wins at 100% even when overdue.
               const tone = progressPct >= 100
                 ? 'green'
-                : isOverdue
-                  ? 'red'
-                  : sub.status === 'started' || sub.status === 'in_progress'
-                    ? 'blue'
-                    : 'gray';
+                : sub.status === 'completed'
+                  ? 'green'
+                  : isOverdue
+                    ? 'red'
+                    : sub.status === 'started' || sub.status === 'in_progress'
+                      ? 'blue'
+                      : 'gray';
               return (
                 <Link key={sub.id} to={`/projects/${projectId}/milestones/${sub.id}`} className="row">
                   <div className="mo-row-icon primary"><i className="ri-flag-line" /></div>
