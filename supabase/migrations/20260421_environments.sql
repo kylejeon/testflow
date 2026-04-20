@@ -13,6 +13,15 @@
 -- ============================================================
 
 -- ─────────────────────────────────────────────────────────────
+-- 0. 전제: project_members.role_override 컬럼 보장
+--    (20260413_project_members_role_override.sql 이 아직 미적용된 환경 대비)
+-- ─────────────────────────────────────────────────────────────
+
+ALTER TABLE project_members
+  ADD COLUMN IF NOT EXISTS role_override TEXT NULL
+  CHECK (role_override IN ('owner', 'admin', 'manager', 'tester', 'viewer', 'guest'));
+
+-- ─────────────────────────────────────────────────────────────
 -- 1. environments 테이블
 -- ─────────────────────────────────────────────────────────────
 
