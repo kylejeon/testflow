@@ -2515,7 +2515,22 @@ export default function PlanDetailPage() {
     setLoading(true);
     setLoadError(false);
     try {
-      const [projectRes, planRes, planTcIdsRes, allTcsRes, runsRes, milestonesRes, foldersRes] = await Promise.all([
+      // Phase 1 — fire all queries that only need projectId/planId in parallel.
+      // Includes plan-independent extras (auth user, project members, presets,
+      // plan-direct activity logs) to remove unnecessary sequential waits.
+      const [
+        projectRes,
+        planRes,
+        planTcIdsRes,
+        allTcsRes,
+        runsRes,
+        milestonesRes,
+        foldersRes,
+        userRes,
+        membersRes,
+        presetsRes,
+        planLogsRes,
+      ] = await Promise.all([
         supabase.from('projects').select('*').eq('id', projectId!).single(),
         supabase.from('test_plans').select('*').eq('id', planId!).single(),
         // Two-step approach: first get IDs, then join with test_cases
@@ -2531,6 +2546,13 @@ export default function PlanDetailPage() {
         supabase.from('test_runs').select('*').eq('test_plan_id', planId!).order('created_at', { ascending: false }),
         supabase.from('milestones').select('id, name, parent_milestone_id').eq('project_id', projectId!).order('created_at'),
         supabase.from('folders').select('name, icon, color').eq('project_id', projectId!),
+        supabase.auth.getUser(),
+        supabase.from('project_members').select('user_id').eq('project_id', projectId!),
+        supabase.from('criteria_presets').select('type, text').eq('project_id', projectId!),
+        // Plan-direct activity logs — doesn't depend on runIds, so fire now.
+        supabase.from('activity_logs').select('*')
+          .eq('target_id', planId!).eq('target_type', 'test_plan')
+          .order('created_at', { ascending: false }).limit(50),
       ]);
 
       if (planRes.error) {
@@ -2539,6 +2561,13 @@ export default function PlanDetailPage() {
       }
       setProject(projectRes.data);
       setPlan(planRes.data);
+
+      // Handle presets — table may not exist in older projects
+      if (!presetsRes.error) {
+        const presets = presetsRes.data || [];
+        setEntryPresets(presets.filter((p: any) => p.type === 'entry').map((p: any) => p.text));
+        setExitPresets(presets.filter((p: any) => p.type === 'exit').map((p: any) => p.text));
+      }
 
       // Normalize tags: DB may return null | string[] | JSON string — ensure string[]
       const normalizeTags = (raw: any): string[] | null => {
@@ -2568,13 +2597,57 @@ export default function PlanDetailPage() {
         return [];
       };
       const runAssigneeIds = [...new Set(rawRuns.flatMap((r: any) => parseAssignees(r.assignees)))];
-      let runAssigneeMap = new Map<string, string>();
-      if (runAssigneeIds.length > 0) {
-        try {
-          const { data: ap } = await supabase.from('profiles').select('id, full_name, email').in('id', runAssigneeIds);
-          (ap || []).forEach((p: any) => runAssigneeMap.set(p.id, p.full_name || p.email));
-        } catch { /* ignore */ }
-      }
+      const runIds = rawRuns.map((r: any) => r.id);
+
+      // Phase 2 — parallelize all queries that depend only on runIds/assignees.
+      // Kick off together so the waterfall is a single round trip, not 3-4.
+      const runAssigneePromise = runAssigneeIds.length > 0
+        ? supabase.from('profiles').select('id, full_name, email').in('id', runAssigneeIds)
+        : Promise.resolve({ data: [], error: null } as any);
+      const testRunLogsPromise = runIds.length > 0
+        ? supabase.from('activity_logs').select('*')
+            .eq('project_id', projectId!)
+            .eq('target_type', 'test_run')
+            .in('target_id', runIds)
+            .order('created_at', { ascending: false }).limit(100)
+        : Promise.resolve({ data: [], error: null } as any);
+      const testResultLogsPromise = runIds.length > 0
+        ? supabase.from('activity_logs').select('*')
+            .eq('project_id', projectId!)
+            .eq('target_type', 'test_result')
+            .in('metadata->>run_id', runIds)
+            .order('created_at', { ascending: false }).limit(100)
+        : Promise.resolve({ data: [], error: null } as any);
+      const testResultsPromise = runIds.length > 0
+        ? supabase.from('test_results')
+            .select('test_case_id, run_id, status, author, created_at')
+            .in('run_id', runIds)
+            .order('created_at', { ascending: false })
+        : Promise.resolve({ data: [], error: null } as any);
+      const issuesPromise = runIds.length > 0
+        ? supabase.from('test_results')
+            .select('issues, github_issues')
+            .in('run_id', runIds)
+            .limit(200)
+        : Promise.resolve({ data: [], error: null } as any);
+
+      const [
+        runAssigneeRes,
+        testRunLogsRes,
+        testResultLogsRes,
+        testResultsRes,
+        issuesRes,
+      ] = await Promise.all([
+        runAssigneePromise,
+        testRunLogsPromise,
+        testResultLogsPromise,
+        testResultsPromise,
+        issuesPromise,
+      ]);
+
+      const runAssigneeMap = new Map<string, string>();
+      (runAssigneeRes.data || []).forEach((p: any) => runAssigneeMap.set(p.id, p.full_name || p.email));
+
       const allRuns: PlanRun[] = rawRuns.map((r: any) => {
         // Parse assignees — may be UUID[], JSONB, or JSON string
         let rawAssignees: string[] = [];
@@ -2619,47 +2692,23 @@ export default function PlanDetailPage() {
         }
       }
 
-      // Activity logs — Plan direct events + linked Run/Result events
-      const runIds = allRuns.map((r: any) => r.id);
-      const logQueries: Promise<any>[] = [
-        // Plan-specific events (TC added/removed, snapshot, settings)
-        supabase.from('activity_logs').select('*')
-          .eq('target_id', planId!).eq('target_type', 'test_plan')
-          .order('created_at', { ascending: false }).limit(50),
+      // Merge activity logs (plan-direct + test_run + test_result)
+      const allLogs = [
+        ...(planLogsRes.data || []),
+        ...(testRunLogsRes.data || []),
+        ...(testResultLogsRes.data || []),
       ];
-      if (runIds.length > 0) {
-        // Test result events from linked runs
-        logQueries.push(
-          supabase.from('activity_logs').select('*')
-            .in('target_type', ['test_result', 'test_run'])
-            .order('created_at', { ascending: false }).limit(100)
-            .then(res => {
-              // Filter to only runs linked to this plan (metadata.run_id)
-              const runIdSet = new Set(runIds);
-              return { ...res, data: (res.data || []).filter((l: any) =>
-                runIdSet.has(l.metadata?.run_id) || runIdSet.has(l.target_id)
-              )};
-            })
-        );
-      }
-      const logResults = await Promise.all(logQueries);
-      const allLogs = [...(logResults[0]?.data || []), ...(logResults[1]?.data || [])];
       // Deduplicate and sort
       const logMap = new Map<string, any>();
       allLogs.forEach(l => logMap.set(l.id, l));
       const logs = [...logMap.values()].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 100);
       setActivityLogs(logs);
 
-      // Test results for TC execution status + assignee
-      let resultAssigneeIds: string[] = [];
+      // Test results for TC execution status + assignee (already fetched in Phase 2)
       if (runIds.length > 0) {
-        const { data: results } = await supabase
-          .from('test_results')
-          .select('test_case_id, run_id, status, author, created_at')
-          .in('run_id', runIds)
-          .order('created_at', { ascending: false });
+        const results = testResultsRes.data || [];
         const rMap = new Map<string, { result: string; assignee: string | null }>();
-        for (const r of (results || [])) {
+        for (const r of results) {
           if (r.test_case_id && !rMap.has(r.test_case_id)) {
             rMap.set(r.test_case_id, {
               result: r.status || 'untested',
@@ -2673,7 +2722,7 @@ export default function PlanDetailPage() {
         const perRunStats = new Map<string, { passed: number; failed: number; blocked: number; retest: number }>();
         // Get latest result per TC per run
         const perRunTcMap = new Map<string, Map<string, string>>(); // runId -> (tcId -> status)
-        for (const r of (results || [])) {
+        for (const r of results) {
           if (!r.run_id || !r.test_case_id) continue;
           if (!perRunTcMap.has(r.run_id)) perRunTcMap.set(r.run_id, new Map());
           const tcMap = perRunTcMap.get(r.run_id)!;
@@ -2702,12 +2751,11 @@ export default function PlanDetailPage() {
           }
         }
         setRuns([...allRuns]);
-        resultAssigneeIds = [...new Set((results || []).map((r: any) => r.author).filter(Boolean))] as string[];
 
         // Daily execution counts for last 7 days
         const now = new Date();
         const counts = [0,0,0,0,0,0,0];
-        for (const r of (results || [])) {
+        for (const r of results) {
           if (!r.created_at || !r.status || r.status === 'untested') continue;
           const execDate = new Date(r.created_at);
           const dayDiff = Math.floor((now.getTime() - execDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -2718,18 +2766,12 @@ export default function PlanDetailPage() {
         setDailyExecCounts(counts);
       }
 
-      // Current user
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      // Current user (already fetched in Phase 1)
+      const currentUser = userRes.data?.user;
       const currentUserId = currentUser?.id;
 
-      // Project members (for Owner selector) — independent query
-      let memberIds: string[] = [];
-      try {
-        const { data: memberRows } = await supabase
-          .from('project_members').select('user_id').eq('project_id', projectId!);
-        memberIds = (memberRows || []).map((m: any) => m.user_id).filter(Boolean) as string[];
-      } catch { /* ignore — fallback to current user */ }
-
+      // Project members (from Phase 1 batch)
+      let memberIds: string[] = (membersRes.data || []).map((m: any) => m.user_id).filter(Boolean) as string[];
       // Always include current user + plan owner in member list
       if (currentUserId && !memberIds.includes(currentUserId)) memberIds.push(currentUserId);
       if (planRes.data?.owner_id && !memberIds.includes(planRes.data.owner_id)) memberIds.push(planRes.data.owner_id);
@@ -2747,29 +2789,14 @@ export default function PlanDetailPage() {
       setMemberProfiles(memberIds.map(id => profileMap.get(id)).filter(Boolean) as Profile[]);
       if (currentUserId) setCurrentUserProfile(profileMap.get(currentUserId) || null);
 
-      // Criteria presets
-      try {
-        const { data: presets } = await supabase
-          .from('criteria_presets').select('type, text').eq('project_id', projectId!);
-        setEntryPresets((presets || []).filter((p: any) => p.type === 'entry').map((p: any) => p.text));
-        setExitPresets((presets || []).filter((p: any) => p.type === 'exit').map((p: any) => p.text));
-      } catch { /* presets table may not exist yet */ }
-
-      // Issues count (pre-load for tab badge)
+      // Issues count (already fetched in Phase 2 batch)
       if (runIds.length > 0) {
-        try {
-          const { data: issueResults } = await supabase
-            .from('test_results')
-            .select('issues, github_issues')
-            .in('run_id', runIds)
-            .limit(200);
-          let count = 0;
-          for (const r of (issueResults || [])) {
-            if (Array.isArray(r.issues)) count += r.issues.filter(Boolean).length;
-            if (Array.isArray(r.github_issues)) count += r.github_issues.length;
-          }
-          setIssuesCount(count);
-        } catch { /* ignore */ }
+        let count = 0;
+        for (const r of (issuesRes.data || [])) {
+          if (Array.isArray(r.issues)) count += r.issues.filter(Boolean).length;
+          if (Array.isArray(r.github_issues)) count += r.github_issues.length;
+        }
+        setIssuesCount(count);
       }
     } catch (err: any) {
       setLoadError(true);
@@ -2792,7 +2819,7 @@ export default function PlanDetailPage() {
         metadata: { name: plan?.name, ...metadata },
       }).then(() => {
         // Refresh activity logs — re-fetch all plan + linked run events
-        fetchData();
+        load();
       });
     });
   };
