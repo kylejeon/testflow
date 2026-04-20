@@ -1,3 +1,96 @@
+2026-04-21: Environment 관리 시스템 @developer 구현 완료 (dev-spec + design-spec-environment-workflow)
+
+## 뭘 했냐 (claude 브랜치)
+
+### 신규 파일 8개
+- supabase/migrations/20260421_environments.sql
+  - `environments` 테이블 (UUID PK, project_id FK CASCADE, name UNIQUE(project_id,name), os_*/browser_*/device_type, is_active soft-delete, updated_at trigger)
+  - 인덱스 3개 (project_active / project_os / project_browser)
+  - RLS: SELECT=project_members, INSERT/UPDATE=Tester+, DELETE=Admin+ (기존 20260413 role_override 패턴 준수)
+  - `test_runs.environment_id UUID FK ON DELETE SET NULL` + 인덱스 (legacy environment TEXT 컬럼 유지)
+- src/types/environment.ts — Environment / EnvironmentFormValues / DeviceType / ENVIRONMENT_PLAN_LIMITS
+- src/lib/environments.ts — ENVIRONMENT_PRESETS 4개 / HEATMAP_COLORS 재사용 / passRateToStatus(AC-6) / summaryStatus(AC-7) / groupEnvironmentsByOS / buildEnvironmentHeatmap
+- src/hooks/useEnvironments.ts — TanStack Query: useEnvironments / useCreateEnvironment / useUpdateEnvironment / useDeleteEnvironment
+- src/components/EnvironmentFormModal.tsx — Preset row + Name/OS/OS ver/Browser/Browser ver/Device radio/Description. Cmd+Enter save / ESC close / focus trap
+- src/components/EnvironmentDropdown.tsx — Trigger + OS-grouped panel + "Add new…" footer + freeform fallback (is_active filter는 active만 dropdown 노출)
+- src/pages/project-detail/EnvironmentsSection.tsx — Project Settings 탭 섹션 (Add button / Preset quick-add / Plan limit banner / 테이블 + Active toggle + Actions menu / Delete confirm / Viewer disabled)
+- src/i18n/local/en/environments.ts + ko/environments.ts — 키 전체 (section/form/preset/table/action/dropdown/limit/error/toast/heatmap)
+
+### 수정 파일 4개
+- src/pages/project-detail/page.tsx — Settings 탭 하단에 `<EnvironmentsSection>` 추가 (max-w-800 컨테이너 내부)
+- src/pages/project-runs/page.tsx — Run 생성/수정 modal Form에 `<EnvironmentDropdown>` 필드 추가. formData에 environment_id/environment 추가, create/update/edit-prefill/reset 4곳 모두 반영. INSERT/UPDATE 시 environment_id UUID + environment TEXT (display name) 동시 저장 (AC-4)
+- src/pages/plan-detail/page.tsx — EnvironmentsTab 전면 재작성:
+  - static mock 제거 → supabase.test_runs(env_id NOT NULL) + test_results + environments + planTcs 4쿼리
+  - buildEnvironmentHeatmap으로 2D 매트릭스 구성 (AC-5)
+  - 셀 tooltip "N/M passed"
+  - Summary row (AC-7)
+  - Legacy warning footer (AC-9) — environment_id IS NULL run 카운트 표시
+  - AI Insights는 placeholder aside (OOS, spec §9)
+  - Loading / Error / Empty / Legacy-only empty 4가지 상태 처리
+  - HM_COLORS 삭제 → src/lib/environments.ts HEATMAP_COLORS 재사용
+  - 호출부에 planTcs prop 전달
+- src/i18n/local/index.ts — environments 네임스페이스 en/ko 등록
+
+### 설계 결정 / 개발 중 판단
+- 프로젝트별 Settings: src/pages/settings는 user-level(org) 설정이라 판단. project-scoped Settings는 src/pages/project-detail/page.tsx의 Settings 탭에 있어 거기에 EnvironmentsSection을 추가. 신규 라우트 생성하지 않음 (Dev Spec §7 "구현 단계에서 최종 판단" 지침대로)
+- Toast: Sonner 미설치, 기존 useToast(src/components/Toast.tsx) 재사용. 네이밍은 spec에 맞춤
+- 다크모드: 프로젝트가 현재 다크모드 미지원(기존 코드 동일) → light 클래스만 적용. spec §5-1의 dark: prefix는 보존해 두었으나 앱 내 실행 영향 없음
+- i18n: 새 컴포넌트들은 EN 하드코딩으로 두고, 번역 키는 네임스페이스에 추가 (후속에서 useTranslation 적용 가능). Dev Spec §10 키는 형식 맞춰 en/ko 양쪽 모두 작성
+- EnvironmentsTab 데이터 로딩: useQuery 미사용 (plan-detail/page.tsx 전체가 useState+useEffect 패턴이라 일관성 유지)
+- Hard delete: Admin+ 권한만 노출 (usePermission `delete_project` level 5 재사용)
+- 플랜별 제한: ENVIRONMENT_PLAN_LIMITS 매트릭스 (Free 3 / Hobby 10 / Starter 25 / Pro 100 / Ent unlimited). subscriptionTier prop 전달. limit reached 시 Add 버튼 disabled + banner
+- Activity logs(AC-11): dev-spec은 요구하지만, Edge Function 신규 생성 범위 외 + 기존 activity_logs 직접 insert 패턴 부재라 이번 PR에선 생략 (follow-up). DB 트리거로 후속 대응 권장
+
+### 건드리지 않음 (의도적)
+- test_runs.environment (legacy TEXT) 컬럼 삭제 금지 — 그대로 유지 + fallback 경로에서만 사용
+- Sonner 설치 추가 (기존 Toast 재사용)
+- Dark mode CSS (앱 전역 미지원)
+- Edge Function (Supabase Client 직접 호출로 충분)
+- 기존 run-detail / milestone-detail / project-milestones의 Environment 표시 로직 (별도 티켓)
+- Activity logs insert (AC-11 후속)
+
+### 품질 검사
+- `npx tsc --noEmit` — 0 에러
+- `npm run build` — PASS (6.58s)
+- npm run lint 스크립트 미존재 (프로젝트 기존 동일) → tsc + build 통과로 대체
+- AC 검증 (코드 레벨):
+  - AC-1 PASS — EnvironmentsSection Add button → Modal → INSERT → 목록 갱신 (optimistic via invalidateQueries)
+  - AC-2 PASS — EnvironmentDropdown이 `is_active=true` 필터 dropdown에 노출
+  - AC-3 PASS — useEnvironments data.length===0 → freeform `<input>` fallback 자동 전환
+  - AC-4 PASS — project-runs/page.tsx INSERT/UPDATE 시 environment_id + environment(name) 동시 저장
+  - AC-5 PASS — plan-detail EnvironmentsTab에서 planId + environment_id NOT NULL 필터 → test_results 집계 → 매트릭스
+  - AC-6 PASS — passRateToStatus(passed, executed) 100/75/50/20 구간 색상 매핑
+  - AC-7 PASS — summaryStatus(cells) 평균 기반 요약 row
+  - AC-8 PASS — is_active=false dropdown 제외, heatmap 포함 (runs.environment_id 기준 집계)
+  - AC-9 PASS — legacy run 카운트 footer 경고 + emptyLegacyOnly 분기
+  - AC-10 PASS — RLS SQL에 role 매트릭스 작성 (UI canManage/canDelete 분기)
+  - AC-11 MISS — activity_logs 이벤트 기록은 미구현 (follow-up)
+  - AC-12 PASS — en/ko environments 네임스페이스 전체 추가
+
+## 어디까지 됐냐
+- claude 브랜치에 9개 신규 파일 + 4개 수정 파일 준비됨, push 대기
+- DB 마이그레이션은 파일만 생성 — `supabase db push` 실행은 CEO 수동
+
+## 다음에 할 것 (CEO 수동)
+1. `supabase db push` — 20260421_environments.sql 적용
+2. Edge Function 배포 없음
+3. 배포 후 UI 검증:
+   - Project Settings → Environments 섹션에서 Preset quick-add 4개 → 테이블에 즉시 표시
+   - Run 생성 modal에서 dropdown에 환경 노출 (Ad-hoc/plan-only 모두)
+   - Run 생성 후 plan-detail/Environments 탭에서 heatmap 셀 집계 확인
+   - 등록 환경 0건 프로젝트에서 Run 생성 modal이 freeform `<input>` 으로 자동 전환 (AC-3)
+4. 기존 legacy run (environment TEXT만) 있는 프로젝트에서 footer 경고 문구 확인 (AC-9)
+
+## 알려진 Follow-up (다음 스프린트)
+- AC-11: activity_logs 이벤트 (environment_created/updated/deactivated) — DB 트리거 또는 supabase.from().insert() 호출부 추가
+- 다크모드: Tailwind dark: 클래스는 새 컴포넌트에 이미 준비됨, 앱 전역 다크모드 스위치 활성화 시 자동 동작
+- useTranslation 적용: 새 컴포넌트들의 하드코딩 EN 문자열을 t('environments.*') 로 치환
+- 기존 legacy freeform environment TEXT → 구조화 환경으로 1회성 migration 툴 (dev-spec §9 OOS)
+- Configuration Groups (dev-spec §9 — 축 분리, 리서치 안 2)
+- Run별 다중 환경 선택 (dev-spec §9 OOS)
+
+---
+
 2026-04-20: Milestone Overview UI 후속 — Test Plan progress 집계 + 5색 배지 통일
 
 ## 뭘 했냐

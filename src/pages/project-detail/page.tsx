@@ -20,6 +20,7 @@ import UpgradeBanner from '../../components/UpgradeBanner';
 import AIGenerateModal from '../project-testcases/components/AIGenerateModal';
 import AnalyticsTab from './AnalyticsTab';
 import ActivityFeedTab from './ActivityFeedTab';
+import EnvironmentsSection from './EnvironmentsSection';
 
 interface UserProfile {
   email: string;
@@ -1387,6 +1388,14 @@ export default function ProjectDetail() {
                       orgId={projectOrgId ?? undefined}
                       onInviteClick={() => setShowProjectSettingsInvite(true)}
                       refreshTrigger={projectSettingsMemberRefresh}
+                      subscriptionTier={userProfile?.subscription_tier ?? 1}
+                    />
+                  </div>
+
+                  {/* Environments section */}
+                  <div className="bg-white border border-slate-200 rounded-[0.625rem] p-6 mt-6">
+                    <EnvironmentsSection
+                      projectId={project!.id}
                       subscriptionTier={userProfile?.subscription_tier ?? 1}
                     />
                   </div>

@@ -20,6 +20,7 @@ import { useSavedViews } from '../../hooks/useSavedViews';
 import { ExportModal, type ExportFormat } from '../../components/ExportModal';
 import { usePermission } from '../../hooks/usePermission';
 import StatusPill from '../../components/StatusPill';
+import EnvironmentDropdown from '../../components/EnvironmentDropdown';
 
 interface TestRun {
   id: string;
@@ -132,6 +133,8 @@ export default function ProjectRunsPage() {
     tags: '',
     include_all_cases: true,
     is_ci_cd_run: false,
+    environment_id: '' as string | '',
+    environment: '' as string | '',
   });
   const [submitting, setSubmitting] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -1104,6 +1107,8 @@ export default function ProjectRunsPage() {
             test_case_ids: testCaseIds,
             is_automated: formData.is_ci_cd_run,
             assignees: runAssignees,
+            environment_id: formData.environment_id && formData.environment_id.trim() !== '' ? formData.environment_id : null,
+            environment: formData.environment && formData.environment.trim() !== '' ? formData.environment.trim() : null,
           })
           .eq('id', editingRunId);
 
@@ -1175,7 +1180,7 @@ export default function ProjectRunsPage() {
           }
         }
 
-        const newRun = {
+        const newRun: Record<string, unknown> = {
           project_id: id,
           milestone_id: formData.milestone_id && formData.milestone_id.trim() !== '' ? formData.milestone_id : null,
           test_plan_id: (formData as any).test_plan_id && (formData as any).test_plan_id.trim() !== '' ? (formData as any).test_plan_id : null,
@@ -1193,6 +1198,8 @@ export default function ProjectRunsPage() {
           test_case_ids: testCaseIds,
           executed_at: new Date().toISOString(),
           is_automated: formData.is_ci_cd_run,
+          environment_id: formData.environment_id && formData.environment_id.trim() !== '' ? formData.environment_id : null,
+          environment: formData.environment && formData.environment.trim() !== '' ? formData.environment.trim() : null,
         };
 
         const { data: insertedData, error } = await supabase
@@ -1394,6 +1401,8 @@ export default function ProjectRunsPage() {
         tags: '',
         include_all_cases: true,
         is_ci_cd_run: false,
+        environment_id: '',
+        environment: '',
       });
       setSelectedTestCases([]);
       setEditingRunId(null);
@@ -1669,10 +1678,13 @@ export default function ProjectRunsPage() {
       name: run.name,
       description: (run as any).description || '',
       milestone_id: run.milestone_id || '',
+      test_plan_id: (run as any).test_plan_id || '',
       status: run.status,
       tags: run.tags ? run.tags.join(', ') : '',
       include_all_cases: run.test_case_ids.length === testCases.length,
       is_ci_cd_run: run.is_automated || false,
+      environment_id: (run as any).environment_id || '',
+      environment: (run as any).environment || '',
     });
     setRunAssignees(run.assignees || []);
     setSelectedTestCases(run.test_case_ids);
@@ -2125,15 +2137,16 @@ export default function ProjectRunsPage() {
                   setEditingRunId(null);
                   setFormData({
                     name: '',
-                    configuration: '',
+                    description: '',
                     milestone_id: '',
                     test_plan_id: '',
                     status: 'new',
-                    issues: '',
                     tags: '',
                     include_all_cases: true,
                     is_ci_cd_run: false,
-                  } as any);
+                    environment_id: '',
+                    environment: '',
+                  });
                   setSelectedTestCases([]);
                   setRunAssignees([]);
                   setEditingRunId(null);
@@ -2579,6 +2592,27 @@ export default function ProjectRunsPage() {
                         </div>
                       );
                     })()}
+
+                    {/* Environment */}
+                    {id && (
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                          Environment
+                        </label>
+                        <EnvironmentDropdown
+                          projectId={id}
+                          value={formData.environment_id || null}
+                          legacyValue={formData.environment || null}
+                          onChange={(envId, displayName) => {
+                            setFormData(prev => ({
+                              ...prev,
+                              environment_id: envId ?? '',
+                              environment: displayName,
+                            }));
+                          }}
+                        />
+                      </div>
+                    )}
 
                     {/* Assignees multi-select */}
                     <div>

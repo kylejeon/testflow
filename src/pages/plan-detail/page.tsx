@@ -7,6 +7,13 @@ import PageLoader from '../../components/PageLoader';
 import AIPlanAssistantModal from '../project-plans/AIPlanAssistantModal';
 import { Avatar } from '../../components/Avatar';
 import IssuesList from '../../components/issues/IssuesList';
+import {
+  HEATMAP_COLORS,
+  heatmapSymbol,
+  buildEnvironmentHeatmap,
+  type HeatmapMatrix,
+} from '../../lib/environments';
+import type { Environment } from '../../types/environment';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1482,124 +1489,271 @@ function IssuesTab({ runs, plan, planTcs, milestone, parentMilestone, profiles, 
 
 // ─── Tab: Environments ────────────────────────────────────────────────────────
 
-// Heatmap cell colors
-const HM_COLORS: Record<string, {bg:string;color:string;label:string}> = {
-  perfect: {bg:'#dcfce7',color:'#14532d',label:'100%'},
-  pass:    {bg:'#86efac',color:'#14532d',label:'Pass'},
-  mixed:   {bg:'#fde68a',color:'#78350f',label:'Mixed'},
-  warn:    {bg:'#fca5a5',color:'#7f1d1d',label:'Warn'},
-  fail:    {bg:'#ef4444',color:'#fff',   label:'Fail'},
-  na:      {bg:'#f3f4f6',color:'#9ca3af',label:'N/A'},
-  untested:{bg:'#fafafa',color:'#9ca3af',label:'—'},
-};
+function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestCase[] }) {
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [matrix, setMatrix] = useState<HeatmapMatrix | null>(null);
 
-function EnvironmentsTab({ plan }: { plan: TestPlan }) {
-  // Static heatmap data (would come from real run results in production)
-  const ENV_COLS = [
-    { group: 'macOS', cols: ['Chrome 124', 'Firefox 125', 'Safari 17'] },
-    { group: 'Windows', cols: ['Chrome 124', 'Edge 124'] },
-    { group: 'Mobile', cols: ['iOS Safari', 'Android Chrome'] },
-  ];
-  const TC_ROWS = [
-    { id: 'TC-001', name: 'Login with valid credentials', pri: 'P1',
-      cells: ['pass','perfect','pass','pass','pass','untested','untested'] },
-    { id: 'TC-002', name: 'Login with invalid password', pri: 'P1',
-      cells: ['perfect','pass','pass','pass','perfect','untested','untested'] },
-    { id: 'TC-003', name: 'Forgot password flow', pri: 'P2',
-      cells: ['pass','pass','mixed','pass','pass','na','na'] },
-    { id: 'TC-004', name: 'OAuth SSO login', pri: 'P1',
-      cells: ['mixed','warn','fail','mixed','mixed','untested','untested'] },
-    { id: 'TC-005', name: 'Remember-me cookie persistence', pri: 'P2',
-      cells: ['pass','pass','warn','pass','pass','na','na'] },
-    { id: 'TC-006', name: 'Session timeout auto-logout', pri: 'P3',
-      cells: ['pass','pass','pass','pass','pass','untested','untested'] },
-    { id: 'TC-007', name: '2FA verification', pri: 'P2',
-      cells: ['untested','untested','untested','untested','untested','untested','untested'] },
-  ];
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      setLoadError(false);
+      try {
+        // 1) Fetch ALL runs for this plan (so we can count legacy-only runs)
+        const { data: allRunsData, error: runsErr } = await supabase
+          .from('test_runs')
+          .select('id, environment_id')
+          .eq('test_plan_id', plan.id);
+        if (runsErr) throw runsErr;
+        const allRuns = (allRunsData ?? []) as Array<{ id: string; environment_id: string | null }>;
+        const structuredRuns = allRuns.filter(r => !!r.environment_id);
+        const legacyRunCount = allRuns.length - structuredRuns.length;
 
-  const allCols = ENV_COLS.flatMap(g => g.cols);
-  const CELL_PASS_MAP: Record<string,number> = { perfect:100, pass:85, mixed:60, warn:30, fail:0, na:-1, untested:-1 };
+        // 2) Fetch test_results for structured runs only
+        const runIds = structuredRuns.map(r => r.id);
+        let results: Array<{ run_id: string; test_case_id: string; status: string }> = [];
+        if (runIds.length > 0) {
+          const { data: resultsData, error: resErr } = await supabase
+            .from('test_results')
+            .select('run_id, test_case_id, status')
+            .in('run_id', runIds);
+          if (resErr) throw resErr;
+          results = resultsData ?? [];
+        }
 
-  // Column summary: average pass for non-na/untested cells
-  const colSummary = allCols.map((_,ci) => {
-    const values = TC_ROWS.map(r => CELL_PASS_MAP[r.cells[ci]]).filter(v=>v>=0);
-    if (!values.length) return 'untested';
-    const avg = values.reduce((a,b)=>a+b,0)/values.length;
-    if (avg>=95) return 'perfect'; if (avg>=75) return 'pass';
-    if (avg>=50) return 'mixed'; if (avg>=20) return 'warn';
-    return 'fail';
-  });
+        // 3) Fetch referenced environments (only those used by runs in this plan)
+        const envIds = [...new Set(structuredRuns.map(r => r.environment_id as string))];
+        let envs: Environment[] = [];
+        if (envIds.length > 0) {
+          const { data: envsData, error: envErr } = await supabase
+            .from('environments')
+            .select('id, project_id, name, os_name, os_version, browser_name, browser_version, device_type, description, is_active, created_by, created_at, updated_at')
+            .in('id', envIds);
+          if (envErr) throw envErr;
+          envs = (envsData ?? []) as Environment[];
+        }
 
-  return (
-    <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) 280px',gap:14,padding:'16px 0'}}>
-      {/* Heatmap card */}
-      <div style={{background:'#fff',border:'1px solid var(--border)',borderRadius:10,overflow:'hidden',display:'flex',flexDirection:'column'}}>
-        <div style={{padding:'12px 16px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',gap:10}}>
-          <div style={{fontSize:12,fontWeight:600,color:'var(--text-muted)',textTransform:'uppercase',letterSpacing:'0.05em',display:'flex',alignItems:'center',gap:6}}>
-            <svg style={{width:14,height:14,color:'var(--primary)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        // 4) Build heatmap from Plan's test_plan_test_cases
+        const tcRows = planTcs.map(ptc => ({
+          id: ptc.test_case_id,
+          title: ptc.test_case.title,
+          priority: ptc.test_case.priority,
+          custom_id: ptc.test_case.custom_id,
+        }));
+
+        const built = buildEnvironmentHeatmap({
+          runs: structuredRuns,
+          results,
+          envs,
+          testCases: tcRows,
+          legacyRunCount,
+        });
+
+        if (!cancelled) setMatrix(built);
+      } catch (e) {
+        console.error('[EnvironmentsTab] load failed', e);
+        if (!cancelled) setLoadError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [plan.id, planTcs]);
+
+  const wrapperStyle: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0,1fr) 280px',
+    gap: 14,
+    padding: '16px 0',
+  };
+
+  if (loading) {
+    return (
+      <div style={wrapperStyle}>
+        <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 10, padding: 16 }}>
+          <div style={{ height: 16, background: '#F1F5F9', borderRadius: 4, marginBottom: 12, width: 240 }} />
+          <div style={{ display: 'grid', gridTemplateColumns: '240px repeat(6, 64px)', gap: 8 }}>
+            {Array.from({ length: 35 }).map((_, i) => (
+              <div key={i} style={{ height: 38, background: '#F8FAFC', borderRadius: 5 }} />
+            ))}
+          </div>
+        </div>
+        <AiInsightsPlaceholder />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div style={wrapperStyle}>
+        <div style={{
+          background: '#fff', border: '1px solid var(--border)', borderRadius: 10,
+          padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13,
+        }}>
+          Failed to load environment coverage data.
+        </div>
+        <AiInsightsPlaceholder />
+      </div>
+    );
+  }
+
+  // No data scenarios
+  const hasStructuredData = matrix && matrix.columns.length > 0 && matrix.rows.length > 0;
+
+  if (!hasStructuredData) {
+    const emptyMsg = !matrix || matrix.columns.length === 0
+      ? (matrix?.legacyRunCount ?? 0) > 0
+        ? 'All runs in this plan use legacy text-only environments. The matrix cannot be rendered.'
+        : 'No runs with structured environments assigned to this plan yet.'
+      : 'This plan has no test cases yet.';
+    return (
+      <div style={wrapperStyle}>
+        <div style={{
+          background: '#fff', border: '1px solid var(--border)', borderRadius: 10,
+          padding: '40px 24px', textAlign: 'center',
+        }}>
+          <svg style={{ width: 48, height: 48, color: '#D1D5DB', margin: '0 auto 12px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+            <rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
+          </svg>
+          <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)', marginBottom: 4 }}>
             Environment Coverage Matrix
           </div>
-          <span style={{marginLeft:'auto',fontSize:11,color:'var(--text-muted)'}}>
-            {plan.name} · {TC_ROWS.length} TCs × {allCols.length} envs
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', maxWidth: 420, margin: '0 auto' }}>
+            {emptyMsg}
+          </div>
+          {(matrix?.legacyRunCount ?? 0) > 0 && (
+            <div style={{
+              marginTop: 16, padding: '8px 12px', borderRadius: 6,
+              background: '#FFFBEB', border: '1px solid #FDE68A',
+              fontSize: 11, color: '#92400E', display: 'inline-flex', alignItems: 'center', gap: 6,
+            }}>
+              <svg style={{ width: 14, height: 14 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+              </svg>
+              {matrix!.legacyRunCount} runs using legacy text-only environment (not shown)
+            </div>
+          )}
+        </div>
+        <AiInsightsPlaceholder />
+      </div>
+    );
+  }
+
+  const groups = matrix.groups;
+  const columns = matrix.columns;
+
+  return (
+    <div style={wrapperStyle}>
+      {/* Heatmap card */}
+      <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <svg style={{ width: 14, height: 14, color: 'var(--primary)' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+              <rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
+            </svg>
+            Environment Coverage Matrix
+          </div>
+          <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>
+            {plan.name} · {matrix.rows.length} TCs × {columns.length} envs
           </span>
         </div>
-        <div style={{overflowX:'auto',padding:'0 16px 12px'}}>
-          <table style={{borderCollapse:'separate',borderSpacing:4,fontSize:12}}>
+        <div style={{ overflowX: 'auto', padding: '0 16px 12px' }}>
+          <table style={{ borderCollapse: 'separate', borderSpacing: 4, fontSize: 12 }}>
             <thead>
               <tr>
-                <th style={{position:'sticky',left:0,zIndex:3,background:'#fff',minWidth:240,textAlign:'left',padding:'0 14px 0 6px'}}></th>
-                {ENV_COLS.map(g => (
-                  <th key={g.group} colSpan={g.cols.length}
-                    style={{fontWeight:700,color:'#0F172A',padding:'6px 8px 8px',textTransform:'uppercase',letterSpacing:'0.05em',fontSize:11,background:'#F9FAFB',borderRadius:6,textAlign:'center'}}>
-                    {g.group}
+                <th style={{ position: 'sticky', left: 0, zIndex: 3, background: '#fff', minWidth: 240, textAlign: 'left', padding: '0 14px 0 6px' }}></th>
+                {groups.map(g => (
+                  <th key={g.os} colSpan={g.columns.length}
+                    style={{ fontWeight: 700, color: '#0F172A', padding: '6px 8px 8px', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: 11, background: '#F9FAFB', borderRadius: 6, textAlign: 'center' }}>
+                    {g.os}
                   </th>
                 ))}
               </tr>
               <tr>
-                <th style={{position:'sticky',left:0,zIndex:3,background:'#fff',padding:'8px 14px 10px 6px'}}></th>
-                {allCols.map(col => (
-                  <th key={col} style={{fontSize:12,fontWeight:600,color:'var(--text-muted)',padding:'8px 4px 10px',textAlign:'center',whiteSpace:'nowrap'}}>
-                    {col}
+                <th style={{ position: 'sticky', left: 0, zIndex: 3, background: '#fff', padding: '8px 14px 10px 6px' }}></th>
+                {columns.map(col => (
+                  <th key={col.env.id} style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', padding: '8px 4px 10px', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                    {col.browserLabel}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {TC_ROWS.map(row => (
-                <tr key={row.id}>
-                  <td style={{position:'sticky',left:0,zIndex:2,background:'#fff',textAlign:'left',padding:'0 14px 0 6px',whiteSpace:'nowrap',minWidth:240,boxShadow:'2px 0 4px -2px rgba(0,0,0,0.04)'}}>
-                    <span style={{color:'var(--primary)',fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:600,marginRight:8}}>{row.id}</span>
-                    <span style={{fontSize:13,fontWeight:500,color:'var(--text)'}}>{row.name}</span>
-                    <span style={{fontSize:10,color:'var(--text-muted)',marginLeft:6,background:'var(--bg-subtle)',padding:'1px 5px',borderRadius:3,
-                      ...(row.pri==='P1'?{background:'var(--danger-50)',color:'var(--danger-600)'}:{})}}>{row.pri}</span>
-                  </td>
-                  {row.cells.map((c,ci) => {
-                    const hm = HM_COLORS[c] || HM_COLORS.untested;
-                    return (
-                      <td key={ci}>
-                        <div style={{width:64,height:38,borderRadius:5,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:13,
-                          background:hm.bg,color:hm.color,cursor:'pointer',
-                          border:c==='untested'?'1px dashed #9CA3AF':'none'}}>
-                          {c==='perfect'?'✓':c==='fail'?'✕':c==='untested'?'–':c==='na'?'N/A':
-                           c==='pass'?'✓':c==='mixed'?'~':'?'}
-                        </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
+              {matrix.rows.map(row => {
+                const pri = row.tc.priority;
+                const priLabel = pri === 'critical' ? 'P0'
+                  : pri === 'high' ? 'P1'
+                  : pri === 'medium' ? 'P2'
+                  : pri === 'low' ? 'P3'
+                  : '';
+                const isTopPri = pri === 'critical' || pri === 'high';
+                return (
+                  <tr key={row.tc.id}>
+                    <td style={{ position: 'sticky', left: 0, zIndex: 2, background: '#fff', textAlign: 'left', padding: '0 14px 0 6px', whiteSpace: 'nowrap', minWidth: 240, boxShadow: '2px 0 4px -2px rgba(0,0,0,0.04)' }}>
+                      {row.tc.custom_id && (
+                        <span style={{ color: 'var(--primary)', fontFamily: "'JetBrains Mono',monospace", fontSize: 12, fontWeight: 600, marginRight: 8 }}>
+                          {row.tc.custom_id}
+                        </span>
+                      )}
+                      <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{row.tc.title}</span>
+                      {priLabel && (
+                        <span style={{
+                          fontSize: 10,
+                          color: isTopPri ? 'var(--danger-600)' : 'var(--text-muted)',
+                          marginLeft: 6,
+                          background: isTopPri ? 'var(--danger-50)' : 'var(--bg-subtle)',
+                          padding: '1px 5px',
+                          borderRadius: 3,
+                        }}>{priLabel}</span>
+                      )}
+                    </td>
+                    {row.cells.map((cell, ci) => {
+                      const hm = HEATMAP_COLORS[cell.status] ?? HEATMAP_COLORS.untested;
+                      return (
+                        <td key={ci}>
+                          <div
+                            title={cell.tooltip}
+                            style={{
+                              width: 64, height: 38, borderRadius: 5,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontWeight: 700, fontSize: 13,
+                              background: hm.bg, color: hm.color,
+                              cursor: 'default',
+                              border: cell.status === 'untested' ? '1px dashed #9CA3AF' : 'none',
+                            }}
+                          >
+                            {heatmapSymbol(cell.status)}
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
               {/* Summary row */}
-              <tr style={{paddingTop:12}}>
-                <td style={{position:'sticky',left:0,zIndex:2,background:'#F9FAFB',fontWeight:700,fontSize:13,color:'var(--text-muted)',padding:'12px 14px 4px 6px',whiteSpace:'nowrap'}}>
+              <tr style={{ paddingTop: 12 }}>
+                <td style={{ position: 'sticky', left: 0, zIndex: 2, background: '#F9FAFB', fontWeight: 700, fontSize: 13, color: 'var(--text-muted)', padding: '12px 14px 4px 6px', whiteSpace: 'nowrap' }}>
                   Env Summary
                 </td>
-                {colSummary.map((c,ci) => {
-                  const hm = HM_COLORS[c] || HM_COLORS.untested;
+                {matrix.summary.map((cell, ci) => {
+                  const hm = HEATMAP_COLORS[cell.status] ?? HEATMAP_COLORS.untested;
                   return (
-                    <td key={ci} style={{paddingTop:12}}>
-                      <div style={{width:64,height:38,borderRadius:5,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:14,
-                        background:hm.bg,color:hm.color,border:c==='untested'?'1px dashed #9CA3AF':'none'}}>
-                        {c==='perfect'?'✓':c==='fail'?'✕':c==='untested'?'–':c==='pass'?'✓':c==='mixed'?'~':'?'}
+                    <td key={ci} style={{ paddingTop: 12 }}>
+                      <div
+                        title={cell.tooltip}
+                        style={{
+                          width: 64, height: 38, borderRadius: 5,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontWeight: 700, fontSize: 14,
+                          background: hm.bg, color: hm.color,
+                          border: cell.status === 'untested' ? '1px dashed #9CA3AF' : 'none',
+                        }}
+                      >
+                        {heatmapSymbol(cell.status)}
                       </div>
                     </td>
                   );
@@ -1608,48 +1762,66 @@ function EnvironmentsTab({ plan }: { plan: TestPlan }) {
             </tbody>
           </table>
         </div>
-        {/* Color scale strip */}
-        <div style={{margin:'0 16px 12px',background:'#fff',border:'1px solid var(--border)',borderRadius:8,padding:'8px 14px',display:'flex',alignItems:'center',gap:14,fontSize:11,color:'var(--text-muted)',flexWrap:'wrap'}}>
-          <b style={{color:'var(--text)'}}>Scale:</b>
-          {(['perfect','pass','mixed','warn','fail','untested'] as const).map(k => (
-            <span key={k} style={{display:'inline-flex',alignItems:'center',gap:4}}>
-              <span style={{width:22,height:14,borderRadius:3,display:'inline-block',background:HM_COLORS[k].bg,border:k==='untested'?'1px dashed #9CA3AF':'none'}}/>
-              {k.charAt(0).toUpperCase()+k.slice(1)}
+
+        {/* Legend strip */}
+        <div style={{ margin: '0 16px 12px', background: '#fff', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 14, fontSize: 11, color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+          <b style={{ color: 'var(--text)' }}>Scale:</b>
+          {(['perfect', 'pass', 'mixed', 'warn', 'fail', 'untested'] as const).map(k => (
+            <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <span style={{
+                width: 22, height: 14, borderRadius: 3, display: 'inline-block',
+                background: HEATMAP_COLORS[k].bg,
+                border: k === 'untested' ? '1px dashed #9CA3AF' : 'none',
+              }} />
+              {k.charAt(0).toUpperCase() + k.slice(1)}
             </span>
           ))}
         </div>
+
+        {/* Legacy warning footer */}
+        {matrix.legacyRunCount > 0 && (
+          <div style={{
+            padding: '8px 16px', borderTop: '1px solid #FDE68A',
+            background: 'rgba(255, 251, 235, 0.5)',
+            fontSize: 11, color: '#92400E',
+            display: 'flex', alignItems: 'center', gap: 6,
+          }}>
+            <svg style={{ width: 14, height: 14 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+            </svg>
+            {matrix.legacyRunCount} runs using legacy text-only environment (not shown)
+          </div>
+        )}
       </div>
 
-      {/* AI Insights sidebar */}
-      <div style={{background:'linear-gradient(180deg,#f5f3ff 0%,#eef2ff 100%)',border:'1px solid #ddd6fe',borderRadius:10,padding:12,display:'flex',flexDirection:'column',gap:10}}>
-        <div style={{display:'flex',alignItems:'center',gap:6,fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.05em',color:'var(--violet)'}}>
-          <svg style={{width:14,height:14}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2"/></svg>
-          AI Env Analysis
-          <span style={{marginLeft:'auto',fontSize:'9.5px',fontWeight:500,background:'#fff',border:'1px solid #ddd6fe',padding:'2px 6px',borderRadius:3,textTransform:'none',letterSpacing:0}}>
-            High conf
-          </span>
-        </div>
-        {[
-          { tag:'critical', tagBg:'#fef2f2', tagColor:'#b91c1c',
-            title:'OAuth SSO failing on Firefox & Safari',
-            body: <><b>TC-004</b> consistently fails on Firefox 125 and Safari 17. Likely related to the OAuth SDK 0.14.1 update — check CORS and cookie SameSite settings.</> },
-          { tag:'warn', tagBg:'#fffbeb', tagColor:'#b45309',
-            title:'7 TCs untested on mobile envs',
-            body: <>Mobile coverage is <b>0%</b>. Consider adding mobile runs or mark these TCs as N/A for this milestone cycle.</> },
-          { tag:'info', tagBg:'#eff6ff', tagColor:'#1d4ed8',
-            title:'macOS Chrome is the strongest env',
-            body: <>5/7 TCs pass on macOS Chrome 124. Use it as baseline for cross-browser regression comparison.</> },
-        ].map((c,i) => (
-          <div key={i} style={{background:'#fff',border:'1px solid #ede9fe',borderRadius:8,padding:'10px 11px'}}>
-            <span style={{display:'inline-block',padding:'1px 7px',borderRadius:10,fontSize:'9.5px',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.04em',marginBottom:6,background:c.tagBg,color:c.tagColor}}>
-              {c.tag}
-            </span>
-            <h4 style={{margin:'0 0 4px',fontSize:'12.5px',lineHeight:1.3,fontWeight:600}}>{c.title}</h4>
-            <p style={{margin:0,fontSize:11,color:'var(--text-muted)',lineHeight:1.45}}>{c.body}</p>
-          </div>
-        ))}
-      </div>
+      <AiInsightsPlaceholder />
     </div>
+  );
+}
+
+function AiInsightsPlaceholder() {
+  return (
+    <aside style={{
+      borderRadius: 10,
+      border: '1px dashed #E5E7EB',
+      background: 'rgba(249, 250, 251, 0.5)',
+      padding: 16,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      textAlign: 'center',
+      gap: 8,
+      minHeight: 400,
+    }}>
+      <svg style={{ width: 24, height: 24, color: '#D1D5DB' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2" />
+      </svg>
+      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#9CA3AF' }}>
+        AI Insights
+      </div>
+      <div style={{ fontSize: 12, color: '#9CA3AF' }}>Coming soon</div>
+    </aside>
   );
 }
 
@@ -2749,7 +2921,7 @@ export default function PlanDetailPage() {
             tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts} currentUserProfile={currentUserProfile} onIssuesCount={setIssuesCount} />
         )}
         {activeTab === 'environments' && (
-          <EnvironmentsTab plan={plan} />
+          <EnvironmentsTab plan={plan} planTcs={planTcs} />
         )}
         {activeTab === 'settings' && (
           <SettingsTab plan={plan} milestones={milestones} profiles={profiles} memberProfiles={memberProfiles} onUpdate={handleUpdate} onDelete={()=>setShowDeleteConfirm(true)} entryPresets={entryPresets} exitPresets={exitPresets} onSavePreset={handleSavePreset} />
