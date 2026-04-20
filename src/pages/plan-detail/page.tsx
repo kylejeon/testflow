@@ -1548,13 +1548,19 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
           envs = (envsData ?? []) as Environment[];
         }
 
-        // 4) Build heatmap from Plan's test_plan_test_cases
-        const tcRows = planTcs.map(ptc => ({
-          id: ptc.test_case_id,
-          title: ptc.test_case.title,
-          priority: ptc.test_case.priority,
-          custom_id: ptc.test_case.custom_id,
-        }));
+        // 4) Build heatmap from Plan's test_plan_test_cases — sort by custom_id ascending (natural)
+        const tcRows = planTcs
+          .map(ptc => ({
+            id: ptc.test_case_id,
+            title: ptc.test_case.title,
+            priority: ptc.test_case.priority,
+            custom_id: ptc.test_case.custom_id,
+          }))
+          .sort((a, b) => {
+            const aId = a.custom_id || '';
+            const bId = b.custom_id || '';
+            return aId.localeCompare(bId, undefined, { numeric: true, sensitivity: 'base' });
+          });
 
         const built = buildEnvironmentHeatmap({
           runs: structuredRuns,
