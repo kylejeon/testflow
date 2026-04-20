@@ -126,7 +126,7 @@ export function useAiFeature(featureKey: AiFeatureKey): AiFeatureState {
           return;
         }
 
-        // Effective tier + billing entity owner 계산 (projects.created_by 기준)
+        // Effective tier + billing entity owner 계산 (projects.owner_id 기준)
         const { tier, ownerId } = await getEffectiveOwnerId(user.id);
 
         const config = AI_FEATURES[featureKey];
@@ -181,15 +181,20 @@ export function useAiFeatures<K extends AiFeatureKey>(
     () => Object.fromEntries(featureKeys.map(k => [k, DEFAULT_STATE])) as Record<K, AiFeatureState>,
   );
 
+  // 순서 무관하게 동일 key 집합이면 재실행 안 되도록 정렬된 키 문자열을 deps로 사용.
+  // featureKeys 참조가 매 렌더 새로 생겨도 집합만 같으면 effect가 재실행되지 않는다.
+  const stableKey = featureKeys.slice().sort().join('|');
+
   useEffect(() => {
     let cancelled = false;
+    const keys = stableKey ? (stableKey.split('|') as K[]) : [];
 
     async function load() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        // Effective tier + billing entity owner (projects.created_by 기준)
+        // Effective tier + billing entity owner (projects.owner_id 기준)
         const { tier, ownerId } = await getEffectiveOwnerId(user.id);
 
         const monthlyLimit = PLAN_LIMITS[tier] ?? -1;
@@ -200,7 +205,7 @@ export function useAiFeatures<K extends AiFeatureKey>(
         const remainingCredits = monthlyLimit === -1 ? -1 : Math.max(0, monthlyLimit - usedCredits);
 
         const next = {} as Record<K, AiFeatureState>;
-        for (const key of featureKeys) {
+        for (const key of keys) {
           const config = AI_FEATURES[key];
           const tierOk = tier >= config.minTier;
           const canUse = monthlyLimit === -1 || remainingCredits >= config.creditCost;
@@ -227,8 +232,7 @@ export function useAiFeatures<K extends AiFeatureKey>(
 
     load();
     return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [featureKeys.join(',')]);
+  }, [stableKey]);
 
   return states;
 }

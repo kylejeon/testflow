@@ -8,7 +8,7 @@
  *
  * Profiles schema used: id, email, full_name, is_trial, trial_ends_at,
  *                        trial_expired_sent, subscription_tier
- * Related tables: projects (created_by), test_cases (project_id),
+ * Related tables: projects (owner_id), test_cases (project_id),
  *                 test_runs (project_id), project_members (project_id, user_id)
  */
 
@@ -33,7 +33,7 @@ async function getUserStats(
   const { data: projects } = await adminClient
     .from('projects')
     .select('id')
-    .eq('created_by', userId);
+    .eq('owner_id', userId);
 
   const projectIds = (projects ?? []).map((p: { id: string }) => p.id);
   if (projectIds.length === 0) {

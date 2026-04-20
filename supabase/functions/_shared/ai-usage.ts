@@ -198,14 +198,16 @@ export async function checkAiAccess(
     };
   }
 
-  // Unlimited plan — skip quota check
+  // Unlimited plan — quota check는 skip하되 usage는 계산 (Dev Spec BR-6)
+  // Enterprise tier도 관리자 모니터링/Dashboard 표시를 위해 실제 사용량 계산 유지.
   const limit = PLAN_LIMITS[tier] ?? -1;
   if (limit === -1) {
+    const usage = await getSharedPoolUsage(supabase, ownerId);
     return {
       allowed: true,
       tier,
       ownerId,
-      usage: 0,
+      usage,
       limit: -1,
       creditCost: config.creditCost,
     };
