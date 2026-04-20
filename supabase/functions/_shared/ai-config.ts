@@ -6,7 +6,7 @@
  */
 
 // ─── Plan Limits (월 credit 한도) ────────────────────────────────────────────
-// 1 credit = AI 기능 호출 1회분 기본 단위. 기능에 따라 1~2 credit 차감.
+// 모든 AI 기능은 호출 1회당 1 credit 차감. 사용량은 mode 무관 shared pool로 합산.
 export const PLAN_LIMITS: Record<number, number> = {
   1: 3,    // Free
   2: 15,   // Hobby
@@ -32,7 +32,7 @@ export const TIER_NAMES: Record<number, string> = {
 export interface AiFeatureConfig {
   /** 최소 요구 구독 tier */
   minTier: number;
-  /** 호출 1회당 차감 credit (1 또는 2) */
+  /** 호출 1회당 차감 credit. 현재 정책상 모든 기능이 1로 통일. */
   creditCost: number;
   /** UI 표시용 기능명 */
   label: string;
@@ -95,22 +95,22 @@ export const AI_FEATURES = {
     mode: 'risk-predictor',
   },
   milestone_risk: {
-    minTier: 2, creditCost: 2,
+    minTier: 2, creditCost: 1,
     label: 'AI Milestone Risk',
     mode: 'milestone-risk',
   },
   burndown_insight: {
-    minTier: 3, creditCost: 2,
+    minTier: 3, creditCost: 1,
     label: 'AI Burndown Insight',
     mode: 'burndown-insight',
   },
   issues_analysis: {
-    minTier: 4, creditCost: 2,
+    minTier: 4, creditCost: 1,
     label: 'AI Issues Analysis',
     mode: 'issues-analysis',
   },
   tag_heatmap_insight: {
-    minTier: 4, creditCost: 2,
+    minTier: 4, creditCost: 1,
     label: 'AI Tag Heatmap Insight',
     mode: 'tag-heatmap-insight',
   },

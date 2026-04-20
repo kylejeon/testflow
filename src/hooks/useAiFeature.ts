@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
 // ─── Plan Limits (백엔드와 동일) ──────────────────────────────────────────────
+// 모든 AI 기능은 1 credit/call + mode 무관 shared pool 합산
 export const PLAN_LIMITS: Record<number, number> = {
   1: 3,    // Free
   2: 15,   // Hobby
@@ -49,10 +50,10 @@ export const AI_FEATURES = {
   plan_assistant:        { minTier: 1, creditCost: 1, label: 'AI Plan Assistant' },
   activity_summary:      { minTier: 2, creditCost: 1, label: 'AI Activity Summary' },
   risk_predictor:        { minTier: 3, creditCost: 1, label: 'AI Risk Predictor' },
-  milestone_risk:        { minTier: 2, creditCost: 2, label: 'AI Milestone Risk' },
-  burndown_insight:      { minTier: 3, creditCost: 2, label: 'AI Burndown Insight' },
-  issues_analysis:       { minTier: 4, creditCost: 2, label: 'AI Issues Analysis' },
-  tag_heatmap_insight:   { minTier: 4, creditCost: 2, label: 'AI Tag Heatmap Insight' },
+  milestone_risk:        { minTier: 2, creditCost: 1, label: 'AI Milestone Risk' },
+  burndown_insight:      { minTier: 3, creditCost: 1, label: 'AI Burndown Insight' },
+  issues_analysis:       { minTier: 4, creditCost: 1, label: 'AI Issues Analysis' },
+  tag_heatmap_insight:   { minTier: 4, creditCost: 1, label: 'AI Tag Heatmap Insight' },
 } as const satisfies Record<string, AiFeatureConfig>;
 
 export type AiFeatureKey = keyof typeof AI_FEATURES;
