@@ -2023,12 +2023,13 @@ function EnvironmentCellDrillModal({
 // ─── Tab: Settings ────────────────────────────────────────────────────────────
 
 function SettingsTab({
-  plan, milestones, profiles, memberProfiles, onUpdate, onDelete, onArchive, onDuplicate, entryPresets, exitPresets, onSavePreset,
+  plan, milestones, profiles, memberProfiles, onUpdate, onDelete, onArchive, onUnarchive, onDuplicate, entryPresets, exitPresets, onSavePreset,
 }: {
   plan: TestPlan; milestones: Milestone[]; profiles: Map<string, Profile>; memberProfiles: Profile[];
   onUpdate: (data: Partial<TestPlan>) => Promise<void>;
   onDelete: () => void;
   onArchive: () => void;
+  onUnarchive: () => void;
   onDuplicate: () => void;
   entryPresets: string[]; exitPresets: string[];
   onSavePreset: (type: 'entry' | 'exit', text: string) => Promise<void>;
@@ -2329,11 +2330,19 @@ function SettingsTab({
         </div>
         <div style={{display:'grid',gridTemplateColumns:'1fr',gap:12}}>
           <div style={{padding:12,border:'1px solid var(--border)',borderRadius:6,background:'#fff'}}>
-            <div style={{fontWeight:600,marginBottom:4,fontSize:13}}>Archive plan</div>
-            <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:8}}>Plan becomes read-only. Existing run data is preserved.{plan.status === 'archived' && ' (Already archived)'}</div>
-            <button className="pd-btn pd-btn-sm" onClick={onArchive} disabled={plan.status === 'archived'}>
-              {plan.status === 'archived' ? 'Archived' : 'Archive'}
-            </button>
+            <div style={{fontWeight:600,marginBottom:4,fontSize:13}}>
+              {plan.status === 'archived' ? 'Unarchive plan' : 'Archive plan'}
+            </div>
+            <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:8}}>
+              {plan.status === 'archived'
+                ? 'Restore the plan to Planning status so it can be edited again.'
+                : 'Plan becomes read-only. Existing run data is preserved.'}
+            </div>
+            {plan.status === 'archived' ? (
+              <button className="pd-btn pd-btn-sm" onClick={onUnarchive}>Unarchive</button>
+            ) : (
+              <button className="pd-btn pd-btn-sm" onClick={onArchive}>Archive</button>
+            )}
           </div>
           <div style={{padding:12,border:'1px solid var(--border)',borderRadius:6,background:'#fff'}}>
             <div style={{fontWeight:600,marginBottom:4,fontSize:13}}>Duplicate plan</div>
@@ -2472,6 +2481,7 @@ export default function PlanDetailPage() {
   const [activeTab, setActiveTab] = useState<TabKey>('testcases');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
+  const [showUnarchiveConfirm, setShowUnarchiveConfirm] = useState(false);
   const [showDuplicateConfirm, setShowDuplicateConfirm] = useState(false);
   const [showAIModal, setShowAIModal] = useState(false);
   const [issuesCount, setIssuesCount] = useState(0);
@@ -2912,6 +2922,19 @@ export default function PlanDetailPage() {
     setShowArchiveConfirm(false);
   };
 
+  const handleUnarchive = async () => {
+    if (!plan) return;
+    const { error } = await supabase
+      .from('test_plans')
+      .update({ status: 'planning' })
+      .eq('id', planId!);
+    if (error) { showToast('Failed to unarchive plan: ' + error.message, 'error'); return; }
+    setPlan(prev => prev ? { ...prev, status: 'planning' } : prev);
+    logActivity('plan_unarchived', 'status', { details: `Plan "${plan.name}" unarchived` });
+    showToast('Plan restored to Planning', 'success');
+    setShowUnarchiveConfirm(false);
+  };
+
   const handleDuplicate = async () => {
     if (!plan) return;
     const { data: { user } } = await supabase.auth.getUser();
@@ -3182,7 +3205,7 @@ export default function PlanDetailPage() {
           <EnvironmentsTab plan={plan} planTcs={planTcs} />
         )}
         {activeTab === 'settings' && (
-          <SettingsTab plan={plan} milestones={milestones} profiles={profiles} memberProfiles={memberProfiles} onUpdate={handleUpdate} onDelete={()=>setShowDeleteConfirm(true)} onArchive={()=>setShowArchiveConfirm(true)} onDuplicate={()=>setShowDuplicateConfirm(true)} entryPresets={entryPresets} exitPresets={exitPresets} onSavePreset={handleSavePreset} />
+          <SettingsTab plan={plan} milestones={milestones} profiles={profiles} memberProfiles={memberProfiles} onUpdate={handleUpdate} onDelete={()=>setShowDeleteConfirm(true)} onArchive={()=>setShowArchiveConfirm(true)} onUnarchive={()=>setShowUnarchiveConfirm(true)} onDuplicate={()=>setShowDuplicateConfirm(true)} entryPresets={entryPresets} exitPresets={exitPresets} onSavePreset={handleSavePreset} />
         )}
       </div>
 
@@ -3285,6 +3308,30 @@ export default function PlanDetailPage() {
               <button onClick={handleArchive}
                 style={{padding:'6px 16px',border:'none',borderRadius:6,background:'var(--warning)',color:'#fff',fontSize:13,fontWeight:500,cursor:'pointer'}}>
                 Archive
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Unarchive confirm modal */}
+      {showUnarchiveConfirm && (
+        <div style={{position:'fixed',inset:0,zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(15,23,42,0.5)'}} onClick={()=>setShowUnarchiveConfirm(false)}>
+          <div onClick={e=>e.stopPropagation()} style={{background:'#fff',borderRadius:12,padding:'1.5rem',maxWidth:'28rem',width:'100%',margin:'1rem',boxShadow:'0 20px 60px rgba(0,0,0,0.2)'}}>
+            <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:16}}>
+              <div style={{width:40,height:40,borderRadius:'50%',background:'var(--success-50)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <svg style={{width:18,height:18,color:'var(--success-600)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 1 0 9-9"/><polyline points="3 4 3 12 11 12"/></svg>
+              </div>
+              <h3 style={{fontSize:16,fontWeight:600,margin:0}}>Unarchive Plan</h3>
+            </div>
+            <p style={{fontSize:14,color:'var(--text-muted)',marginBottom:20,lineHeight:1.6}}>
+              Restore <strong>"{plan.name}"</strong> to <strong>Planning</strong> status? The plan will become editable again.
+            </p>
+            <div style={{display:'flex',gap:10,justifyContent:'flex-end'}}>
+              <button onClick={()=>setShowUnarchiveConfirm(false)} className="pd-btn pd-btn-sm">Cancel</button>
+              <button onClick={handleUnarchive}
+                style={{padding:'6px 16px',border:'none',borderRadius:6,background:'var(--success-600)',color:'#fff',fontSize:13,fontWeight:500,cursor:'pointer'}}>
+                Unarchive
               </button>
             </div>
           </div>
