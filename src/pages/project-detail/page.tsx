@@ -138,8 +138,7 @@ export default function ProjectDetail() {
       return await getSharedPoolUsage(ownerId);
     },
     enabled: !!id,
-    staleTime: 0,
-    refetchOnMount: 'always',
+    staleTime: 60_000,
   });
 
   // Project detail data: React Query

@@ -84,7 +84,7 @@ export async function loadProjectDetailData(id: string): Promise<ProjectDetailDa
     let completedTestsSum = 0;
 
     milestoneRuns.forEach((run: any) => {
-      const runResults = allTestResultsData?.filter((r: any) => r.run_id === run.id) || [];
+      const runResults = allResultsByRun.get(run.id) || [];
       const statusMap = new Map<string, string>();
       runResults.forEach((r: any) => {
         if (!statusMap.has(r.test_case_id)) statusMap.set(r.test_case_id, r.status);
