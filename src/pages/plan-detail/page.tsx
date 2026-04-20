@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import ProjectHeader from '../../components/ProjectHeader';
 import { useToast } from '../../components/Toast';
@@ -2459,6 +2460,7 @@ export default function PlanDetailPage() {
   const projectId = params.id;
   const planId = params.planId;
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { showToast } = useToast();
 
   const [project, setProject] = useState<any>(null);
@@ -2909,6 +2911,12 @@ export default function PlanDetailPage() {
     showToast('Plan deleted', 'success');
   };
 
+  const invalidateMilestoneCaches = () => {
+    // milestone-detail 메인 쿼리 + OverviewTab extra 쿼리 양쪽 refetch 유도
+    queryClient.invalidateQueries({ queryKey: ['milestone-detail'] });
+    queryClient.invalidateQueries({ queryKey: ['milestone-overview-extra'] });
+  };
+
   const handleArchive = async () => {
     if (!plan) return;
     const { error } = await supabase
@@ -2917,6 +2925,7 @@ export default function PlanDetailPage() {
       .eq('id', planId!);
     if (error) { showToast('Failed to archive plan: ' + error.message, 'error'); return; }
     setPlan(prev => prev ? { ...prev, status: 'archived' } : prev);
+    invalidateMilestoneCaches();
     logActivity('plan_archived', 'status', { details: `Plan "${plan.name}" archived` });
     showToast('Plan archived', 'success');
     setShowArchiveConfirm(false);
@@ -2930,6 +2939,7 @@ export default function PlanDetailPage() {
       .eq('id', planId!);
     if (error) { showToast('Failed to unarchive plan: ' + error.message, 'error'); return; }
     setPlan(prev => prev ? { ...prev, status: 'planning' } : prev);
+    invalidateMilestoneCaches();
     logActivity('plan_unarchived', 'status', { details: `Plan "${plan.name}" unarchived` });
     showToast('Plan restored to Planning', 'success');
     setShowUnarchiveConfirm(false);
