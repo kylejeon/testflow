@@ -108,7 +108,7 @@ export const environments = {
       untested: 'Untested',
     },
     ai: {
-      sectionTitle: 'AI Insights',
+      sectionTitle: 'Coverage Insights',
       patternCount: '{{count}} patterns',
       critical: {
         tag: 'Critical · env',

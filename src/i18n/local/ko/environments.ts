@@ -108,7 +108,7 @@ export const environments = {
       untested: '미실행',
     },
     ai: {
-      sectionTitle: 'AI 인사이트',
+      sectionTitle: 'Coverage Insights',
       patternCount: '패턴 {{count}}개',
       critical: {
         tag: '심각 · 환경',
