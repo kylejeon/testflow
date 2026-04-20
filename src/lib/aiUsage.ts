@@ -4,7 +4,7 @@
  * 관련 스펙: pm/specs/dev-spec-ai-usage-shared-pool.md §4-1 / §6-1
  *
  * 정책:
- *   Billing entity  = projects.created_by (owner)
+ *   Billing entity  = projects.owner_id (owner)
  *   Usage scope     = owner ∪ owner 소유 프로젝트 멤버 전원
  *   Aggregate       = SUM(COALESCE(credits_used, 1)) WHERE step=1 AND created_at >= startOfUtcMonth
  *   Tier            = 본인 tier > 1 이면 self, 아니면 소속 프로젝트 owner 중 최고 tier
@@ -32,7 +32,7 @@ export function startOfUtcMonth(): Date {
  *
  * 우선순위:
  *   1) 본인 tier > 1 이면 self (본인이 billing entity)
- *   2) 그렇지 않으면 소속 프로젝트의 created_by 중 최고 tier owner
+ *   2) 그렇지 않으면 소속 프로젝트의 owner_id 중 최고 tier owner
  *   3) 모두 실패하면 self
  */
 export async function getEffectiveOwnerId(userId: string): Promise<EffectiveTierInfo> {
@@ -62,13 +62,13 @@ export async function getEffectiveOwnerId(userId: string): Promise<EffectiveTier
 
   const { data: projects } = await supabase
     .from('projects')
-    .select('id, created_by')
+    .select('id, owner_id')
     .in('id', projectIds);
 
   if (!projects?.length) return { tier: ownTier, ownerId: userId };
 
   const ownerIds = [...new Set(
-    (projects as any[]).map((p: any) => p.created_by).filter(Boolean),
+    (projects as any[]).map((p: any) => p.owner_id).filter(Boolean),
   )];
 
   if (ownerIds.length === 0) return { tier: ownTier, ownerId: userId };

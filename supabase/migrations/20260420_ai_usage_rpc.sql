@@ -7,7 +7,7 @@
 --       owner 단위 shared pool 집계를 수행한다.
 --
 -- 정책:
---   Billing entity = projects.created_by
+--   Billing entity = projects.owner_id
 --   Usage scope   = owner ∪ owner 소유 프로젝트 멤버(project_members.user_id)
 --   Aggregate     = SUM(COALESCE(credits_used, 1)) WHERE step = 1
 --                   AND created_at >= p_month_start
@@ -25,7 +25,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
   WITH owner_projects AS (
-    SELECT id FROM projects WHERE created_by = p_owner_id
+    SELECT id FROM projects WHERE owner_id = p_owner_id
   ),
   member_ids AS (
     SELECT p_owner_id AS uid
@@ -43,7 +43,7 @@ $$;
 COMMENT ON FUNCTION get_ai_shared_pool_usage(uuid, timestamptz) IS
   'AI 사용량 집계: owner의 팀 shared pool 월간 credit 합계(SUM). '
   'SECURITY DEFINER로 RLS 우회. '
-  'owner = projects.created_by. step=1만 집계. credits_used NULL은 1로 처리.';
+  'owner = projects.owner_id. step=1만 집계. credits_used NULL은 1로 처리.';
 
 GRANT EXECUTE ON FUNCTION get_ai_shared_pool_usage(uuid, timestamptz) TO authenticated, service_role;
 

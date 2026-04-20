@@ -4,13 +4,13 @@
  * 관련 스펙: pm/specs/dev-spec-ai-usage-shared-pool.md §4-1 / §6-2
  *
  * 정책:
- *   Billing entity  = projects.created_by (owner)
+ *   Billing entity  = projects.owner_id (owner)
  *   Usage scope     = owner ∪ owner 소유 프로젝트의 멤버 전원
  *   Aggregate       = SUM(COALESCE(credits_used, 1)) WHERE step=1 AND created_at >= startOfUtcMonth
  *   Tier            = 본인 tier > 1 이면 self, 아니면 소속 프로젝트 owner 중 최고 tier
  *
  * ⚠ 프론트 src/lib/aiUsage.ts 와 로직 동기화 필수.
- * ⚠ 호출자는 service_role client를 넘겨야 함 (RLS 우회 + projects.created_by 조회).
+ * ⚠ 호출자는 service_role client를 넘겨야 함 (RLS 우회 + projects.owner_id 조회).
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
@@ -32,7 +32,7 @@ export function startOfUtcMonth(): Date {
 
 /**
  * 유효 구독 tier + billing entity owner 식별
- * owner 식별은 projects.created_by 기준으로 통일 (project_members.role='owner' 사용 금지).
+ * owner 식별은 projects.owner_id 기준으로 통일 (project_members.role='owner' 사용 금지).
  */
 export async function getEffectiveTier(
   supabase: SB,
@@ -53,7 +53,7 @@ export async function getEffectiveTier(
   // 2. 본인이 유료면 본인 기준
   if (ownTier > 1) return { tier: ownTier, ownerId: userId };
 
-  // 3. 소속 프로젝트 owner 조회 (projects.created_by 기준)
+  // 3. 소속 프로젝트 owner 조회 (projects.owner_id 기준)
   const { data: memberships } = await supabase
     .from('project_members')
     .select('project_id')
@@ -65,13 +65,13 @@ export async function getEffectiveTier(
 
   const { data: projects } = await supabase
     .from('projects')
-    .select('id, created_by')
+    .select('id, owner_id')
     .in('id', projectIds);
 
   if (!projects?.length) return { tier: ownTier, ownerId: userId };
 
   const ownerIds = [...new Set(
-    (projects as any[]).map((p: any) => p.created_by).filter(Boolean),
+    (projects as any[]).map((p: any) => p.owner_id).filter(Boolean),
   )];
 
   if (ownerIds.length === 0) return { tier: ownTier, ownerId: userId };
@@ -116,7 +116,7 @@ export async function getSharedPoolUsage(
   const { data: ownerProjects } = await supabase
     .from('projects')
     .select('id')
-    .eq('created_by', ownerId);
+    .eq('owner_id', ownerId);
 
   if (!ownerProjects || (ownerProjects as any[]).length === 0) {
     // owner 본인만 집계 (프로젝트 없는 Free 단독 사용자 포함)
