@@ -486,10 +486,10 @@
 .mo-chart-body { padding: 2px 4px; flex: 1; min-height: 180px; }
 .mo-legend { display: flex; gap: 10px; font-size: 10px; color: var(--text-muted); }
 .mo-legend .sw { width: 14px; height: 2px; border-radius: 1px; display: inline-block; vertical-align: middle; margin-right: 4px; }
-.mo-legend .sw.ideal { background: var(--text-subtle); }
+.mo-legend .sw.ideal { background: #6b7280; }
 .mo-legend .sw.actual { background: var(--primary); }
 .mo-legend .sw.scope { background: var(--warning); }
-.mo-legend .sw.projected { background: #a5b4fc; }
+.mo-legend .sw.projected { background: #8b5cf6; }
 .mo-range-tabs { display: flex; gap: 3px; margin-left: auto; background: var(--bg-subtle); padding: 2px; border-radius: 6px; }
 .mo-range-tab { font-size: 10px; padding: 2px 7px; border-radius: 4px; cursor: pointer; color: var(--text-muted); border: 0; background: transparent; font-family: inherit; }
 .mo-range-tab.active { background: #fff; color: var(--text); font-weight: 500; box-shadow: var(--shadow-sm); }

@@ -112,7 +112,7 @@ export default function BurndownChart({ startDate, endDate, totalTCs, executedPe
       </div>
       <div className="mo-chart-body">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 4, right: 6, left: -4, bottom: 0 }}>
+          <LineChart data={data} margin={{ top: 4, right: 8, left: 4, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
             <XAxis
               dataKey="dateLabel"
@@ -124,20 +124,21 @@ export default function BurndownChart({ startDate, endDate, totalTCs, executedPe
             <YAxis
               tick={{ fontSize: 9, fill: '#9ca3af' }}
               stroke="#d1d5db"
-              width={26}
+              width={totalTCs >= 1000 ? 32 : totalTCs >= 100 ? 28 : 22}
               tickCount={4}
               domain={[0, totalTCs]}
               allowDataOverflow={false}
-              tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)}
+              tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(Math.round(v))}
             />
             <Tooltip
               contentStyle={{ background: '#111827', border: 'none', borderRadius: 4, color: '#fff', fontSize: 11, padding: '6px 8px' }}
               labelStyle={{ color: '#fff' }}
               itemStyle={{ color: '#fff' }}
+              formatter={(v: number) => [Math.round(v), '']}
             />
-            <Line type="monotone" dataKey="ideal" stroke="#9ca3af" strokeWidth={1.2} strokeDasharray="4 3" dot={false} isAnimationActive={false} />
+            <Line type="monotone" dataKey="ideal" stroke="#6b7280" strokeWidth={1.5} strokeDasharray="5 3" dot={false} isAnimationActive={false} />
             <Line type="monotone" dataKey="actual" stroke="var(--primary)" strokeWidth={2} dot={false} isAnimationActive={false} connectNulls={false} />
-            <Line type="monotone" dataKey="projected" stroke="#a5b4fc" strokeWidth={1.2} strokeDasharray="2 2" dot={false} isAnimationActive={false} connectNulls={false} />
+            <Line type="monotone" dataKey="projected" stroke="#8b5cf6" strokeWidth={1.5} strokeDasharray="3 2" dot={false} isAnimationActive={false} connectNulls={false} />
             {data.find(d => d.date === todayISO) && (
               <ReferenceLine x={data.find(d => d.date === todayISO)!.dateLabel} stroke="var(--primary)" strokeDasharray="2 2" />
             )}
