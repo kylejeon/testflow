@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Environment, EnvironmentFormValues, DeviceType } from '../types/environment';
 import { ENVIRONMENT_PRESETS } from '../lib/environments';
 
@@ -45,6 +46,7 @@ export default function EnvironmentFormModal({
   error,
   zIndex = 50,
 }: EnvironmentFormModalProps) {
+  const { t } = useTranslation('environments');
   const [values, setValues] = useState<EnvironmentFormValues>(toValues(initialValues));
   const nameInputRef = useRef<HTMLInputElement | null>(null);
   const isEdit = !!initialValues;
@@ -114,12 +116,12 @@ export default function EnvironmentFormModal({
         {/* Header */}
         <div className="flex items-start justify-between px-6 py-4 border-b border-gray-200">
           <h3 id="env-modal-title" className="text-lg font-semibold text-gray-900">
-            {isEdit ? 'Edit Environment' : 'Add Environment'}
+            {isEdit ? t('editTitle') : t('addButton')}
           </h3>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close dialog"
+            aria-label={t('form.cancel')}
             className="p-1 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
@@ -148,7 +150,7 @@ export default function EnvironmentFormModal({
           {/* Name */}
           <div>
             <label htmlFor="env-name" className="block text-xs font-medium text-gray-700 mb-1">
-              Name <span className="text-red-500">*</span>
+              {t('form.name')} <span className="text-red-500">*</span>
             </label>
             <input
               ref={nameInputRef}
@@ -156,7 +158,7 @@ export default function EnvironmentFormModal({
               type="text"
               value={values.name}
               onChange={e => setField('name', e.target.value)}
-              placeholder="e.g. Chrome 124 / macOS 14"
+              placeholder={t('form.namePlaceholder')}
               maxLength={120}
               className={`w-full px-3 py-2 rounded-md border bg-white text-sm focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 ${
                 error || nameInvalid ? 'border-red-400' : 'border-gray-300'
@@ -173,7 +175,7 @@ export default function EnvironmentFormModal({
           {/* OS + OS version */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="env-os" className="block text-xs font-medium text-gray-700 mb-1">OS</label>
+              <label htmlFor="env-os" className="block text-xs font-medium text-gray-700 mb-1">{t('form.osName')}</label>
               <input
                 id="env-os"
                 type="text"
@@ -184,7 +186,7 @@ export default function EnvironmentFormModal({
               />
             </div>
             <div>
-              <label htmlFor="env-os-ver" className="block text-xs font-medium text-gray-700 mb-1">OS version</label>
+              <label htmlFor="env-os-ver" className="block text-xs font-medium text-gray-700 mb-1">{t('form.osVersion')}</label>
               <input
                 id="env-os-ver"
                 type="text"
@@ -199,7 +201,7 @@ export default function EnvironmentFormModal({
           {/* Browser + version */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="env-browser" className="block text-xs font-medium text-gray-700 mb-1">Browser</label>
+              <label htmlFor="env-browser" className="block text-xs font-medium text-gray-700 mb-1">{t('form.browserName')}</label>
               <input
                 id="env-browser"
                 type="text"
@@ -210,7 +212,7 @@ export default function EnvironmentFormModal({
               />
             </div>
             <div>
-              <label htmlFor="env-browser-ver" className="block text-xs font-medium text-gray-700 mb-1">Browser version</label>
+              <label htmlFor="env-browser-ver" className="block text-xs font-medium text-gray-700 mb-1">{t('form.browserVersion')}</label>
               <input
                 id="env-browser-ver"
                 type="text"
@@ -224,8 +226,8 @@ export default function EnvironmentFormModal({
 
           {/* Device */}
           <div>
-            <span className="block text-xs font-medium text-gray-700 mb-1">Device</span>
-            <div className="flex gap-2" role="radiogroup" aria-label="Device type">
+            <span className="block text-xs font-medium text-gray-700 mb-1">{t('form.deviceType')}</span>
+            <div className="flex gap-2" role="radiogroup" aria-label={t('form.deviceType')}>
               {(['desktop', 'mobile', 'tablet'] as DeviceType[]).map(d => {
                 const active = values.device_type === d;
                 return (
@@ -241,7 +243,7 @@ export default function EnvironmentFormModal({
                         : 'px-3 py-1.5 rounded-full text-sm bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
                     }
                   >
-                    {d.charAt(0).toUpperCase() + d.slice(1)}
+                    {t(`form.device.${d}`)}
                   </button>
                 );
               })}
@@ -250,7 +252,7 @@ export default function EnvironmentFormModal({
 
           {/* Description */}
           <div>
-            <label htmlFor="env-desc" className="block text-xs font-medium text-gray-700 mb-1">Description (optional)</label>
+            <label htmlFor="env-desc" className="block text-xs font-medium text-gray-700 mb-1">{t('form.description')}</label>
             <textarea
               id="env-desc"
               value={values.description}
@@ -269,7 +271,7 @@ export default function EnvironmentFormModal({
             onClick={onClose}
             className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md"
           >
-            Cancel
+            {t('form.cancel')}
           </button>
           <button
             type="button"
@@ -282,7 +284,7 @@ export default function EnvironmentFormModal({
                 <path d="M21 12a9 9 0 1 1-6.219-8.56" />
               </svg>
             )}
-            {submitting ? 'Saving...' : 'Save'}
+            {submitting ? t('form.saving') : t('form.save')}
           </button>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import ProjectHeader from '../../components/ProjectHeader';
 import { useToast } from '../../components/Toast';
@@ -1490,6 +1491,7 @@ function IssuesTab({ runs, plan, planTcs, milestone, parentMilestone, profiles, 
 // ─── Tab: Environments ────────────────────────────────────────────────────────
 
 function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestCase[] }) {
+  const { t } = useTranslation('environments');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [matrix, setMatrix] = useState<HeatmapMatrix | null>(null);
@@ -1592,7 +1594,7 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
           background: '#fff', border: '1px solid var(--border)', borderRadius: 10,
           padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13,
         }}>
-          Failed to load environment coverage data.
+          {t('heatmap.loadFailed')}
         </div>
         <AiInsightsPlaceholder />
       </div>
@@ -1605,9 +1607,9 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
   if (!hasStructuredData) {
     const emptyMsg = !matrix || matrix.columns.length === 0
       ? (matrix?.legacyRunCount ?? 0) > 0
-        ? 'All runs in this plan use legacy text-only environments. The matrix cannot be rendered.'
-        : 'No runs with structured environments assigned to this plan yet.'
-      : 'This plan has no test cases yet.';
+        ? t('heatmap.emptyLegacyOnly')
+        : t('heatmap.empty')
+      : t('heatmap.emptyNoTcs');
     return (
       <div style={wrapperStyle}>
         <div style={{
@@ -1619,7 +1621,7 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
             <rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
           </svg>
           <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)', marginBottom: 4 }}>
-            Environment Coverage Matrix
+            {t('heatmap.title')}
           </div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)', maxWidth: 420, margin: '0 auto' }}>
             {emptyMsg}
@@ -1633,7 +1635,7 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
               <svg style={{ width: 14, height: 14 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
               </svg>
-              {matrix!.legacyRunCount} runs using legacy text-only environment (not shown)
+              {t('heatmap.legacyWarning', { count: matrix!.legacyRunCount })}
             </div>
           )}
         </div>
@@ -1655,10 +1657,10 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
               <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
               <rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
             </svg>
-            Environment Coverage Matrix
+            {t('heatmap.title')}
           </div>
           <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>
-            {plan.name} · {matrix.rows.length} TCs × {columns.length} envs
+            {plan.name} · {t('heatmap.tcsByEnvs', { tcs: matrix.rows.length, envs: columns.length })}
           </span>
         </div>
         <div style={{ overflowX: 'auto', padding: '0 16px 12px' }}>
@@ -1737,7 +1739,7 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
               {/* Summary row */}
               <tr style={{ paddingTop: 12 }}>
                 <td style={{ position: 'sticky', left: 0, zIndex: 2, background: '#F9FAFB', fontWeight: 700, fontSize: 13, color: 'var(--text-muted)', padding: '12px 14px 4px 6px', whiteSpace: 'nowrap' }}>
-                  Env Summary
+                  {t('heatmap.envSummary')}
                 </td>
                 {matrix.summary.map((cell, ci) => {
                   const hm = HEATMAP_COLORS[cell.status] ?? HEATMAP_COLORS.untested;
@@ -1765,7 +1767,7 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
 
         {/* Legend strip */}
         <div style={{ margin: '0 16px 12px', background: '#fff', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 14, fontSize: 11, color: 'var(--text-muted)', flexWrap: 'wrap' }}>
-          <b style={{ color: 'var(--text)' }}>Scale:</b>
+          <b style={{ color: 'var(--text)' }}>{t('heatmap.scaleLabel')}</b>
           {(['perfect', 'pass', 'mixed', 'warn', 'fail', 'untested'] as const).map(k => (
             <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
               <span style={{
@@ -1773,7 +1775,7 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
                 background: HEATMAP_COLORS[k].bg,
                 border: k === 'untested' ? '1px dashed #9CA3AF' : 'none',
               }} />
-              {k.charAt(0).toUpperCase() + k.slice(1)}
+              {t(`heatmap.scale.${k}`)}
             </span>
           ))}
         </div>
@@ -1789,7 +1791,7 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
             <svg style={{ width: 14, height: 14 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
             </svg>
-            {matrix.legacyRunCount} runs using legacy text-only environment (not shown)
+            {t('heatmap.legacyWarning', { count: matrix.legacyRunCount })}
           </div>
         )}
       </div>

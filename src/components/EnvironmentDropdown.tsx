@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useEnvironments, useCreateEnvironment } from '../hooks/useEnvironments';
 import { useToast, getApiErrorMessage } from './Toast';
 import EnvironmentFormModal from './EnvironmentFormModal';
@@ -30,6 +31,7 @@ export default function EnvironmentDropdown({
   disabled,
   label,
 }: EnvironmentDropdownProps) {
+  const { t } = useTranslation('environments');
   const { data: allEnvs, isLoading, isError } = useEnvironments(projectId);
   const { showToast } = useToast();
   const [open, setOpen] = useState(false);
@@ -85,13 +87,13 @@ export default function EnvironmentDropdown({
     try {
       const newEnv = await create.mutateAsync(values);
       setShowAddModal(false);
-      showToast('Environment created', 'success');
+      showToast(t('toast.created'), 'success');
       // auto-select the newly created environment
       onChange(newEnv.id, getEnvironmentDisplayName(newEnv));
     } catch (e: unknown) {
       const err = e as { code?: string; message?: string };
       if (err.code === '23505') {
-        setFormError('An environment with this name already exists.');
+        setFormError(t('error.duplicateName'));
       } else {
         setFormError(getApiErrorMessage(e));
       }
@@ -108,18 +110,18 @@ export default function EnvironmentDropdown({
           value={legacyValue ?? ''}
           onChange={e => handleFallbackChange(e.target.value)}
           disabled={disabled}
-          placeholder="Environment (e.g. Chrome 124 / macOS 14)"
+          placeholder={t('dropdown.freeformPlaceholder')}
           className="w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 disabled:bg-gray-50 disabled:text-gray-400"
         />
         <p className="mt-1 text-xs text-gray-500 flex items-center gap-1">
           <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
-          No environments in this project yet.
+          {t('dropdown.noEnvsHint')}
           <button
             type="button"
             onClick={() => setShowAddModal(true)}
             className="text-brand-600 hover:text-brand-700 underline"
           >
-            Add one
+            {t('dropdown.addOne')}
           </button>
         </p>
 
@@ -138,7 +140,7 @@ export default function EnvironmentDropdown({
   // ─── Dropdown mode ─────────────────────────────────────────────
   const triggerLabel = selectedEnv
     ? getEnvironmentDisplayName(selectedEnv)
-    : 'Select environment';
+    : t('dropdown.select');
 
   return (
     <div ref={rootRef} className="relative">
@@ -155,13 +157,13 @@ export default function EnvironmentDropdown({
         {isLoading ? (
           <span className="flex items-center gap-2 text-gray-400">
             <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
-            Loading...
+            {t('dropdown.loading')}
           </span>
         ) : (
           <span className={selectedEnv ? 'text-gray-900' : 'text-gray-400'}>
             {triggerLabel}
             {selectedEnv && !selectedEnv.is_active && (
-              <span className="ml-1.5 text-[10px] uppercase tracking-wider text-gray-400">(inactive)</span>
+              <span className="ml-1.5 text-[10px] uppercase tracking-wider text-gray-400">{t('dropdown.inactiveTag')}</span>
             )}
           </span>
         )}
@@ -175,7 +177,7 @@ export default function EnvironmentDropdown({
         >
           {activeEnvs.length === 0 ? (
             <div className="px-3 py-3 text-sm text-gray-500">
-              No active environments. Add one to get started.
+              {t('dropdown.noActive')}
             </div>
           ) : (
             groups.map(g => (
@@ -223,7 +225,7 @@ export default function EnvironmentDropdown({
             className="sticky bottom-0 w-full flex items-center gap-2 px-3 py-2 bg-gray-50 text-sm font-medium text-brand-600 hover:bg-gray-100 cursor-pointer"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-            Add new…
+            {t('dropdown.addNew')}
           </button>
         </div>
       )}

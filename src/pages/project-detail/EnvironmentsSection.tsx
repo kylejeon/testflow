@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   useEnvironments,
   useCreateEnvironment,
@@ -18,11 +19,13 @@ export interface EnvironmentsSectionProps {
 }
 
 export default function EnvironmentsSection({ projectId, subscriptionTier = 1 }: EnvironmentsSectionProps) {
+  const { t } = useTranslation('environments');
   const { data: envs, isLoading, isError, refetch } = useEnvironments(projectId);
   const { showToast } = useToast();
   const { can } = usePermission(projectId);
-  const canManage = can('create_testcase'); // Tester+ (same level)
-  const canDelete = can('delete_project');  // Admin+
+  const canManage = can('create_testcase');    // Tester+ — add / edit general fields
+  const canDeactivate = can('delete_project'); // Admin+ — toggle is_active (soft delete) per Dev Spec §4-3
+  const canDelete = can('delete_project');     // Admin+ — hard delete
 
   const create = useCreateEnvironment(projectId);
   const update = useUpdateEnvironment(projectId);
@@ -62,20 +65,20 @@ export default function EnvironmentsSection({ projectId, subscriptionTier = 1 }:
     try {
       if (editing) {
         await update.mutateAsync({ id: editing.id, values });
-        showToast('Environment updated', 'success');
+        showToast(t('toast.updated'), 'success');
       } else {
         if (limitReached) {
           showToast(`You've reached the ${limit}-environment limit of your plan.`, 'warning');
           return;
         }
         await create.mutateAsync(values);
-        showToast('Environment created', 'success');
+        showToast(t('toast.created'), 'success');
       }
       closeModal();
     } catch (e: unknown) {
       const err = e as { code?: string; message?: string };
       if (err.code === '23505') {
-        setFormError('An environment with this name already exists.');
+        setFormError(t('error.duplicateName'));
       } else {
         setFormError(getApiErrorMessage(e));
       }
@@ -83,9 +86,13 @@ export default function EnvironmentsSection({ projectId, subscriptionTier = 1 }:
   };
 
   const handleToggleActive = async (env: Environment) => {
+    if (!canDeactivate) {
+      showToast(t('error.deactivatePermission'), 'warning');
+      return;
+    }
     try {
       await update.mutateAsync({ id: env.id, values: { is_active: !env.is_active } });
-      showToast(env.is_active ? 'Environment deactivated' : 'Environment activated', 'success');
+      showToast(env.is_active ? t('toast.deactivated') : t('toast.activated'), 'success');
     } catch (e: unknown) {
       showToast(getApiErrorMessage(e), 'error');
     }
@@ -100,11 +107,11 @@ export default function EnvironmentsSection({ projectId, subscriptionTier = 1 }:
     if (!preset) return;
     try {
       await create.mutateAsync(preset.values);
-      showToast(`Added "${preset.values.name}"`, 'success');
+      showToast(t('toast.presetAdded', { name: preset.values.name }), 'success');
     } catch (e: unknown) {
       const err = e as { code?: string };
       if (err.code === '23505') {
-        showToast('An environment with this name already exists.', 'error');
+        showToast(t('error.duplicateName'), 'error');
       } else {
         showToast(getApiErrorMessage(e), 'error');
       }
@@ -114,7 +121,7 @@ export default function EnvironmentsSection({ projectId, subscriptionTier = 1 }:
   const handleDelete = async (id: string) => {
     try {
       await destroy.mutateAsync(id);
-      showToast('Environment deleted', 'success');
+      showToast(t('toast.deleted'), 'success');
       setConfirmDeleteId(null);
     } catch (e: unknown) {
       showToast(getApiErrorMessage(e), 'error');
@@ -127,9 +134,9 @@ export default function EnvironmentsSection({ projectId, subscriptionTier = 1 }:
   const header = (
     <div className="flex items-start justify-between mb-4">
       <div>
-        <h3 className="text-[0.9375rem] font-bold text-slate-900 mb-0.5">Environments</h3>
+        <h3 className="text-[0.9375rem] font-bold text-slate-900 mb-0.5">{t('sectionTitle')}</h3>
         <p className="text-[0.8125rem] text-slate-500">
-          Define OS/Browser/Device combinations to run your test suites against.
+          {t('sectionDesc')}
         </p>
       </div>
       <button
@@ -138,16 +145,16 @@ export default function EnvironmentsSection({ projectId, subscriptionTier = 1 }:
         disabled={!canManage || limitReached}
         title={
           !canManage
-            ? 'You need Tester role or higher to manage environments.'
+            ? t('error.permission')
             : limitReached
               ? `Plan limit reached (${activeCount}/${limit})`
               : undefined
         }
-        aria-label="Add new environment"
+        aria-label={t('addButton')}
         className="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-brand-600"
       >
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-        Add Environment
+        {t('addButton')}
       </button>
     </div>
   );
@@ -157,14 +164,14 @@ export default function EnvironmentsSection({ projectId, subscriptionTier = 1 }:
     <div className="flex items-center justify-between gap-3 p-4 mb-4 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-800">
       <span className="flex items-center gap-2">
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
-        {activeCount}/{limit} environments used on your plan.
+        {t('limit.banner', { used: activeCount, max: limit })}
       </span>
       {limitReached && (
         <a
           href="/settings?tab=billing"
           className="text-xs font-semibold text-brand-600 hover:text-brand-700 underline"
         >
-          Upgrade
+          {t('limit.upgradeCta')}
         </a>
       )}
     </div>
@@ -174,7 +181,7 @@ export default function EnvironmentsSection({ projectId, subscriptionTier = 1 }:
   const presetBar = canManage && (
     <div className="mb-4">
       <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">
-        Quick presets
+        {t('preset.title')}
       </div>
       <div className="flex flex-wrap gap-2">
         {ENVIRONMENT_PRESETS.map(p => (
@@ -211,14 +218,14 @@ export default function EnvironmentsSection({ projectId, subscriptionTier = 1 }:
       <div className="flex items-center justify-between p-4 rounded-lg bg-red-50 border border-red-200 text-sm text-red-800">
         <span className="flex items-center gap-2">
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-          Failed to load environments.
+          {t('error.loadFailed')}
         </span>
         <button
           type="button"
           onClick={() => refetch()}
           className="px-3 py-1 text-xs font-semibold rounded-md bg-red-600 text-white hover:bg-red-700"
         >
-          Retry
+          {t('error.retry')}
         </button>
       </div>
     );
@@ -226,8 +233,8 @@ export default function EnvironmentsSection({ projectId, subscriptionTier = 1 }:
     body = (
       <div className="flex flex-col items-center justify-center py-12 rounded-lg border border-dashed border-gray-300 bg-gray-50/50">
         <svg className="w-12 h-12 text-gray-400 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /></svg>
-        <div className="text-sm font-medium text-gray-700 mb-1">No environments yet</div>
-        <div className="text-xs text-gray-400 mb-4">Add one to enable the Environment Coverage Matrix.</div>
+        <div className="text-sm font-medium text-gray-700 mb-1">{t('emptyTitle')}</div>
+        <div className="text-xs text-gray-400 mb-4">{t('emptyDesc')}</div>
         {canManage && (
           <button
             type="button"
@@ -235,7 +242,7 @@ export default function EnvironmentsSection({ projectId, subscriptionTier = 1 }:
             className="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-            Add Environment
+            {t('addButton')}
           </button>
         )}
       </div>
@@ -246,12 +253,12 @@ export default function EnvironmentsSection({ projectId, subscriptionTier = 1 }:
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Name</th>
-              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">OS</th>
-              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Browser</th>
-              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Device</th>
-              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Active</th>
-              <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-500">Actions</th>
+              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">{t('table.name')}</th>
+              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">{t('table.os')}</th>
+              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">{t('table.browser')}</th>
+              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">{t('table.device')}</th>
+              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">{t('table.active')}</th>
+              <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-500">{t('table.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -276,7 +283,8 @@ export default function EnvironmentsSection({ projectId, subscriptionTier = 1 }:
                     role="switch"
                     aria-checked={env.is_active}
                     aria-label="Toggle environment active status"
-                    disabled={!canManage || update.isPending}
+                    disabled={!canDeactivate || update.isPending}
+                    title={!canDeactivate ? t('error.deactivatePermission') : undefined}
                     onClick={() => handleToggleActive(env)}
                     className={`inline-flex h-5 w-9 rounded-full items-center px-0.5 transition-colors ${
                       env.is_active ? 'bg-emerald-500 justify-end' : 'bg-gray-300 justify-start'
@@ -307,14 +315,16 @@ export default function EnvironmentsSection({ projectId, subscriptionTier = 1 }:
                           onClick={() => openEditModal(env)}
                           className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
                         >
-                          Edit
+                          {t('action.edit')}
                         </button>
                         <button
                           type="button"
+                          disabled={!canDeactivate}
+                          title={!canDeactivate ? t('error.deactivatePermission') : undefined}
                           onClick={() => { setOpenMenuId(null); void handleToggleActive(env); }}
-                          className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                          className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                         >
-                          {env.is_active ? 'Deactivate' : 'Activate'}
+                          {env.is_active ? t('action.deactivate') : t('action.activate')}
                         </button>
                         {canDelete && (
                           <button
@@ -322,7 +332,7 @@ export default function EnvironmentsSection({ projectId, subscriptionTier = 1 }:
                             onClick={() => { setOpenMenuId(null); setConfirmDeleteId(env.id); }}
                             className="w-full text-left px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
                           >
-                            Delete permanently
+                            {t('action.delete')}
                           </button>
                         )}
                       </div>
@@ -356,9 +366,9 @@ export default function EnvironmentsSection({ projectId, subscriptionTier = 1 }:
       {confirmDeleteId && (
         <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-            <h4 className="text-base font-semibold text-gray-900 mb-2">Delete environment?</h4>
+            <h4 className="text-base font-semibold text-gray-900 mb-2">{t('deleteConfirmTitle')}</h4>
             <p className="text-sm text-gray-600 mb-4">
-              This will permanently remove the environment. Runs using it will be unlinked. Continue?
+              {t('deleteConfirm')}
             </p>
             <div className="flex justify-end gap-2">
               <button
@@ -366,7 +376,7 @@ export default function EnvironmentsSection({ projectId, subscriptionTier = 1 }:
                 onClick={() => setConfirmDeleteId(null)}
                 className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md"
               >
-                Cancel
+                {t('form.cancel')}
               </button>
               <button
                 type="button"
@@ -374,7 +384,7 @@ export default function EnvironmentsSection({ projectId, subscriptionTier = 1 }:
                 disabled={destroy.isPending}
                 className="px-3 py-1.5 text-sm font-semibold bg-red-600 hover:bg-red-700 text-white rounded-md disabled:opacity-50"
               >
-                {destroy.isPending ? 'Deleting…' : 'Delete'}
+                {destroy.isPending ? t('deletingLabel') : t('deleteLabel')}
               </button>
             </div>
           </div>

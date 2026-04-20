@@ -2,6 +2,7 @@ export const environments = {
   sectionTitle: 'Environments',
   sectionDesc: 'Define OS/Browser/Device combinations to run your test suites against.',
   addButton: 'Add Environment',
+  editTitle: 'Edit Environment',
 
   emptyTitle: 'No environments yet',
   emptyDesc: 'Add one to enable the Environment Coverage Matrix.',
@@ -16,6 +17,7 @@ export const environments = {
     deviceType: 'Device',
     description: 'Description (optional)',
     save: 'Save',
+    saving: 'Saving...',
     cancel: 'Cancel',
     device: {
       desktop: 'Desktop',
@@ -48,11 +50,18 @@ export const environments = {
     delete: 'Delete permanently',
   },
 
+  deleteConfirmTitle: 'Delete environment?',
   deleteConfirm: 'This will permanently remove the environment. Runs using it will be unlinked. Continue?',
+  deleteLabel: 'Delete',
+  deletingLabel: 'Deleting…',
 
   dropdown: {
     select: 'Select environment',
     addNew: 'Add new…',
+    addOne: 'Add one',
+    loading: 'Loading...',
+    inactiveTag: '(inactive)',
+    noActive: 'No active environments. Add one to get started.',
     freeformPlaceholder: 'Environment (e.g. Chrome 124 / macOS 14)',
     manageLink: 'Manage environments',
     noEnvsHint: 'No environments in this project yet.',
@@ -66,6 +75,7 @@ export const environments = {
   error: {
     duplicateName: 'An environment with this name already exists.',
     permission: 'You need Tester role or higher to manage environments.',
+    deactivatePermission: 'Only Admin or Owner can deactivate environments.',
     loadFailed: 'Failed to load environments.',
     retry: 'Retry',
   },
@@ -83,9 +93,20 @@ export const environments = {
     title: 'Environment Coverage Matrix',
     envSummary: 'Env Summary',
     legacyWarning: '{{count}} runs using legacy text-only environment (not shown)',
-    empty: 'No runs assigned to this plan yet.',
+    empty: 'No runs with structured environments assigned to this plan yet.',
     emptyLegacyOnly: 'All runs in this plan use legacy text-only environments. The matrix cannot be rendered.',
+    emptyNoTcs: 'This plan has no test cases yet.',
     loadFailed: 'Failed to load environment coverage data.',
+    tcsByEnvs: '{{tcs}} TCs × {{envs}} envs',
+    scaleLabel: 'Scale:',
+    scale: {
+      perfect: 'Perfect',
+      pass: 'Pass',
+      mixed: 'Mixed',
+      warn: 'Warn',
+      fail: 'Fail',
+      untested: 'Untested',
+    },
   },
 };
 
