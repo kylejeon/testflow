@@ -2,7 +2,7 @@
  * TestRail CSV/XLSX Export/Import Utility
  * TestRail 호환 포맷으로 테스트 케이스를 내보내고 가져오는 유틸리티
  */
-import * as XLSX from 'xlsx';
+// Note: XLSX export uses ExcelJS (dynamically imported inside exportToXLSX).
 
 export interface TestRailRow {
   'ID': string;

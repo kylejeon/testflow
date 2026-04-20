@@ -7,7 +7,6 @@ import PageLoader from '../../components/PageLoader';
 import { supabase } from '../../lib/supabase';
 import { Avatar } from '../../components/Avatar';
 import { toCanvas } from 'html-to-image';
-import jsPDF from 'jspdf';
 import NotificationBell from '../../components/feature/NotificationBell';
 import { queryClient } from '../../lib/queryClient';
 
@@ -83,6 +82,8 @@ export default function PassRateReportPage() {
     if (!pdfContentRef.current || exporting) return;
     setExporting(true);
     try {
+      // Lazy-load jspdf — ~400 kB dep, only needed on Export PDF click.
+      const { default: jsPDF } = await import('jspdf');
       const el = pdfContentRef.current;
       const canvas = await toCanvas(el, {
         pixelRatio: 2,

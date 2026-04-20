@@ -2,7 +2,8 @@
  * Excel/CSV Import Utility
  * .xlsx, .xls, .csv 파일을 파싱하여 TestCase 배열로 변환
  */
-import * as XLSX from 'xlsx';
+// `xlsx` is dynamically imported inside parseExcelImport to keep it out of the
+// initial bundle for the Test Cases page.
 import { parseCSV } from './testRailExport';
 
 export interface ImportedTestCase {
@@ -118,12 +119,15 @@ export function parseCSVImport(csvText: string): ImportResult {
 
 /**
  * Excel 파일(ArrayBuffer) 파싱
+ * `xlsx` is loaded lazily — it is a heavy dep (~400 kB minified) and only
+ * needed when a user actually imports an .xlsx/.xls file.
  */
-export function parseExcelImport(buffer: ArrayBuffer): ImportResult {
+export async function parseExcelImport(buffer: ArrayBuffer): Promise<ImportResult> {
   const errors: string[] = [];
   const warnings: string[] = [];
 
   try {
+    const XLSX = await import('xlsx');
     const workbook = XLSX.read(buffer, { type: 'array' });
     const sheetName = workbook.SheetNames[0];
     if (!sheetName) {

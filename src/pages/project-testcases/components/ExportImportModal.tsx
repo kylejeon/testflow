@@ -354,8 +354,8 @@ export default function ExportImportModal({
     const isExcel = ext === 'xlsx' || ext === 'xls';
     const reader = new FileReader();
     if (isExcel) {
-      reader.onload = e => {
-        const r = parseExcelImport(e.target?.result as ArrayBuffer);
+      reader.onload = async e => {
+        const r = await parseExcelImport(e.target?.result as ArrayBuffer);
         setImportErrors(r.errors); setImportWarnings(r.warnings); setTotalRows(r.totalRows);
         setImportPreview(r.success ? r.data : null);
       };
