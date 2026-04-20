@@ -1580,7 +1580,7 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
     display: 'grid',
     gridTemplateColumns: isMobileViewport ? '1fr' : 'minmax(0,1fr) 280px',
     gap: 14,
-    padding: '16px 0',
+    padding: isMobileViewport ? '16px 12px' : '16px 24px',
   };
 
   if (loading) {
@@ -1678,7 +1678,8 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
         <div
           className="matrix-scroll"
           style={{
-            maxHeight: isMobileViewport ? 400 : 560,
+            maxHeight: isMobileViewport ? 'calc(100vh - 280px)' : 'calc(100vh - 320px)',
+            minHeight: 320,
             overflow: 'auto',
             padding: '0 16px 12px',
           }}

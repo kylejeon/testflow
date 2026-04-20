@@ -169,7 +169,10 @@ export interface EnvGroup {
 export function groupEnvironmentsByOS(envs: Environment[]): EnvGroup[] {
   const map = new Map<string, EnvColumn[]>();
   for (const env of envs) {
-    const osKey = env.os_name?.trim() || '(Other)';
+    // OS 그룹 키 = os_name + os_version 조합 (version 없으면 name만)
+    const osName = env.os_name?.trim() || '(Other)';
+    const osVersion = env.os_version?.trim() || '';
+    const osKey = osVersion ? `${osName} ${osVersion}` : osName;
     const browserLabel = [env.browser_name, env.browser_version]
       .filter(Boolean)
       .join(' ')
