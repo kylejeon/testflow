@@ -140,10 +140,43 @@ async function loadMilestoneDetailData(projectId: string, milestoneId: string): 
     .from('milestones').select('*').eq('id', milestoneId).single();
   if (milestoneError) throw milestoneError;
 
-  // Auto-correct milestone status
   let correctedMilestone = { ...milestoneData };
   const today = new Date(); today.setHours(0, 0, 0, 0);
 
+  // Fetch sub milestones first so we can derive dates before status correction
+  const { data: subMilestonesData } = await supabase
+    .from('milestones').select('*').eq('parent_milestone_id', milestoneId).order('start_date', { ascending: true });
+  const subMilestoneIds = (subMilestonesData || []).map((s: any) => s.id);
+
+  // Roll-up date derivation (UI-only, matches project-milestones list view logic):
+  // When parent has sub milestones and date_mode !== 'manual', derive start/end from subs
+  // (and subs' plans' start_date / target_date) so the header reflects the true span.
+  const hasSubs = (subMilestonesData || []).length > 0;
+  const dateMode = correctedMilestone.date_mode || 'auto';
+  if (hasSubs && dateMode !== 'manual') {
+    const allRelatedIds = [milestoneId, ...subMilestoneIds];
+    const { data: relatedPlans } = await supabase
+      .from('test_plans')
+      .select('milestone_id, start_date, end_date, target_date')
+      .in('milestone_id', allRelatedIds);
+
+    const subStarts: number[] = [
+      ...(subMilestonesData || []).map((s: any) => s.start_date).filter(Boolean).map((d: string) => new Date(d).getTime()),
+      ...(relatedPlans || []).map((p: any) => p.start_date).filter(Boolean).map((d: string) => new Date(d).getTime()),
+    ];
+    const subEnds: number[] = [
+      ...(subMilestonesData || []).map((s: any) => s.end_date).filter(Boolean).map((d: string) => new Date(d).getTime()),
+      ...(relatedPlans || []).map((p: any) => p.end_date || p.target_date).filter(Boolean).map((d: string) => new Date(d).getTime()),
+    ];
+    if (subStarts.length > 0) {
+      correctedMilestone.start_date = new Date(Math.min(...subStarts, correctedMilestone.start_date ? new Date(correctedMilestone.start_date).getTime() : Infinity)).toISOString();
+    }
+    if (subEnds.length > 0) {
+      correctedMilestone.end_date = new Date(Math.max(...subEnds, correctedMilestone.end_date ? new Date(correctedMilestone.end_date).getTime() : -Infinity)).toISOString();
+    }
+  }
+
+  // Auto-correct milestone status (based on possibly-derived dates)
   if (correctedMilestone.start_date && correctedMilestone.status === 'upcoming') {
     const [sy, sm, sd] = correctedMilestone.start_date.split('T')[0].split('-');
     const startDate = new Date(parseInt(sy), parseInt(sm) - 1, parseInt(sd));
@@ -163,10 +196,6 @@ async function loadMilestoneDetailData(projectId: string, milestoneId: string): 
       await supabase.from('milestones').update({ status: 'started' }).eq('id', milestoneId);
     }
   }
-
-  const { data: subMilestonesData } = await supabase
-    .from('milestones').select('*').eq('parent_milestone_id', milestoneId).order('start_date', { ascending: true });
-  const subMilestoneIds = (subMilestonesData || []).map((s: any) => s.id);
 
   const { data: runsData, error: runsError } = await supabase
     .from('test_runs').select('*').eq('milestone_id', milestoneId).order('created_at', { ascending: false });
