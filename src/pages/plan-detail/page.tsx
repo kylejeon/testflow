@@ -182,28 +182,35 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
   const [riskLoading, setRiskLoading] = useState(false);
   const [riskError, setRiskError] = useState<string | null>(null);
 
-  // Load previous risk scan result on mount
+  // Load previous risk scan result on mount (owner 팀 shared pool 범위).
+  // RLS 때문에 ai_generation_logs 를 직접 SELECT 하면 본인 행만 보여 팀원의 결과를
+  // 재사용할 수 없다. SECURITY DEFINER RPC `get_team_ai_log` 로 owner 팀 범위에서 조회.
   useEffect(() => {
-    if (!plan.id) return;
+    if (!plan.id || !projectId) return;
     (async () => {
       try {
-        const { data } = await supabase
-          .from('ai_generation_logs')
-          .select('output_data, created_at')
-          .eq('mode', 'risk-predictor')
-          .eq('step', 1)
-          .contains('input_data', { plan_id: plan.id })
-          .order('created_at', { ascending: false })
-          .limit(1)
+        const { data: projectRow } = await supabase
+          .from('projects')
+          .select('owner_id')
+          .eq('id', projectId)
           .maybeSingle();
-        if (data?.output_data) {
-          setRiskData({ ...data.output_data, _scanned_at: data.created_at });
+        const ownerId = (projectRow as any)?.owner_id;
+        if (!ownerId) return;
+
+        const { data: rows } = await supabase.rpc('get_team_ai_log', {
+          p_owner_id: ownerId,
+          p_mode: 'risk-predictor',
+          p_input_match: { plan_id: plan.id },
+        });
+        const row = Array.isArray(rows) && rows.length > 0 ? (rows[0] as any) : null;
+        if (row?.output_data) {
+          setRiskData({ ...row.output_data, _scanned_at: row.created_at });
         }
       } catch {
         // Silently fail — user can manually scan
       }
     })();
-  }, [plan.id]);
+  }, [plan.id, projectId]);
 
   const handleRunRiskScan = async () => {
     if (planTcs.length === 0) {

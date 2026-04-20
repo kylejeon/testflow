@@ -6,6 +6,7 @@ import {
 } from '../_shared/ai-config.ts';
 import {
   getEffectiveTier,
+  getOwnerTeamUserIds,
   getSharedPoolUsage,
   checkAiAccess,
 } from '../_shared/ai-usage.ts';
@@ -358,13 +359,15 @@ Deno.serve(async (req) => {
       }
       const { tier, ownerId } = access;
 
-      // Check cache: same run_id with prior summary (skip if force_reanalyze)
+      // Check cache: same run_id with prior summary (owner 팀 shared pool 범위).
+      // self-only 조회로는 팀원이 먼저 분석한 결과를 재사용할 수 없어 중복 credit 차감이 발생.
       if (!body.force_reanalyze) {
+        const teamUserIds = await getOwnerTeamUserIds(adminClient, ownerId);
         const { data: cached } = await adminClient
           .from('ai_generation_logs')
           .select('output_data, created_at')
           .eq('mode', 'run-summary')
-          .eq('user_id', user.id)
+          .in('user_id', teamUserIds)
           .filter('input_data->>run_id', 'eq', run_id)
           .order('created_at', { ascending: false })
           .limit(1)

@@ -410,4 +410,62 @@
 ### 구현 중 결정사항 (Dev Spec과 다른 부분)
 - 프론트와 백엔드 모두 `getSharedPoolUsage` 동일 시그니처로 통일. 백엔드도 이미 service_role로 RLS 우회 가능하므로 RPC 불필요 판단 (§5 "Edge Function은 service_role로 직접 쿼리" 지침대로)
 - 마이그레이션 파일명: Dev Spec §12에서 `20260420001_` prefix 옵션 언급했으나 기존 `20260420_milestone_ai_risk_cache.sql` 과 알파벳 정렬상 이후 배치되므로 `20260420_ai_usage_rpc.sql` 로 단순화
+
+---
+
+2026-04-20 (ai-usage follow-up): AI 캐시 조회 → owner 팀 shared pool 확장 @developer 구현 완료
+
+## 뭘 했냐 (QA MAJOR-3/MAJOR-4 대응)
+
+### 배경
+usage 집계는 이미 owner shared pool 로 통일됐지만, 캐시 조회(`ai_generation_logs` SELECT)는 여전히 self-only 로 남아 팀원이 각자 AI 호출 → 동일 결과 재생성 + credit 중복 차감 문제.
+
+### 신규 파일 1개
+- supabase/migrations/20260421_ai_team_cache_rpc.sql
+  - `get_owner_team_user_ids(p_owner_id uuid) RETURNS SETOF uuid` — 팀 user_id 목록 (owner + 소유 프로젝트 멤버)
+  - `get_team_ai_log(p_owner_id uuid, p_mode text, p_input_match jsonb)` — mode + input_data JSONB 매칭으로 팀 범위 캐시 최신 1건 반환 (SECURITY DEFINER + 호출자 검증)
+
+### 수정 파일 4개
+- supabase/functions/_shared/ai-usage.ts
+  - `getOwnerTeamUserIds(supabase, ownerId)` export 추가 — 팀 범위 산출 공통 헬퍼
+  - `getSharedPoolUsage` 내부 중복 로직을 `getOwnerTeamUserIds` 재사용으로 DRY
+- supabase/functions/generate-testcases/index.ts
+  - import에 `getOwnerTeamUserIds` 추가
+  - run-summary 캐시 조회(line 367) `.eq('user_id', user.id)` → `.in('user_id', teamUserIds)` 교체 (유일한 self-only 필터였음)
+  - coverage-gap / analyze-flaky 캐시는 이미 user_id 필터 없음 (service_role 쿼리 → 자동 팀 공유)
+- src/pages/plan-detail/page.tsx:185-210
+  - risk scan 이전 결과 로딩을 `ai_generation_logs` 직접 SELECT → RPC `get_team_ai_log` 호출로 교체
+  - 조회 기준은 **프로젝트 owner_id** (플랜은 한 프로젝트에만 속하므로 billing owner 보다 프로젝트 owner 가 이 플랜의 모든 결과를 포괄)
+- pm/specs/dev-spec-ai-usage-shared-pool.md
+  - §6-6 "AI 캐시 조회 — Owner 팀 Shared Pool 확장 (follow-up)" 섹션 신설
+  - 수정 대상 / 설계 결정 / AC-T1~T4 수용 기준 추가
+
+### 건드리지 않은 것 (의도적)
+- 캐시 INSERT — 전부 호출자 user.id 로 유지 (credit 정산 로그와 일관)
+- risk-predictor / milestone-risk-predictor Edge Function — 내부 캐시 SELECT 자체가 없음 (milestone-risk 는 milestones.ai_risk_cache JSONB 로 milestone-scoped 저장이라 이미 팀 공유, risk-predictor 는 캐시 없음)
+- coverage-gap / analyze-flaky 캐시 — 이미 user_id 필터 없이 service_role 로 팀 공유 동작 중
+- getEffectiveOwnerId 시그니처 — 변경 없음
+
+## 어디까지 됐냐
+- TypeScript 타입체크 PASS (`npx tsc --noEmit` 에러 0개)
+- 풀 빌드 PASS (`npm run build` 6.66s 성공)
+
+## 커밋 예정 (claude 브랜치)
+- feat(ai-usage): AI 캐시 조회를 owner 팀 shared pool로 확장
+
+## 다음에 할 것 (CEO 수동 작업)
+
+### 배포 절차 (반드시 순서대로)
+1. `supabase db push` — 20260421_ai_team_cache_rpc.sql 적용 (RPC 함수 2개 생성 + GRANT)
+2. `supabase functions deploy generate-testcases` — run-summary 캐시 팀 스코프 조회 반영 (CEO 결정 시점에 실행)
+3. `git push origin claude` (수동 push, main 금지)
+
+### 배포 후 검증
+- owner A 팀 멤버 B 가 run-summary 생성 → 멤버 C 가 같은 run 진입 시 `cached: true` 응답 (credit 0 차감)
+- 멤버 B 가 plan-detail 에서 risk scan → 멤버 C 가 같은 plan 진입 시 이전 risk 카드 즉시 표시
+- 다른 owner 팀 사용자가 다른 팀 ownerId 로 RPC 호출 시 빈 결과 (SECURITY DEFINER 호출자 검증)
+
+### Out of Scope (미작업)
+- AC-T1~T4 테스트 케이스 — Dev Spec §11 에 유사한 시나리오 기록됨. 프로젝트 테스트 러너 미구성 상태는 이전과 동일
+- RBAC 확장 — 프로젝트 멤버십 체크가 feature 진입 시 이미 작동하므로 캐시 공유 자체로 인한 권한 확장 없음
 - generate-testcases Edge Function은 기존에 이미 owner 기반 정답 로직이었고, 이번 작업으로 로컬 구현이 _shared로 이전된 것 외 동작 변경 없음

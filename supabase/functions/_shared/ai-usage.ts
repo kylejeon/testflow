@@ -95,9 +95,46 @@ export async function getEffectiveTier(
 }
 
 /**
+ * Owner 팀의 user_id 목록 반환 (owner 본인 + owner 소유 프로젝트의 모든 멤버)
+ *
+ * - owner 소유 프로젝트가 없으면 [ownerId] 단일 배열
+ * - 팀 멤버 중복은 Set 으로 제거
+ *
+ * AI 캐시 조회(`ai_generation_logs` SELECT)와 shared pool credit 집계의
+ * 공통 범위로 사용한다. 프론트(RLS 우회 필요)는 대응 RPC
+ * `get_owner_team_user_ids` 를 통해 동일 목록을 얻는다.
+ */
+export async function getOwnerTeamUserIds(
+  supabase: SB,
+  ownerId: string,
+): Promise<string[]> {
+  if (!ownerId) return [];
+
+  const { data: ownerProjects } = await supabase
+    .from('projects')
+    .select('id')
+    .eq('owner_id', ownerId);
+
+  if (!ownerProjects || (ownerProjects as any[]).length === 0) {
+    return [ownerId];
+  }
+
+  const projectIds = (ownerProjects as any[]).map((p: any) => p.id);
+  const { data: members } = await supabase
+    .from('project_members')
+    .select('user_id')
+    .in('project_id', projectIds);
+
+  return [...new Set([
+    ownerId,
+    ...(((members as any[]) ?? []).map((m: any) => m.user_id).filter(Boolean)),
+  ])];
+}
+
+/**
  * owner의 이번 달 shared pool 사용량 (credits SUM)
- * - owner 소유 프로젝트가 0개면 owner 본인 로그만 집계
- * - 소유 프로젝트가 있으면 owner + 모든 프로젝트 멤버 로그를 합산
+ * - owner 팀 user_id 목록을 `getOwnerTeamUserIds` 로 조회
+ * - 소유 프로젝트가 0개면 owner 본인 로그만 집계
  * - credits_used IS NULL 은 1로 집계
  */
 export async function getSharedPoolUsage(
@@ -112,36 +149,9 @@ export async function getSharedPoolUsage(
   const sumRows = (rows: any[]): number =>
     rows.reduce((acc, r) => acc + (r.credits_used ?? 1), 0);
 
-  // 1. owner 소유 프로젝트 목록
-  const { data: ownerProjects } = await supabase
-    .from('projects')
-    .select('id')
-    .eq('owner_id', ownerId);
+  const memberIds = await getOwnerTeamUserIds(supabase, ownerId);
+  if (memberIds.length === 0) return 0;
 
-  if (!ownerProjects || (ownerProjects as any[]).length === 0) {
-    // owner 본인만 집계 (프로젝트 없는 Free 단독 사용자 포함)
-    const { data } = await supabase
-      .from('ai_generation_logs')
-      .select('credits_used')
-      .eq('user_id', ownerId)
-      .eq('step', 1)
-      .gte('created_at', start.toISOString());
-    return sumRows((data as any[]) ?? []);
-  }
-
-  // 2. 해당 프로젝트들의 모든 멤버
-  const projectIds = (ownerProjects as any[]).map((p: any) => p.id);
-  const { data: members } = await supabase
-    .from('project_members')
-    .select('user_id')
-    .in('project_id', projectIds);
-
-  const memberIds = [...new Set([
-    ownerId,
-    ...(((members as any[]) ?? []).map((m: any) => m.user_id)),
-  ])];
-
-  // 3. 팀 전체 credit 합산
   const { data } = await supabase
     .from('ai_generation_logs')
     .select('credits_used')
