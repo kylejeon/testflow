@@ -56,6 +56,8 @@ GRANT EXECUTE ON FUNCTION get_owner_team_user_ids(uuid) TO authenticated, servic
 --         일치 캐시 없으면 row 0 개.
 -- ------------------------------------------------------------------------
 
+DROP FUNCTION IF EXISTS get_team_ai_log(uuid, text, jsonb);
+
 CREATE OR REPLACE FUNCTION get_team_ai_log(
   p_owner_id uuid,
   p_mode text,
@@ -66,39 +68,28 @@ RETURNS TABLE (
   created_at timestamptz,
   user_id uuid
 )
-LANGUAGE plpgsql
+LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
-DECLARE
-  v_caller uuid := auth.uid();
-  v_authorized boolean;
-BEGIN
-  IF v_caller IS NULL THEN
-    RETURN;
-  END IF;
-
-  -- 호출자가 owner 본인이거나 owner 팀 멤버인지 확인
-  SELECT EXISTS (
-    SELECT 1 FROM get_owner_team_user_ids(p_owner_id) AS t(uid)
-    WHERE t.uid = v_caller
-  ) INTO v_authorized;
-
-  IF NOT v_authorized THEN
-    RETURN;
-  END IF;
-
-  RETURN QUERY
+  WITH team_ids AS (
+    SELECT p_owner_id AS uid
+    UNION
+    SELECT pm.user_id
+    FROM project_members pm
+    JOIN projects p ON p.id = pm.project_id
+    WHERE p.owner_id = p_owner_id
+  )
   SELECT l.output_data, l.created_at, l.user_id
   FROM ai_generation_logs l
   WHERE l.mode = p_mode
     AND l.step = 1
     AND l.input_data @> p_input_match
-    AND l.user_id IN (SELECT uid FROM get_owner_team_user_ids(p_owner_id) AS t(uid))
+    AND l.user_id IN (SELECT uid FROM team_ids)
+    AND EXISTS (SELECT 1 FROM team_ids WHERE uid = auth.uid())
   ORDER BY l.created_at DESC
   LIMIT 1;
-END;
 $$;
 
 COMMENT ON FUNCTION get_team_ai_log(uuid, text, jsonb) IS
