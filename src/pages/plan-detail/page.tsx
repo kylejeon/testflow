@@ -1678,8 +1678,7 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
         <div
           className="matrix-scroll"
           style={{
-            maxHeight: isMobileViewport ? 'calc(100vh - 280px)' : 'calc(100vh - 320px)',
-            minHeight: 320,
+            maxHeight: isMobileViewport ? 'min(calc(100vh - 280px), 480px)' : 'min(calc(100vh - 320px), 560px)',
             overflow: 'auto',
             padding: '0 16px 12px',
           }}
