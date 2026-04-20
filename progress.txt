@@ -469,3 +469,57 @@ usage 집계는 이미 owner shared pool 로 통일됐지만, 캐시 조회(`ai_
 - AC-T1~T4 테스트 케이스 — Dev Spec §11 에 유사한 시나리오 기록됨. 프로젝트 테스트 러너 미구성 상태는 이전과 동일
 - RBAC 확장 — 프로젝트 멤버십 체크가 feature 진입 시 이미 작동하므로 캐시 공유 자체로 인한 권한 확장 없음
 - generate-testcases Edge Function은 기존에 이미 owner 기반 정답 로직이었고, 이번 작업으로 로컬 구현이 _shared로 이전된 것 외 동작 변경 없음
+
+---
+
+2026-04-20 (ai-usage QA follow-up): MINOR-2/MINOR-3 + trial/loops owner_id 수정 @developer 구현 완료
+
+## 뭘 했냐 (커밋 1개 — 18407cd)
+
+### MINOR-3: Enterprise tier usage 집계 복원 (BR-6 위반 수정)
+- supabase/functions/_shared/ai-usage.ts:201-212
+- `limit === -1` (Enterprise/Unlimited) 분기에서 `usage: 0` 고정 하드코딩 → `getSharedPoolUsage(supabase, ownerId)` 호출로 실제 사용량 계산
+- 이전: Dashboard aiUsageCount가 Enterprise tier에선 항상 0 표시 → 관리자 모니터링 불가
+- 수정 후: quota check는 여전히 skip (무제한이므로), 표시/모니터링용 usage는 정확
+
+### MINOR-2: useAiFeatures deps 안정화 (eslint-disable 제거)
+- src/hooks/useAiFeature.ts:180-234
+- 기존: `[featureKeys.join(',')]` + `eslint-disable-next-line react-hooks/exhaustive-deps`
+- 수정: `featureKeys.slice().sort().join('|')` 파생 stable key + `eslint-disable` 주석 삭제
+- 효과: 순서만 다른 동일 집합은 재실행 안 됨 / featureKeys 참조 매번 새로 와도 effect 안정
+
+### trial-* / sync-loops: projects.created_by → projects.owner_id
+- 실제 `projects` 테이블 컬럼은 `owner_id` (20260403_multitenant_isolation.sql, delete-account, aiUsage 등 다수 증거)
+- 수정 3개 파일 (각 파일의 getUserStats 내부 `.eq('created_by', userId)` 1회 + 헤더 주석):
+  - supabase/functions/trial-expire-handler/index.ts:36
+  - supabase/functions/trial-ending-reminder/index.ts:36
+  - supabase/functions/sync-loops-contacts/index.ts:44
+- 이전: 이 셋은 owner 프로젝트 조회가 silently 빈 배열 반환 → testCaseCount/testRunCount/teamMemberCount 전부 0으로 Loops에 전송됨
+- 수정 후: 정상적인 집계 값으로 Loops 이메일 템플릿 merge tag 채워짐
+- 부수: useAiFeature.ts 주석 "projects.created_by 기준" 2곳도 owner_id로 동기화
+
+## 어디까지 됐냐
+- TypeScript 타입체크 PASS (`npx tsc --noEmit` 에러 0개)
+- 풀 빌드 PASS (`npm run build` 6.74s)
+- 커밋 18407cd claude 브랜치에 있음, origin/claude push 완료
+- npm run lint 스크립트 미존재로 ESLint 미실행 — tsc + build 통과로 대체
+
+## 스킵 항목 (별도 티켓 필요)
+- MAJOR-1 (vitest 단위 테스트 인프라): 프로젝트 테스트 러너 미구성. 인프라 변경이 커 이번 범위 밖
+- MAJOR-2 (bigint 타입): 현재 `Number(data ?? 0)` 변환으로 실동작 안전. 타입만 명확히 하면 되는데 영향도 낮아 스킵
+- MINOR-1 (i18n ai.usage.* 키 8개): Dev Spec §10 "권장" 수준이고 실제 UI 텍스트 변화 없음. UI 개편 시 함께
+
+## 발견 사항 (사용자 확인 필요)
+- `fetch-github-issues/index.ts:97`, `fetch-jira-requirements/index.ts:134` 에서 `.from('projects').select('id, created_by')` 확인됨
+- 실제 projects 테이블은 owner_id이므로 `projectData.created_by` 는 항상 undefined
+  → `!memberCheck && projectData.created_by !== user.id` 조건이 non-member인 프로젝트 owner에게도 Access denied 유발
+- 이번 지시에선 "확인 후 결정"이라 범위 밖으로 처리 (별도 지시 받으면 수정)
+
+## 배포 절차 (CEO 수동)
+1. Edge Functions 재배포 (CEO가 일괄 배포 결정 시점에):
+   - `supabase functions deploy trial-expire-handler trial-ending-reminder sync-loops-contacts`
+   - `supabase functions deploy generate-testcases risk-predictor milestone-risk-predictor plan-assistant` (_shared/ai-usage.ts 변경이 있으므로 의존 함수 전부)
+2. DB 마이그레이션 변경 없음 (이번 커밋은 코드만 수정)
+3. 배포 후 검증:
+   - Enterprise tier 사용자의 Dashboard aiUsageCount가 0 아닌 실제 값으로 표시
+   - trial-* Edge Function 실행 후 Loops 이벤트의 testCaseCount 등 값이 0이 아닌 실제 집계로 전송
