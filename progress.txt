@@ -1,3 +1,83 @@
+2026-04-20 (밤): 성능 감사 후속 일괄 수정 @developer
+
+## 뭘 했냐 (claude 브랜치, 3개 커밋)
+
+Researcher가 식별한 P0/P1/P2 성능 이슈 9건 일괄 수정. 3개 논리 커밋으로 분리하여 push (main 머지는 CEO 수동).
+
+### 커밋 1 — `perf(db): add test_results indexes + fix queryFns O(n²) + aiUsage cache` (7481f68)
+
+- **신규** `supabase/migrations/20260423_test_results_indexes.sql`
+  - `idx_test_results_run_id` 단일 + `idx_test_results_run_status(run_id, status)` 복합.
+  - CEO 수동 적용 필요 (`supabase db push`).
+- **queryFns.ts** line 87 O(n²) 버그 수정
+  - `allTestResultsData.filter(r => r.run_id === run.id)` → `allResultsByRun.get(run.id) || []`.
+  - 이미 135줄에서 Map 사용 중이었는데 이 부분만 누락. 마일스톤 많은 프로젝트에서 `마일스톤수 × 런수 × 결과수` → `마일스톤수 × 런수`.
+- **project-detail/page.tsx** `aiUsageCount` 캐시 정책
+  - `staleTime: 0, refetchOnMount: 'always'` → `staleTime: 60_000`. 프로젝트 페이지 방문마다 강제 RPC 호출하던 거 60초 캐시로.
+
+### 커밋 2 — `perf(bundle): lazy-load xlsx/jspdf, drop unused firebase dep` (900994d)
+
+- **excelImport.ts** `parseExcelImport`를 async로 전환, `const XLSX = await import('xlsx')`로 교체. 호출부 `ExportImportModal`의 `reader.onload`도 async로 수정.
+- **testRailExport.ts** 실제로 사용하지 않던 `import * as XLSX from 'xlsx'` 제거 (exportToXLSX는 이미 ExcelJS 동적 import 사용).
+- **PassRateReportPage.tsx** 상단 `import jsPDF from 'jspdf'` 제거, `exportPDF()` 클릭 핸들러 내부 `const { default: jsPDF } = await import('jspdf')`.
+- **package.json** `firebase@12.0.0` 의존성 제거. `grep -r "firebase"` 로 실제 사용처 0건 확인.
+  - `npm uninstall firebase` → 79 packages removed, package-lock.json 재생성.
+
+Bundle size impact (prod build):
+- project-testcases 페이지 청크 (`page-CqOF3Fa3.js`): **543 kB → 209 kB** (xlsx 분리).
+- 신규 `xlsx-*.js` 청크 429 kB 생성 — 실제 xlsx import 시에만 로드.
+- jspdf는 이미 별도 청크였지만, PassRateReportPage가 방문 즉시 불러오던 것 → Export PDF 버튼 클릭 시에만 로드.
+- main index 청크: 798.93 kB → 798.89 kB (firebase 실제로 번들되진 않았음, node_modules만 클렸던 상황).
+
+### 커밋 3 — `perf(plan-detail): parallelize load() + fix fetchData + scope log queries` (7dc05a0)
+
+플랜 상세 `load()` 함수 (3376줄 중 큰 비중) 쿼리 파이프라인 재작성. 4회 round-trip → 2회로 감소.
+
+**Phase 1 (병렬 11개 쿼리)**: project, plan, plan_tcs, all_tcs, runs, milestones, folders, `auth.getUser()`, project_members, criteria_presets, plan-direct activity_logs. 전부 projectId/planId만 의존.
+
+**Phase 2 (병렬 5개 쿼리)**: runIds 확보 후 run-assignee profiles + test_run logs + test_result logs + test_results + issues. 서로 독립.
+
+**Phase 3 (1개)**: 통합 profiles 쿼리.
+
+동시에 두 버그 수정:
+- **`fetchData()` → `load()`** (2795줄): 존재하지 않는 함수 호출 → Activity 탭 리프레시가 사실상 동작 안 하던 버그.
+- **activity_logs 필터 누락** (2633~2641): 기존에 `target_type IN (test_result, test_run)` 만 걸고 *모든* 프로젝트의 로그 100개를 받아와서 클라이언트에서 `metadata.run_id` 매칭. 이제:
+  - project_id로 1차 스코프.
+  - `test_run` → `target_id IN runIds` (서버 필터).
+  - `test_result` → `metadata->>run_id IN runIds` (PostgREST JSON path `.in()`).
+  - 2개 쿼리로 분리 (target_id 컬럼이 각각 다른 대상을 가리키므로).
+
+### 설계 결정 / 변경하지 않은 것들
+
+- **recharts lazy import**: researcher P3로 리스트됐으나 명시적으로 SKIP 지시. 건드리지 않음.
+- **exceljs**: 이미 `exportToXLSX` 내부에서 dynamic import 중 (937 kB 청크 별도). 유지.
+- **plan-detail load() 보수적 접근**: 함수 중간의 상태 업데이트 순서 / setRuns 두 번 호출 등의 세밀한 동작 그대로 보존. 쿼리 파이프라인만 재구성.
+- **presets 에러 처리**: 이전 try/catch → `presetsRes.error` 체크로 단순화. 테이블 미존재 시 presets만 skip, 나머지는 정상 동작.
+
+### 품질 검사
+
+- `npx tsc --noEmit` — 0 에러.
+- `npm run build` — PASS (6.58s, 6.51s 기존과 동일).
+- 모든 커밋 `origin/claude`에 push 완료 (main 금지).
+
+## 어디까지 됐냐
+
+3개 커밋 모두 claude 브랜치 반영 + push. DB 마이그레이션 파일은 2개 대기 중 (`20260422_environments_activity_trigger.sql` + `20260423_test_results_indexes.sql`) — CEO 수동 `supabase db push` 필요.
+
+## 다음 할 것 (CEO 수동)
+
+1. `supabase db push` — 2개 신규 마이그레이션 일괄 적용.
+2. 브라우저 검증:
+   - Plan Detail 페이지 로드 속도 개선 체감 (특히 런 많은 플랜).
+   - Activity 탭에 다른 프로젝트 로그 누출 없는지 확인.
+   - Activity 탭 리프레시가 상태 변경 후 즉시 동작하는지.
+   - Test Cases 페이지에서 Import/Export Modal — xlsx 파일 선택 시 xlsx 청크 정상 로드.
+   - Stats > Pass Rate Report에서 PDF 내보내기 버튼 클릭 시 jspdf 청크 정상 로드.
+   - Project Detail 페이지에서 AI 사용량 카운트 정상 표시 (60초 캐시).
+3. Sentry / DB slow query 모니터링으로 `test_results` 쿼리 p95 회귀 여부 확인.
+
+---
+
 2026-04-20: Environment Coverage Matrix v2 구현 @developer
 (dev-spec-environment-v2 + design-spec-environment-v2)
 
