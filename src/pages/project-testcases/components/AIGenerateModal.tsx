@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
+import { getMySharedPoolUsage } from '../../../lib/aiUsage';
 import { markOnboardingStep } from '../../../lib/onboardingMarker';
 import { ModalShell } from '../../../components/ModalShell';
 
@@ -129,22 +130,8 @@ export default function AIGenerateModal({
 
   const fetchMonthlyUsage = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
-      // credits_used SUM — 기능별 가중치(1 또는 2) 반영 (NULL은 1로 처리)
-      const { data } = await supabase
-        .from('ai_generation_logs')
-        .select('credits_used')
-        .eq('user_id', user.id)
-        .eq('step', 1)
-        .gte('created_at', startOfMonth.toISOString());
-      const total = (data ?? []).reduce(
-        (acc, row) => acc + ((row as any).credits_used ?? 1),
-        0,
-      );
+      // owner 팀 shared pool 합산 (Dashboard와 동일한 기준)
+      const total = await getMySharedPoolUsage();
       setMonthlyUsage(total);
     } catch {
       // silent

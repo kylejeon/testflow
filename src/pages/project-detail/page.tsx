@@ -118,7 +118,7 @@ export default function ProjectDetail() {
   });
 
   // Fetch AI usage count — owner 기준 팀 전체 사용량 (credits SUM).
-  // Billing entity는 현재 프로젝트의 projects.created_by.
+  // Billing entity는 현재 프로젝트의 projects.owner_id.
   // 실제 집계는 SECURITY DEFINER RPC(getSharedPoolUsage)로 수행한다.
   // ⚠ row count 방식은 폐기됨 — credits_used 가중치(2 레거시 값)가 누락되기 때문.
   const { data: aiUsageCount = 0 } = useQuery({
@@ -129,11 +129,11 @@ export default function ProjectDetail() {
 
       const { data: projectRow } = await supabase
         .from('projects')
-        .select('created_by')
+        .select('owner_id')
         .eq('id', id)
         .maybeSingle();
 
-      const ownerId: string = (projectRow as any)?.created_by || user.id;
+      const ownerId: string = (projectRow as any)?.owner_id || user.id;
       return await getSharedPoolUsage(ownerId);
     },
     enabled: !!id,
