@@ -2023,11 +2023,13 @@ function EnvironmentCellDrillModal({
 // ─── Tab: Settings ────────────────────────────────────────────────────────────
 
 function SettingsTab({
-  plan, milestones, profiles, memberProfiles, onUpdate, onDelete, entryPresets, exitPresets, onSavePreset,
+  plan, milestones, profiles, memberProfiles, onUpdate, onDelete, onArchive, onDuplicate, entryPresets, exitPresets, onSavePreset,
 }: {
   plan: TestPlan; milestones: Milestone[]; profiles: Map<string, Profile>; memberProfiles: Profile[];
   onUpdate: (data: Partial<TestPlan>) => Promise<void>;
   onDelete: () => void;
+  onArchive: () => void;
+  onDuplicate: () => void;
   entryPresets: string[]; exitPresets: string[];
   onSavePreset: (type: 'entry' | 'exit', text: string) => Promise<void>;
 }) {
@@ -2180,8 +2182,8 @@ function SettingsTab({
         </div>
       </div>
 
-      {/* Entry / Exit Criteria — 2-column grid on desktop */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Entry / Exit Criteria — 2-column grid on desktop, 14px gap to match section spacing */}
+      <div className="grid grid-cols-1 md:grid-cols-2" style={{gap: 14, marginBottom: 14}}>
 
       {/* Entry Criteria */}
       <div className="section-card" style={{marginBottom:0}}>
@@ -2326,15 +2328,17 @@ function SettingsTab({
           Danger Zone
         </div>
         <div style={{display:'grid',gridTemplateColumns:'1fr',gap:12}}>
-          <div style={{padding:12,border:'1px solid var(--border)',borderRadius:6}}>
+          <div style={{padding:12,border:'1px solid var(--border)',borderRadius:6,background:'#fff'}}>
             <div style={{fontWeight:600,marginBottom:4,fontSize:13}}>Archive plan</div>
-            <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:8}}>Plan becomes read-only. Existing run data is preserved.</div>
-            <button className="pd-btn pd-btn-sm">Archive</button>
+            <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:8}}>Plan becomes read-only. Existing run data is preserved.{plan.status === 'archived' && ' (Already archived)'}</div>
+            <button className="pd-btn pd-btn-sm" onClick={onArchive} disabled={plan.status === 'archived'}>
+              {plan.status === 'archived' ? 'Archived' : 'Archive'}
+            </button>
           </div>
-          <div style={{padding:12,border:'1px solid var(--border)',borderRadius:6}}>
+          <div style={{padding:12,border:'1px solid var(--border)',borderRadius:6,background:'#fff'}}>
             <div style={{fontWeight:600,marginBottom:4,fontSize:13}}>Duplicate plan</div>
             <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:8}}>Create a new plan with the same TC snapshot.</div>
-            <button className="pd-btn pd-btn-sm" style={{borderColor:'var(--primary-100)',color:'var(--primary)'}}>Duplicate</button>
+            <button className="pd-btn pd-btn-sm" onClick={onDuplicate} style={{borderColor:'var(--primary-100)',color:'var(--primary)'}}>Duplicate</button>
           </div>
           <div style={{padding:12,border:'1px solid var(--danger)',borderRadius:6,background:'var(--danger-50)'}}>
             <div style={{fontWeight:600,marginBottom:4,fontSize:13,color:'var(--danger-600)'}}>Delete plan</div>
@@ -2893,6 +2897,62 @@ export default function PlanDetailPage() {
     showToast('Plan deleted', 'success');
   };
 
+  const handleArchive = async () => {
+    if (!plan) return;
+    if (!confirm(`Archive plan "${plan.name}"? It will become read-only.`)) return;
+    const { error } = await supabase
+      .from('test_plans')
+      .update({ status: 'archived' })
+      .eq('id', planId!);
+    if (error) { showToast('Failed to archive plan: ' + error.message, 'error'); return; }
+    setPlan(prev => prev ? { ...prev, status: 'archived' } : prev);
+    logActivity('plan_archived', 'status', { details: `Plan "${plan.name}" archived` });
+    showToast('Plan archived', 'success');
+  };
+
+  const handleDuplicate = async () => {
+    if (!plan) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    const copyName = `${plan.name} (Copy)`;
+    const { data: newPlan, error: insertErr } = await supabase
+      .from('test_plans')
+      .insert([{
+        project_id: plan.project_id,
+        milestone_id: plan.milestone_id,
+        name: copyName,
+        description: plan.description,
+        status: 'planning',
+        priority: plan.priority,
+        owner_id: user?.id ?? plan.owner_id,
+        target_date: plan.target_date,
+        entry_criteria: plan.entry_criteria ?? [],
+        exit_criteria: plan.exit_criteria ?? [],
+        entry_criteria_met: [],
+        exit_criteria_met: [],
+      }])
+      .select()
+      .single();
+    if (insertErr || !newPlan) { showToast('Failed to duplicate plan: ' + (insertErr?.message ?? ''), 'error'); return; }
+
+    // Copy test_plan_test_cases
+    if (planTcs.length > 0) {
+      const rows = planTcs.map(ptc => ({
+        test_plan_id: (newPlan as any).id,
+        test_case_id: ptc.test_case_id,
+      }));
+      const { error: tcErr } = await supabase.from('test_plan_test_cases').insert(rows);
+      if (tcErr) {
+        showToast('Plan created but TCs not copied: ' + tcErr.message, 'warning');
+        navigate(`/projects/${projectId}/plans/${(newPlan as any).id}`);
+        return;
+      }
+    }
+
+    logActivity('plan_duplicated', 'status', { details: `Duplicated from "${plan.name}"` });
+    showToast('Plan duplicated', 'success');
+    navigate(`/projects/${projectId}/plans/${(newPlan as any).id}`);
+  };
+
   if (loading) return <PageLoader />;
   if (!plan || loadError) return (
     <div style={{ display:'flex', flexDirection:'column', height:'100vh' }}>
@@ -3119,7 +3179,7 @@ export default function PlanDetailPage() {
           <EnvironmentsTab plan={plan} planTcs={planTcs} />
         )}
         {activeTab === 'settings' && (
-          <SettingsTab plan={plan} milestones={milestones} profiles={profiles} memberProfiles={memberProfiles} onUpdate={handleUpdate} onDelete={()=>setShowDeleteConfirm(true)} entryPresets={entryPresets} exitPresets={exitPresets} onSavePreset={handleSavePreset} />
+          <SettingsTab plan={plan} milestones={milestones} profiles={profiles} memberProfiles={memberProfiles} onUpdate={handleUpdate} onDelete={()=>setShowDeleteConfirm(true)} onArchive={handleArchive} onDuplicate={handleDuplicate} entryPresets={entryPresets} exitPresets={exitPresets} onSavePreset={handleSavePreset} />
         )}
       </div>
 
