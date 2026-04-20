@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
 
     const { data: projectData } = await adminClient
       .from('projects')
-      .select('id, created_by')
+      .select('id, owner_id')
       .eq('id', project_id)
       .maybeSingle();
 
@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Project not found' }, 404);
     }
 
-    if (!memberCheck && projectData.created_by !== user.id) {
+    if (!memberCheck && projectData.owner_id !== user.id) {
       return jsonResponse({ error: 'Access denied' }, 403);
     }
 
