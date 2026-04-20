@@ -3,10 +3,12 @@ import { checkRateLimit, rateLimitResponse, RATE_CONFIGS } from '../_shared/rate
 import {
   AI_FEATURES,
   PLAN_LIMITS,
-  TIER_NAMES,
-  type AiFeatureKey,
-  type AiAccessResult,
 } from '../_shared/ai-config.ts';
+import {
+  getEffectiveTier,
+  getSharedPoolUsage,
+  checkAiAccess,
+} from '../_shared/ai-usage.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -52,174 +54,6 @@ interface JiraIssueData {
 interface JiraFetchError {
   key: string;
   reason: string;
-}
-
-/** 유효 구독 티어 반환 — 본인 또는 소속 프로젝트 owner 중 최고 티어 */
-async function getEffectiveTier(
-  supabase: ReturnType<typeof createClient>,
-  userId: string,
-): Promise<{ tier: number; ownerId: string }> {
-  // 1. 본인 티어 조회
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('subscription_tier, is_trial, trial_ends_at')
-    .eq('id', userId)
-    .maybeSingle();
-
-  let ownTier = profile?.subscription_tier || 1;
-  if (profile?.is_trial && profile?.trial_ends_at) {
-    if (new Date() > new Date(profile.trial_ends_at)) ownTier = 1;
-  }
-
-  // 2. 본인이 유료 구독자면 본인 기준
-  if (ownTier > 1) {
-    return { tier: ownTier, ownerId: userId };
-  }
-
-  // 3. 소속 프로젝트 owner들의 티어 조회
-  const { data: memberships } = await supabase
-    .from('project_members')
-    .select('project_id, role')
-    .eq('user_id', userId);
-
-  if (!memberships || memberships.length === 0) {
-    return { tier: ownTier, ownerId: userId };
-  }
-
-  const projectIds = memberships.map((m: any) => m.project_id);
-
-  // 프로젝트 owner(created_by) 목록 조회
-  const { data: projects } = await supabase
-    .from('projects')
-    .select('id, created_by')
-    .in('id', projectIds);
-
-  if (!projects || projects.length === 0) {
-    return { tier: ownTier, ownerId: userId };
-  }
-
-  const ownerIds = [...new Set((projects as any[]).map((p: any) => p.created_by).filter(Boolean))];
-
-  // owner들의 티어 조회
-  const { data: ownerProfiles } = await supabase
-    .from('profiles')
-    .select('id, subscription_tier, is_trial, trial_ends_at')
-    .in('id', ownerIds);
-
-  // 가장 높은 티어의 owner 찾기
-  let bestTier = ownTier;
-  let bestOwnerId = userId;
-
-  (ownerProfiles ?? []).forEach((op: any) => {
-    let ownerTier = op.subscription_tier || 1;
-    if (op.is_trial && op.trial_ends_at) {
-      if (new Date() > new Date(op.trial_ends_at)) ownerTier = 1;
-    }
-    if (ownerTier > bestTier) {
-      bestTier = ownerTier;
-      bestOwnerId = op.id;
-    }
-  });
-
-  return { tier: bestTier, ownerId: bestOwnerId };
-}
-
-/** 당월 팀 전체 사용 credit 합계 조회 (owner 기준)
- *  credits_used 컬럼을 SUM — 기능별 가중치(1 또는 2) 반영.
- *  NULL은 DEFAULT 1로 처리 (마이그레이션 이전 기존 행 호환).
- */
-async function getMonthlyCredits(
-  supabase: ReturnType<typeof createClient>,
-  ownerId: string,
-): Promise<number> {
-  const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
-
-  const sumRows = (rows: any[]): number =>
-    rows.reduce((acc, r) => acc + (r.credits_used ?? 1), 0);
-
-  // owner가 소유한 프로젝트의 모든 멤버 ID 조회
-  const { data: ownerProjects } = await supabase
-    .from('projects')
-    .select('id')
-    .eq('created_by', ownerId);
-
-  if (!ownerProjects || ownerProjects.length === 0) {
-    // owner 본인 사용량만 조회 (프로젝트 없는 경우)
-    const { data } = await supabase
-      .from('ai_generation_logs')
-      .select('credits_used')
-      .eq('user_id', ownerId)
-      .eq('step', 1)
-      .gte('created_at', startOfMonth.toISOString());
-    return sumRows(data ?? []);
-  }
-
-  const projectIds = (ownerProjects as any[]).map((p: any) => p.id);
-
-  // 해당 프로젝트들의 모든 멤버 ID 조회
-  const { data: members } = await supabase
-    .from('project_members')
-    .select('user_id')
-    .in('project_id', projectIds);
-
-  const memberIds = [...new Set([ownerId, ...((members ?? []) as any[]).map((m: any) => m.user_id)])];
-
-  // 팀 전체 credit 합산
-  const { data } = await supabase
-    .from('ai_generation_logs')
-    .select('credits_used')
-    .in('user_id', memberIds)
-    .eq('step', 1)
-    .gte('created_at', startOfMonth.toISOString());
-
-  return sumRows(data ?? []);
-}
-
-/** AI 기능 접근 통합 체크 — tier gate + credit quota 동시 검사 */
-async function checkAiAccess(
-  supabase: ReturnType<typeof createClient>,
-  userId: string,
-  featureKey: AiFeatureKey,
-): Promise<AiAccessResult> {
-  const config = AI_FEATURES[featureKey];
-  const { tier, ownerId } = await getEffectiveTier(supabase, userId);
-
-  // Tier gate
-  if (tier < config.minTier) {
-    const tierName = TIER_NAMES[config.minTier] ?? 'Professional';
-    return {
-      allowed: false,
-      tier, ownerId,
-      usage: 0, limit: 0,
-      creditCost: config.creditCost,
-      error: `${tierName} plan required`,
-      requiredTier: config.minTier,
-      upgradeUrl: '/settings?tab=billing',
-    };
-  }
-
-  // Unlimited plan — skip quota check
-  const limit = PLAN_LIMITS[tier] ?? -1;
-  if (limit === -1) {
-    return { allowed: true, tier, ownerId, usage: 0, limit: -1, creditCost: config.creditCost };
-  }
-
-  // Credit quota check
-  const usage = await getMonthlyCredits(supabase, ownerId);
-  if (limit - usage < config.creditCost) {
-    return {
-      allowed: false,
-      tier, ownerId,
-      usage, limit,
-      creditCost: config.creditCost,
-      error: 'Monthly AI credit limit reached.',
-      upgradeUrl: '/settings?tab=billing',
-    };
-  }
-
-  return { allowed: true, tier, ownerId, usage, limit, creditCost: config.creditCost };
 }
 
 /** Atlassian Document Format → plain text */
@@ -734,7 +568,7 @@ Quality Gates: Pass Rate ≥90%, Critical Failures = 0, Coverage ≥80%, Blocked
         credits_used: AI_FEATURES.run_summary.creditCost,
       });
 
-      const usage = await getMonthlyCredits(adminClient, ownerId);
+      const usage = await getSharedPoolUsage(adminClient, ownerId);
       return jsonResponse({
         success: true,
         summary: aiSummary,
@@ -973,7 +807,7 @@ Respond in valid JSON:
         credits_used: AI_FEATURES.coverage_gap.creditCost,
       });
 
-      const usage = await getMonthlyCredits(adminClient, ownerId);
+      const usage = await getSharedPoolUsage(adminClient, ownerId);
       return jsonResponse({
         success: true,
         result: gapResult,
@@ -1079,7 +913,7 @@ Suggest test cases not yet covered.`;
         credits_used: AI_FEATURES.requirement_suggest.creditCost,
       });
 
-      const usage = await getMonthlyCredits(adminClient, ownerId);
+      const usage = await getSharedPoolUsage(adminClient, ownerId);
       return jsonResponse({
         success: true,
         suggestions,
@@ -1209,7 +1043,7 @@ Respond in valid JSON:
         credits_used: AI_FEATURES.flaky_analysis.creditCost,
       });
 
-      const usage = await getMonthlyCredits(adminClient, ownerId);
+      const usage = await getSharedPoolUsage(adminClient, ownerId);
       return jsonResponse({
         success: true,
         result: analysisResult,
@@ -1300,7 +1134,7 @@ Respond in valid JSON:
     if (step === 1) {
       const limit = PLAN_LIMITS[tier] ?? -1;
       if (limit !== -1) {
-        const usage = await getMonthlyCredits(adminClient, ownerId);
+        const usage = await getSharedPoolUsage(adminClient, ownerId);
         if (limit - usage < AI_FEATURES.tc_generation_text.creditCost) {
           return jsonResponse({ error: 'Monthly AI credit limit reached.', usage, limit, current_tier: tier }, 429);
         }

@@ -3,9 +3,13 @@
  *
  * 백엔드 _shared/ai-config.ts 와 동기화된 프론트엔드 미러 상수.
  * 새 기능 추가 시 양쪽 모두 업데이트 필요.
+ *
+ * Usage 집계는 owner 단위 shared pool로 수행된다 (src/lib/aiUsage.ts 참조).
+ * Dev Spec: pm/specs/dev-spec-ai-usage-shared-pool.md
  */
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { getEffectiveOwnerId, getSharedPoolUsage } from '../lib/aiUsage';
 
 // ─── Plan Limits (백엔드와 동일) ──────────────────────────────────────────────
 // 모든 AI 기능은 1 credit/call + mode 무관 shared pool 합산
@@ -122,61 +126,14 @@ export function useAiFeature(featureKey: AiFeatureKey): AiFeatureState {
           return;
         }
 
-        // 구독 tier 조회 (백엔드 getEffectiveTier와 동일 로직)
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('subscription_tier, is_trial, trial_ends_at')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        let tier = profile?.subscription_tier || 1;
-        // 만료된 trial은 Free로 처리
-        if (profile?.is_trial && profile?.trial_ends_at) {
-          if (new Date() > new Date(profile.trial_ends_at)) tier = 1;
-        }
-
-        // 자신의 tier가 1이면 소속 프로젝트 owner의 tier도 확인 (effective tier)
-        if (tier <= 1) {
-          try {
-            const { data: memberships } = await supabase
-              .from('project_members').select('project_id').eq('user_id', user.id);
-            if (memberships?.length) {
-              const projectIds = memberships.map((m: any) => m.project_id);
-              const { data: owners } = await supabase
-                .from('project_members').select('user_id').in('project_id', projectIds).eq('role', 'owner');
-              if (owners?.length) {
-                const ownerIds = [...new Set(owners.map((o: any) => o.user_id))];
-                const { data: ownerProfiles } = await supabase
-                  .from('profiles').select('subscription_tier, is_trial, trial_ends_at').in('id', ownerIds);
-                for (const p of ownerProfiles || []) {
-                  let t = p.subscription_tier || 1;
-                  if (p.is_trial && p.trial_ends_at && new Date() > new Date(p.trial_ends_at)) t = 1;
-                  if (t > tier) tier = t;
-                }
-              }
-            }
-          } catch { /* silent — fall back to own tier */ }
-        }
+        // Effective tier + billing entity owner 계산 (projects.created_by 기준)
+        const { tier, ownerId } = await getEffectiveOwnerId(user.id);
 
         const config = AI_FEATURES[featureKey];
         const monthlyLimit = PLAN_LIMITS[tier] ?? -1;
 
-        // 당월 사용 credit 합산 (credits_used 컬럼 SUM)
-        const startOfMonth = new Date();
-        startOfMonth.setDate(1);
-        startOfMonth.setHours(0, 0, 0, 0);
-
-        const { data: logs } = await supabase
-          .from('ai_generation_logs')
-          .select('credits_used')
-          .eq('user_id', user.id)
-          .eq('step', 1)
-          .gte('created_at', startOfMonth.toISOString());
-
-        const usedCredits = (logs ?? []).reduce(
-          (acc, row) => acc + ((row as any).credits_used ?? 1),
-          0,
-        );
+        // Owner 단위 shared pool 사용량 조회 (RPC)
+        const usedCredits = await getSharedPoolUsage(ownerId);
 
         const tierOk = tier >= config.minTier;
         const remainingCredits = monthlyLimit === -1 ? -1 : Math.max(0, monthlyLimit - usedCredits);
@@ -232,56 +189,13 @@ export function useAiFeatures<K extends AiFeatureKey>(
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('subscription_tier, is_trial, trial_ends_at')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        let tier = profile?.subscription_tier || 1;
-        if (profile?.is_trial && profile?.trial_ends_at) {
-          if (new Date() > new Date(profile.trial_ends_at)) tier = 1;
-        }
-
-        if (tier <= 1) {
-          try {
-            const { data: memberships } = await supabase
-              .from('project_members').select('project_id').eq('user_id', user.id);
-            if (memberships?.length) {
-              const projectIds = memberships.map((m: any) => m.project_id);
-              const { data: owners } = await supabase
-                .from('project_members').select('user_id').in('project_id', projectIds).eq('role', 'owner');
-              if (owners?.length) {
-                const ownerIds = [...new Set(owners.map((o: any) => o.user_id))];
-                const { data: ownerProfiles } = await supabase
-                  .from('profiles').select('subscription_tier, is_trial, trial_ends_at').in('id', ownerIds);
-                for (const p of ownerProfiles || []) {
-                  let t = p.subscription_tier || 1;
-                  if (p.is_trial && p.trial_ends_at && new Date() > new Date(p.trial_ends_at)) t = 1;
-                  if (t > tier) tier = t;
-                }
-              }
-            }
-          } catch { /* silent */ }
-        }
+        // Effective tier + billing entity owner (projects.created_by 기준)
+        const { tier, ownerId } = await getEffectiveOwnerId(user.id);
 
         const monthlyLimit = PLAN_LIMITS[tier] ?? -1;
 
-        const startOfMonth = new Date();
-        startOfMonth.setDate(1);
-        startOfMonth.setHours(0, 0, 0, 0);
-
-        const { data: logs } = await supabase
-          .from('ai_generation_logs')
-          .select('credits_used')
-          .eq('user_id', user.id)
-          .eq('step', 1)
-          .gte('created_at', startOfMonth.toISOString());
-
-        const usedCredits = (logs ?? []).reduce(
-          (acc, row) => acc + ((row as any).credits_used ?? 1),
-          0,
-        );
+        // Owner 단위 shared pool 사용량 (RPC, 한 번만 조회)
+        const usedCredits = await getSharedPoolUsage(ownerId);
 
         const remainingCredits = monthlyLimit === -1 ? -1 : Math.max(0, monthlyLimit - usedCredits);
 

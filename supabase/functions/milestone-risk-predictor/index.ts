@@ -5,6 +5,10 @@ import {
   TIER_NAMES,
 } from '../_shared/ai-config.ts';
 import { checkRateLimit, rateLimitResponse } from '../_shared/rate-limit.ts';
+import {
+  getEffectiveTier,
+  getSharedPoolUsage,
+} from '../_shared/ai-usage.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -35,72 +39,6 @@ interface MilestoneRiskResult {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-async function getEffectiveTier(
-  supabase: ReturnType<typeof createClient>,
-  userId: string,
-): Promise<{ tier: number; ownerId: string }> {
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('subscription_tier, is_trial, trial_ends_at')
-    .eq('id', userId)
-    .maybeSingle();
-
-  let ownTier = profile?.subscription_tier || 1;
-  if (profile?.is_trial && profile?.trial_ends_at) {
-    if (new Date() > new Date(profile.trial_ends_at)) ownTier = 1;
-  }
-  if (ownTier > 1) return { tier: ownTier, ownerId: userId };
-
-  const { data: memberships } = await supabase
-    .from('project_members')
-    .select('project_id')
-    .eq('user_id', userId);
-
-  if (!memberships?.length) return { tier: ownTier, ownerId: userId };
-
-  const projectIds = memberships.map((m: any) => m.project_id);
-  const { data: owners } = await supabase
-    .from('project_members')
-    .select('user_id, role')
-    .in('project_id', projectIds)
-    .eq('role', 'owner');
-
-  if (!owners?.length) return { tier: ownTier, ownerId: userId };
-
-  const ownerIds = [...new Set(owners.map((o: any) => o.user_id))];
-  const { data: ownerProfiles } = await supabase
-    .from('profiles')
-    .select('id, subscription_tier, is_trial, trial_ends_at')
-    .in('id', ownerIds);
-
-  let bestTier = ownTier;
-  let bestOwner = userId;
-  for (const p of ownerProfiles || []) {
-    let t = p.subscription_tier || 1;
-    if (p.is_trial && p.trial_ends_at && new Date() > new Date(p.trial_ends_at)) t = 1;
-    if (t > bestTier) { bestTier = t; bestOwner = p.id; }
-  }
-  return { tier: bestTier, ownerId: bestOwner };
-}
-
-async function getMonthlyUsage(
-  supabase: ReturnType<typeof createClient>,
-  userId: string,
-): Promise<number> {
-  const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
-
-  const { data: logs } = await supabase
-    .from('ai_generation_logs')
-    .select('credits_used')
-    .eq('user_id', userId)
-    .eq('step', 1)
-    .gte('created_at', startOfMonth.toISOString());
-
-  return (logs || []).reduce((acc: number, row: any) => acc + (row.credits_used ?? 1), 0);
-}
 
 function isoNow(): string {
   return new Date().toISOString();
@@ -209,7 +147,7 @@ Deno.serve(async (req: Request) => {
 
     // ── Tier & Credit check ──────────────────────────────────────────────────
     const feature = AI_FEATURES['milestone_risk'];
-    const { tier } = await getEffectiveTier(supabase, user.id);
+    const { tier, ownerId } = await getEffectiveTier(supabase, user.id);
 
     if (tier < feature.minTier) {
       return jsonResponse({
@@ -235,7 +173,7 @@ Deno.serve(async (req: Request) => {
           credits_used: 0,
           credits_remaining: PLAN_LIMITS[tier] === -1
             ? -1
-            : Math.max(0, (PLAN_LIMITS[tier] ?? 0) - (await getMonthlyUsage(supabase, user.id))),
+            : Math.max(0, (PLAN_LIMITS[tier] ?? 0) - (await getSharedPoolUsage(supabase, ownerId))),
           monthly_limit: PLAN_LIMITS[tier] ?? -1,
           tokens_used: 0,
           latency_ms: Date.now() - startTime,
@@ -256,7 +194,7 @@ Deno.serve(async (req: Request) => {
 
     // ── Monthly credit check (AC-11) ─────────────────────────────────────────
     const monthlyLimit = PLAN_LIMITS[tier] ?? -1;
-    const usedCredits = await getMonthlyUsage(supabase, user.id);
+    const usedCredits = await getSharedPoolUsage(supabase, ownerId);
     if (monthlyLimit !== -1 && usedCredits + feature.creditCost > monthlyLimit) {
       return jsonResponse({
         error: 'monthly_limit_reached',

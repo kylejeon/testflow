@@ -4,6 +4,10 @@ import {
   PLAN_LIMITS,
   TIER_NAMES,
 } from '../_shared/ai-config.ts';
+import {
+  getEffectiveTier,
+  getSharedPoolUsage,
+} from '../_shared/ai-usage.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -34,75 +38,6 @@ interface PlanAssistantResponse {
   summary: string;
   coverage_areas: string[];
   risk_level: 'low' | 'medium' | 'high' | 'critical';
-}
-
-/** 유효 구독 티어 반환 */
-async function getEffectiveTier(
-  supabase: ReturnType<typeof createClient>,
-  userId: string,
-): Promise<{ tier: number; ownerId: string }> {
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('subscription_tier, is_trial, trial_ends_at')
-    .eq('id', userId)
-    .maybeSingle();
-
-  let ownTier = profile?.subscription_tier || 1;
-  if (profile?.is_trial && profile?.trial_ends_at) {
-    if (new Date() > new Date(profile.trial_ends_at)) ownTier = 1;
-  }
-  if (ownTier > 1) return { tier: ownTier, ownerId: userId };
-
-  // 소속 프로젝트 owner tier 조회
-  const { data: memberships } = await supabase
-    .from('project_members')
-    .select('project_id')
-    .eq('user_id', userId);
-
-  if (!memberships?.length) return { tier: ownTier, ownerId: userId };
-
-  const projectIds = memberships.map((m: any) => m.project_id);
-  const { data: owners } = await supabase
-    .from('project_members')
-    .select('user_id, role')
-    .in('project_id', projectIds)
-    .eq('role', 'owner');
-
-  if (!owners?.length) return { tier: ownTier, ownerId: userId };
-
-  const ownerIds = [...new Set(owners.map((o: any) => o.user_id))];
-  const { data: ownerProfiles } = await supabase
-    .from('profiles')
-    .select('id, subscription_tier, is_trial, trial_ends_at')
-    .in('id', ownerIds);
-
-  let bestTier = ownTier;
-  let bestOwner = userId;
-  for (const p of ownerProfiles || []) {
-    let t = p.subscription_tier || 1;
-    if (p.is_trial && p.trial_ends_at && new Date() > new Date(p.trial_ends_at)) t = 1;
-    if (t > bestTier) { bestTier = t; bestOwner = p.id; }
-  }
-  return { tier: bestTier, ownerId: bestOwner };
-}
-
-/** 당월 credit 사용량 조회 */
-async function getMonthlyUsage(
-  supabase: ReturnType<typeof createClient>,
-  userId: string,
-): Promise<number> {
-  const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
-
-  const { data: logs } = await supabase
-    .from('ai_generation_logs')
-    .select('credits_used')
-    .eq('user_id', userId)
-    .eq('step', 1)
-    .gte('created_at', startOfMonth.toISOString());
-
-  return (logs || []).reduce((acc: number, row: any) => acc + (row.credits_used ?? 1), 0);
 }
 
 Deno.serve(async (req: Request) => {
@@ -187,7 +122,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const monthlyLimit = PLAN_LIMITS[tier] ?? -1;
-    const usedCredits = await getMonthlyUsage(supabase, user.id);
+    const usedCredits = await getSharedPoolUsage(supabase, ownerId);
     if (monthlyLimit !== -1 && usedCredits + feature.creditCost > monthlyLimit) {
       return new Response(JSON.stringify({
         error: 'Monthly AI credit limit reached. Upgrade your plan for more credits.',
