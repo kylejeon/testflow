@@ -1,6 +1,7 @@
 import PageLoader from '../../components/PageLoader';
 import { useToast } from '../../components/Toast';
 import { StatusBadge, type TestStatus } from '../../components/StatusBadge';
+import StatusPill from '../../components/StatusPill';
 import { useEffect, useState } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -735,26 +736,8 @@ export default function MilestoneDetail() {
     return { text: `D-${diffDays}`, bg: '#F1F5F9', color: '#475569' };
   };
 
-  const getStatusBadgeStyle = (status: string) => {
-    const map: Record<string, { bg: string; color: string; dot: string; label: string }> = {
-      upcoming: { bg: '#DBEAFE', color: '#1E40AF', dot: '#3B82F6', label: 'Upcoming' },
-      started:  { bg: '#DBEAFE', color: '#1E40AF', dot: '#3B82F6', label: 'In Progress' },
-      past_due: { bg: '#F97316', color: '#fff',    dot: '#fff',    label: 'Overdue' },
-      completed:{ bg: '#F1F5F9', color: '#475569', dot: '#94A3B8', label: 'Completed' },
-    };
-    return map[status] || map.upcoming;
-  };
-
-  const getRunStatusStyle = (status: string) => {
-    const map: Record<string, { bg: string; color: string; label: string }> = {
-      new:          { bg: '#F1F5F9', color: '#475569', label: 'New' },
-      in_progress:  { bg: '#DBEAFE', color: '#1E40AF', label: 'In Progress' },
-      paused:       { bg: '#FEF3C7', color: '#92400E', label: 'Paused' },
-      under_review: { bg: '#EDE9FE', color: '#6D28D9', label: 'Under Review' },
-      completed:    { bg: '#DCFCE7', color: '#166534', label: 'Completed' },
-    };
-    return map[status] || map.new;
-  };
+  // getStatusBadgeStyle / getRunStatusStyle 함수는 <StatusPill> 로 대체되어 삭제됨.
+  // (dev-spec-milestone-badge-progress-consistency.md §4)
 
   const handleUpdateMilestone = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -852,7 +835,6 @@ export default function MilestoneDetail() {
 
   // When aggregated, progress reflects rollup coverage (AC-4). Otherwise parent-only.
   const progress = isAggregated && rollupStats ? rollupStats.coverage : calculateMilestoneProgress();
-  const msBadge = getStatusBadgeStyle(milestone.status);
   const dday = getDDayBadge(milestone.end_date);
   const progressColor = milestone.status === 'past_due' ? '#F97316' : milestone.status === 'completed' ? '#94A3B8' : '#22C55E';
 
@@ -884,10 +866,7 @@ export default function MilestoneDetail() {
             <i className="ri-flag-line" style={{ fontSize: '1rem', color: '#6366F1' }} />
           </div>
           <span style={{ fontSize: '1.125rem', fontWeight: 700, color: '#0F172A' }}>{milestone.name}</span>
-          <span style={{ fontSize: '0.6875rem', fontWeight: 600, padding: '0.1875rem 0.5rem', borderRadius: '9999px', background: msBadge.bg, color: msBadge.color, display: 'inline-flex', alignItems: 'center', gap: '0.25rem', flexShrink: 0 }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: msBadge.dot }} />
-            {msBadge.label}
-          </span>
+          <StatusPill status={milestone.status} />
           <RollupBadge count={subMilestones.length} visible={isAggregated} />
           {(milestone.start_date || milestone.end_date) && (
             <span style={{ fontSize: '0.8125rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
@@ -1010,8 +989,6 @@ export default function MilestoneDetail() {
             contributorProfiles={contributorProfiles}
             aiRiskCache={milestone.ai_risk_cache ?? null}
             aggregatedRunIds={isAggregated ? aggregatedRunIds : undefined}
-            getSubBadge={getStatusBadgeStyle}
-            getRunStatusStyle={getRunStatusStyle}
             formatDateRange={formatDateRange}
             getAuthorColor={getAuthorColor}
             getContributorInitials={getContributorInitials}

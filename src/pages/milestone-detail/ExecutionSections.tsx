@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import StatusPill from '../../components/StatusPill';
+import ProgressBar from '../../components/ProgressBar';
 
 interface SubMilestoneItem {
   id: string;
@@ -48,8 +50,6 @@ interface Props {
   runs: RunItem[];
   sessions: SessionItem[];
   planMap: Map<string, PlanItem>;
-  getSubBadge: (status: string) => { bg: string; color: string; label: string; dot: string };
-  getRunStatusStyle: (status: string) => { bg: string; color: string; label: string };
   formatDateRange: (s: string | null, e: string | null) => string;
 }
 
@@ -58,10 +58,14 @@ interface Props {
  * Empty-per-section hiding: each section is entirely removed from DOM when count = 0.
  * When all four sections are empty (and plans is not loading / erroring), renders a
  * single unified `.mo-exec-empty` card.
+ *
+ * Badge/progress consistency (dev-spec-milestone-badge-progress-consistency.md):
+ * - All status badges use `<StatusPill>` (5-color system).
+ * - All four section rows render `<ProgressBar>` (0% shows empty track).
  */
 export default function ExecutionSections({
   projectId, subMilestones, subMilestoneProgress, plans, plansLoading, plansError,
-  runs, sessions, planMap, getSubBadge, getRunStatusStyle, formatDateRange,
+  runs, sessions, planMap, formatDateRange,
 }: Props) {
   const { t } = useTranslation('milestones');
   const hasSubs = subMilestones.length > 0;
@@ -94,8 +98,16 @@ export default function ExecutionSections({
           </div>
           <div className="mo-sec-card">
             {subMilestones.map(sub => {
-              const subBadge = getSubBadge(sub.status);
               const progressPct = subMilestoneProgress.get(sub.id) ?? 0;
+              const isOverdue = sub.status === 'past_due' || sub.status === 'overdue';
+              // AC-11: green wins at 100% even when overdue.
+              const tone = progressPct >= 100
+                ? 'green'
+                : isOverdue
+                  ? 'red'
+                  : sub.status === 'started' || sub.status === 'in_progress'
+                    ? 'blue'
+                    : 'gray';
               return (
                 <Link key={sub.id} to={`/projects/${projectId}/milestones/${sub.id}`} className="row">
                   <div className="mo-row-icon primary"><i className="ri-flag-line" /></div>
@@ -103,13 +115,9 @@ export default function ExecutionSections({
                     <div className="mo-row-name">{sub.name}</div>
                     <div className="mo-row-sub">{formatDateRange(sub.start_date, sub.end_date)}</div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ width: 80, height: 6, background: 'var(--bg-subtle)', borderRadius: 3, overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${progressPct}%`, background: 'var(--success)' }} />
-                    </div>
-                  </div>
-                  <span className="badge" style={{ background: subBadge.bg, color: subBadge.color }}>{subBadge.label}</span>
-                  <div className="mo-row-pct success">{progressPct}%</div>
+                  <div />
+                  <StatusPill status={sub.status} />
+                  <ProgressBar value={progressPct} tone={tone} />
                   <i className="ri-arrow-right-s-line" style={{ color: 'var(--text-subtle)' }} />
                 </Link>
               );
@@ -135,24 +143,33 @@ export default function ExecutionSections({
             </div>
           ) : (
             <div className="mo-sec-card">
-              {plans.map(plan => (
-                <Link key={plan.id} to={`/projects/${projectId}/plans/${plan.id}`} className="row">
-                  <div className="mo-row-icon violet"><i className="ri-folder-chart-line" /></div>
-                  <div style={{ minWidth: 0 }}>
-                    <div className="mo-row-name">{plan.name}</div>
-                    <div className="mo-row-sub">
-                      {plan.priority && <span>Priority: {plan.priority}</span>}
-                      {plan.target_date && <> · Target {new Date(plan.target_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</>}
+              {plans.map(plan => {
+                // 1차 PR: plan progress 집계 쿼리 없음 → 0% 빈 트랙 (Dev Spec §6.2, Out of Scope 3).
+                const planProgressPct = 0;
+                const planTone = plan.status === 'completed'
+                  ? 'green'
+                  : plan.status === 'cancelled'
+                    ? 'red'
+                    : plan.status === 'active'
+                      ? 'blue'
+                      : 'gray';
+                return (
+                  <Link key={plan.id} to={`/projects/${projectId}/plans/${plan.id}`} className="row">
+                    <div className="mo-row-icon violet"><i className="ri-folder-chart-line" /></div>
+                    <div style={{ minWidth: 0 }}>
+                      <div className="mo-row-name">{plan.name}</div>
+                      <div className="mo-row-sub">
+                        {plan.priority && <span>Priority: {plan.priority}</span>}
+                        {plan.target_date && <> · Target {new Date(plan.target_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</>}
+                      </div>
                     </div>
-                  </div>
-                  <div />
-                  <span className={`badge ${plan.status === 'active' ? 'badge-warning' : plan.status === 'completed' ? 'badge-success' : 'badge-neutral'}`}>
-                    {plan.status === 'active' ? 'In Progress' : plan.status === 'completed' ? 'Completed' : plan.status === 'planning' ? 'Planning' : 'Cancelled'}
-                  </span>
-                  <div />
-                  <i className="ri-arrow-right-s-line" style={{ color: 'var(--text-subtle)' }} />
-                </Link>
-              ))}
+                    <div />
+                    <StatusPill status={plan.status} />
+                    <ProgressBar value={planProgressPct} tone={planTone} />
+                    <i className="ri-arrow-right-s-line" style={{ color: 'var(--text-subtle)' }} />
+                  </Link>
+                );
+              })}
             </div>
           )}
         </>
@@ -174,10 +191,17 @@ export default function ExecutionSections({
               const planned = !!run.test_plan_id;
               const linkedPlan = planned ? planMap.get(run.test_plan_id!) : null;
               const planLabel = planned ? (linkedPlan ? `Plan: ${linkedPlan.name}` : 'Plan: (deleted)') : 'Milestone-direct';
-              const runStyle = getRunStatusStyle(run.status);
               const total = (run.passed_count || 0) + (run.failed_count || 0) + (run.blocked_count || 0) + (run.retest_count || 0) + (run.untested_count || 0);
               const done = (run.passed_count || 0) + (run.failed_count || 0) + (run.blocked_count || 0) + (run.retest_count || 0);
               const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+              // Dev Spec §6.3 tone rule.
+              const tone = pct === 100 && run.status === 'completed'
+                ? 'green'
+                : run.status === 'in_progress'
+                  ? 'blue'
+                  : run.status === 'completed'
+                    ? 'green'
+                    : 'gray';
               return (
                 <Link key={run.id} to={`/projects/${projectId}/runs/${run.id}`} className="row">
                   <div className={`mo-row-icon ${planned ? 'primary' : 'blue'}`}>
@@ -198,8 +222,8 @@ export default function ExecutionSections({
                     <span><b>{run.blocked_count || 0}</b> blocked</span>
                     <span><b>{run.untested_count || 0}</b> untested</span>
                   </div>
-                  <span className="badge" style={{ background: runStyle.bg, color: runStyle.color }}>{runStyle.label}</span>
-                  <div className="mo-row-pct">{pct}%</div>
+                  <StatusPill status={run.status} />
+                  <ProgressBar value={pct} tone={tone} />
                   <i className="ri-arrow-right-s-line" style={{ color: 'var(--text-subtle)' }} />
                 </Link>
               );
@@ -224,10 +248,9 @@ export default function ExecutionSections({
                   <div className="mo-row-sub">{new Date(session.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
                 </div>
                 <div />
-                <span className={`badge ${session.actualStatus === 'in_progress' ? 'badge-blue' : session.actualStatus === 'done' ? 'badge-success' : 'badge-neutral'}`}>
-                  {session.actualStatus === 'in_progress' ? 'In Progress' : session.actualStatus === 'done' ? 'Done' : 'New'}
-                </span>
-                <div />
+                <StatusPill status={session.actualStatus ?? 'new'} />
+                {/* Exploratory progress 집계 로직 없음 — Dev Spec §6.4 Out of Scope 4. */}
+                <ProgressBar value={0} tone="gray" showLabel={false} />
                 <i className="ri-arrow-right-s-line" style={{ color: 'var(--text-subtle)' }} />
               </Link>
             ))}

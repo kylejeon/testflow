@@ -523,3 +523,71 @@ usage 집계는 이미 owner shared pool 로 통일됐지만, 캐시 조회(`ai_
 3. 배포 후 검증:
    - Enterprise tier 사용자의 Dashboard aiUsageCount가 0 아닌 실제 값으로 표시
    - trial-* Edge Function 실행 후 Loops 이벤트의 testCaseCount 등 값이 0이 아닌 실제 집계로 전송
+
+---
+
+2026-04-20 (badge/progress consistency): Milestone Detail 5색 배지 + ProgressBar @developer 구현 완료
+
+## 뭘 했냐 (dev-spec + design-spec-milestone-badge-progress-consistency.md)
+
+### 신규 파일 3개
+- src/lib/statusPill.ts
+  - STATUS_TO_VARIANT 매핑 (gray/blue/green/red/amber 5 variant)
+  - resolveStatus / getStatusVariant / getProgressTone / humanizeStatus 유틸
+  - past_due/overdue → red, active/started/in_progress → blue, under_review → amber (Violet에서 교체)
+  - AC-11: 100% 완료 시 Overdue여도 green 우선
+- src/components/StatusPill.tsx
+  - Design Spec §1 Tailwind 클래스 그대로: `inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold`
+  - VARIANT_CLASSES: bg-{gray|blue|green|red|amber}-100 text-{...}-700
+  - size prop 타입만 유지(future-proof), md 단일 경로 구현
+- src/components/ProgressBar.tsx
+  - Design Spec §2: width 80px 기본 / height 6px / track bg-gray-200 / fill bg-{tone}-500
+  - tone: blue/green/red/gray (LABEL_TONE_CLASSES로 라벨 색도 tone별 분기)
+  - clamp (NaN/undefined/음수→0, 100초과→100)
+  - role="progressbar" + aria-valuenow/min/max
+  - 래퍼에 .progress-bar-wrap 클래스 → 모바일 숨김 CSS 훅
+
+### 수정 파일 4개
+- src/pages/milestone-detail/ExecutionSections.tsx
+  - Props에서 getSubBadge / getRunStatusStyle 제거
+  - 4개 섹션(Sub/Plans/Runs/Exploratory) 전부 `<StatusPill>` + `<ProgressBar>` 사용
+  - Sub Milestones: 기존 인라인 progress div → `<ProgressBar>` (tone 로직에 AC-11 반영)
+  - Test Plans: `<ProgressBar value={0}>` 빈 트랙 추가 (실제 집계는 Out of Scope)
+  - Runs: `<StatusPill status={run.status} />` + 기존 pct 유지 ProgressBar
+  - Exploratory: `<StatusPill status={session.actualStatus ?? 'new'} />` + ProgressBar value=0 showLabel=false
+- src/pages/milestone-detail/OverviewTab.tsx
+  - Props 시그니처에서 getSubBadge / getRunStatusStyle 삭제
+  - ExecutionSections 호출부 깔끔하게 정리
+- src/pages/milestone-detail/page.tsx
+  - getStatusBadgeStyle / getRunStatusStyle 함수 (L738-757) 삭제 + 주석 1줄로 대체
+  - Header 배지를 `<StatusPill status={milestone.status} />` 로 교체 (msBadge.dot 제거)
+  - import StatusPill 추가
+  - OverviewTab 호출부에서 getSubBadge / getRunStatusStyle props 제거
+- src/index.css
+  - `.badge` 주석에 "NEW CODE: use <StatusPill />" 가이드 추가
+  - @media (max-width: 767px) .mo-sec-card .row .progress-bar-wrap { display: none; } 추가 (Design Spec §6)
+
+### 건드리지 않음 (scope 외, 후속 PR)
+- src/components/StatusBadge.tsx — TC Run 결과 전용 (passed/failed/blocked/retest/untested dot 배지), 네이밍 충돌 방지 위해 분리 유지
+- src/pages/project-milestones/* (MilestoneCard / AdhocPanel / AdhocRunCard / MilestonePlanList) — Dev Spec §4에 "후속 PR" 명시
+- src/pages/plan-detail/page.tsx badge-warning 등 — 동일 후속 PR 범위
+
+## 어디까지 됐냐
+- TypeScript 타입체크 PASS (`npx tsc --noEmit` 에러 0개)
+- 풀 빌드 PASS (`npm run build` 6.72s)
+- npm run lint 스크립트 미존재 (기존 진행 기록과 동일) → tsc + build 통과로 대체
+- AC 12개 모두 코드 수준 구현 완료 (AC-1~12)
+
+## 다음에 할 것
+- 수동 QA (Dev Spec §10 체크리스트 10항목):
+  - Milestone Detail Overview 페이지에서 `active` plan 배지가 Blue로 (기존 Amber)
+  - `under_review` run 배지가 Amber로 (기존 Violet)
+  - `past_due` sub 배지가 Red로 (기존 Orange)
+  - Test Plans / Exploratory 카드에 0% 빈 progress bar 표시
+  - 모든 "In Progress" 배지의 background가 동일한가
+- 커밋 메시지: `feat(ui): Milestone detail 카드 배지 5색 통일 + ProgressBar 적용`
+- 후속 PR 범위 (out of scope, 별도 티켓):
+  - Test Plans 실제 progress 집계 쿼리 (loadOverviewExtra 확장)
+  - Exploratory Session progress 로직 (done/total 스키마 결정 선행 필요)
+  - project-milestones / plan-detail의 레거시 badge-* 클래스 마이그레이션
+  - i18n 키 추가 (현재 label은 StatusPill 내부 영문 하드코딩, 기존 동작 동일)

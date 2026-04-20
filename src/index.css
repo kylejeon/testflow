@@ -122,7 +122,11 @@
 .detail-tab .count { background: var(--bg-subtle); color: var(--text-muted); padding: 1px 7px; border-radius: 10px; font-size: 11px; font-weight: 600; }
 .detail-tab.active .count { background: var(--primary-100); color: var(--primary-600); }
 
-/* Badges */
+/* Badges
+ * Legacy utility classes, retained for pages not yet migrated.
+ * NEW CODE: use <StatusPill /> (src/components/StatusPill.tsx) for entity-level statuses
+ * so the 5-color system (gray/blue/green/red/amber) stays consistent across cards.
+ */
 .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; background: var(--bg-subtle); color: var(--text-muted); }
 .badge-success { background: var(--success-100); color: var(--success-600); }
 .badge-danger  { background: var(--danger-100);  color: var(--danger-600); }
@@ -580,6 +584,8 @@
 
 @media (max-width: 767px) {
   .mo-sec-card .row { grid-template-columns: 30px 1fr auto; padding: 10px 12px; }
+  /* ProgressBar hidden on mobile — Design Spec §6 (badge/progress consistency). */
+  .mo-sec-card .row .progress-bar-wrap { display: none; }
 }
 
 /* Empty states */

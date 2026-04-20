@@ -83,8 +83,6 @@ interface OverviewTabProps {
   aiRiskCache: MilestoneAiRiskCache | null;
   /** Parent runIds + sub milestones' runIds when rollup is active. Undefined = parent-only. */
   aggregatedRunIds?: string[];
-  getSubBadge: (status: string) => { bg: string; color: string; label: string; dot: string };
-  getRunStatusStyle: (status: string) => { bg: string; color: string; label: string };
   formatDateRange: (s: string | null, e: string | null) => string;
   getAuthorColor: (author: string) => string;
   getContributorInitials: (author: string) => string;
@@ -177,7 +175,7 @@ export default function OverviewTab(props: OverviewTabProps) {
     projectId, milestoneId, milestoneStart, milestoneEnd, tcStats, failedBlockedTcs,
     activityLogs, runs, sessions, subMilestones, subMilestoneProgress, contributorProfiles,
     aiRiskCache, aggregatedRunIds,
-    getSubBadge, getRunStatusStyle, formatDateRange, getAuthorColor, getContributorInitials,
+    formatDateRange, getAuthorColor, getContributorInitials,
     onGoActivity, onGoIssues,
   } = props;
 
@@ -315,8 +313,6 @@ export default function OverviewTab(props: OverviewTabProps) {
           runs={runs}
           sessions={sessions}
           planMap={planMap}
-          getSubBadge={getSubBadge}
-          getRunStatusStyle={getRunStatusStyle}
           formatDateRange={formatDateRange}
         />
       </div>
