@@ -153,6 +153,7 @@
 .pd-btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; }
 .pd-btn-primary:hover { background: var(--primary-600); }
 .pd-btn-ai { background: linear-gradient(135deg, #6366f1, #7c3aed); border-color: transparent; color: #fff; }
+.pd-btn-ai:hover { background: linear-gradient(135deg, #4f46e5, #6d28d9); color: #fff; }
 .pd-btn-sm { padding: 4px 10px; font-size: 12px; }
 
 /* TC id */
