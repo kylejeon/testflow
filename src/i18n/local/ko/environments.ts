@@ -107,6 +107,46 @@ export const environments = {
       fail: '실패',
       untested: '미실행',
     },
+    ai: {
+      sectionTitle: 'AI 인사이트',
+      patternCount: '패턴 {{count}}개',
+      critical: {
+        tag: '심각 · 환경',
+        envLowTitle: '{{env}} 환경 저성능',
+        envLowDetail: '{{env}} 환경의 통과율이 이 Plan에서 {{rate}}%에 불과합니다.',
+        browserTitle: '전체 OS에서 {{browser}} 취약',
+        browserDetail: '{{browser}}가 {{osCount}}개 OS에서 평균 {{rate}}% 통과율을 보입니다.',
+        empty: '심각한 이슈가 감지되지 않았습니다.',
+        actionIssue: '이슈 생성',
+        actionFilter: '필터 적용',
+      },
+      gap: {
+        tag: '커버리지 공백',
+        title: '{{tc}} 미실행 구간 존재',
+        detail: '이 테스트 케이스는 {{untested}}/{{total}}개 환경에서 미실행 상태입니다.',
+        empty: '커버리지 공백 없음.',
+        actionAssign: 'Run 할당',
+      },
+      baseline: {
+        tag: '안정 기준',
+        title: '{{env}} = {{rate}}%',
+        detail: '디버깅 기준으로 사용할 수 있습니다.',
+        empty: '안정 기준이 아직 없습니다.',
+      },
+      stats: {
+        tag: '빠른 통계',
+        bestEnv: '최고 환경',
+        worstEnv: '최저 환경',
+        bestTc: '최고 TC',
+        worstTc: '최저 TC',
+        noData: '–',
+      },
+      toast: {
+        createIssue: '이슈 생성 기능은 곧 제공됩니다',
+        filter: '환경 필터는 곧 제공됩니다',
+        assignRun: 'Run 할당은 곧 제공됩니다',
+      },
+    },
   },
 };
 

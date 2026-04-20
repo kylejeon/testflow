@@ -10,10 +10,11 @@ import { Avatar } from '../../components/Avatar';
 import IssuesList from '../../components/issues/IssuesList';
 import {
   HEATMAP_COLORS,
-  heatmapSymbol,
+  cellLabel,
   buildEnvironmentHeatmap,
   type HeatmapMatrix,
 } from '../../lib/environments';
+import EnvironmentAIInsights from '../../components/EnvironmentAIInsights';
 import type { Environment } from '../../types/environment';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -1496,6 +1497,17 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
   const [loadError, setLoadError] = useState(false);
   const [matrix, setMatrix] = useState<HeatmapMatrix | null>(null);
 
+  // Mobile viewport detection (Design Spec §2-5): <768px → 400px cap.
+  const [isMobileViewport, setIsMobileViewport] = useState(() =>
+    typeof window !== 'undefined' && window.innerWidth < 768,
+  );
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onResize = () => setIsMobileViewport(window.innerWidth < 768);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -1566,7 +1578,7 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
 
   const wrapperStyle: React.CSSProperties = {
     display: 'grid',
-    gridTemplateColumns: 'minmax(0,1fr) 280px',
+    gridTemplateColumns: isMobileViewport ? '1fr' : 'minmax(0,1fr) 280px',
     gap: 14,
     padding: '16px 0',
   };
@@ -1582,7 +1594,7 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
             ))}
           </div>
         </div>
-        <AiInsightsPlaceholder />
+        <EnvironmentAIInsights matrix={null} />
       </div>
     );
   }
@@ -1596,7 +1608,7 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
         }}>
           {t('heatmap.loadFailed')}
         </div>
-        <AiInsightsPlaceholder />
+        <EnvironmentAIInsights matrix={null} />
       </div>
     );
   }
@@ -1639,7 +1651,7 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
             </div>
           )}
         </div>
-        <AiInsightsPlaceholder />
+        <EnvironmentAIInsights matrix={matrix} />
       </div>
     );
   }
@@ -1663,22 +1675,29 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
             {plan.name} · {t('heatmap.tcsByEnvs', { tcs: matrix.rows.length, envs: columns.length })}
           </span>
         </div>
-        <div style={{ overflowX: 'auto', padding: '0 16px 12px' }}>
+        <div
+          className="matrix-scroll"
+          style={{
+            maxHeight: isMobileViewport ? 400 : 560,
+            overflow: 'auto',
+            padding: '0 16px 12px',
+          }}
+        >
           <table style={{ borderCollapse: 'separate', borderSpacing: 4, fontSize: 12 }}>
             <thead>
               <tr>
-                <th style={{ position: 'sticky', left: 0, zIndex: 3, background: '#fff', minWidth: 240, textAlign: 'left', padding: '0 14px 0 6px' }}></th>
+                <th style={{ position: 'sticky', top: 0, left: 0, zIndex: 5, background: '#fff', minWidth: 240, textAlign: 'left', padding: '0 14px 0 6px' }}></th>
                 {groups.map(g => (
                   <th key={g.os} colSpan={g.columns.length}
-                    style={{ fontWeight: 700, color: '#0F172A', padding: '6px 8px 8px', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: 11, background: '#F9FAFB', borderRadius: 6, textAlign: 'center' }}>
+                    style={{ position: 'sticky', top: 0, zIndex: 3, fontWeight: 700, color: '#0F172A', padding: '6px 8px 8px', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: 11, background: '#F9FAFB', borderRadius: 6, textAlign: 'center' }}>
                     {g.os}
                   </th>
                 ))}
               </tr>
               <tr>
-                <th style={{ position: 'sticky', left: 0, zIndex: 3, background: '#fff', padding: '8px 14px 10px 6px' }}></th>
+                <th style={{ position: 'sticky', top: 38, left: 0, zIndex: 5, background: '#fff', padding: '8px 14px 10px 6px' }}></th>
                 {columns.map(col => (
-                  <th key={col.env.id} style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', padding: '8px 4px 10px', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                  <th key={col.env.id} style={{ position: 'sticky', top: 38, zIndex: 3, background: '#fff', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', padding: '8px 4px 10px', textAlign: 'center', whiteSpace: 'nowrap' }}>
                     {col.browserLabel}
                   </th>
                 ))}
@@ -1715,6 +1734,8 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
                     </td>
                     {row.cells.map((cell, ci) => {
                       const hm = HEATMAP_COLORS[cell.status] ?? HEATMAP_COLORS.untested;
+                      const isUntested = cell.executed === 0 && cell.status !== 'na';
+                      const isNA = cell.status === 'na';
                       return (
                         <td key={ci}>
                           <div
@@ -1722,13 +1743,14 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
                             style={{
                               width: 64, height: 38, borderRadius: 5,
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontWeight: 700, fontSize: 13,
+                              fontWeight: isUntested || isNA ? 500 : 700,
+                              fontSize: isUntested ? 16 : isNA ? 11 : 13,
                               background: hm.bg, color: hm.color,
                               cursor: 'default',
-                              border: cell.status === 'untested' ? '1px dashed #9CA3AF' : 'none',
+                              border: isUntested ? '1px dashed #9CA3AF' : 'none',
                             }}
                           >
-                            {heatmapSymbol(cell.status)}
+                            {cellLabel(cell.status, cell.passed, cell.executed)}
                           </div>
                         </td>
                       );
@@ -1743,6 +1765,8 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
                 </td>
                 {matrix.summary.map((cell, ci) => {
                   const hm = HEATMAP_COLORS[cell.status] ?? HEATMAP_COLORS.untested;
+                  const isUntested = cell.executed === 0 && cell.status !== 'na';
+                  const isNA = cell.status === 'na';
                   return (
                     <td key={ci} style={{ paddingTop: 12 }}>
                       <div
@@ -1750,12 +1774,13 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
                         style={{
                           width: 64, height: 38, borderRadius: 5,
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontWeight: 700, fontSize: 14,
+                          fontWeight: isUntested || isNA ? 500 : 700,
+                          fontSize: isUntested ? 16 : isNA ? 11 : 14,
                           background: hm.bg, color: hm.color,
-                          border: cell.status === 'untested' ? '1px dashed #9CA3AF' : 'none',
+                          border: isUntested ? '1px dashed #9CA3AF' : 'none',
                         }}
                       >
-                        {heatmapSymbol(cell.status)}
+                        {cellLabel(cell.status, cell.passed, cell.executed)}
                       </div>
                     </td>
                   );
@@ -1796,34 +1821,8 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
         )}
       </div>
 
-      <AiInsightsPlaceholder />
+      <EnvironmentAIInsights matrix={matrix} />
     </div>
-  );
-}
-
-function AiInsightsPlaceholder() {
-  return (
-    <aside style={{
-      borderRadius: 10,
-      border: '1px dashed #E5E7EB',
-      background: 'rgba(249, 250, 251, 0.5)',
-      padding: 16,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      textAlign: 'center',
-      gap: 8,
-      minHeight: 400,
-    }}>
-      <svg style={{ width: 24, height: 24, color: '#D1D5DB' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2" />
-      </svg>
-      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#9CA3AF' }}>
-        AI Insights
-      </div>
-      <div style={{ fontSize: 12, color: '#9CA3AF' }}>Coming soon</div>
-    </aside>
   );
 }
 

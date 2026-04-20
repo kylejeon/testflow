@@ -107,6 +107,46 @@ export const environments = {
       fail: 'Fail',
       untested: 'Untested',
     },
+    ai: {
+      sectionTitle: 'AI Insights',
+      patternCount: '{{count}} patterns',
+      critical: {
+        tag: 'Critical · env',
+        envLowTitle: '{{env}} underperforming',
+        envLowDetail: '{{env}} only passes {{rate}}% across this plan.',
+        browserTitle: '{{browser}} weak across all OS',
+        browserDetail: '{{browser}} averages {{rate}}% across {{osCount}} OS.',
+        empty: 'No critical issues detected.',
+        actionIssue: 'Create issue',
+        actionFilter: 'Filter',
+      },
+      gap: {
+        tag: 'Coverage gap',
+        title: '{{tc}} under-tested',
+        detail: '{{untested}}/{{total}} environments not executed for this test case.',
+        empty: 'Full coverage.',
+        actionAssign: 'Assign run',
+      },
+      baseline: {
+        tag: 'Stable baseline',
+        title: '{{env}} = {{rate}}%',
+        detail: 'Use as debugging baseline.',
+        empty: 'No baseline yet.',
+      },
+      stats: {
+        tag: 'Quick stats',
+        bestEnv: 'Best env',
+        worstEnv: 'Worst env',
+        bestTc: 'Best TC',
+        worstTc: 'Worst TC',
+        noData: '–',
+      },
+      toast: {
+        createIssue: 'Issue creation coming soon',
+        filter: 'Environment filter coming soon',
+        assignRun: 'Run assignment coming soon',
+      },
+    },
   },
 };
 

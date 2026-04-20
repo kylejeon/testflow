@@ -93,6 +93,10 @@ export const HEATMAP_COLORS: Record<string, { bg: string; color: string; label: 
 
 export type HeatmapStatus = keyof typeof HEATMAP_COLORS;
 
+/**
+ * @deprecated v2부터 cell은 숫자로 표시합니다. `cellLabel(cell)` 을 사용하세요.
+ * 호환성 유지 목적으로 남겨두며 다음 PR에서 제거됩니다.
+ */
 export function heatmapSymbol(status: HeatmapStatus): string {
   switch (status) {
     case 'perfect': return '✓';
@@ -106,6 +110,24 @@ export function heatmapSymbol(status: HeatmapStatus): string {
   }
 }
 
+/**
+ * v2 cell label — pass-rate 정수 표시.
+ * - executed > 0 → Math.round(passed/executed * 100) 정수 (단위 기호 없음)
+ * - executed === 0 → '–' (em-dash U+2013)
+ * - status === 'na' → 'N/A'
+ */
+export function cellLabel(
+  status: HeatmapStatus,
+  passed?: number,
+  executed?: number,
+): string {
+  if (status === 'na') return 'N/A';
+  const exec = executed ?? 0;
+  const pass = passed ?? 0;
+  if (exec <= 0) return '–';
+  return String(Math.round((pass / exec) * 100));
+}
+
 /** Pass rate → cell status per AC-6. */
 export function passRateToStatus(passed: number, executed: number): HeatmapStatus {
   if (executed <= 0) return 'untested';
@@ -117,19 +139,17 @@ export function passRateToStatus(passed: number, executed: number): HeatmapStatu
   return 'fail';
 }
 
-/** Summary row — average pass% (ignoring untested/na cells). */
-export function summaryStatus(cells: HeatmapStatus[]): HeatmapStatus {
-  const CELL_PASS: Record<HeatmapStatus, number> = {
-    perfect: 100, pass: 85, mixed: 60, warn: 30, fail: 0,
-    na: -1, untested: -1,
-  };
-  const values = cells.map(c => CELL_PASS[c]).filter(v => v >= 0);
-  if (values.length === 0) return 'untested';
-  const avg = values.reduce((a, b) => a + b, 0) / values.length;
-  if (avg >= 95) return 'perfect';
-  if (avg >= 75) return 'pass';
-  if (avg >= 50) return 'mixed';
-  if (avg >= 20) return 'warn';
+/**
+ * Summary row status — v2 누적 합산 기반 (AC-V17).
+ * cell-array proxy 평균 방식은 제거 — 실제 pass/executed 합산값으로 정확한 pct 계산.
+ */
+export function summaryStatus(passed: number, executed: number): HeatmapStatus {
+  if (executed <= 0) return 'untested';
+  const pct = (passed / executed) * 100;
+  if (pct >= 100) return 'perfect';
+  if (pct >= 75)  return 'pass';
+  if (pct >= 50)  return 'mixed';
+  if (pct >= 20)  return 'warn';
   return 'fail';
 }
 
@@ -257,16 +277,15 @@ export function buildEnvironmentHeatmap(params: {
     }),
   }));
 
-  // Column summary
+  // Column summary — v2 누적 합산 기반 (AC-V17)
   const summary: HeatmapCellData[] = columns.map((_, colIdx) => {
-    const cells = rows.map(r => r.cells[colIdx].status);
-    const status = summaryStatus(cells);
     let passed = 0;
     let executed = 0;
     for (const r of rows) {
       passed += r.cells[colIdx].passed;
       executed += r.cells[colIdx].executed;
     }
+    const status = summaryStatus(passed, executed);
     const tooltip = executed > 0
       ? `Env avg: ${passed}/${executed} passed`
       : 'No executions';

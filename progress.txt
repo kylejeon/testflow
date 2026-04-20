@@ -1,3 +1,115 @@
+2026-04-20: Environment Coverage Matrix v2 구현 @developer
+(dev-spec-environment-v2 + design-spec-environment-v2)
+
+## 뭘 했냐 (claude 브랜치)
+
+Environment Heatmap v2 — 스크롤 컨테이너, 숫자 셀 표시, AI Insights 사이드바, activity_logs trigger, summaryStatus 실값 재계산.
+
+### 신규 파일 3개
+- src/lib/environmentInsights.ts
+  - `deriveInsights(matrix)` 순수 함수 (Dev Spec §6-2).
+  - Critical: env col < 40% OR browser cross-OS avg < 60% (더 심각한 쪽 1개).
+  - Coverage gap: TC 중 untested/total >= 0.5인 첫 번째.
+  - Stable baseline: env col pass >= 95% 최고.
+  - Quick Stats: best/worst env + TC.
+- src/components/EnvironmentAIInsights.tsx
+  - 사이드바 컨테이너 (violet gradient bg, head + pattern count badge).
+  - 4카드 (Critical red · Gap orange · Baseline blue · Quick Stats gray).
+  - Chip (Create issue / Filter / Assign run) 클릭 시 `useToast(..., 'info')`로 "Coming soon" 표시.
+  - Loading skeleton (matrix=null) / empty state (rows=0 or cols=0).
+- supabase/migrations/20260422_environments_activity_trigger.sql
+  - `fn_log_environment_change()` plpgsql + INSERT/UPDATE/DELETE 3 trigger.
+  - event_type: environment_created / environment_updated / environment_activated / environment_deactivated / environment_deleted.
+  - `is_active` 단독 변경 시 activated/deactivated로만 기록 (중복 방지).
+  - `EXCEPTION WHEN OTHERS` → 로깅 실패가 원본 CRUD를 막지 않음.
+  - event_category='settings', target_type='environment'. 기존 `"System can insert activity logs"` RLS 정책으로 INSERT 허용 (별도 정책 추가 없음).
+
+### 수정 파일 4개
+- src/lib/environments.ts
+  - `summaryStatus(cells: HeatmapStatus[])` → `summaryStatus(passed: number, executed: number)` 시그니처 교체 (AC-V17).
+  - `buildEnvironmentHeatmap` summary 계산부가 누적 passed/executed 합산으로 재작성.
+  - `heatmapSymbol` → `@deprecated` JSDoc 추가 (사용처 0건, 다음 PR에서 제거).
+  - 신규 export `cellLabel(status, passed, executed)` — executed>0 정수/untested '–'/na 'N/A'.
+- src/pages/plan-detail/page.tsx
+  - import: `heatmapSymbol` 제거 → `cellLabel` + `EnvironmentAIInsights` 추가.
+  - EnvironmentsTab에 `isMobileViewport` 상태 + resize listener.
+  - Heatmap 스크롤 wrapper: `maxHeight: isMobileViewport ? 400 : 560, overflow: 'auto'` (기존 overflowX 대체).
+  - thead 2-row 전부 sticky: 첫 행 `top:0` z3, 두 번째 행 `top:38` z3. 교차점 (왼-위 / 아래-왼) `zIndex:5`로 가장 위.
+  - Cell 렌더링 `heatmapSymbol(cell.status)` → `cellLabel(cell.status, cell.passed, cell.executed)` 2곳 (일반 cell + summary row).
+  - untested/na 셀 fontSize/fontWeight 분기 (untested 16px 500 / na 11px 500 / 숫자 13~14px 700).
+  - `wrapperStyle.gridTemplateColumns`: 모바일 `'1fr'` / 데스크톱 `'minmax(0,1fr) 280px'`.
+  - `<AiInsightsPlaceholder />` 4곳 → `<EnvironmentAIInsights matrix={matrix | null} />`.
+  - `AiInsightsPlaceholder` 함수 선언 제거.
+- src/i18n/local/en/environments.ts + ko/environments.ts
+  - `heatmap.ai.*` 네임스페이스 신규 추가 (Dev Spec §10 24개 키).
+  - sectionTitle / patternCount.
+  - critical: tag/envLowTitle/envLowDetail/browserTitle/browserDetail/empty/actionIssue/actionFilter.
+  - gap: tag/title/detail/empty/actionAssign.
+  - baseline: tag/title/detail/empty.
+  - stats: tag/bestEnv/worstEnv/bestTc/worstTc/noData.
+  - toast: createIssue/filter/assignRun.
+
+### 설계 결정 / 개발 중 판단
+- **Sparkles 아이콘**: 프로젝트에 `lucide-react` 미설치. `ri-magic-line` (RemixIcon, 기존 사용 확인) 으로 대체.
+- **Sonner**: 미설치. 기존 `useToast(msg, 'info')` 재사용 (`src/components/Toast.tsx`).
+- **Browser cross-OS Critical 조건**: OS가 1개만 있을 땐 "across all OS" 의미가 약해지므로 `valid.length >= 2` 가드 추가 (OS 1개면 skip — 엣지 방어).
+- **Quick Stats 'Best TC/Worst TC' name**: 디자인 목업에선 custom_id 표시 (`DCM-14`) → `customId || title` 로 대체 이름 선정. title은 길 수 있어 `overflow:hidden + textOverflow:ellipsis + whiteSpace:nowrap`로 잘림 처리.
+- **Quick Stats 'Worst' red 강조**: Design Spec §4-6대로 `#DC2626` 적용. bestEnv/bestTc는 기본 색.
+- **Mobile stacking**: `isMobileViewport` state + resize listener. `<768px`에서 grid 1열, max-height 400.
+- **Critical 'Filter' chip label**: "Filter Firefox" 같은 label을 위해 i18n key `actionFilter`("Filter") + `data.label` 문자열 조합.
+- **Pattern count badge**: "{{count}} patterns" — critical + gap + baseline 중 non-null 개수(0~3). Quick Stats는 항상 있으므로 count 제외.
+- **heatmapSymbol 사용처 grep 결과 0건** — 다른 코드에서 호출 없음 확인 후 deprecated 마킹만 (삭제 OOS).
+
+### 건드리지 않음 (의도적)
+- Edge Function 배포 없음 (AI Insights는 100% 클라이언트 계산).
+- `heatmapSymbol` 함수 본체 (deprecated만, 다음 PR).
+- DB 마이그레이션 적용은 CEO 수동 (`supabase db push`).
+- 다크모드 (Dev Spec §9 OOS).
+- "Create issue/Filter/Assign run" chip 실제 기능 (AC-V13 — toast "Coming soon"만).
+
+### 품질 검사
+- `npx tsc --noEmit` — 0 에러
+- `npm run build` — PASS (6.76s)
+- AC 자체 검증:
+  - AC-V1 (scroll max-h 560/400) — PASS, isMobileViewport 분기.
+  - AC-V2 (sticky 2-row header + 첫 컬럼) — PASS, top:0/top:38, z3/z5.
+  - AC-V3 (mobile 400) — PASS.
+  - AC-V4 (numeric cell executed>0) — PASS, `cellLabel`.
+  - AC-V5 (untested '–') — PASS.
+  - AC-V6 (na 'N/A') — PASS (경로 OOS지만 분기 유지).
+  - AC-V7 (AI Insights rendered) — PASS, 4카드.
+  - AC-V8 (Critical card) — PASS, envLow/browserLow 중 더 심각한 쪽.
+  - AC-V9 (Coverage gap) — PASS.
+  - AC-V10 (Stable baseline) — PASS.
+  - AC-V11 (Quick stats) — PASS.
+  - AC-V12 (client-only) — PASS, 외부 호출 0건.
+  - AC-V13 (chip toast only) — PASS.
+  - AC-V14~V16 (trigger) — 마이그레이션 파일 생성됨 (CEO가 수동 적용).
+  - AC-V17 (summaryStatus 합산) — PASS.
+  - AC-V18 (i18n) — PASS, en/ko 24키.
+  - AC-V19 (no regression) — v1 AC-1~12 그대로.
+
+## 어디까지 됐냐
+- claude 브랜치에 3 신규 + 4 수정 파일 준비.
+- DB 마이그레이션은 파일만 (CEO가 `supabase db push`로 적용).
+
+## 다음 할 것 (CEO 수동)
+1. `supabase db push` — 20260422_environments_activity_trigger.sql 적용.
+2. 브라우저 검증:
+   - Plan Detail > Environments: 20+ TC 플랜에서 세로 스크롤 동작.
+   - thead sticky + 첫 컬럼 sticky 확인 (세로/가로 스크롤 시 가려짐 없음).
+   - Cell에 "95", "72", "100" 같은 숫자 표시 / untested "–" / na "N/A".
+   - AI Insights 사이드바 4카드 렌더 + chip 클릭 시 "Coming soon" toast.
+   - i18n en/ko 전환 시 AI Insights 문구 번역 확인.
+   - Settings > Environments 에서 생성/수정/삭제 → Activity 탭에 즉시 반영.
+
+## 알려진 Follow-up
+- `heatmapSymbol` 함수 실제 삭제 (다음 PR).
+- Chip의 실제 "Create issue / Filter / Assign run" 기능 구현 (별도 티켓).
+- `na` 상태 데이터 경로 (TC × env 지원 매트릭스) — v1/v2 OOS.
+
+---
+
 2026-04-21 (오후): Environment 관리 시스템 QA Major 수정 @developer
 
 ## 뭘 했냐 (claude 브랜치)
