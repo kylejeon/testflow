@@ -90,6 +90,13 @@ interface OverviewTabProps {
   onGoIssues: () => void;
 }
 
+export interface SessionActivityCounts {
+  note: number;
+  bug: number;
+  obs: number;
+  step: number;
+}
+
 interface OverviewExtra {
   plans: any[];
   plansError: boolean;
@@ -106,6 +113,15 @@ interface OverviewExtra {
    *   pct       = round(executed / totalTCs * 100), 0 when totalTCs = 0
    */
   planProgressMap: Map<string, number>;
+  /**
+   * sessionId → activity counts from `session_logs.type`.
+   *   note    ← type='note'
+   *   bug     ← type='failed'
+   *   obs     ← type='blocked'
+   *   step    ← type='passed'
+   * Missing entry (or session with 0 logs) → all zeros.
+   */
+  sessionActivityMap: Map<string, SessionActivityCounts>;
 }
 
 /**
@@ -118,6 +134,7 @@ interface OverviewExtra {
 async function loadOverviewExtra(
   milestoneId: string,
   runIds: string[],
+  sessionIds: string[],
   aggregatedRunIds?: string[],
 ): Promise<OverviewExtra> {
   const queryRunIds = aggregatedRunIds && aggregatedRunIds.length > 0 ? aggregatedRunIds : runIds;
@@ -230,7 +247,28 @@ async function loadOverviewExtra(
     velocity7d.push(executedPerDay.get(d.toISOString().slice(0, 10)) || 0);
   }
 
-  return { plans, plansError, topFailTags, totalFails, executedPerDay, velocity7d, planProgressMap };
+  // ── Session activity aggregation (session_logs.type → note/bug/obs/step) ──
+  // Used by Exploratory SegmentedBar in ExecutionSections.
+  const sessionActivityMap = new Map<string, SessionActivityCounts>();
+  for (const sid of sessionIds) {
+    sessionActivityMap.set(sid, { note: 0, bug: 0, obs: 0, step: 0 });
+  }
+  if (sessionIds.length > 0) {
+    const { data: logs } = await supabase
+      .from('session_logs')
+      .select('session_id, type')
+      .in('session_id', sessionIds);
+    for (const log of ((logs as Array<{ session_id: string; type: string }> | null) ?? [])) {
+      const current = sessionActivityMap.get(log.session_id);
+      if (!current) continue;
+      if (log.type === 'note') current.note++;
+      else if (log.type === 'failed') current.bug++;
+      else if (log.type === 'blocked') current.obs++;
+      else if (log.type === 'passed') current.step++;
+    }
+  }
+
+  return { plans, plansError, topFailTags, totalFails, executedPerDay, velocity7d, planProgressMap, sessionActivityMap };
 }
 
 export default function OverviewTab(props: OverviewTabProps) {
@@ -243,11 +281,13 @@ export default function OverviewTab(props: OverviewTabProps) {
   } = props;
 
   const runIds = runs.map(r => r.id);
+  const sessionIds = sessions.map(s => s.id);
   const aggRunIdsKey = aggregatedRunIds ? [...aggregatedRunIds].sort().join(',') : '';
+  const sessionIdsKey = [...sessionIds].sort().join(',');
 
   const { data: extra, isLoading: extraLoading } = useQuery({
-    queryKey: ['milestone-overview-extra', milestoneId, [...runIds].sort().join(','), aggRunIdsKey],
-    queryFn: () => loadOverviewExtra(milestoneId, runIds, aggregatedRunIds),
+    queryKey: ['milestone-overview-extra', milestoneId, [...runIds].sort().join(','), aggRunIdsKey, sessionIdsKey],
+    queryFn: () => loadOverviewExtra(milestoneId, runIds, sessionIds, aggregatedRunIds),
     staleTime: 60_000,
   });
 
@@ -258,6 +298,7 @@ export default function OverviewTab(props: OverviewTabProps) {
   const executedPerDay = extra?.executedPerDay || new Map<string, number>();
   const velocity7d = extra?.velocity7d || [0, 0, 0, 0, 0, 0, 0];
   const planProgressMap = extra?.planProgressMap || new Map<string, number>();
+  const sessionActivityMap = extra?.sessionActivityMap || new Map<string, SessionActivityCounts>();
 
   const planMap = new Map(plans.map((p: any) => [p.id, p]));
 
@@ -377,6 +418,7 @@ export default function OverviewTab(props: OverviewTabProps) {
           planProgressMap={planProgressMap}
           runs={runs}
           sessions={sessions}
+          sessionActivityMap={sessionActivityMap}
           planMap={planMap}
           formatDateRange={formatDateRange}
         />

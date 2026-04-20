@@ -2,6 +2,14 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import StatusPill from '../../components/StatusPill';
 import ProgressBar from '../../components/ProgressBar';
+import SegmentedBar from '../../components/SegmentedBar';
+
+interface SessionActivityCounts {
+  note: number;
+  bug: number;
+  obs: number;
+  step: number;
+}
 
 interface SubMilestoneItem {
   id: string;
@@ -54,6 +62,12 @@ interface Props {
   planProgressMap?: Map<string, number>;
   runs: RunItem[];
   sessions: SessionItem[];
+  /**
+   * sessionId → activity counts (note/bug/obs/step) from `session_logs.type`.
+   * Used to render a 4-way SegmentedBar in the Exploratory section.
+   * Missing entry or all-zero counts → empty gray track.
+   */
+  sessionActivityMap?: Map<string, SessionActivityCounts>;
   planMap: Map<string, PlanItem>;
   formatDateRange: (s: string | null, e: string | null) => string;
 }
@@ -70,7 +84,7 @@ interface Props {
  */
 export default function ExecutionSections({
   projectId, subMilestones, subMilestoneProgress, plans, plansLoading, plansError,
-  planProgressMap, runs, sessions, planMap, formatDateRange,
+  planProgressMap, runs, sessions, sessionActivityMap, planMap, formatDateRange,
 }: Props) {
   const { t } = useTranslation('milestones');
   const hasSubs = subMilestones.length > 0;
@@ -251,20 +265,32 @@ export default function ExecutionSections({
             <span className="count">{sessions.length}</span>
           </div>
           <div className="mo-sec-card">
-            {sessions.map(session => (
-              <Link key={session.id} to={`/projects/${projectId}/discovery-logs/${session.id}`} className="row">
-                <div className="mo-row-icon violet"><i className="ri-search-eye-line" /></div>
-                <div style={{ minWidth: 0 }}>
-                  <div className="mo-row-name">{session.name}</div>
-                  <div className="mo-row-sub">{new Date(session.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
-                </div>
-                <div />
-                <StatusPill status={session.actualStatus ?? 'new'} />
-                {/* Exploratory progress 집계 로직 없음 — Dev Spec §6.4 Out of Scope 4. */}
-                <ProgressBar value={0} tone="gray" showLabel={false} />
-                <i className="ri-arrow-right-s-line" style={{ color: 'var(--text-subtle)' }} />
-              </Link>
-            ))}
+            {sessions.map(session => {
+              // Exploratory sessions have no "% complete" concept — instead visualise
+              // activity distribution (note/bug/obs/step) as a 4-way segmented bar.
+              // Counts sourced from `session_logs.type` (aggregated in OverviewTab).
+              const act = sessionActivityMap?.get(session.id) ?? { note: 0, bug: 0, obs: 0, step: 0 };
+              return (
+                <Link key={session.id} to={`/projects/${projectId}/discovery-logs/${session.id}`} className="row">
+                  <div className="mo-row-icon violet"><i className="ri-search-eye-line" /></div>
+                  <div style={{ minWidth: 0 }}>
+                    <div className="mo-row-name">{session.name}</div>
+                    <div className="mo-row-sub">{new Date(session.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+                  </div>
+                  <div />
+                  <StatusPill status={session.actualStatus ?? 'new'} />
+                  <SegmentedBar
+                    segments={[
+                      { count: act.note, className: 'bg-indigo-500', label: 'Note' },
+                      { count: act.bug,  className: 'bg-red-500',    label: 'Bug'  },
+                      { count: act.obs,  className: 'bg-amber-500',  label: 'Obs'  },
+                      { count: act.step, className: 'bg-purple-500', label: 'Step' },
+                    ]}
+                  />
+                  <i className="ri-arrow-right-s-line" style={{ color: 'var(--text-subtle)' }} />
+                </Link>
+              );
+            })}
           </div>
         </>
       )}

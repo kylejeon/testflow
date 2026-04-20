@@ -574,6 +574,62 @@ usage 집계는 이미 owner shared pool 로 통일됐지만, 캐시 조회(`ai_
 
 ---
 
+2026-04-20 (exploratory SegmentedBar): Exploratory 세션 4분할 activity bar @developer 구현 완료
+
+## 뭘 했냐
+
+### 신규 파일 1개
+- src/components/SegmentedBar.tsx
+  - Props: segments[{count,className,label?}], width(80), height(6), className
+  - total=0 → 빈 gray 트랙 (fill 없음)
+  - total>0 → count 비율로 flex-basis 분할, 0-count 세그먼트는 숨김 (경계 깔끔)
+  - 세그먼트 사이 1px 흰색 border-right (마지막 제외)
+  - 트랙 rounded-full (양끝만 둥글게, 내부 segment는 overflow-hidden으로 접합)
+  - role="progressbar" + aria-valuenow={total} + aria-label=
+    "Session activity: 2 Note, 3 Bug, 1 Obs, 0 Step"
+  - .progress-bar-wrap 래퍼로 기존 모바일 <768px 숨김 CSS 재활용
+  - ProgressBar와 독립 (단일 fill용 ProgressBar는 유지)
+
+### 수정 파일 2개
+- src/pages/milestone-detail/OverviewTab.tsx
+  - SessionActivityCounts 인터페이스 export
+  - OverviewExtra에 sessionActivityMap: Map<string, SessionActivityCounts> 추가
+  - loadOverviewExtra 시그니처 확장: (milestoneId, runIds, sessionIds, aggregatedRunIds?)
+  - sessionIds 있을 때 supabase.session_logs.select('session_id,type').in('session_id',...) 쿼리 추가
+  - log.type 매핑: note→note / failed→bug / blocked→obs / passed→step
+  - useQuery queryKey에 sessionIdsKey 추가 (세션 변경 시 재집계)
+  - sessionActivityMap을 ExecutionSections props로 전달
+- src/pages/milestone-detail/ExecutionSections.tsx
+  - Props에 sessionActivityMap?: Map<string, SessionActivityCounts> 추가
+  - Exploratory 섹션 L262 `<ProgressBar value={0} tone="gray" showLabel={false} />` 제거
+  - `<SegmentedBar segments=[indigo/red/amber/purple] />` 로 교체
+    - Note: bg-indigo-500 (#6366F1)
+    - Bug:  bg-red-500    (#DC2626)
+    - Obs:  bg-amber-500  (#D97706)
+    - Step: bg-purple-500 (#7C3AED)
+  - 색상은 session-detail/page.tsx:980-985 entryTypeButtons와 일치
+
+### 건드리지 않음 (scope 외)
+- src/components/ProgressBar.tsx — 단일 fill용 유지
+- Sub Milestones / Test Plans / Runs 섹션 — 여전히 ProgressBar
+- session_logs realtime 갱신 — Out of Scope
+- 다른 페이지의 progress bar — Out of Scope
+
+## 어디까지 됐냐
+- TypeScript 타입체크 PASS (`npx tsc --noEmit` 에러 0개)
+- 풀 빌드 PASS (`npm run build` 6.71s)
+- 커밋 메시지: `feat(ui): Exploratory session SegmentedBar (note/bug/obs/step 활동 비율)`
+
+## 다음에 할 것
+- 커밋 + origin/claude push (main 금지)
+- CEO 수동 확인:
+  - Milestone Detail → Overview → Exploratory 섹션에 log 개수 비율 segment bar 표시
+  - 로그 0개 세션은 빈 gray 트랙
+  - 모바일 <768px 에서 segment bar 숨김 (기존 ProgressBar와 동일)
+  - 스크린리더로 "Session activity: N Note, N Bug, N Obs, N Step" 읽기
+
+---
+
 2026-04-20 (badge/progress consistency): Milestone Detail 5색 배지 + ProgressBar @developer 구현 완료
 
 ## 뭘 했냐 (dev-spec + design-spec-milestone-badge-progress-consistency.md)
