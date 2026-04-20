@@ -1491,11 +1491,30 @@ function IssuesTab({ runs, plan, planTcs, milestone, parentMilestone, profiles, 
 
 // ─── Tab: Environments ────────────────────────────────────────────────────────
 
+type DrillSelection = {
+  tcId: string;
+  envId: string;
+  tcLabel: string;
+  envLabel: string;
+};
+
+type DrillRunEntry = {
+  runId: string;
+  runName: string;
+  runStatus: string;
+  executedAt: string | null;
+  resultStatus: string;
+};
+
 function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestCase[] }) {
   const { t } = useTranslation('environments');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [matrix, setMatrix] = useState<HeatmapMatrix | null>(null);
+  // Drill-down state: map `${tcId}||${envId}` → RunEntry[]
+  const [drillMap, setDrillMap] = useState<Map<string, DrillRunEntry[]>>(new Map());
+  const [drill, setDrill] = useState<DrillSelection | null>(null);
+  const projectId = plan.project_id;
 
   // Mobile viewport detection (Design Spec §2-5): <768px → 400px cap.
   const [isMobileViewport, setIsMobileViewport] = useState(() =>
@@ -1517,10 +1536,10 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
         // 1) Fetch ALL runs for this plan (so we can count legacy-only runs)
         const { data: allRunsData, error: runsErr } = await supabase
           .from('test_runs')
-          .select('id, environment_id')
+          .select('id, name, status, executed_at, environment_id')
           .eq('test_plan_id', plan.id);
         if (runsErr) throw runsErr;
-        const allRuns = (allRunsData ?? []) as Array<{ id: string; environment_id: string | null }>;
+        const allRuns = (allRunsData ?? []) as Array<{ id: string; name: string; status: string; executed_at: string | null; environment_id: string | null }>;
         const structuredRuns = allRuns.filter(r => !!r.environment_id);
         const legacyRunCount = allRuns.length - structuredRuns.length;
 
@@ -1570,7 +1589,28 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
           legacyRunCount,
         });
 
-        if (!cancelled) setMatrix(built);
+        // Build drill-down map: (tcId||envId) → RunEntry[]
+        const runById = new Map(structuredRuns.map(r => [r.id, r]));
+        const resultMap = new Map<string, DrillRunEntry[]>();
+        for (const res of results) {
+          const run = runById.get(res.run_id);
+          if (!run || !run.environment_id) continue;
+          const key = `${res.test_case_id}||${run.environment_id}`;
+          const arr = resultMap.get(key) ?? [];
+          arr.push({
+            runId: run.id,
+            runName: run.name,
+            runStatus: run.status,
+            executedAt: run.executed_at,
+            resultStatus: res.status,
+          });
+          resultMap.set(key, arr);
+        }
+
+        if (!cancelled) {
+          setMatrix(built);
+          setDrillMap(resultMap);
+        }
       } catch (e) {
         console.error('[EnvironmentsTab] load failed', e);
         if (!cancelled) setLoadError(true);
@@ -1742,19 +1782,37 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
                       const hm = HEATMAP_COLORS[cell.status] ?? HEATMAP_COLORS.untested;
                       const isUntested = cell.executed === 0 && cell.status !== 'na';
                       const isNA = cell.status === 'na';
+                      const isClickable = !isUntested && !isNA;
+                      const envCol = columns[ci];
+                      const envLabel = envCol ? `${envCol.env.os_name || ''}${envCol.env.os_version ? ' ' + envCol.env.os_version : ''} · ${envCol.browserLabel}`.trim() : '';
                       return (
                         <td key={ci}>
                           <div
                             title={cell.tooltip}
+                            onClick={isClickable && envCol ? () => setDrill({
+                              tcId: row.tc.id,
+                              envId: envCol.env.id,
+                              tcLabel: row.tc.custom_id ? `${row.tc.custom_id} ${row.tc.title}` : row.tc.title,
+                              envLabel,
+                            }) : undefined}
                             style={{
                               width: 64, height: 38, borderRadius: 5,
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                               fontWeight: isUntested || isNA ? 500 : 700,
                               fontSize: isUntested ? 16 : isNA ? 11 : 13,
                               background: hm.bg, color: hm.color,
-                              cursor: 'default',
+                              cursor: isClickable ? 'pointer' : 'default',
                               border: isUntested ? '1px dashed #9CA3AF' : 'none',
+                              transition: isClickable ? 'transform 0.1s, box-shadow 0.1s' : 'none',
                             }}
+                            onMouseEnter={isClickable ? (e) => {
+                              (e.currentTarget as HTMLDivElement).style.transform = 'scale(1.05)';
+                              (e.currentTarget as HTMLDivElement).style.boxShadow = '0 0 0 2px var(--text)';
+                            } : undefined}
+                            onMouseLeave={isClickable ? (e) => {
+                              (e.currentTarget as HTMLDivElement).style.transform = 'scale(1)';
+                              (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
+                            } : undefined}
                           >
                             {cellLabel(cell.status, cell.passed, cell.executed)}
                           </div>
@@ -1814,19 +1872,149 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
 
       <EnvironmentAIInsights matrix={matrix} />
 
-      {/* Legend strip — full width (spans heatmap + sidebar) per Design Spec §5 */}
+      {/* Legend strip — full width (spans heatmap + sidebar). Pass rate 7 buckets + drill hint */}
       <div style={{ gridColumn: '1 / -1', background: '#fff', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 14, fontSize: 11, color: 'var(--text-muted)', flexWrap: 'wrap' }}>
-        <b style={{ color: 'var(--text)' }}>{t('heatmap.scaleLabel')}</b>
-        {(['perfect', 'pass', 'mixed', 'warn', 'fail', 'untested'] as const).map(k => (
+        <b style={{ color: 'var(--text)' }}>{t('heatmap.scaleLabelV2')}</b>
+        {([
+          { k: 'critical', label: '0–20' },
+          { k: 'fail', label: '20–40' },
+          { k: 'warn', label: '40–60' },
+          { k: 'mixed', label: '60–75' },
+          { k: 'pass', label: '75–95' },
+          { k: 'perfect', label: '95–100' },
+          { k: 'untested', label: t('heatmap.scale.untested') },
+          { k: 'na', label: 'N/A' },
+        ] as const).map(({ k, label }) => (
           <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
             <span style={{
               width: 22, height: 14, borderRadius: 3, display: 'inline-block',
               background: HEATMAP_COLORS[k].bg,
               border: k === 'untested' ? '1px dashed #9CA3AF' : 'none',
             }} />
-            {t(`heatmap.scale.${k}`)}
+            {label}
           </span>
         ))}
+        <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>
+          {t('heatmap.drillHint')}
+        </span>
+      </div>
+
+      {/* Cell drill-down modal */}
+      {drill && (
+        <EnvironmentCellDrillModal
+          projectId={projectId}
+          selection={drill}
+          entries={drillMap.get(`${drill.tcId}||${drill.envId}`) ?? []}
+          onClose={() => setDrill(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Cell drill-down modal ──────────────────────────────────────────────────
+function EnvironmentCellDrillModal({
+  projectId,
+  selection,
+  entries,
+  onClose,
+}: {
+  projectId: string;
+  selection: DrillSelection;
+  entries: DrillRunEntry[];
+  onClose: () => void;
+}) {
+  const passed = entries.filter(e => e.resultStatus === 'passed').length;
+  const executed = entries.filter(e => e.resultStatus !== 'untested').length;
+  const pct = executed > 0 ? Math.round((passed / executed) * 100) : 0;
+
+  const resultColor = (s: string) => {
+    if (s === 'passed') return { bg: '#dcfce7', color: '#14532d' };
+    if (s === 'failed') return { bg: '#fee2e2', color: '#991b1b' };
+    if (s === 'blocked') return { bg: '#fef3c7', color: '#92400e' };
+    if (s === 'retest') return { bg: '#e0e7ff', color: '#3730a3' };
+    return { bg: '#f3f4f6', color: '#6b7280' };
+  };
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: '#fff', borderRadius: 12, padding: 0,
+          maxWidth: 560, width: '90vw', maxHeight: '80vh', display: 'flex', flexDirection: 'column',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+        }}
+      >
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600, marginBottom: 4 }}>
+              TC × Environment
+            </div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {selection.tcLabel}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+              {selection.envLabel}
+            </div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 22, fontWeight: 700, color: pct >= 75 ? '#14532d' : pct >= 40 ? '#78350f' : '#991b1b' }}>
+              {executed > 0 ? `${pct}%` : '—'}
+            </div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+              {passed}/{executed} passed
+            </div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'var(--text-muted)' }}>
+            <svg style={{ width: 20, height: 20 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div style={{ overflow: 'auto', padding: '12px 20px', flex: 1 }}>
+          {entries.length === 0 ? (
+            <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+              No runs found for this combination.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {entries.map((entry, i) => {
+                const c = resultColor(entry.resultStatus);
+                return (
+                  <Link
+                    key={i}
+                    to={`/projects/${projectId}/runs/${entry.runId}`}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      padding: '10px 12px', borderRadius: 8,
+                      border: '1px solid var(--border)',
+                      textDecoration: 'none', color: 'var(--text)',
+                      background: '#fff',
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {entry.runName}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                        {entry.executedAt ? new Date(entry.executedAt).toLocaleString() : '—'} · Run {entry.runStatus}
+                      </div>
+                    </div>
+                    <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 4, background: c.bg, color: c.color, textTransform: 'capitalize' }}>
+                      {entry.resultStatus}
+                    </span>
+                    <svg style={{ width: 14, height: 14, color: 'var(--text-subtle)', flex: 'none' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

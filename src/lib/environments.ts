@@ -82,11 +82,12 @@ export function getEnvironmentDisplayName(env: Environment): string {
 // ─── Heatmap helpers ───────────────────────────────────────────────────────
 
 export const HEATMAP_COLORS: Record<string, { bg: string; color: string; label: string }> = {
-  perfect:  { bg: '#dcfce7', color: '#14532d', label: '100%' },
-  pass:     { bg: '#86efac', color: '#14532d', label: 'Pass' },
-  mixed:    { bg: '#fde68a', color: '#78350f', label: 'Mixed' },
-  warn:     { bg: '#fca5a5', color: '#7f1d1d', label: 'Warn' },
-  fail:     { bg: '#ef4444', color: '#ffffff', label: 'Fail' },
+  perfect:  { bg: '#dcfce7', color: '#14532d', label: '95–100' },
+  pass:     { bg: '#86efac', color: '#14532d', label: '75–95' },
+  mixed:    { bg: '#fde68a', color: '#78350f', label: '60–75' },
+  warn:     { bg: '#fca5a5', color: '#7f1d1d', label: '40–60' },
+  fail:     { bg: '#ef4444', color: '#ffffff', label: '20–40' },
+  critical: { bg: '#991b1b', color: '#ffffff', label: '0–20' },
   na:       { bg: '#f3f4f6', color: '#9ca3af', label: 'N/A' },
   untested: { bg: '#fafafa', color: '#9ca3af', label: '—' },
 };
@@ -128,15 +129,16 @@ export function cellLabel(
   return String(Math.round((pass / exec) * 100));
 }
 
-/** Pass rate → cell status per AC-6. */
+/** Pass rate → cell status (7-bucket scale). */
 export function passRateToStatus(passed: number, executed: number): HeatmapStatus {
   if (executed <= 0) return 'untested';
   const pct = (passed / executed) * 100;
-  if (pct >= 100) return 'perfect';
-  if (pct >= 75)  return 'pass';
-  if (pct >= 50)  return 'mixed';
-  if (pct >= 20)  return 'warn';
-  return 'fail';
+  if (pct >= 95) return 'perfect';
+  if (pct >= 75) return 'pass';
+  if (pct >= 60) return 'mixed';
+  if (pct >= 40) return 'warn';
+  if (pct >= 20) return 'fail';
+  return 'critical';
 }
 
 /**
@@ -146,11 +148,12 @@ export function passRateToStatus(passed: number, executed: number): HeatmapStatu
 export function summaryStatus(passed: number, executed: number): HeatmapStatus {
   if (executed <= 0) return 'untested';
   const pct = (passed / executed) * 100;
-  if (pct >= 100) return 'perfect';
-  if (pct >= 75)  return 'pass';
-  if (pct >= 50)  return 'mixed';
-  if (pct >= 20)  return 'warn';
-  return 'fail';
+  if (pct >= 95) return 'perfect';
+  if (pct >= 75) return 'pass';
+  if (pct >= 60) return 'mixed';
+  if (pct >= 40) return 'warn';
+  if (pct >= 20) return 'fail';
+  return 'critical';
 }
 
 // ─── Environment grouping for heatmap columns ──────────────────────────────
