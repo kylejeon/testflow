@@ -2471,6 +2471,8 @@ export default function PlanDetailPage() {
   const [loadError, setLoadError] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>('testcases');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
+  const [showDuplicateConfirm, setShowDuplicateConfirm] = useState(false);
   const [showAIModal, setShowAIModal] = useState(false);
   const [issuesCount, setIssuesCount] = useState(0);
   const [showUnlockConfirm, setShowUnlockConfirm] = useState(false);
@@ -2899,7 +2901,6 @@ export default function PlanDetailPage() {
 
   const handleArchive = async () => {
     if (!plan) return;
-    if (!confirm(`Archive plan "${plan.name}"? It will become read-only.`)) return;
     const { error } = await supabase
       .from('test_plans')
       .update({ status: 'archived' })
@@ -2908,6 +2909,7 @@ export default function PlanDetailPage() {
     setPlan(prev => prev ? { ...prev, status: 'archived' } : prev);
     logActivity('plan_archived', 'status', { details: `Plan "${plan.name}" archived` });
     showToast('Plan archived', 'success');
+    setShowArchiveConfirm(false);
   };
 
   const handleDuplicate = async () => {
@@ -2950,6 +2952,7 @@ export default function PlanDetailPage() {
 
     logActivity('plan_duplicated', 'status', { details: `Duplicated from "${plan.name}"` });
     showToast('Plan duplicated', 'success');
+    setShowDuplicateConfirm(false);
     navigate(`/projects/${projectId}/plans/${(newPlan as any).id}`);
   };
 
@@ -3179,7 +3182,7 @@ export default function PlanDetailPage() {
           <EnvironmentsTab plan={plan} planTcs={planTcs} />
         )}
         {activeTab === 'settings' && (
-          <SettingsTab plan={plan} milestones={milestones} profiles={profiles} memberProfiles={memberProfiles} onUpdate={handleUpdate} onDelete={()=>setShowDeleteConfirm(true)} onArchive={handleArchive} onDuplicate={handleDuplicate} entryPresets={entryPresets} exitPresets={exitPresets} onSavePreset={handleSavePreset} />
+          <SettingsTab plan={plan} milestones={milestones} profiles={profiles} memberProfiles={memberProfiles} onUpdate={handleUpdate} onDelete={()=>setShowDeleteConfirm(true)} onArchive={()=>setShowArchiveConfirm(true)} onDuplicate={()=>setShowDuplicateConfirm(true)} entryPresets={entryPresets} exitPresets={exitPresets} onSavePreset={handleSavePreset} />
         )}
       </div>
 
@@ -3258,6 +3261,54 @@ export default function PlanDetailPage() {
               <button onClick={handleDelete}
                 style={{padding:'6px 16px',border:'none',borderRadius:6,background:'var(--danger)',color:'#fff',fontSize:13,fontWeight:500,cursor:'pointer'}}>
                 Delete Plan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Archive confirm modal */}
+      {showArchiveConfirm && (
+        <div style={{position:'fixed',inset:0,zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(15,23,42,0.5)'}} onClick={()=>setShowArchiveConfirm(false)}>
+          <div onClick={e=>e.stopPropagation()} style={{background:'#fff',borderRadius:12,padding:'1.5rem',maxWidth:'28rem',width:'100%',margin:'1rem',boxShadow:'0 20px 60px rgba(0,0,0,0.2)'}}>
+            <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:16}}>
+              <div style={{width:40,height:40,borderRadius:'50%',background:'var(--warning-50)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <svg style={{width:18,height:18,color:'var(--warning)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+              </div>
+              <h3 style={{fontSize:16,fontWeight:600,margin:0}}>Archive Plan</h3>
+            </div>
+            <p style={{fontSize:14,color:'var(--text-muted)',marginBottom:20,lineHeight:1.6}}>
+              Archive <strong>"{plan.name}"</strong>? The plan will become read-only. Existing run data is preserved and the plan can be unarchived from the status dropdown.
+            </p>
+            <div style={{display:'flex',gap:10,justifyContent:'flex-end'}}>
+              <button onClick={()=>setShowArchiveConfirm(false)} className="pd-btn pd-btn-sm">Cancel</button>
+              <button onClick={handleArchive}
+                style={{padding:'6px 16px',border:'none',borderRadius:6,background:'var(--warning)',color:'#fff',fontSize:13,fontWeight:500,cursor:'pointer'}}>
+                Archive
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Duplicate confirm modal */}
+      {showDuplicateConfirm && (
+        <div style={{position:'fixed',inset:0,zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(15,23,42,0.5)'}} onClick={()=>setShowDuplicateConfirm(false)}>
+          <div onClick={e=>e.stopPropagation()} style={{background:'#fff',borderRadius:12,padding:'1.5rem',maxWidth:'28rem',width:'100%',margin:'1rem',boxShadow:'0 20px 60px rgba(0,0,0,0.2)'}}>
+            <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:16}}>
+              <div style={{width:40,height:40,borderRadius:'50%',background:'var(--primary-50)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <svg style={{width:18,height:18,color:'var(--primary)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              </div>
+              <h3 style={{fontSize:16,fontWeight:600,margin:0}}>Duplicate Plan</h3>
+            </div>
+            <p style={{fontSize:14,color:'var(--text-muted)',marginBottom:20,lineHeight:1.6}}>
+              Create a copy of <strong>"{plan.name}"</strong> with the same TC snapshot ({planTcs.length} test case{planTcs.length === 1 ? '' : 's'})? The new plan will be named <strong>"{plan.name} (Copy)"</strong> and you'll be redirected to it.
+            </p>
+            <div style={{display:'flex',gap:10,justifyContent:'flex-end'}}>
+              <button onClick={()=>setShowDuplicateConfirm(false)} className="pd-btn pd-btn-sm">Cancel</button>
+              <button onClick={handleDuplicate}
+                style={{padding:'6px 16px',border:'none',borderRadius:6,background:'var(--primary)',color:'#fff',fontSize:13,fontWeight:500,cursor:'pointer'}}>
+                Duplicate
               </button>
             </div>
           </div>
