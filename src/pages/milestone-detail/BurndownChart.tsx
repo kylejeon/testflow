@@ -40,19 +40,24 @@ export default function BurndownChart({ startDate, endDate, totalTCs, executedPe
       });
     }
 
-    // Projected segment — from today to +projDays (linear from current remaining to 0)
+    // Projected segment — only draw if milestone is still in progress (not overdue)
+    // and we have room on the X axis between today and end date.
     const todayIdx = Math.min(daysElapsed, perDay.length - 1);
-    if (perDay[todayIdx]?.actual != null) {
+    const isOverdue = daysElapsed >= totalDays;
+    if (!isOverdue && perDay[todayIdx]?.actual != null) {
       const currentRemaining = perDay[todayIdx].actual!;
       const elapsed = Math.max(1, daysElapsed);
       const executedSoFar = totalTCs - currentRemaining;
       const velocity = executedSoFar / elapsed;
       const projDays = velocity > 0 ? Math.ceil(currentRemaining / velocity) : null;
-      if (projDays != null) {
+      if (projDays != null && projDays > 0) {
         const projEnd = Math.min(totalDays, todayIdx + projDays);
-        for (let i = todayIdx; i <= projEnd; i++) {
-          const t = (i - todayIdx) / Math.max(1, projEnd - todayIdx);
-          perDay[i].projected = Math.max(0, currentRemaining * (1 - t));
+        const span = projEnd - todayIdx;
+        if (span > 0) {
+          for (let i = todayIdx; i <= projEnd; i++) {
+            const t = (i - todayIdx) / span;
+            perDay[i].projected = Math.max(0, currentRemaining * (1 - t));
+          }
         }
       }
     }
@@ -121,6 +126,8 @@ export default function BurndownChart({ startDate, endDate, totalTCs, executedPe
               stroke="#d1d5db"
               width={26}
               tickCount={4}
+              domain={[0, totalTCs]}
+              allowDataOverflow={false}
               tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)}
             />
             <Tooltip
