@@ -1790,21 +1790,6 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
           </table>
         </div>
 
-        {/* Legend strip */}
-        <div style={{ margin: '0 16px 12px', background: '#fff', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 14, fontSize: 11, color: 'var(--text-muted)', flexWrap: 'wrap' }}>
-          <b style={{ color: 'var(--text)' }}>{t('heatmap.scaleLabel')}</b>
-          {(['perfect', 'pass', 'mixed', 'warn', 'fail', 'untested'] as const).map(k => (
-            <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-              <span style={{
-                width: 22, height: 14, borderRadius: 3, display: 'inline-block',
-                background: HEATMAP_COLORS[k].bg,
-                border: k === 'untested' ? '1px dashed #9CA3AF' : 'none',
-              }} />
-              {t(`heatmap.scale.${k}`)}
-            </span>
-          ))}
-        </div>
-
         {/* Legacy warning footer */}
         {matrix.legacyRunCount > 0 && (
           <div style={{
@@ -1822,6 +1807,21 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
       </div>
 
       <EnvironmentAIInsights matrix={matrix} />
+
+      {/* Legend strip — full width (spans heatmap + sidebar) per Design Spec §5 */}
+      <div style={{ gridColumn: '1 / -1', background: '#fff', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 14, fontSize: 11, color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+        <b style={{ color: 'var(--text)' }}>{t('heatmap.scaleLabel')}</b>
+        {(['perfect', 'pass', 'mixed', 'warn', 'fail', 'untested'] as const).map(k => (
+          <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <span style={{
+              width: 22, height: 14, borderRadius: 3, display: 'inline-block',
+              background: HEATMAP_COLORS[k].bg,
+              border: k === 'untested' ? '1px dashed #9CA3AF' : 'none',
+            }} />
+            {t(`heatmap.scale.${k}`)}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
