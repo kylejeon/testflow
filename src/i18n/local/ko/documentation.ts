@@ -57,6 +57,11 @@ export const documentation = {
   // Nav
   settings: '설정',
   logout: '로그아웃',
+
+  // f024 — Toast (Dev Spec §6-3 A15)
+  toast: {
+    loadFailed: '문서를 불러오지 못했어요.',
+  },
 };
 
 export default documentation;

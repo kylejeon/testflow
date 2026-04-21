@@ -22,6 +22,9 @@ export const milestones = {
     updateFailed: 'Failed to update milestone.',
     analysisRefreshed: 'Analysis refreshed',
     analysisReady: 'AI analysis ready',
+    // f024 — catch→toast (Dev Spec §6-3 A5 / A19)
+    loadFailed: 'Failed to load milestones.',
+    completeFailed: 'Failed to complete milestone.',
   },
 
   // Header / misc

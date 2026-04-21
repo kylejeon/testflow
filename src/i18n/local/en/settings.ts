@@ -51,6 +51,11 @@ export const settings = {
   passwordChanged: 'Password changed successfully',
   integrationConnected: 'Integration connected successfully',
   integrationDisconnected: 'Integration disconnected successfully',
+
+  // f024 — Toast (Dev Spec §6-3 A1 / A2 / A3)
+  toast: {
+    logoutFailed: 'Failed to log out. Please try again.',
+  },
 };
 
 export default settings;

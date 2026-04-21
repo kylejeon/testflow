@@ -51,6 +51,11 @@ export const projects = {
   projectUpdated: 'Project updated successfully',
   projectDeleted: 'Project deleted successfully',
   memberInvited: 'Member invited successfully',
+
+  // f024 — Toast (Dev Spec §6-3 A6)
+  toast: {
+    membersLoadFailed: 'Failed to load project members.',
+  },
 };
 
 export default projects;

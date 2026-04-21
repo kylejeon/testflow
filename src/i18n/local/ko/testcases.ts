@@ -68,6 +68,12 @@ export const testcases = {
   aiBackToMode: '모드 선택으로',
   aiSelectedCount: '{{count}}개 선택됨',
   aiSessionMode: 'Professional+ 전용',
+
+  // f024 — Toast (Dev Spec §6-3 A17 / A18 / A20)
+  toast: {
+    attachmentDeleteFailed: '첨부파일 삭제에 실패했어요.',
+    generateSaveFailed: '생성된 테스트 케이스 저장에 실패했어요.',
+  },
 };
 
 export default testcases;

@@ -51,6 +51,11 @@ export const settings = {
   passwordChanged: '비밀번호가 변경되었습니다',
   integrationConnected: '통합이 연결되었습니다',
   integrationDisconnected: '통합 연결이 해제되었습니다',
+
+  // f024 — Toast (Dev Spec §6-3 A1 / A2 / A3)
+  toast: {
+    logoutFailed: '로그아웃에 실패했어요. 다시 시도해주세요.',
+  },
 };
 
 export default settings;

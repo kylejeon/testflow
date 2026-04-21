@@ -450,6 +450,13 @@ export const runs = {
     jiraCreateFailed: 'Jira 이슈 생성 실패: {{reason}}',
     githubCreated: 'GitHub 이슈 #{{number}} 생성됨',
     githubCreateFailed: 'GitHub 이슈 생성 실패: {{reason}}',
+    // f024 — catch→toast 추가 (Dev Spec §6-3 A8-A14)
+    commentsLoadFailed: '코멘트를 불러오지 못했어요.',
+    resultsLoadFailed: '결과를 불러오지 못했어요.',
+    loadFailed: '실행을 불러오지 못했어요.',
+    attachmentDeleteFailed: '첨부파일 삭제에 실패했어요.',
+    assigneeUpdateFailed: '담당자 업데이트에 실패했어요.',
+    assigneeBulkUpdateFailed: '담당자 일괄 업데이트에 실패했어요.',
   },
 };
 

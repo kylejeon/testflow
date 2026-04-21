@@ -458,6 +458,13 @@ export const runs = {
     jiraCreateFailed: 'Failed to create Jira issue: {{reason}}',
     githubCreated: 'GitHub issue #{{number}} created',
     githubCreateFailed: 'Failed to create GitHub issue: {{reason}}',
+    // f024 — additional catch→toast replacements (Dev Spec §6-3 A8-A14)
+    commentsLoadFailed: 'Failed to load comments.',
+    resultsLoadFailed: 'Failed to load results.',
+    loadFailed: 'Failed to load run.',
+    attachmentDeleteFailed: 'Failed to delete attachment.',
+    assigneeUpdateFailed: 'Failed to update assignee.',
+    assigneeBulkUpdateFailed: 'Failed to update assignees.',
   },
 };
 

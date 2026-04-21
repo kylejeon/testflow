@@ -22,6 +22,9 @@ export const milestones = {
     updateFailed: '마일스톤 수정에 실패했습니다.',
     analysisRefreshed: '분석이 갱신되었습니다',
     analysisReady: 'AI 분석 완료',
+    // f024 — catch→toast (Dev Spec §6-3 A5 / A19)
+    loadFailed: '마일스톤을 불러오지 못했어요.',
+    completeFailed: '마일스톤 완료 처리에 실패했어요.',
   },
 
   // Header / misc

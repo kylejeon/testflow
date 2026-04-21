@@ -68,6 +68,12 @@ export const testcases = {
   aiBackToMode: 'Back to mode selection',
   aiSelectedCount: '{{count}} selected',
   aiSessionMode: 'Professional+ only',
+
+  // f024 — Toast (Dev Spec §6-3 A17 / A18 / A20)
+  toast: {
+    attachmentDeleteFailed: 'Failed to delete attachment.',
+    generateSaveFailed: 'Failed to save generated test cases.',
+  },
 };
 
 export default testcases;

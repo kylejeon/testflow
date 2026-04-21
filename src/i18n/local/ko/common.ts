@@ -117,6 +117,46 @@ export const common = {
     saveFailed: '저장에 실패했습니다',
     networkError: '네트워크 오류. 다시 시도해 주세요.',
     somethingWentWrong: '문제가 발생했습니다.',
+    // f024 — 공용 내보내기 실패 (Dev Spec §6-3 A4, Design Spec §4-1)
+    exportFailed: '보고서 내보내기에 실패했어요. 다시 시도해주세요.',
+    // f024 — getApiErrorMessage(code) 매핑 (Design Spec §5)
+    apiErrors: {
+      recordNotFound: '데이터를 찾을 수 없어요.',
+      permissionDenied: '이 작업을 수행할 권한이 없어요.',
+      recordExists: '이미 존재하는 항목이에요.',
+      relatedMissing: '관련 항목이 없어서 처리할 수 없어요.',
+      insufficientPrivilege: '권한이 부족해요. 플랜이나 역할을 확인해주세요.',
+      invalidEmail: '유효하지 않은 이메일 주소예요.',
+      userNotFound: '해당 이메일로 가입된 계정이 없어요.',
+      wrongPassword: '비밀번호가 일치하지 않아요.',
+      sessionExpired: '세션이 만료됐어요. 다시 로그인해주세요.',
+      notFound: '요청한 항목을 찾을 수 없어요.',
+      conflict: '기존 데이터와 충돌해요. 이미 존재할 수 있어요.',
+      rateLimited: '요청이 너무 많아요. 잠시 후 다시 시도해주세요.',
+      serverError: '서버 오류가 발생했어요. 잠시 후 다시 시도해주세요.',
+      networkError: '연결 문제가 발생했어요. 네트워크를 확인하고 다시 시도해주세요.',
+      timeout: '요청 시간이 초과됐어요. 다시 시도해주세요.',
+      cancelled: '요청이 취소됐어요.',
+      generic: '문제가 발생했어요. 다시 시도해주세요.',
+    },
+  },
+
+  // f024 — ErrorBoundary fallback UI (Design Spec §2 / §3)
+  errorBoundary: {
+    title: '문제가 발생했어요',
+    description: '문제를 확인하고 있어요. 잠시 후 다시 시도하거나 대시보드로 돌아가주세요.',
+    reload: '다시 시도',
+    goHome: '대시보드로',
+    reportId: '문제 보고 번호: {{id}}',
+    reportIdMissing: '에러 상세 정보를 수집하지 못했어요.',
+    sendReport: '문제 신고 메일 보내기',
+    devDetailsSummary: '에러 상세 정보',
+    section: {
+      title: '"{{sectionName}}" 섹션을 불러오지 못했어요.',
+      titleGeneric: '이 섹션을 불러오지 못했어요.',
+      hint: '새로고침하거나 문제가 계속되면 지원팀에 문의해주세요.',
+      retry: '재시도',
+    },
   },
 
   issues: {

@@ -57,6 +57,11 @@ export const documentation = {
   // Nav
   settings: 'Settings',
   logout: 'Log out',
+
+  // f024 — Toast (Dev Spec §6-3 A15)
+  toast: {
+    loadFailed: 'Failed to load documentation.',
+  },
 };
 
 export default documentation;

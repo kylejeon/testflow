@@ -18,6 +18,11 @@ export const sessions = {
   sessionCreated: '세션이 생성되었습니다',
   sessionUpdated: '세션이 수정되었습니다',
   sessionDeleted: '세션이 삭제되었습니다',
+
+  // f024 — Toast (Dev Spec §6-3 A7 / A16)
+  toast: {
+    loadFailed: '세션을 불러오지 못했어요.',
+  },
 };
 
 export default sessions;

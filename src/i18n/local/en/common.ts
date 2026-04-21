@@ -117,6 +117,46 @@ export const common = {
     saveFailed: 'Failed to save',
     networkError: 'Network error. Please retry.',
     somethingWentWrong: 'Something went wrong.',
+    // f024 — generic export failure (Dev Spec §6-3 A4, Design Spec §4-1)
+    exportFailed: 'Failed to export report. Please try again.',
+    // f024 — getApiErrorMessage(code) mapping (Design Spec §5)
+    apiErrors: {
+      recordNotFound: 'No data found.',
+      permissionDenied: "You don't have permission for this action.",
+      recordExists: 'This record already exists.',
+      relatedMissing: 'Cannot complete — a related record is missing.',
+      insufficientPrivilege: 'Permission denied. Check your plan or role.',
+      invalidEmail: 'That email address is invalid.',
+      userNotFound: 'No account found with that email.',
+      wrongPassword: 'Incorrect password.',
+      sessionExpired: 'Session expired. Please log in again.',
+      notFound: 'The requested resource was not found.',
+      conflict: 'This conflicts with existing data. It may already exist.',
+      rateLimited: 'Too many requests. Please wait a moment and try again.',
+      serverError: 'Server error. Please try again shortly.',
+      networkError: 'Connection issue. Check your network and try again.',
+      timeout: 'The request timed out. Please try again.',
+      cancelled: 'The request was cancelled.',
+      generic: 'Something went wrong. Please try again.',
+    },
+  },
+
+  // f024 — ErrorBoundary fallback UI (Design Spec §2 / §3)
+  errorBoundary: {
+    title: 'Something went wrong',
+    description: "We've been notified and are looking into it. Try again, or head back to your dashboard.",
+    reload: 'Try again',
+    goHome: 'Go to dashboard',
+    reportId: 'Report ID: {{id}}',
+    reportIdMissing: "We couldn't capture error details.",
+    sendReport: 'Send an error report',
+    devDetailsSummary: 'Error details',
+    section: {
+      title: '"{{sectionName}}" failed to load.',
+      titleGeneric: 'Failed to load this section.',
+      hint: 'Please refresh or contact support if the problem persists.',
+      retry: 'Retry',
+    },
   },
 
   // Issues (shared across Plan Detail / Milestone Detail Issues tabs)
