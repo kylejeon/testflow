@@ -1,3 +1,59 @@
+2026-04-21: i18n Phase 2 QA follow-up (W-1 / N-1 / N-2) 해소
+(qa-report-i18n-coverage-phase2, f010)
+
+## 뭘 했냐 (claude 브랜치, 커밋 1개 — push 완료)
+
+QA Phase 2 리포트의 Minor/Nit 3건 해소. W-2 / W-3 은 Dev Spec soft cap
+편차(측정 값 vs 예상 값) 로 스펙에서 이미 초과 허용으로 명시돼 있어 코드
+수정 불필요 — 정보성 기록만 남김.
+
+### W-1 (Minor) — run-detail throw Error fallback 2건
+- [src/pages/run-detail/page.tsx:2571](src/pages/run-detail/page.tsx#L2571) Jira 이슈 생성
+- [src/pages/run-detail/page.tsx:2626](src/pages/run-detail/page.tsx#L2626) GitHub 이슈 생성
+- data.error / data.message 둘 다 없는 엣지 케이스에서 `'Failed to create Jira/GitHub issue.'` 영문 fallback이 KO 토스트 `{{reason}}`으로 노출되던 문제.
+- 수정: `t('common:unknownError')` 로 교체. 이미 catch 블록에서 동일 키를 사용하던 패턴과 일관성 확보.
+
+### N-1 (Nit) — upgradeModal bodyLine1 `<Trans>` 교체
+- [src/pages/run-detail/page.tsx:3665~3667](src/pages/run-detail/page.tsx#L3665)
+- `.split('<1>')` / `.match(/<1>(.*?)<\/1>/)` 수동 파싱 → 번역자가 마크업 제거 시 강조 소실.
+- 수정: `<Trans i18nKey="..." components={{ 1: <strong /> }} />` 공식 패턴. import에 `Trans` 추가.
+
+### N-2 (Nit) — .i18nignore showToast info/warning 보강
+- plan-detail이 이미 `'info'` / `'warning'` 타입 사용 중 (aiRisk.needTcs 등). run-detail 향후 추가 시 false-positive 대비.
+- 수정: `.i18nignore` 102~105 라인에 2줄 추가.
+
+### W-2 (Minor, 문서성) — plan-detail AC-13 soft cap 500 초과
+- 실측: en 400 + ko 397 = 797 라인. Dev Spec에서 "예상 ~360~520 라인" 대비 초과하였으나 "soft cap" 으로 명시돼 있어 블로커 아님.
+- 후속 조치 미실행. sub-section 분리는 Phase 3 공유 컴포넌트 Epic 이후 일괄 검토 권장.
+
+### W-3 (Minor, 문서성) — run-detail AC-10 leaf 하한 미달
+- 실측 191 leaf. Dev Spec "300 ± 50" 대비 하한 미달. common.* 재사용 (AC-7/AC-8) 을 올바르게 따른 결과라 의도적 축소.
+- 후속 조치 미실행. Phase 3 공유 컴포넌트 Epic Dev Spec에서 예상치 조정 (공통 키 재사용 비율 30~40% 전제) 권장.
+
+### 검증
+- `npx tsc --noEmit` — 0 errors
+- `npm run test -- --run` — 5 files / 69 tests PASS
+- `npm run scan:i18n` — clean 23 files
+- `npm run scan:i18n:parity` — 0 diff
+- `npm run build` — 7.31s 성공
+
+## 어디까지 됐냐
+
+- Phase 1, 2a, 2b — 완료 + QA PASS + Minor/Nit 3건 해소
+- 남은 follow-up: Phase 3 공유 컴포넌트 Epic, i18n CI gate 강제화, KO 원어민 용어 리뷰
+
+최종 커밋: `c083a07` fix(i18n): Phase 2 QA follow-up — W-1, N-1, N-2 해소
+
+## 다음엔 뭘 할 거냐
+
+- Phase 3 공유 컴포넌트 Epic 기획 (@planner → @designer → @developer → @qa):
+  - DetailPanel / ExportModal / FocusMode / StatusBadge / Avatar / ProjectHeader
+  - 예상 신규 키 ~80~120 leaf
+- i18n CI gate 강제화: `npm run scan:i18n:check` + `scan:i18n:parity` GitHub Actions workflow
+- KO 원어민 용어 리뷰 (CEO 패스 1회): Danger Zone 강조 톤, "되돌릴 수 없음" / "고아 상태" / "복사본" 문구 자연스러움
+
+───
+
 2026-04-21: i18n 커버리지 Phase 2 QA M-1 수정 — plan-detail ActivityTab 날짜 헤더 locale 적용
 (qa-report-i18n-coverage-phase2, f010)
 
