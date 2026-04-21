@@ -1,3 +1,114 @@
+2026-04-21: i18n 커버리지 1차 (Milestone Overview + Issues + AIRunSummaryPanel 레이블) @developer
+(dev-spec-i18n-coverage, design-spec-i18n-coverage, f010)
+
+## 뭘 했냐 (claude 브랜치, 6개 커밋 — push 완료)
+
+Planner + Designer가 뽑은 20개 파일 전량 i18n 교체. Designer가 산출한 195 신규
+키를 dev-spec AC-10 soft cap을 180→210으로 상향 적용하여 단일 PR에 포함 (2차
+분리하지 않음 — QA 리포트 반복 지적 누락 방지). plan-detail(3,415줄) /
+run-detail(5,245줄) 은 OOS 유지, 별도 티켓 예정.
+
+### 커밋 (6)
+1. `4e99ea6` feat(i18n): bundle keys + formatRelativeTime / formatShortDate helpers
+   - en/ko common.ts: time.*, weekday.short.*, toast.*, issues.* 확장 (~50 키)
+   - en/ko milestones.ts: detail.overview.{failedBlocked,velocity,topFailTags,
+     contributors,activity,sections,kpi,riskBullet}.*, aiRisk.* 확장,
+     startsTbd/startsOn/noDeadline 헤더
+   - en/ko runs.ts: aiSummary.* 신규 네임스페이스 (title/analyzing/metric/
+     goNoGo/action/jira/github/slack/email/toast/error)
+   - src/lib/formatRelativeTime.ts: i18next _one/_other 기반 헬퍼
+   - src/lib/dateFormat.ts: formatShortDate(iso, lang?) Intl.DateTimeFormat 래퍼
+   - src/lib/issueMetadata.ts: 기존 formatRelativeTime deprecate 주석
+     (pdfDataPrep 등 비-UI 호출처 유지)
+
+2. `2cf774a` feat(i18n): migrate issues cluster (5 files)
+   - IssuesList.tsx, LastSyncedLabel.tsx, IssueAssignee.tsx,
+     IssuePriorityBadge.tsx, IssueStatusBadge.tsx
+   - Plural (fromRuns, tcsWithLinkedIssues), interpolation (aria-label row),
+     formatShortDate(createdAt) 적용
+
+3. `4899172` feat(i18n): migrate milestone-detail Overview + Activity (13 files)
+   - BurndownChart, KpiStrip, FailedBlockedCard, VelocitySparkline,
+     TopFailTagsCard, ContributorsCard, Activity24hFeed, ExecutionSections,
+     RiskSignalCard, AiRiskAnalysisCard, RiskInsightContainer, OverviewTab,
+     page.tsx
+   - Activity24hFeed / AiRiskAnalysisCard 의 인라인 relativeTime() 제거, 공통
+     formatRelativeTime(iso, t) 재사용 (AC-7)
+   - OverviewTab 의 riskBullets <b> 포함 문장은 <Trans> 로 처리 (5종)
+   - page.tsx: Activity 탭 전체 + Edit 모달 + D-Day 뱃지 fallback + 날짜 포맷
+     로케일 분기 (ko-KR / en-US)
+   - RollupBadge 는 변경 없음 (이미 i18n 적용)
+
+4. `a6baf4d` feat(i18n): migrate AIRunSummaryPanel wrapping labels (AC-9)
+   - 래핑 레이블만 번역. Claude 응답 본문 (summary.narrative, cluster.*,
+     recommendations, goNoGoCondition) 은 pass-through.
+   - 파일 상단에 AC-9 정책 주석 블록 + 영문 고정 구간 (buildMarkdown,
+     Jira payload, GitHub body template, Jira summary/priority) 에 NOTE 주석
+   - 모든 토스트 18개 교체, rerunCreated plural 처리
+
+5. `c97f9a5` chore(i18n): add scan-i18n CLI + .i18nignore
+   - scripts/scan-i18n.mjs (Node ESM, 의존성 0)
+     • 기본: warn-only (exit 0)
+     • --fail-on-match: CI 차단용 exit 1
+     • --check-parity: en↔ko 키 트리 diff
+   - .i18nignore: 브랜드명 / 단일 문자 / D-Day / URL 플레이스홀더 / AC-9
+     Claude 본문 / plan-detail + run-detail page.tsx 파일 전체 ignore
+   - package.json: scan:i18n / scan:i18n:check / scan:i18n:parity 스크립트
+   - 1차 차단 비활성 (warning-only). 2차 PR에서 CI gate 로 격상 예정
+
+6. `ae98fbd` docs(specs): dev-spec + design-spec i18n-coverage
+
+### 스코프 요약
+- 교체한 파일: 20개 (issues 5 + milestone-detail 14 + AIRunSummaryPanel 1)
+- 신규 키 (en + ko 합산 대략): ~210 (AC-10 상향 한도 210 내)
+- en ↔ ko parity: 0 diff (scan:i18n:parity 통과)
+- 스코프 내 하드코딩 매치: 0 (scan:i18n 통과)
+
+### 품질 검사
+- `npx tsc --noEmit`: 0 에러
+- `npm run build`: PASS (7.43s)
+- `npm run test -- --run`: 69/69 PASS
+- `npm run scan:i18n`: clean — 0 hardcoded matches across 21 files in scope
+- `npm run scan:i18n:parity`: en ↔ ko key trees match (0 diff)
+
+### 건너뛴 항목 / 예외 (이유)
+- plan-detail/page.tsx + run-detail/page.tsx: dev-spec §9 OOS. .i18nignore
+  에 파일 단위 등재. 별도 티켓 예정 (f010-phase2-plan / f010-phase2-run).
+- AC-9 Claude 본문: 응답 문자열 번역 금지 정책. AiRiskAnalysisCard +
+  AIRunSummaryPanel 상단 주석으로 가드. AI 프롬프트에 locale 힌트 주입은
+  별도 티켓 (f013) 제안.
+- Markdown / Jira / GitHub payload 템플릿: 외부 시스템 포워드 형식 일관성을
+  위해 영문 고정. 각 호출 site 에 NOTE 주석.
+- `sections.runs = '런'` (레거시 KO 용어) 유지 — dev-spec §3-3 "3차 정리
+  대상" 으로 이미 분리됨.
+- CI gate (scan:i18n:check 필수화) 는 warning-only 로 시작. 1차 머지 후
+  별도 PR에서 강화 예정.
+
+### 후속 티켓 후보
+1. `dev-spec-i18n-coverage-phase2-plan-detail.md` — plan-detail/page.tsx
+   섹션별 분할 번역.
+2. `dev-spec-i18n-coverage-phase2-run-detail.md` — run-detail/page.tsx 동일.
+3. `dev-spec-i18n-coverage-phase3-remaining.md` — 스캐너 전수 리스트 기반
+   전역 분할 Epic (projects / settings / testcases / sessions / onboarding /
+   admin / blog / pricing / legal 등).
+4. `f013-ai-locale-prompt` — Claude 프롬프트에 user_locale 주입해서 AI 본문
+   도 KO 받기.
+5. CI gate 강화 PR: scan:i18n:check + scan:i18n:parity GitHub Actions 단계.
+6. KO 원어민 문구 리뷰 (@marketer / CEO) — Design Spec §17 체크리스트.
+
+## 어디까지 됐냐
+
+20개 파일 전량 i18n 교체 완료. claude 브랜치에 6개 커밋 push 완료.
+main 머지는 CEO 수동.
+
+## 다음 할 것
+
+- (CEO) claude → main 수동 머지.
+- 이후: f010 phase 2 plan-detail / run-detail 분할 작업 착수.
+- 병행: @marketer / CEO 의 KO 원어민 용어 리뷰 (§17 항목).
+
+---
+
 2026-04-20 (밤 2): Vitest 테스트 인프라 + src/lib 유틸 테스트 초기 배치 @developer
 (dev-spec-vitest-infra, f009)
 
