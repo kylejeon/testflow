@@ -158,6 +158,14 @@ export const environments = {
       },
     },
   },
+
+  // Cell drill modal (plan-detail Environments tab) — phase 2a
+  drillModal: {
+    header: 'TC × 환경',
+    noRuns: '이 조합에서 찾은 실행이 없습니다.',
+    runStatusSuffix: '실행 {{status}}',
+    passedOfExecuted: '{{executed}}개 중 {{passed}}개 통과',
+  },
 };
 
 export default environments;

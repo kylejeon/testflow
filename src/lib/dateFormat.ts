@@ -14,12 +14,49 @@
 export function formatShortDate(
   iso: string | Date | null | undefined,
   lang?: string,
+  opts?: { withYear?: boolean },
 ): string {
   if (!iso) return '';
   const d = typeof iso === 'string' ? new Date(iso) : iso;
   if (!(d instanceof Date) || Number.isNaN(d.getTime())) return '';
   const locale = lang === 'ko' ? 'ko-KR' : 'en-US';
-  return new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(d);
+  const fmtOpts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+  if (opts?.withYear) fmtOpts.year = 'numeric';
+  return new Intl.DateTimeFormat(locale, fmtOpts).format(d);
+}
+
+/**
+ * Locale-aware short date+time formatter used by Plan Detail (phase 2a).
+ *
+ * Matches: "Apr 21 · 14:30" (en) / "4월 21일 · 14:30" (ko).
+ */
+export function formatShortDateTime(
+  iso: string | Date | null | undefined,
+  lang?: string,
+): string {
+  if (!iso) return '';
+  const d = typeof iso === 'string' ? new Date(iso) : iso;
+  if (!(d instanceof Date) || Number.isNaN(d.getTime())) return '';
+  const locale = lang === 'ko' ? 'ko-KR' : 'en-US';
+  const datePart = new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(d);
+  const timePart = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', hour12: false }).format(d);
+  return `${datePart} · ${timePart}`;
+}
+
+/**
+ * Locale-aware short time only formatter (Plan Detail phase 2a).
+ *
+ * Matches: "14:30" across both en/ko (24h format).
+ */
+export function formatShortTime(
+  iso: string | Date | null | undefined,
+  lang?: string,
+): string {
+  if (!iso) return '';
+  const d = typeof iso === 'string' ? new Date(iso) : iso;
+  if (!(d instanceof Date) || Number.isNaN(d.getTime())) return '';
+  const locale = lang === 'ko' ? 'ko-KR' : 'en-US';
+  return new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', hour12: false }).format(d);
 }
 
 export default formatShortDate;
