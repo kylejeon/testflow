@@ -4,7 +4,7 @@ import { ErrorBoundary } from '../../components/ErrorBoundary';
 import { LogoMark } from '../../components/Logo';
 import { supabase } from '../../lib/supabase';
 import ProjectHeader from '../../components/ProjectHeader';
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 import { FocusMode, type FocusTestCase, type TestStatus } from '../../components/FocusMode';
 import { StatusBadge } from '../../components/StatusBadge';
 import { DetailPanel } from '../../components/DetailPanel';
@@ -2568,7 +2568,7 @@ export default function RunDetail() {
           setIssueFormData({ summary: '', description: '', issueType: 'Bug', priority: 'Medium', labels: '', assignee: '', components: '' });
         }
       } else {
-        throw new Error(data.error || data.message || 'Failed to create Jira issue.');
+        throw new Error(data.error || data.message || t('common:unknownError'));
       }
     } catch (error: any) {
       console.error('Jira 이슈 생성 오류:', error);
@@ -2623,7 +2623,7 @@ export default function RunDetail() {
         setShowAssigneeSuggest(false);
         showToast('success', t('runs:toast.githubCreated', { number: data.issue.number }));
       } else {
-        throw new Error(data?.error || 'Failed to create GitHub issue.');
+        throw new Error(data?.error || t('common:unknownError'));
       }
     } catch (error: any) {
       console.error('GitHub 이슈 생성 오류:', error);
@@ -3662,9 +3662,10 @@ export default function RunDetail() {
                   </div>
                   <h2 className="text-xl font-bold text-gray-900 mb-2">{t('runs:detail.upgradeModal.title')}</h2>
                   <p className="text-gray-600 text-sm mb-6">
-                    {t('runs:detail.upgradeModal.bodyLine1').split('<1>')[0]}
-                    <strong>{t('runs:detail.upgradeModal.bodyLine1').match(/<1>(.*?)<\/1>/)?.[1] ?? ''}</strong>
-                    {t('runs:detail.upgradeModal.bodyLine1').split('</1>')[1] ?? ''}
+                    <Trans
+                      i18nKey="runs:detail.upgradeModal.bodyLine1"
+                      components={{ 1: <strong /> }}
+                    />
                     <br />
                     {t('runs:detail.upgradeModal.bodyLine2')}
                   </p>
