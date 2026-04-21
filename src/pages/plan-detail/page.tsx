@@ -17,7 +17,7 @@ import {
 } from '../../lib/environments';
 import EnvironmentAIInsights from '../../components/EnvironmentAIInsights';
 import type { Environment } from '../../types/environment';
-import { formatShortDate, formatShortDateTime, formatShortTime } from '../../lib/dateFormat';
+import { formatShortDate, formatShortDateTime, formatShortTime, formatDayHeader } from '../../lib/dateFormat';
 import { formatRelativeTime } from '../../lib/formatRelativeTime';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -1318,7 +1318,7 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCo
     const groups: Record<string, ActivityLog[]> = {};
     logs.forEach(log => {
       const d = new Date(log.created_at);
-      const key = d.toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' });
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       if (!groups[key]) groups[key] = [];
       groups[key].push(log);
     });
@@ -1359,10 +1359,10 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCo
     return d.toDateString() === y.toDateString();
   };
 
-  const getDayLabel = (dateStr: string, firstLog: ActivityLog) => {
+  const getDayLabel = (_dateStr: string, firstLog: ActivityLog) => {
     if (isToday(firstLog.created_at)) return t('milestones:planDetail.activityTab.dayHeader.today', { date: formatShortDate(firstLog.created_at, lang) });
     if (isYesterday(firstLog.created_at)) return t('milestones:planDetail.activityTab.dayHeader.yesterday', { date: formatShortDate(firstLog.created_at, lang) });
-    return dateStr;
+    return formatDayHeader(firstLog.created_at, lang);
   };
 
   return (

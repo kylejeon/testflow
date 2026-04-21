@@ -60,6 +60,22 @@ export function formatShortTime(
 }
 
 /**
+ * Locale-aware weekday + short date (Phase 2a — Plan Detail ActivityTab).
+ *
+ * Matches: "Monday, Apr 21" (en) / "4월 21일 월요일" (ko).
+ */
+export function formatDayHeader(
+  iso: string | Date | null | undefined,
+  lang?: string,
+): string {
+  if (!iso) return '';
+  const d = typeof iso === 'string' ? new Date(iso) : iso;
+  if (!(d instanceof Date) || Number.isNaN(d.getTime())) return '';
+  const locale = lang === 'ko' ? 'ko-KR' : 'en-US';
+  return new Intl.DateTimeFormat(locale, { weekday: 'long', month: 'short', day: 'numeric' }).format(d);
+}
+
+/**
  * Locale-aware long date+time formatter (Phase 2b — run-detail ResultDetailModal).
  *
  * Matches: "April 21, 2026, 02:15 PM" (en) / "2026년 4월 21일 오후 2:15" (ko).
