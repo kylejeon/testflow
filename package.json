@@ -59,7 +59,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
-    "test:smoke": "playwright test"
+    "test:smoke": "playwright test",
+    "scan:i18n": "node scripts/scan-i18n.mjs",
+    "scan:i18n:check": "node scripts/scan-i18n.mjs --fail-on-match",
+    "scan:i18n:parity": "node scripts/scan-i18n.mjs --check-parity"
   },
   "type": "module",
   "version": "0.0.0"
