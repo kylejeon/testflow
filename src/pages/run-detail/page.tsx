@@ -393,6 +393,12 @@ export default function RunDetail() {
     URL.revokeObjectURL(url);
   };
 
+  /**
+   * i18n policy (Phase 1 AC-9 + Phase 2b §15-1):
+   * External PDF output — the HTML template strings below are locked EN.
+   * Do NOT route stat-label / table header / "Testably — Run Report" / etc.
+   * through t(). Scanner exclusion is configured in .i18nignore.
+   */
   const handleExportPDF = (filteredCases?: TestCaseWithRunStatus[], summaryToInclude?: AISummaryResult | null) => {
     const casesToRender = [...(filteredCases ?? testCases)].sort((a, b) => {
       const aId = (a as any).custom_id || '';
@@ -1239,7 +1245,7 @@ export default function RunDetail() {
       setCommentText('');
     } catch (error: any) {
       console.error('코멘트 저장 오류:', error);
-      showToast('error', error?.message || 'Failed to save comment.');
+      showToast('error', error?.message || t('runs:toast.commentSaveFailed'));
     }
   };
 
@@ -1255,7 +1261,7 @@ export default function RunDetail() {
       setComments(comments.filter(c => c.id !== commentId));
     } catch (error: any) {
       console.error('코멘트 삭제 오류:', error);
-      showToast('error', error?.message || 'Failed to delete comment.');
+      showToast('error', error?.message || t('runs:toast.commentDeleteFailed'));
     }
   };
 
@@ -1447,11 +1453,11 @@ export default function RunDetail() {
                 await supabase.from('test_results')
                   .update({ issues: [...existingIssues, jiraData.issue.key] })
                   .eq('id', newResultData.id);
-                showToast('success', `Jira issue ${jiraData.issue.key} created automatically`);
+                showToast('success', t('runs:toast.jiraAutoCreated', { key: jiraData.issue.key }));
               }
             } catch (err) {
               console.warn('Auto Jira issue creation failed:', err);
-              showToast('error', 'Failed to auto-create Jira issue');
+              showToast('error', t('runs:toast.jiraAutoCreateFailed'));
             }
           }
         }
@@ -1478,7 +1484,7 @@ export default function RunDetail() {
               },
             });
             if (ghData?.success && ghData?.issue?.number) {
-              showToast('success', `GitHub issue #${ghData.issue.number} created automatically`);
+              showToast('success', t('runs:toast.githubAutoCreated', { number: ghData.issue.number }));
             }
           } catch (err) {
             console.warn('Auto GitHub issue creation failed:', err);
@@ -1519,7 +1525,7 @@ export default function RunDetail() {
       setActiveTab('results');
     } catch (error: any) {
       console.error('상태 업데이트 오류:', error);
-      showToast('error', error?.message || 'Failed to update status.');
+      showToast('error', error?.message || t('runs:toast.statusUpdateFailed'));
     }
   };
 
@@ -1607,7 +1613,7 @@ export default function RunDetail() {
       }, 500);
     } catch (error: any) {
       console.error('상태 업데이트 오류:', error);
-      showToast('error', error?.message || 'Failed to update status.');
+      showToast('error', error?.message || t('runs:toast.statusUpdateFailed'));
     }
   };
 
@@ -1647,7 +1653,7 @@ export default function RunDetail() {
       ));
     } else {
       // No existing result — show guidance instead of creating a failed result
-      showToast('error', 'Add a test result first, then link an issue.');
+      showToast('error', t('runs:toast.addResultFirstThenLink'));
     }
   };
 
@@ -1734,7 +1740,7 @@ export default function RunDetail() {
     try {
       if (!selectedTestCase || !currentUser) return;
       if (!runId) {
-        showToast('error', 'Run ID not found. Please refresh the page.');
+        showToast('error', t('runs:toast.runIdNotFound'));
         return;
       }
 
@@ -1821,11 +1827,11 @@ export default function RunDetail() {
                 await supabase.from('test_results')
                   .update({ issues: [...existingIssues, jiraData.issue.key] })
                   .eq('id', data.id);
-                showToast('success', `Jira issue ${jiraData.issue.key} created automatically`);
+                showToast('success', t('runs:toast.jiraAutoCreated', { key: jiraData.issue.key }));
               }
             } catch (err) {
               console.warn('Auto Jira issue creation failed:', err);
-              showToast('error', 'Failed to auto-create Jira issue');
+              showToast('error', t('runs:toast.jiraAutoCreateFailed'));
             }
           }
         }
@@ -1857,7 +1863,7 @@ export default function RunDetail() {
               await supabase.from('test_results')
                 .update({ github_issues: [...existingGhIssues, autoGhIssue] })
                 .eq('id', data.id);
-              showToast('success', `GitHub issue #${ghData.issue.number} created automatically`);
+              showToast('success', t('runs:toast.githubAutoCreated', { number: ghData.issue.number }));
             }
           } catch (err) {
             console.warn('Auto GitHub issue creation failed:', err);
@@ -1979,7 +1985,7 @@ export default function RunDetail() {
       setActiveTab('results');
     } catch (error: any) {
       console.error('결과 저장 오류:', error);
-      showToast('error', error?.message || 'Failed to save result.');
+      showToast('error', error?.message || t('runs:toast.resultSaveFailed'));
     }
   };
 
@@ -2043,9 +2049,9 @@ export default function RunDetail() {
         await supabase.from('test_runs').update({ steps_snapshot: newSnapshot }).eq('id', runId);
       }
       setExpandedDiffKey(null);
-      showToast('success', `Shared Step '${latest.name}' updated to v${latest.version}`);
+      showToast('success', t('runs:toast.ssVersionUpdated', { name: latest.name, version: latest.version }));
     } catch {
-      showToast('error', 'Failed to update Shared Step version');
+      showToast('error', t('runs:toast.ssVersionUpdateFailed'));
     }
   };
 
@@ -2074,9 +2080,9 @@ export default function RunDetail() {
       };
       setTcVersionsSnapshot(newSnapshot);
       await supabase.from('test_runs').update({ tc_versions_snapshot: newSnapshot }).eq('id', run.id);
-      showToast('success', `TC updated to v${(tc as any).version_major ?? 1}.${(tc as any).version_minor ?? 0}`);
+      showToast('success', t('runs:toast.tcVersionUpdated', { major: (tc as any).version_major ?? 1, minor: (tc as any).version_minor ?? 0 }));
     } catch {
-      showToast('error', 'Failed to update TC version');
+      showToast('error', t('runs:toast.tcVersionUpdateFailed'));
     }
   };
 
@@ -2292,7 +2298,7 @@ export default function RunDetail() {
       });
     } catch (error: any) {
       console.error('파일 업로드 오류:', error);
-      showToast('error', `Failed to upload file: ${error.message || 'Unknown error'}`);
+      showToast('error', t('runs:toast.uploadFailed', { reason: error.message || t('common:unknownError') }));
     } finally {
       setUploadingFile(false);
       e.target.value = '';
@@ -2333,7 +2339,7 @@ export default function RunDetail() {
   const handleScreenshot = async () => {
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-        showToast('error', '이 브라우저는 스크린샷 기능을 지원하지 않습니다.');
+        showToast('error', t('runs:toast.screenshotUnsupported'));
         return;
       }
 
@@ -2388,14 +2394,14 @@ export default function RunDetail() {
           });
         } catch (error: any) {
           console.error('스크린샷 업로드 오류:', error);
-          showToast('error', `Failed to upload screenshot: ${error.message || 'Unknown error'}`);
+          showToast('error', t('runs:toast.screenshotUploadFailed', { reason: error.message || t('common:unknownError') }));
         } finally {
           setUploadingFile(false);
         }
       }, 'image/png');
     } catch (error: any) {
       console.error('스크린샷 캡처 오류:', error);
-      showToast('error', error?.message || 'Failed to capture screenshot.');
+      showToast('error', error?.message || t('runs:toast.screenshotCaptureFailed'));
     }
   };
 
@@ -2454,9 +2460,16 @@ export default function RunDetail() {
     setShowAddIssueModal(true);
   };
 
+  /**
+   * i18n policy (Phase 1 AC-9 + Phase 2b §15-2):
+   * Jira REST payload (summary/description/labels) is forwarded to the
+   * external Atlassian API — locked EN. Only wrapping UI labels / toasts
+   * surface through t(). The helper `buildBugBody` / string templates
+   * inside the `body` of this request must NOT be translated.
+   */
   const handleCreateJiraIssue = async (fromIssuesTab = false) => {
     if (!issueFormData.summary.trim()) {
-      showToast('error', 'Summary는 필수 항목입니다.');
+      showToast('error', t('runs:toast.summaryRequired'));
       return;
     }
 
@@ -2509,7 +2522,7 @@ export default function RunDetail() {
         // Add Result 모달이 열려 있는 경우: pending 상태로 보관 (새 result에 포함)
         if (showAddResultModal) {
           setPendingJiraIssues(prev => [...prev, newIssueKey]);
-          showToast('success', `Jira issue ${newIssueKey} created`);
+          showToast('success', t('runs:toast.jiraCreated', { key: newIssueKey }));
           setShowAddIssueModal(false);
           setIssueFormData({ summary: '', description: '', issueType: 'Bug', priority: 'Medium', labels: '', assignee: '', components: '' });
         } else if (testResults.length > 0) {
@@ -2531,7 +2544,7 @@ export default function RunDetail() {
               : r
           ));
 
-          showToast('success', `Jira issue ${newIssueKey} created`);
+          showToast('success', t('runs:toast.jiraCreated', { key: newIssueKey }));
           setShowAddIssueModal(false);
           setIssueFormData({
             summary: '',
@@ -2550,7 +2563,7 @@ export default function RunDetail() {
           await fetchTestResults();
         } else {
           // result가 없는 경우: 이슈 키만 메모리에 임시 보관 (자동 failed result 생성 없음)
-          showToast('success', `Jira issue ${newIssueKey} created. Add Result로 테스트 결과를 기록하면 이슈가 자동으로 연결됩니다.`);
+          showToast('success', t('runs:toast.jiraCreatedAddResult', { key: newIssueKey }));
           setShowAddIssueModal(false);
           setIssueFormData({ summary: '', description: '', issueType: 'Bug', priority: 'Medium', labels: '', assignee: '', components: '' });
         }
@@ -2559,12 +2572,18 @@ export default function RunDetail() {
       }
     } catch (error: any) {
       console.error('Jira 이슈 생성 오류:', error);
-      showToast('error', `Failed to create Jira issue: ${error.message || 'Unknown error'}`);
+      showToast('error', t('runs:toast.jiraCreateFailed', { reason: error.message || t('common:unknownError') }));
     } finally {
       setCreatingIssue(false);
     }
   };
 
+  /**
+   * i18n policy (Phase 1 AC-9 + Phase 2b §15-3):
+   * GitHub REST payload (title/body/labels) is forwarded to the external
+   * GitHub API — locked EN. Only wrapping UI labels / toasts surface
+   * through t().
+   */
   const handleCreateGithubIssue = async () => {
     if (!githubIssueFormData.title.trim() || !githubSettings) return;
     setCreatingGithubIssue(true);
@@ -2602,13 +2621,13 @@ export default function RunDetail() {
         setGithubLabelInput('');
         setAssigneeQuery('');
         setShowAssigneeSuggest(false);
-        showToast('success', `GitHub issue #${data.issue.number} created`);
+        showToast('success', t('runs:toast.githubCreated', { number: data.issue.number }));
       } else {
         throw new Error(data?.error || 'Failed to create GitHub issue.');
       }
     } catch (error: any) {
       console.error('GitHub 이슈 생성 오류:', error);
-      showToast('error', `Failed to create GitHub issue: ${error.message || 'Unknown error'}`);
+      showToast('error', t('runs:toast.githubCreateFailed', { reason: error.message || t('common:unknownError') }));
     } finally {
       setCreatingGithubIssue(false);
     }
@@ -4784,6 +4803,7 @@ export default function RunDetail() {
               <div className="relative max-w-4xl max-h-[90vh] w-full">
                 <button
                   onClick={() => setPreviewImage(null)}
+                  aria-label={t('runs:detail.imagePreview.closeA11y')}
                   className="absolute -top-12 right-0 w-10 h-10 flex items-center justify-center text-white hover:bg-white/20 rounded-lg transition-all cursor-pointer"
                 >
                   <i className="ri-close-line text-2xl"></i>
@@ -4816,6 +4836,7 @@ interface ResultDetailModalProps {
 }
 
 function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, stepsSnapshot, onClose }: ResultDetailModalProps) {
+  const { t, i18n } = useTranslation(['common', 'runs']);
   const getJiraIssueUrl = (issueKey: string) => {
     if (!jiraDomain) return '#';
     return `https://${jiraDomain}/browse/${issueKey}`;
@@ -4835,11 +4856,11 @@ function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, ste
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white">
           <div className="flex items-center gap-3">
-            <h2 className="text-xl font-bold text-gray-900">Test Result Details</h2>
+            <h2 className="text-xl font-bold text-gray-900">{t('runs:detail.resultDetail.title')}</h2>
             {isAutomated && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-sm font-semibold border border-purple-200">
                 <i className="ri-robot-line"></i>
-                CI/CD
+                {t('runs:detail.resultDetail.cicdBadge')}
               </span>
             )}
           </div>
@@ -4863,27 +4884,21 @@ function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, ste
               </div>
             )}
             <div>
-              <div className="font-semibold text-gray-900">{result.author || 'Unknown'}</div>
+              <div className="font-semibold text-gray-900">{result.author || t('runs:detail.resultDetail.unknownAuthor')}</div>
               <div className="text-sm text-gray-500">
-                {result.timestamp.toLocaleString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
+                {formatLongDateTime(result.timestamp, i18n.language)}
               </div>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">{t('common:status')}</label>
             <StatusBadge status={result.status as TestStatus} />
           </div>
 
           {result.elapsed && (
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Elapsed Time</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">{t('runs:detail.resultDetail.elapsedLabel')}</label>
               <div className="flex items-center gap-2 text-gray-900">
                 <i className="ri-time-line text-lg"></i>
                 <span>{result.elapsed}</span>
@@ -4893,7 +4908,7 @@ function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, ste
 
           {result.note && (
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Note</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">{t('runs:detail.addResult.note.label')}</label>
               <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700 whitespace-pre-wrap">
                 {result.note}
               </div>
@@ -4914,7 +4929,7 @@ function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, ste
               }
               return (
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-3">Step Results</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">{t('runs:detail.resultDetail.stepResultsLabel')}</label>
                   <div className="space-y-1.5">
                     {(() => {
                       const snapGroups: any[] = [];
@@ -4935,7 +4950,7 @@ function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, ste
                         if (!group.isShared) {
                           const fs = group.steps[0];
                           const status = result.stepStatuses?.[fs.flatIndex] || 'untested';
-                          const statusInfo = getStepStatusInfo(status);
+                          const statusInfo = getStepStatusInfo(status, t);
                           return (
                             <div key={fs.flatIndex} className="border border-gray-200 rounded-lg p-3">
                               <div className="flex items-start gap-3">
@@ -4970,12 +4985,12 @@ function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, ste
                               <span className="text-[0.65rem] font-mono font-bold text-indigo-600 bg-indigo-100 border border-indigo-200 px-1.5 py-0.5 rounded">{ssCustomIdR}</span>
                               <span className="text-xs font-medium text-slate-700 truncate flex-1 min-w-0">{ssNameR}</span>
                               {group.ref?.shared_step_version != null && <span className="text-[0.65rem] text-indigo-400 flex-shrink-0">v{group.ref.shared_step_version}</span>}
-                              <span className="text-[0.6rem] font-bold text-indigo-500 bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-full uppercase tracking-wide flex-shrink-0">Shared</span>
+                              <span className="text-[0.6rem] font-bold text-indigo-500 bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-full uppercase tracking-wide flex-shrink-0">{t('runs:detail.addResult.steps.sharedBadge')}</span>
                             </div>
                             <div className="divide-y divide-indigo-100 bg-white">
                               {group.steps.map((fs: any) => {
                                 const status = result.stepStatuses?.[fs.flatIndex] || 'untested';
-                                const statusInfo = getStepStatusInfo(status);
+                                const statusInfo = getStepStatusInfo(status, t);
                                 return (
                                   <div key={fs.flatIndex} className="p-3">
                                     <div className="flex items-start gap-3">
@@ -5024,7 +5039,7 @@ function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, ste
               });
               return (
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-3">Step Results</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">{t('runs:detail.resultDetail.stepResultsLabel')}</label>
                   <div className="space-y-1.5">
                     {(() => {
                       const parsedGroups: any[] = [];
@@ -5045,7 +5060,7 @@ function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, ste
                         if (!group.isShared) {
                           const fs = group.steps[0];
                           const status = result.stepStatuses?.[fs.flatIndex] || 'untested';
-                          const statusInfo = getStepStatusInfo(status);
+                          const statusInfo = getStepStatusInfo(status, t);
                           return (
                             <div key={fs.flatIndex} className="border border-gray-200 rounded-lg p-3">
                               <div className="flex items-start gap-3">
@@ -5080,12 +5095,12 @@ function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, ste
                               <span className="text-[0.65rem] font-mono font-bold text-indigo-600 bg-indigo-100 border border-indigo-200 px-1.5 py-0.5 rounded">{ssCustomIdP}</span>
                               <span className="text-xs font-medium text-slate-700 truncate flex-1 min-w-0">{ssNameP}</span>
                               {group.ref?.shared_step_version != null && <span className="text-[0.65rem] text-indigo-400 flex-shrink-0">v{group.ref.shared_step_version}</span>}
-                              <span className="text-[0.6rem] font-bold text-indigo-500 bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-full uppercase tracking-wide flex-shrink-0">Shared</span>
+                              <span className="text-[0.6rem] font-bold text-indigo-500 bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-full uppercase tracking-wide flex-shrink-0">{t('runs:detail.addResult.steps.sharedBadge')}</span>
                             </div>
                             <div className="divide-y divide-indigo-100 bg-white">
                               {group.steps.map((fs: any) => {
                                 const status = result.stepStatuses?.[fs.flatIndex] || 'untested';
-                                const statusInfo = getStepStatusInfo(status);
+                                const statusInfo = getStepStatusInfo(status, t);
                                 return (
                                   <div key={fs.flatIndex} className="p-3">
                                     <div className="flex items-start gap-3">
@@ -5124,18 +5139,18 @@ function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, ste
             const stepsArray = testCase.steps.split('\n').filter((s: string) => s.trim());
             return (
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">Step Results</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">{t('runs:detail.resultDetail.stepResultsLabel')}</label>
                 <div className="space-y-2">
                   {stepsArray.map((_step: string, index: number) => {
                     const status = result.stepStatuses?.[index] || 'untested';
-                    const statusInfo = getStepStatusInfo(status);
+                    const statusInfo = getStepStatusInfo(status, t);
                     return (
                       <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                         <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-700 font-semibold text-xs flex-shrink-0">
                           {index + 1}
                         </div>
                         <div className="flex-1">
-                          <span className="text-sm text-gray-700">Step {index + 1}</span>
+                          <span className="text-sm text-gray-700">{t('runs:detail.resultDetail.stepFallback', { index: index + 1 })}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <i className={`${statusInfo.icon} ${statusInfo.color}`}></i>
@@ -5154,7 +5169,7 @@ function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, ste
           {result.attachments.length > 0 && (
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Attachments ({result.attachments.length})
+                {t('runs:detail.resultDetail.attachmentsLabel', { count: result.attachments.length })}
               </label>
               <div className="grid grid-cols-3 gap-3">
                 {result.attachments.map((attachment, idx) => (
@@ -5172,7 +5187,7 @@ function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, ste
 
           {result.issues && result.issues.length > 0 && (
             <div className="px-6 pb-4">
-              <h4 className="text-sm font-semibold text-gray-700 mb-2">Linked Issues</h4>
+              <h4 className="text-sm font-semibold text-gray-700 mb-2">{t('runs:detail.resultDetail.linkedIssues')}</h4>
               <div className="flex flex-wrap gap-2">
                 {result.issues.map((issueKey, idx) => (
                   <a
@@ -5193,7 +5208,7 @@ function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, ste
 
           {result.github_issues && result.github_issues.length > 0 && (
             <div className="px-6 pb-4">
-              <h4 className="text-sm font-semibold text-gray-700 mb-2">GitHub Issues</h4>
+              <h4 className="text-sm font-semibold text-gray-700 mb-2">{t('runs:detail.resultDetail.githubIssues')}</h4>
               <div className="flex flex-wrap gap-2">
                 {result.github_issues.map((gi, idx) => (
                   <a
@@ -5218,7 +5233,7 @@ function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, ste
             onClick={onClose}
             className="px-4 py-2 bg-indigo-500 text-white hover:bg-indigo-600 rounded-lg transition-all cursor-pointer whitespace-nowrap"
           >
-            Close
+            {t('common:close')}
           </button>
         </div>
       </div>
@@ -5226,42 +5241,53 @@ function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, ste
   );
 }
 
-function getStepStatusInfo(status: string) {
+function getStepStatusInfo(status: string, t?: (key: string) => string) {
+  // Fallback (used when t is not provided, e.g., legacy callers or SSR).
+  const tr = t ?? ((k: string) => {
+    const flat: Record<string, string> = {
+      'common:passed': 'Passed',
+      'common:failed': 'Failed',
+      'common:blocked': 'Blocked',
+      'common:untested': 'Untested',
+      'runs:detail.resultDetail.unknownAuthor': 'Unknown',
+    };
+    return flat[k] ?? k;
+  });
   switch (status) {
     case 'passed':
       return {
         icon: 'ri-checkbox-circle-line',
         color: 'text-green-600',
         bgColor: 'bg-green-100 text-green-700',
-        label: 'Passed'
+        label: tr('common:passed'),
       };
     case 'failed':
       return {
         icon: 'ri-close-circle-line',
         color: 'text-red-600',
         bgColor: 'bg-red-100 text-red-700',
-        label: 'Failed'
+        label: tr('common:failed'),
       };
     case 'blocked':
       return {
         icon: 'ri-forbid-line',
         color: 'text-gray-600',
         bgColor: 'bg-gray-100 text-gray-700',
-        label: 'Blocked'
+        label: tr('common:blocked'),
       };
     case 'untested':
       return {
         icon: 'ri-question-line',
         color: 'text-gray-500',
         bgColor: 'bg-gray-100 text-gray-500',
-        label: 'Untested'
+        label: tr('common:untested'),
       };
     default:
       return {
         icon: 'ri-question-line',
         color: 'text-gray-500',
         bgColor: 'bg-gray-100 text-gray-500',
-        label: 'Unknown'
+        label: tr('runs:detail.resultDetail.unknownAuthor'),
       };
   }
 }
