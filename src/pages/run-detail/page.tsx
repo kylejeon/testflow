@@ -13,6 +13,7 @@ import AIRunSummaryPanel, { type AISummaryResult } from './components/AIRunSumma
 import { type AnyStep, isSharedStepRef } from '../../types/shared-steps';
 import { type FlatStep, type SharedStepCache, expandFlatSteps } from '../../lib/expandSharedSteps';
 import { ExportModal, type ExportFormat } from '../../components/ExportModal';
+import { formatShortDate, formatLongDateTime } from '../../lib/dateFormat';
 
 interface TestCase {
   id: string;
@@ -121,7 +122,7 @@ export default function RunDetail() {
   const { projectId, runId } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { t } = useTranslation(['common']);
+  const { t, i18n } = useTranslation(['common', 'runs']);
   const [project, setProject] = useState<any>(null);
   const [run, setRun] = useState<any>(null);
   const [testCases, setTestCases] = useState<TestCaseWithRunStatus[]>([]);
@@ -1386,10 +1387,10 @@ export default function RunDetail() {
     console.log('[handleStatusChange] currentUser:', currentUser?.email, 'testCaseId:', testCaseId);
     try {
       if (!currentUser) {
-        throw new Error('사용자 정보를 불러올 수 없습니다. 페이지를 새로고침해주세요.');
+        throw new Error(t('runs:detail.fatalError.userMissing'));
       }
       if (!runId) {
-        throw new Error('Run ID가 없습니다. URL을 확인해주세요.');
+        throw new Error(t('runs:detail.fatalError.runIdMissing'));
       }
 
       // Persist the status change as a test_result row so it survives page refresh
@@ -2797,7 +2798,7 @@ export default function RunDetail() {
       return (
         <FocusMode
           tests={sortedFocusTests}
-          runName={run?.name || 'Test Run'}
+          runName={run?.name || t('runs:detail.page.runNameFallback')}
           onStatusChange={handleFocusStatusChange}
           onExit={() => setFocusModeOpen(false)}
           initialIndex={firstUntestedIndex >= 0 ? firstUntestedIndex : 0}
@@ -2833,12 +2834,12 @@ export default function RunDetail() {
           <div className={`flex-shrink-0 bg-white border-r border-slate-200 flex flex-col overflow-y-auto transition-all duration-200 ${isFolderSidebarOpen ? 'w-[200px]' : 'w-12'}`}>
             <div className={`px-[0.875rem] py-[0.75rem] border-b border-slate-200 flex items-center ${isFolderSidebarOpen ? 'justify-between' : 'justify-center'}`}>
               {isFolderSidebarOpen && (
-                <span className="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-[0.04em]">Folders</span>
+                <span className="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-[0.04em]">{t('runs:detail.folderSidebar.title')}</span>
               )}
               <button
                 onClick={() => setIsFolderSidebarOpen(!isFolderSidebarOpen)}
                 className="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-slate-600 rounded transition-all cursor-pointer flex-shrink-0 border-0 bg-transparent"
-                title={isFolderSidebarOpen ? '접기' : '펼치기'}
+                title={isFolderSidebarOpen ? t('runs:detail.folderSidebar.collapseTooltip') : t('runs:detail.folderSidebar.expandTooltip')}
               >
                 <i className={`ri-${isFolderSidebarOpen ? 'arrow-left-s' : 'arrow-right-s'}-line text-base`}></i>
               </button>
@@ -2852,12 +2853,12 @@ export default function RunDetail() {
                     ? 'bg-indigo-50 text-indigo-700 font-semibold'
                     : 'text-slate-600 hover:bg-slate-50'
                 }`}
-                title={!isFolderSidebarOpen ? 'All Cases' : undefined}
+                title={!isFolderSidebarOpen ? t('runs:detail.folderSidebar.allCases') : undefined}
               >
                 <i className={`ri-folder-3-line text-[0.9375rem] flex-shrink-0 ${selectedFolder === null ? 'text-indigo-500' : 'text-slate-400'}`}></i>
                 {isFolderSidebarOpen && (
                   <>
-                    <span className="truncate">All Cases</span>
+                    <span className="truncate">{t('runs:detail.folderSidebar.allCases')}</span>
                     <span className={`ml-auto text-[0.75rem] flex-shrink-0 ${selectedFolder === null ? 'text-indigo-500' : 'text-slate-400'}`}>
                       {testCases.length}
                     </span>
@@ -2909,7 +2910,7 @@ export default function RunDetail() {
 
               {folders.length === 0 && !loading && isFolderSidebarOpen && (
                 <div className="px-[0.875rem] py-4 text-center">
-                  <p className="text-[0.75rem] text-slate-400">폴더 없음</p>
+                  <p className="text-[0.75rem] text-slate-400">{t('runs:detail.folderSidebar.empty')}</p>
                 </div>
               )}
             </div>
@@ -2923,7 +2924,7 @@ export default function RunDetail() {
                   className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:underline mb-1 cursor-pointer"
                 >
                   <i className="ri-arrow-left-line text-sm"></i>
-                  Back to Runs
+                  {t('runs:detail.page.backToRuns')}
                 </Link>
 
                 <div className="flex items-start justify-between">
@@ -2931,29 +2932,30 @@ export default function RunDetail() {
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <h1 className="text-[1.375rem] font-bold text-slate-900">{run?.name}</h1>
                       {(() => {
-                        const statusLabel = run?.status === 'completed' ? 'Completed' :
-                          run?.status === 'in_progress' ? 'In Progress' :
-                          run?.status === 'under_review' ? 'Under Review' :
-                          run?.status === 'paused' ? 'Paused' : 'New';
+                        const statusKey =
+                          run?.status === 'completed' ? 'completed' :
+                          run?.status === 'in_progress' ? 'inProgress' :
+                          run?.status === 'under_review' ? 'underReview' :
+                          run?.status === 'paused' ? 'paused' : 'draft';
                         const isInProgress = run?.status === 'in_progress';
                         return (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[0.6875rem] font-semibold bg-blue-100 text-blue-700">
                             {isInProgress && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />}
-                            {statusLabel}
+                            {t(`runs:detail.runStatus.${statusKey}`)}
                           </span>
                         );
                       })()}
                       {run?.is_automated && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[0.6875rem] font-semibold bg-sky-50 text-sky-600">
                           <i className="ri-robot-line" style={{ fontSize: '0.75rem' }}></i>
-                          Automated
+                          {t('runs:detail.page.automatedBadge')}
                         </span>
                       )}
                     </div>
                     <p className="text-[0.8125rem] text-slate-400">
-                      {run?.created_at && `Started ${new Date(run.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · `}
-                      {testCases.length > 0 && `${Math.round((testCases.filter(tc => tc.runStatus !== 'untested').length / testCases.length) * 100)}% completed · `}
-                      {testCases.length} test cases
+                      {run?.created_at && `${t('runs:detail.page.startedPrefix', { date: formatShortDate(run.created_at, i18n.language) })} · `}
+                      {testCases.length > 0 && `${t('runs:detail.page.percentCompletedSuffix', { percent: Math.round((testCases.filter(tc => tc.runStatus !== 'untested').length / testCases.length) * 100) })} · `}
+                      {t('runs:detail.page.testCasesCount', { count: testCases.length })}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -2963,10 +2965,10 @@ export default function RunDetail() {
                         onClick={() => setShowExportModal(true)}
                         className="flex items-center gap-1.5 px-3.5 py-[0.4375rem] rounded-lg text-[0.8125rem] font-medium transition-colors cursor-pointer border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600"
                         style={{ color: '#475569', background: 'white' }}
-                        title="Export PDF / CSV / Excel"
+                        title={t('runs:detail.headerActions.exportTooltip')}
                       >
                         <i className="ri-download-2-line text-base" />
-                        Export
+                        {t('runs:detail.headerActions.export')}
                       </button>
                     )}
                     {/* AI Summary standalone button */}
@@ -2977,7 +2979,7 @@ export default function RunDetail() {
                         style={{ color: '#4338CA', background: 'white' }}
                       >
                         <i className="ri-sparkling-2-fill text-base" style={{ color: '#8B5CF6' }} />
-                        AI Summary
+                        {t('runs:detail.headerActions.aiSummary')}
                         {aiSummaryState === 'fresh' && (
                           <span style={{ fontSize: '11px', color: '#16A34A', fontWeight: 700 }}>✓</span>
                         )}
@@ -2986,7 +2988,7 @@ export default function RunDetail() {
                         )}
                         {aiSummaryState === 'none' && showAINewBadge && (
                           <span style={{ fontSize: '10px', background: '#EDE9FE', color: '#6D28D9', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>
-                            NEW
+                            {t('runs:detail.headerActions.aiSummaryNewBadge')}
                           </span>
                         )}
                       </button>
@@ -2997,9 +2999,9 @@ export default function RunDetail() {
                         style={{ color: '#94A3B8', background: 'white' }}
                       >
                         <i className="ri-lock-line text-base" style={{ color: '#94A3B8' }} />
-                        AI Summary
+                        {t('runs:detail.headerActions.aiSummary')}
                         <span style={{ fontSize: '10px', background: '#F1F5F9', color: '#94A3B8', border: '1px solid #E2E8F0', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>
-                          HOBBY
+                          {t('runs:detail.headerActions.aiSummaryLockedBadge')}
                         </span>
                       </button>
                     )}
@@ -3007,10 +3009,10 @@ export default function RunDetail() {
                       <button
                         onClick={() => setFocusModeOpen(true)}
                         className="flex items-center gap-1.5 px-3.5 py-[0.4375rem] bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-[0.8125rem] font-semibold transition-colors cursor-pointer border border-indigo-500"
-                        title="Cmd+Shift+F"
+                        title={t('runs:detail.headerActions.focusModeTooltip')}
                       >
                         <i className="ri-focus-3-line text-base" />
-                        Focus Mode
+                        {t('runs:detail.headerActions.focusMode')}
                       </button>
                     )}
                   </div>
@@ -3019,11 +3021,11 @@ export default function RunDetail() {
 
               <div className="grid grid-cols-5 gap-[0.875rem] mb-4">
                 {[
-                  { label: 'Total Tests', icon: 'ri-file-list-3-line', iconBg: '#DBEAFE', iconColor: '#2563EB', value: testCases.length, valueColor: undefined },
-                  { label: 'Passed', icon: 'ri-checkbox-circle-fill', iconBg: '#D1FAE5', iconColor: '#16A34A', value: testCases.filter(tc => tc.runStatus === 'passed').length, valueColor: '#16A34A' },
-                  { label: 'Failed', icon: 'ri-close-circle-fill', iconBg: '#FEE2E2', iconColor: '#DC2626', value: testCases.filter(tc => tc.runStatus === 'failed').length, valueColor: undefined },
-                  { label: 'Blocked', icon: 'ri-forbid-fill', iconBg: '#F1F5F9', iconColor: '#64748B', value: testCases.filter(tc => tc.runStatus === 'blocked').length, valueColor: undefined },
-                  { label: 'Untested', icon: 'ri-time-fill', iconBg: '#FEF3C7', iconColor: '#D97706', value: testCases.filter(tc => tc.runStatus === 'untested').length, valueColor: undefined },
+                  { label: t('runs:detail.kpi.totalTests'), icon: 'ri-file-list-3-line', iconBg: '#DBEAFE', iconColor: '#2563EB', value: testCases.length, valueColor: undefined },
+                  { label: t('common:passed'), icon: 'ri-checkbox-circle-fill', iconBg: '#D1FAE5', iconColor: '#16A34A', value: testCases.filter(tc => tc.runStatus === 'passed').length, valueColor: '#16A34A' },
+                  { label: t('common:failed'), icon: 'ri-close-circle-fill', iconBg: '#FEE2E2', iconColor: '#DC2626', value: testCases.filter(tc => tc.runStatus === 'failed').length, valueColor: undefined },
+                  { label: t('common:blocked'), icon: 'ri-forbid-fill', iconBg: '#F1F5F9', iconColor: '#64748B', value: testCases.filter(tc => tc.runStatus === 'blocked').length, valueColor: undefined },
+                  { label: t('common:untested'), icon: 'ri-time-fill', iconBg: '#FEF3C7', iconColor: '#D97706', value: testCases.filter(tc => tc.runStatus === 'untested').length, valueColor: undefined },
                 ].map(({ label, icon, iconBg, iconColor, value, valueColor }) => (
                   <div key={label} className="bg-white rounded-[0.625rem] border border-gray-200 py-4 px-[1.125rem] flex items-center gap-3">
                     <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: iconBg }}>
@@ -3055,7 +3057,7 @@ export default function RunDetail() {
                 return (
                   <div className="bg-white rounded-[0.625rem] border border-gray-200 py-4 px-[1.125rem] mb-4">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[0.8125rem] font-semibold text-slate-900">Execution Progress</span>
+                      <span className="text-[0.8125rem] font-semibold text-slate-900">{t('runs:detail.progress.title')}</span>
                       <span className="text-[0.8125rem] font-bold text-slate-900">
                         {total > 0 ? Math.round(((passed + failed + blocked + retest) / total) * 100) : 0}%
                       </span>
@@ -3065,45 +3067,45 @@ export default function RunDetail() {
                         <div
                           className="bg-green-500 transition-all duration-500"
                           style={{ width: `${passedPct}%` }}
-                          title={`Passed: ${passed}`}
+                          title={t('runs:detail.progress.tooltipCount', { label: t('common:passed'), count: passed })}
                         />
                       )}
                       {failed > 0 && (
                         <div
                           className="bg-red-500 transition-all duration-500"
                           style={{ width: `${failedPct}%` }}
-                          title={`Failed: ${failed}`}
+                          title={t('runs:detail.progress.tooltipCount', { label: t('common:failed'), count: failed })}
                         />
                       )}
                       {blocked > 0 && (
                         <div
                           className="bg-gray-400 transition-all duration-500"
                           style={{ width: `${blockedPct}%` }}
-                          title={`Blocked: ${blocked}`}
+                          title={t('runs:detail.progress.tooltipCount', { label: t('common:blocked'), count: blocked })}
                         />
                       )}
                       {retest > 0 && (
                         <div
                           className="bg-yellow-400 transition-all duration-500"
                           style={{ width: `${retestPct}%` }}
-                          title={`Retest: ${retest}`}
+                          title={t('runs:detail.progress.tooltipCount', { label: t('common:retest'), count: retest })}
                         />
                       )}
                       {untested > 0 && (
                         <div
                           className="bg-gray-200 transition-all duration-500"
                           style={{ width: `${untestedPct}%` }}
-                          title={`Untested: ${untested}`}
+                          title={t('runs:detail.progress.tooltipCount', { label: t('common:untested'), count: untested })}
                         />
                       )}
                     </div>
                     <div className="flex items-center gap-4 flex-wrap">
                       {[
-                        { count: passed, color: '#22C55E', label: 'Passed' },
-                        { count: failed, color: '#EF4444', label: 'Failed' },
-                        { count: blocked, color: '#94A3B8', label: 'Blocked' },
-                        { count: retest, color: '#FACC15', label: 'Retest' },
-                        { count: untested, color: '#E2E8F0', label: 'Untested' },
+                        { count: passed, color: '#22C55E', label: t('common:passed') },
+                        { count: failed, color: '#EF4444', label: t('common:failed') },
+                        { count: blocked, color: '#94A3B8', label: t('common:blocked') },
+                        { count: retest, color: '#FACC15', label: t('common:retest') },
+                        { count: untested, color: '#E2E8F0', label: t('common:untested') },
                       ].map(({ count, color, label }) => (
                         <span key={label} className="inline-flex items-center gap-[0.3125rem] text-[0.6875rem] text-slate-500">
                           <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: color }} />
@@ -3170,7 +3172,7 @@ export default function RunDetail() {
                   </button>
                   <div style={{ fontSize: '24px', marginBottom: '10px' }}>✨</div>
                   <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#C7D2FE', marginBottom: '6px' }}>
-                    AI Run Summary
+                    {t('runs:aiSummary.title')}
                   </h3>
                   <p
                     style={{
@@ -3182,7 +3184,7 @@ export default function RunDetail() {
                       margin: '0 auto 16px',
                     }}
                   >
-                    Get instant failure pattern analysis, Go/No-Go recommendations, and one-click Jira issue creation.
+                    {t('runs:detail.upgradeNudge.body')}
                   </p>
                   <button
                     onClick={() => navigate('/settings?tab=billing')}
@@ -3200,10 +3202,10 @@ export default function RunDetail() {
                       gap: '6px',
                     }}
                   >
-                    <i className="ri-vip-crown-fill" /> Upgrade to Hobby — $19/mo
+                    <i className="ri-vip-crown-fill" /> {t('runs:detail.upgradeNudge.cta')}
                   </button>
                   <div style={{ fontSize: '11px', color: '#475569', marginTop: '8px' }}>
-                    15 AI credits/month · AI Run Summary included
+                    {t('runs:detail.upgradeNudge.subtitle')}
                   </div>
                 </div>
               )}
@@ -3214,7 +3216,7 @@ export default function RunDetail() {
                     <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[0.9375rem]"></i>
                     <input
                       type="text"
-                      placeholder="Search test cases..."
+                      placeholder={t('runs:detail.tcList.filter.searchPlaceholder')}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full text-[0.8125rem] py-[0.4375rem] pl-[2.125rem] pr-[0.875rem] rounded-lg border border-gray-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 bg-white text-slate-700"
@@ -3225,23 +3227,23 @@ export default function RunDetail() {
                     onChange={(e) => setStatusFilter(e.target.value)}
                     className="text-[0.8125rem] py-[0.4375rem] px-[0.625rem] rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer font-medium text-slate-700 bg-white"
                   >
-                    <option value="all">All Status</option>
-                    <option value="passed">Passed</option>
-                    <option value="failed">Failed</option>
-                    <option value="blocked">Blocked</option>
-                    <option value="retest">Retest</option>
-                    <option value="untested">Untested</option>
+                    <option value="all">{t('runs:detail.tcList.filter.allStatus')}</option>
+                    <option value="passed">{t('common:passed')}</option>
+                    <option value="failed">{t('common:failed')}</option>
+                    <option value="blocked">{t('common:blocked')}</option>
+                    <option value="retest">{t('common:retest')}</option>
+                    <option value="untested">{t('common:untested')}</option>
                   </select>
                   <select
                     value={priorityFilter}
                     onChange={(e) => setPriorityFilter(e.target.value)}
                     className="text-[0.8125rem] py-[0.4375rem] px-[0.625rem] rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer font-medium text-slate-700 bg-white"
                   >
-                    <option value="all">All Priority</option>
-                    <option value="critical">Critical</option>
-                    <option value="high">High</option>
-                    <option value="medium">Medium</option>
-                    <option value="low">Low</option>
+                    <option value="all">{t('runs:detail.tcList.filter.allPriority')}</option>
+                    <option value="critical">{t('common:issues.priority.critical')}</option>
+                    <option value="high">{t('common:high')}</option>
+                    <option value="medium">{t('common:medium')}</option>
+                    <option value="low">{t('common:low')}</option>
                   </select>
                 </div>
 
@@ -3253,16 +3255,16 @@ export default function RunDetail() {
                         <i className="ri-checkbox-multiple-line text-indigo-600"></i>
                       </div>
                       <span className="text-sm font-semibold text-indigo-700">
-                        {selectedIds.size} item{selectedIds.size > 1 ? 's' : ''} selected
+                        {t('runs:detail.tcList.bulk.selected', { count: selectedIds.size })}
                       </span>
                       <div className="w-px h-4 bg-indigo-300 mx-1"></div>
-                      <span className="text-sm text-gray-600 whitespace-nowrap">Assign to:</span>
+                      <span className="text-sm text-gray-600 whitespace-nowrap">{t('runs:detail.tcList.bulk.assignToLabel')}</span>
                       <select
                         value={bulkAssignee}
                         onChange={(e) => setBulkAssignee(e.target.value)}
                         className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                       >
-                        <option value="">Unassigned</option>
+                        <option value="">{t('runs:detail.tcList.bulk.unassigned')}</option>
                         {projectMembers.map((member) => (
                           <option key={member.id} value={member.full_name || member.email}>
                             {member.full_name || member.email}
@@ -3273,13 +3275,13 @@ export default function RunDetail() {
                         onClick={() => handleBulkAssigneeChange(bulkAssignee)}
                         className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-all cursor-pointer whitespace-nowrap"
                       >
-                        Apply
+                        {t('runs:detail.tcList.bulk.apply')}
                       </button>
                       <button
                         onClick={() => { setSelectedIds(new Set()); setBulkAssignee(''); }}
                         className="px-3 py-1.5 bg-white border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50 transition-all cursor-pointer whitespace-nowrap ml-auto"
                       >
-                        Clear selection
+                        {t('runs:detail.tcList.bulk.clearSelection')}
                       </button>
                     </div>
                   )}
@@ -3294,22 +3296,27 @@ export default function RunDetail() {
                       <div className="flex items-center gap-3 mx-4 my-3 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-lg transition-all duration-200">
                         <i className="ri-refresh-line text-amber-500 text-base flex-shrink-0" />
                         <div className="flex-1 text-xs text-amber-800">
-                          <span className="font-semibold">New version available for {uniqueSsIds.size} Shared Step{uniqueSsIds.size !== 1 ? 's' : ''}</span>
-                          <span className="text-amber-600 ml-1">({outdatedTCs.length} TC affected{updatableTCs.length > 0 ? `, ${updatableTCs.length} untested can be updated` : ''})</span>
+                          <span className="font-semibold">{t('runs:detail.ssBanner.headline', { count: uniqueSsIds.size })}</span>
+                          <span className="text-amber-600 ml-1">
+                            {'('}
+                            {t('runs:detail.ssBanner.tcAffected', { count: outdatedTCs.length })}
+                            {updatableTCs.length > 0 && t('runs:detail.ssBanner.untestedUpdatable', { count: updatableTCs.length })}
+                            {')'}
+                          </span>
                         </div>
                         {updatableTCs.length > 0 && (
                           <button
                             onClick={handleUpdateAllSSVersions}
                             className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-md transition-colors duration-200 cursor-pointer flex-shrink-0"
                           >
-                            Update all
+                            {t('runs:detail.ssBanner.updateAll')}
                           </button>
                         )}
                         <button
                           onClick={() => setVersionBannerDismissed(true)}
                           className="text-amber-600 hover:text-amber-700 text-xs font-medium cursor-pointer flex-shrink-0"
                         >
-                          Dismiss
+                          {t('runs:detail.ssBanner.dismiss')}
                         </button>
                       </div>
                     );
@@ -3320,9 +3327,8 @@ export default function RunDetail() {
                     <div className="flex items-start gap-2.5 mx-4 my-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
                       <i className="ri-information-line text-blue-500 text-base mt-0.5 flex-shrink-0" />
                       <div>
-                        <strong>Some TCs in this run have been deprecated.</strong>{' '}
-                        {testCases.filter(tc => (tc as any).lifecycle_status === 'deprecated').length} test case(s) were deprecated after this run was created.
-                        Existing results are preserved. These TCs won't appear in new runs.
+                        <strong>{t('runs:detail.deprecatedBanner.title')}</strong>{' '}
+                        {t('runs:detail.deprecatedBanner.countSentence', { count: testCases.filter(tc => (tc as any).lifecycle_status === 'deprecated').length })}
                       </div>
                     </div>
                   )}
@@ -3337,22 +3343,22 @@ export default function RunDetail() {
                       />
                     </div>
                     <div className="col-span-1">
-                      <span className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">ID / Ver</span>
+                      <span className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">{t('runs:detail.tcList.header.idVer')}</span>
                     </div>
                     <div className="col-span-3">
-                      <span className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">Test Case</span>
+                      <span className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">{t('runs:detail.tcList.header.testCase')}</span>
                     </div>
                     <div className="col-span-1">
-                      <span className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">Priority</span>
+                      <span className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">{t('common:priority')}</span>
                     </div>
                     <div className="col-span-2">
-                      <span className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">Folder</span>
+                      <span className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">{t('runs:detail.tcList.header.folder')}</span>
                     </div>
                     <div className="col-span-1 flex items-center">
-                      <span className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">Assignee</span>
+                      <span className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">{t('common:assignee')}</span>
                     </div>
                     <div className="col-span-3 flex items-center">
-                      <span className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">Status</span>
+                      <span className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">{t('common:status')}</span>
                     </div>
                   </div>
 
@@ -3361,8 +3367,8 @@ export default function RunDetail() {
                       <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <i className="ri-file-list-3-line text-3xl text-gray-400"></i>
                       </div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">테스트 케이스가 없습니다</h3>
-                      <p className="text-gray-600">이 Run에 테스트 케이스가 포함되어 있지 않습니다.</p>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('runs:detail.tcList.empty.title')}</h3>
+                      <p className="text-gray-600">{t('runs:detail.tcList.empty.hint')}</p>
                     </div>
                   ) : (
                     filteredTestCases.map((testCase) => (
@@ -3409,7 +3415,7 @@ export default function RunDetail() {
                                     className={`self-start inline-flex items-center gap-0.5 px-1 py-px rounded-full text-[0.5rem] leading-none font-bold transition-all duration-200 ${
                                       canUp ? 'bg-amber-100 text-amber-700 hover:bg-amber-200 cursor-pointer' : 'bg-slate-100 text-slate-500 cursor-default'
                                     }`}
-                                    title={canUp ? `TC updated to v${liveMajor}.${liveMinor} — click to review changes` : 'Locked: test result recorded'}
+                                    title={canUp ? t('runs:detail.tcList.versionBadge.tcUpdatedClickable', { major: liveMajor, minor: liveMinor }) : t('runs:detail.tcList.versionBadge.locked')}
                                   >
                                     {canUp
                                       ? <><i className="ri-arrow-up-line" />v{liveMajor}.{liveMinor}</>
@@ -3437,7 +3443,7 @@ export default function RunDetail() {
                                     ? 'bg-amber-100 text-amber-700 hover:bg-amber-200 cursor-pointer'
                                     : 'bg-slate-100 text-slate-500 cursor-default'
                                 }`}
-                                title={canUp ? `Shared step update available (v${latestVer})` : 'Locked: test result recorded'}
+                                title={canUp ? t('runs:detail.tcList.versionBadge.ssUpdateAvailable', { version: latestVer }) : t('runs:detail.tcList.versionBadge.locked')}
                               >
                                 {canUp
                                   ? <><i className="ri-arrow-up-line text-[0.5rem]" />SS v{latestVer}</>
@@ -3455,7 +3461,14 @@ export default function RunDetail() {
                               testCase.priority === 'medium' ? 'bg-indigo-500' :
                               'bg-slate-400'
                             }`} />
-                            {testCase.priority.charAt(0).toUpperCase() + testCase.priority.slice(1)}
+                            {(() => {
+                              const p = testCase.priority?.toLowerCase();
+                              if (p === 'critical') return t('common:issues.priority.critical');
+                              if (p === 'high') return t('common:high');
+                              if (p === 'medium') return t('common:medium');
+                              if (p === 'low') return t('common:low');
+                              return testCase.priority ? testCase.priority.charAt(0).toUpperCase() + testCase.priority.slice(1) : '';
+                            })()}
                           </span>
                         </div>
                         <div className="col-span-2 flex items-center">
@@ -3504,7 +3517,7 @@ export default function RunDetail() {
                                         className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-gray-50 cursor-pointer"
                                         onClick={(e) => { e.stopPropagation(); handleAssigneeChange(testCase.id, ''); setOpenAssigneeDropdown(null); }}
                                       >
-                                        — Unassigned —
+                                        {t('runs:detail.tcList.assigneeDropdown.unassigned')}
                                       </button>
                                       {projectMembers.map((member) => {
                                         const name = member.full_name || member.email;
@@ -3598,7 +3611,7 @@ export default function RunDetail() {
 
           {showExportModal && (
             <ExportModal
-              runName={run?.name || 'Run'}
+              runName={run?.name || t('runs:detail.page.runNameFallback')}
               totalCount={testCases.length}
               availableTags={Array.from(new Set(
                 testCases.flatMap(tc => (tc.tags || '').split(',').map((t: string) => t.trim()).filter(Boolean))
