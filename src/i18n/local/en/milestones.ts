@@ -334,6 +334,10 @@ export const milestones = {
         dateRangeFallback: '?',
         aiOptimize: 'AI Optimize',
       },
+      stats: {
+        executedOfTotal: '{{executed}}/{{total}} executed · <1>{{pct}}%</1>',
+        passRate: 'Pass Rate <1>{{pct}}%</1>',
+      },
     },
     statusConfig: {
       planning: 'Planning',

@@ -331,6 +331,10 @@ export const milestones = {
         dateRangeFallback: '?',
         aiOptimize: 'AI 최적화',
       },
+      stats: {
+        executedOfTotal: '{{executed}}/{{total}} 실행 · <1>{{pct}}%</1>',
+        passRate: '통과율 <1>{{pct}}%</1>',
+      },
     },
     statusConfig: {
       planning: '계획',
