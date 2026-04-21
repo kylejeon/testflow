@@ -1,3 +1,46 @@
+2026-04-21: i18n 커버리지 Phase 2 QA M-1 수정 — plan-detail ActivityTab 날짜 헤더 locale 적용
+(qa-report-i18n-coverage-phase2, f010)
+
+## 뭘 했냐 (claude 브랜치, 커밋 1개 — push 완료)
+
+QA Phase 2 통합 검수에서 Major 1건(M-1) 발견:
+- [src/pages/plan-detail/page.tsx:1321](src/pages/plan-detail/page.tsx#L1321)
+- ActivityTab groupByDay가 `d.toLocaleDateString('en-US', ...)` 로 그룹 키 생성
+- 오늘/어제 외 날짜 헤더가 KO 로케일에서도 "Monday, Apr 21" 영문 노출
+
+수정:
+- groupByDay 키를 "YYYY-MM-DD" ISO 문자열로 교체 (locale 독립)
+- `src/lib/dateFormat.ts` 에 `formatDayHeader(iso, lang)` 헬퍼 추가 ("Monday, Apr 21" / "4월 21일 월요일")
+- getDayLabel fallback에서 formatDayHeader 사용
+
+검증:
+- tsc --noEmit 0 errors
+- vitest 5 files / 69 tests PASS
+- scan:i18n / parity clean
+- npm run build 6.78s 성공
+
+## 어디까지 됐냐
+
+- Phase 1 (milestone-detail + issues + AIRunSummaryPanel): 완료
+- Phase 2a (plan-detail): 완료 + QA PASS (M-1 수정 후 재검수 의미적 통과)
+- Phase 2b (run-detail): 완료 + QA PASS
+
+최종 커밋: `62357c5` fix(i18n): plan-detail ActivityTab groupByDay 날짜 헤더 locale 적용
+
+## 다음엔 뭘 할 거냐
+
+- QA Minor follow-up 티켓 분리:
+  - W-1 run-detail throw Error fallback 하드코딩 2건
+  - W-2 plan-detail AC-13 soft cap 797 라인
+  - W-3 run-detail AC-10 leaf 191개 하한 미달 (Dev Spec 실측 값)
+  - N-1 upgradeModal bodyLine1 split/match → `<Trans>` 교체 권장
+  - N-2 .i18nignore showToast info/warning 미등록 보강
+- Phase 3 공유 컴포넌트 Epic (DetailPanel / ExportModal / FocusMode / StatusBadge / Avatar / ProjectHeader)
+- i18n CI gate 강제화 (scan:i18n:check + scan:i18n:parity GitHub Actions)
+- KO 원어민 용어 리뷰 (Danger Zone / "고아 상태" / "되돌릴 수 없음" 톤)
+
+───
+
 2026-04-21: i18n 커버리지 Phase 2a — plan-detail/page.tsx 완료 @developer
 (dev-spec-i18n-coverage-phase2-plan-detail, design-spec-i18n-coverage-phase2-plan-detail, f010)
 
