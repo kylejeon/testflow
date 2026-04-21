@@ -1,5 +1,6 @@
-import { Component, ReactNode } from 'react';
+import { Component, ReactNode, useEffect, useRef } from 'react';
 import { Sentry } from '../lib/sentry';
+import i18n from '../i18n';
 
 /** Returns true if the error is a Vite/webpack dynamic import chunk load failure. */
 function isChunkLoadError(error: Error): boolean {
@@ -31,9 +32,27 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+  /** Sentry eventId returned from captureException, surfaced as a Report ID. */
+  eventId: string | null;
 }
 
-function FullPageFallback({ error, onReset }: { error: Error | null; onReset: () => void }) {
+function FullPageFallback({ error, eventId, onReset }: { error: Error | null; eventId: string | null; onReset: () => void }) {
+  // i18n singleton — ErrorBoundary may sit outside I18nextProvider, so useTranslation() is not reliable.
+  const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, opts);
+
+  // AC-10 / Design Spec §8-1 — focus title on mount so screen readers start
+  // reading from the alert title.
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    titleRef.current?.focus();
+  }, []);
+
+  // Design Spec §8-1 — in dev (DSN unset), Sentry still returns an eventId that
+  // is not actually sent. Hide the Report ID line in dev to avoid confusion.
+  const isDev = import.meta.env.DEV;
+  const showEventId = !isDev && !!eventId;
+  const showEventIdMissing = !isDev && !eventId;
+
   return (
     <main
       role="alert"
@@ -50,12 +69,15 @@ function FullPageFallback({ error, onReset }: { error: Error | null; onReset: ()
         <path d="M64 110 h32 l-4 8 h-24 z" fill="#6366f1" />
       </svg>
 
-      <h1 className="mt-6 text-2xl font-semibold tracking-tight text-slate-900">
-        Something went wrong
+      <h1
+        ref={titleRef}
+        tabIndex={-1}
+        className="mt-6 text-2xl font-semibold tracking-tight text-slate-900 focus:outline-none"
+      >
+        {t('common:errorBoundary.title')}
       </h1>
       <p className="mt-2 max-w-md text-sm text-slate-500">
-        We hit an unexpected error and couldn't finish loading this page.
-        Try reloading — if it keeps happening, head back to your dashboard.
+        {t('common:errorBoundary.description')}
       </p>
 
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
@@ -63,26 +85,39 @@ function FullPageFallback({ error, onReset }: { error: Error | null; onReset: ()
           onClick={onReset}
           className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
         >
-          Reload page
+          {t('common:errorBoundary.reload')}
         </button>
         <a
           href="/projects"
-          className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+          className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
         >
-          Go to Dashboard
+          {t('common:errorBoundary.goHome')}
         </a>
       </div>
 
+      {showEventId && (
+        <p className="mt-4 font-mono text-xs text-slate-500 break-all max-w-xs">
+          {t('common:errorBoundary.reportId', { id: eventId })}
+        </p>
+      )}
+      {showEventIdMissing && (
+        <p className="mt-4 text-xs text-slate-500">
+          {t('common:errorBoundary.reportIdMissing')}
+        </p>
+      )}
+
       <a
         href="mailto:support@testably.app?subject=Error%20report"
-        className="mt-4 text-xs text-slate-400 underline hover:text-slate-600"
+        className="mt-4 text-xs text-slate-500 underline hover:text-slate-600"
       >
-        Send an error report
+        {t('common:errorBoundary.sendReport')}
       </a>
 
-      {import.meta.env.DEV && error && (
+      {isDev && error && (
         <details className="mt-8 max-w-xl text-left">
-          <summary className="cursor-pointer text-xs text-slate-400">Error details</summary>
+          <summary className="cursor-pointer text-xs text-slate-400">
+            {t('common:errorBoundary.devDetailsSummary')}
+          </summary>
           <pre className="mt-2 overflow-auto rounded bg-slate-100 p-3 text-xs text-slate-600">
             {error.stack || error.message}
           </pre>
@@ -93,6 +128,7 @@ function FullPageFallback({ error, onReset }: { error: Error | null; onReset: ()
 }
 
 function SectionFallback({ sectionName, onReset }: { sectionName?: string; onReset: () => void }) {
+  const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, opts);
   return (
     <div
       role="alert"
@@ -100,26 +136,28 @@ function SectionFallback({ sectionName, onReset }: { sectionName?: string; onRes
     >
       <i className="ri-error-warning-line text-2xl text-red-400 mb-2 block"></i>
       <p className="text-sm font-medium text-red-700">
-        {sectionName ? `"${sectionName}" failed to load.` : 'This section failed to load.'}
+        {sectionName
+          ? t('common:errorBoundary.section.title', { sectionName })
+          : t('common:errorBoundary.section.titleGeneric')}
       </p>
       <p className="text-xs text-red-500 mt-1 mb-3">
-        Please refresh or contact support if the problem persists.
+        {t('common:errorBoundary.section.hint')}
       </p>
       <button
         onClick={onReset}
-        className="inline-flex items-center gap-1 text-xs font-medium text-red-600 border border-red-200 rounded-md px-3 py-1.5 hover:bg-red-100 transition-colors cursor-pointer"
+        className="inline-flex items-center gap-1 text-xs font-medium text-red-600 border border-red-200 rounded-md px-3 py-1.5 hover:bg-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 transition-colors cursor-pointer"
       >
         <i className="ri-refresh-line"></i>
-        Retry
+        {t('common:errorBoundary.section.retry')}
       </button>
     </div>
   );
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  state: State = { hasError: false, error: null };
+  state: State = { hasError: false, error: null, eventId: null };
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { hasError: true, error };
   }
 
@@ -137,21 +175,27 @@ export class ErrorBoundary extends Component<Props, State> {
       }
     }
 
-    // Report to Sentry with component stack context
+    // Report to Sentry with component stack context.
+    // f024 — capture the returned eventId so we can surface it as Report ID.
+    let capturedId: string | null = null;
     Sentry.withScope((scope) => {
       if (this.props.sectionName) {
         scope.setTag('error_boundary', this.props.sectionName);
       }
       scope.setExtra('componentStack', info.componentStack);
       scope.setExtra('isChunkLoadError', isChunkLoadError(error));
-      Sentry.captureException(error);
+      const id = Sentry.captureException(error);
+      if (id) capturedId = id;
     });
+    if (capturedId) {
+      this.setState({ eventId: capturedId });
+    }
   }
 
   handleReset = () => {
     if (this.props.section) {
       // Section errors: reset state to retry rendering
-      this.setState({ hasError: false, error: null });
+      this.setState({ hasError: false, error: null, eventId: null });
     } else {
       window.location.reload();
     }
@@ -170,7 +214,7 @@ export class ErrorBoundary extends Component<Props, State> {
         );
       }
 
-      return <FullPageFallback error={this.state.error} onReset={this.handleReset} />;
+      return <FullPageFallback error={this.state.error} eventId={this.state.eventId} onReset={this.handleReset} />;
     }
     return this.props.children;
   }

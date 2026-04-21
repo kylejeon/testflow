@@ -228,18 +228,21 @@ function AppContent() {
 }
 
 function App() {
+  // f024 — I18nextProvider must sit OUTSIDE ErrorBoundary so the fallback UI
+  // can call i18n.t(...) via the singleton. QueryClient stays outside so
+  // devtools/cache remain accessible during crashes.
   return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <I18nextProvider i18n={i18n}>
+    <QueryClientProvider client={queryClient}>
+      <I18nextProvider i18n={i18n}>
+        <ErrorBoundary>
           <ToastProvider>
             <BrowserRouter basename={__BASE_PATH__}>
               <AppContent />
             </BrowserRouter>
           </ToastProvider>
-        </I18nextProvider>
-      </QueryClientProvider>
-    </ErrorBoundary>
+        </ErrorBoundary>
+      </I18nextProvider>
+    </QueryClientProvider>
   );
 }
 

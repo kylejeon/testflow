@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
+import i18n from '../i18n';
 
 export type ToastType = 'error' | 'success' | 'warning' | 'info';
 
@@ -144,47 +145,52 @@ export function useToast() {
  * Converts an API or Supabase error into a human-readable message.
  * Avoids generic "Network error" by mapping known error codes/messages
  * to actionable descriptions.
+ *
+ * f024 — uses the i18n singleton (i18n.t) since this helper is a pure
+ * function and may be called from non-hook contexts.
  */
 export function getApiErrorMessage(error: unknown): string {
-  if (!error) return 'An unexpected error occurred.';
+  const t = (key: string) => i18n.t(key);
+
+  if (!error) return t('common:toast.apiErrors.generic');
 
   const err = error as { message?: string; code?: string; status?: number; statusCode?: number };
 
   // Supabase / PostgREST specific codes
   if (err.code) {
     switch (err.code) {
-      case 'PGRST116': return 'Record not found.';
-      case 'PGRST301': return 'You don\'t have permission to perform this action.';
-      case '23505': return 'This record already exists.';
-      case '23503': return 'Cannot complete: related record is missing.';
-      case '42501': return 'Permission denied. Check your plan or role.';
-      case 'auth/invalid-email': return 'Invalid email address.';
-      case 'auth/user-not-found': return 'No account found with this email.';
-      case 'auth/wrong-password': return 'Incorrect password.';
+      case 'PGRST116': return t('common:toast.apiErrors.recordNotFound');
+      case 'PGRST301': return t('common:toast.apiErrors.permissionDenied');
+      case '23505': return t('common:toast.apiErrors.recordExists');
+      case '23503': return t('common:toast.apiErrors.relatedMissing');
+      case '42501': return t('common:toast.apiErrors.insufficientPrivilege');
+      case 'auth/invalid-email': return t('common:toast.apiErrors.invalidEmail');
+      case 'auth/user-not-found': return t('common:toast.apiErrors.userNotFound');
+      case 'auth/wrong-password': return t('common:toast.apiErrors.wrongPassword');
     }
   }
 
   // HTTP status codes
   const status = err.status ?? err.statusCode;
-  if (status === 401) return 'Session expired. Please log in again.';
-  if (status === 403) return 'You don\'t have permission to perform this action.';
-  if (status === 404) return 'The requested resource was not found.';
-  if (status === 409) return 'A conflict occurred — the record may already exist.';
-  if (status === 429) return 'Too many requests. Please wait a moment and try again.';
-  if (status && status >= 500) return 'Server error. Please try again shortly.';
+  if (status === 401) return t('common:toast.apiErrors.sessionExpired');
+  if (status === 403) return t('common:toast.apiErrors.permissionDenied');
+  if (status === 404) return t('common:toast.apiErrors.notFound');
+  if (status === 409) return t('common:toast.apiErrors.conflict');
+  if (status === 429) return t('common:toast.apiErrors.rateLimited');
+  if (status && status >= 500) return t('common:toast.apiErrors.serverError');
 
   // Network/fetch errors
   const msg = err.message?.toLowerCase() ?? '';
   if (msg.includes('network') || msg.includes('failed to fetch') || msg.includes('load failed')) {
-    return 'Network error. Check your connection and try again.';
+    return t('common:toast.apiErrors.networkError');
   }
-  if (msg.includes('timeout')) return 'Request timed out. Please try again.';
-  if (msg.includes('aborted')) return 'Request was cancelled.';
+  if (msg.includes('timeout')) return t('common:toast.apiErrors.timeout');
+  if (msg.includes('aborted')) return t('common:toast.apiErrors.cancelled');
 
   // Fall back to the error message itself if it's short and readable
   if (err.message && err.message.length < 120 && !err.message.startsWith('{}')) {
     return err.message;
   }
 
-  return 'Something went wrong. Please try again.';
+  return t('common:toast.apiErrors.generic');
 }
