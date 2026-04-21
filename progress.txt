@@ -1331,3 +1331,173 @@ usage 집계는 이미 owner shared pool 로 통일됐지만, 캐시 조회(`ai_
   - Exploratory Session progress 로직 (done/total 스키마 결정 선행 필요)
   - project-milestones / plan-detail의 레거시 badge-* 클래스 마이그레이션
   - i18n 키 추가 (현재 label은 StatusPill 내부 영문 하드코딩, 기존 동작 동일)
+
+---
+
+# 2026-04-21 — Phase 2b i18n (run-detail/page.tsx) by Developer (Opus 4.7)
+
+## 뭘 했냐
+f010 i18n 커버리지 Phase 2b 구현 완료. `src/pages/run-detail/page.tsx`
+(5,245줄) 단일 파일 전역 하드코딩 제거 + `.i18nignore` 에서 해당 파일
+제외 라인 삭제 + PDF export HTML / showToast 타입 prefix 용 예외 규칙
+추가. ResultDetailModal 서브 컴포넌트 포함 모든 섹션 30개 처리.
+
+## 주요 변경 파일
+- src/i18n/local/en/runs.ts (+332 라인, runs.detail.* + runs.toast.*)
+- src/i18n/local/ko/runs.ts (+324 라인, 동일 구조 KO)
+- src/i18n/local/en/common.ts (+1 unknownError)
+- src/i18n/local/ko/common.ts (+1 unknownError)
+- src/lib/dateFormat.ts (+formatLongDateTime 헬퍼)
+- src/pages/run-detail/page.tsx (메인 본체 + ResultDetailModal 서브)
+- scripts/scan-i18n.mjs (SCOPE_DIRS 확장, GLOBAL_FILE_IGNORES 비움)
+- .i18nignore (PDF HTML 고정 영문 + showToast prefix 예외)
+
+## 추가된 키 수
+- runs.detail.* : 170 leaf (EN) / 170 (KO)
+- runs.toast.* : 24 leaf (EN) / 24 (KO)
+- common.unknownError : 1 / 1
+- **총 195 신규 leaf (EN+KO 합 390)**
+- AC-10 권장 범위(250~350) **미달** — Dev Spec §5 추정(~292)과 차이 있음.
+  Design Spec §17.1 에서 이미 "AC-10 하한 미달 예상" 명시. 재사용 우선
+  원칙으로 `common.passed|failed|blocked|retest|untested` / `common.priority`
+  / `common.assignee` / `common.status` / `common.description` / `common.cancel`
+  / `common.close` / `runs.totalTests` / `runs.aiSummary.title` 10군데 이상
+  재사용하여 중복 키를 만들지 않은 결과.
+
+## 커밋 해시 리스트 (claude 브랜치)
+- cb64dfd  feat(i18n): run-detail Phase 2b bundle keys + formatLongDateTime
+- 6a508c8  feat(i18n): PR-A — header / KPI / progress / TC list
+- c126ab9  feat(i18n): PR-B — modals (Add Result, Issues, Diff)
+- 68fbb1a  feat(i18n): PR-C — ResultDetailModal + toasts
+- b47fddf  chore(i18n): activate scanner + expand .i18nignore
+
+## 교체한 섹션 (Design Spec §6~§15 / Dev Spec §4-2 표 30 행)
+- §6-1 Page header (7 keys) — Back to Runs, Started/percent/testCasesCount
+  plural, Automated, runNameFallback
+- §6-2 Run status pills 5종 — completed/inProgress/underReview/paused/draft
+- §6-3 Header actions (7 keys) — Export, AI Summary, NEW/HOBBY badges,
+  Focus Mode (Cmd+Shift+F 보존 AC-12)
+- §6-4 KPI 5 카드 — totalTests 1 + 4 common.* 재사용
+- §6-5 Execution Progress (title + tooltipCount helper)
+- §7-1 TC list filter bar (searchPlaceholder, allStatus, allPriority +
+  5 status options + 4 priority options common.* 재사용)
+- §7-2 Bulk toolbar (selected plural 2, assignToLabel, unassigned, apply,
+  clearSelection) — 인라인 `> 1 ? 's' : ''` 제거
+- §7-3 SS version banner (headline / tcAffected / untestedUpdatable
+  각 plural 2, updateAll, dismiss) — 인라인 `!== 1 ? 's' : ''` 제거
+- §7-4 Deprecated banner (title + countSentence plural 2)
+- §7-5 TC header 6열 (idVer/testCase/folder 신규 + Priority/Assignee/
+  Status common.* 재사용)
+- §7-6 Version badges (tcUpdatedClickable / locked / ssUpdateAvailable)
+- §7-7 Empty state (AC-11: KR 하드코딩 2건 → EN 회귀)
+- §7-8 Assignee dropdown `— Unassigned —` (AC-11 엄격히는 기호만)
+- §7-9 Folder sidebar (title/allCases/collapse/expand/empty — AC-11 KR
+  3건 회귀: 접기/펼치기/폴더 없음)
+- §7-10 DetailPanel/ExportModal prop runName fallback
+- §8 Add Result Modal (80+ keys):
+  title, 5 status buttons, Note + 9 toolbar aria-labels (신규 접근성),
+  Steps label + 3 select × 4 options × 3 occurrences = 12 위치 공용
+  `common.*` 재사용, Shared badge / sharedUpdateBadgeTitle / lockedBanner
+  / diffBannerPrefix / updateButton / diffCurrent / diffLatest /
+  diffUnavailable / diffLoading, Elapsed label, Assignee label/placeholder
+  /hint, Linked Issues + createJira / createGithub / placeholder (PROJ-123
+  AC-12) / hint (AC-11 회귀) / confirm() (AC-11 회귀), Attachments
+  (label/chooseFiles/or/screenshot/dropzoneHint/uploading), footer Cancel
+  (common.*) / Add result
+- §9-1 Create Jira Issue Modal (25+ keys):
+  title, Summary label/placeholder, Description (common.*) + placeholder,
+  Issue Type label + 4 options, Priority (common.*) + 5 options
+  (Highest/High/Medium/Low/Lowest), Labels label/placeholder/hint
+  (AC-11 회귀), Assignee (common.*) placeholder/hint (AC-11 2건 회귀),
+  Components label/placeholder/hint (AC-11 2건 회귀), Related Test Case,
+  Cancel/Creating/Create Issue
+- §9-2 Create GitHub Issue Modal (12+ keys):
+  title, Title field label/placeholder, Description (common.*) + placeholder,
+  Labels label/placeholder (Enter AC-12), Assignee (common.*) placeholder,
+  willBeCreatedInPrefix, Related Test Case (reused jira), Cancel/
+  Creating/Create Issue
+- §10-1 TC Version Diff Modal (15+ keys):
+  comparingPrefix (v{snap} → v{live} 리터럴), columnHeader.current/updated
+  + interp, 4 metadata (Title/Tags/Precondition/Description common.*),
+  Steps sectionTitle + noSteps, Expected Result sectionTitle, loading,
+  Cancel, Update to v{major}.{minor}
+- §10-2 Upgrade Modal (10 keys, AC-11 전체 KR 회귀):
+  title, body (bodyLine1 w/ `<1>Starter plan</1>`, bodyLine2), benefitsTitle,
+  5 benefit items (`Testcase` → `Test Case` 오타 수정), Close (common.*),
+  Upgrade plan
+- §10-3 Upgrade Nudge (3 keys + aiSummary.title 재사용)
+- §10-4 Jira Setup Modal (4 keys, AC-11 전체 KR 회귀): title, body, Close,
+  Connect Jira
+- §11-1 ResultDetailModal (13 keys):
+  useTranslation 서브 컴포넌트 내부 신규 호출, title, CI/CD badge, Unknown
+  author fallback, Status (common.*), Elapsed Time, Note (reused),
+  Step Results (3위치), Step {{index}} fallback, Shared badge (3위치,
+  reused), Attachments plural, Linked Issues (reused), GitHub Issues,
+  Close (common.*)
+- §11-2 Image Preview (closeA11y aria-label 신규 접근성)
+- §11-3 Fatal Error throw new Error 2건 — AC-11 KR 2건 회귀
+- §12 showToast 29 호출처 → 24 유니크 키 (중복 5건) + `common.unknownError`
+  fallback 포함 전수 치환
+- §13 AC-11 KR 하드코딩 29건 전수 EN 회귀 완료
+- §14 AC-12 단축키 기호 보존 검증: `Cmd+Shift+F` (line 3012),
+  `Enter` (line 4113, 4508), `PROJ-123` (line 4110, 4113) — 모두 번역 문자열
+  안에 리터럴로 보존
+- §15 AC-9 외부 송출 문자열 비번역 재확인:
+  - PDF HTML (line 503~628) — handleExportPDF 상단 NOTE 주석 추가 +
+    .i18nignore 17개 규칙 추가
+  - Jira payload — handleCreateJiraIssue 상단 NOTE 주석 + 기존 Phase 1
+    규칙 유지
+  - GitHub payload — handleCreateGithubIssue 상단 NOTE 주석 + 기존 Phase 1
+    규칙 유지
+
+## AC-10 하한(250) 미달 이유
+1. 재사용 우선 원칙(AC-7, AC-8)으로 `common.*` 10개 이상 재활용
+2. Note toolbar aria-labels 9개를 "접근성 개선으로 신규 추가"만 하고
+   페이지 내 기존 동등 키 없음
+3. PDF HTML 비번역(AC-9)으로 20+ 라벨을 애초에 제외
+4. i18next plural `_one/_other` 를 `_one` only 로 세는 Dev Spec §5 추정과
+   실제 `_one+_other` 카운트 방식 차이 (약 +9)
+
+실제 리프 수 194 (+common.unknownError = 195)는 Design Spec §17.1 에서
+이미 "≈ 200" 예측했던 범위와 일치. AC-10 초과 위반이 아닌 "명시된
+예외 범주"로 판단.
+
+## .i18nignore 에 추가한 패턴 규칙 (전체)
+- PDF HTML 라벨 (17개 bare `>Word<` 패턴): AI Run Summary, Executive
+  Summary, Key Metrics, Recommendations, Failure Patterns, Metric, Value,
+  Total, Retest, Passed, Failed, Blocked, Untested, Test Case, Priority,
+  Folder, Assignee, Status
+- showToast('error' / showToast('success' (스캐너 정규식 false-positive)
+- >—< (em-dash 분리자)
+
+## 건너뛴 항목
+- 공유 컴포넌트(`DetailPanel` / `FocusMode` / `ExportModal` / `StatusBadge`
+  / `Avatar` / `ProjectHeader`) 내부 — Phase 3 공유 Epic 범위
+- Jira/GitHub REST payload 본문 — AC-9, Phase 1부터 보호 중
+- PDF HTML 라벨 — AC-9, .i18nignore 신규 보호
+- `console.error(...)` / 인라인 주석 한국어 — 개발자 전용, i18n 범위 외
+- `AIRunSummaryPanel` — Phase 1 완료, 스펙 금기
+
+## 품질 체크 (전부 PASS)
+- `npx tsc --noEmit` → 0 에러
+- `npm run build` → 성공 (6.81s)
+- `npm run test -- --run` → 69 tests, 5 files 전부 PASS
+- `npm run scan:i18n` → 0 matches across 23 files in scope
+- `npm run scan:i18n:parity` → 0 diff
+
+## 어디까지 됐냐
+- claude 브랜치에 5 커밋 완료 (bundle → PR-A → PR-B → PR-C → scanner)
+- 모든 수용 기준(AC-1 ~ AC-12) 충족 — AC-10 예외 사유 위 문서화
+- `origin/claude` 로 push 대기
+
+## 다음에 할 것
+- `git push origin claude`
+- 수동 QA (KO 로케일에서 run-detail 전체 모달/toast 체크)
+- Phase 3 (공유 컴포넌트 Epic) 기획 단계 진입 — 별도 Planner 티켓
+- follow-up: 
+  - `common.loading` 의 KO 값이 현재 영문 `Loading...` 상태 (Phase 1 유산),
+    다국어 일관성 위해 별도 정리 티켓 권장
+  - `getStepStatusInfo` 의 `t?` optional fallback 은 tr 객체 리터럴을
+    들고 있는 스모크 세이프티 — 장기적으로 필수 파라미터로 전환 고려
+  - AI Summary 버튼 내 `✓` / `⚠️` 이모지는 현재 인라인 하드코딩 —
+    상태 아이콘 역할이라 번역 대상 아님 (디자이너 확인 완료)
