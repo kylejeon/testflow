@@ -26,19 +26,18 @@ import { fileURLToPath } from 'node:url';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..');
 
-// ── Phase 1 directories (dev-spec §4-1 A) + Phase 2a plan-detail ────────────
+// ── Phase 1 directories (dev-spec §4-1 A) + Phase 2a plan-detail +
+//    Phase 2b run-detail ────────────────────────────────────────────────
 const SCOPE_DIRS = [
   'src/components/issues',
   'src/pages/milestone-detail',
-  'src/pages/run-detail/components',
+  'src/pages/run-detail',
   'src/pages/plan-detail',
 ];
 
-// Phase 2 files to ignore globally (dev-spec §9) — phase 2b (run-detail) still
-// pending. plan-detail/page.tsx activated in Phase 2a (2026-04-21).
-const GLOBAL_FILE_IGNORES = [
-  'src/pages/run-detail/page.tsx',
-];
+// Phase 2 files to ignore globally. With run-detail/page.tsx activated
+// in Phase 2b (2026-04-21), this list is now empty.
+const GLOBAL_FILE_IGNORES = [];
 
 // ── Patterns (regex source strings) ─────────────────────────────────────────
 // JSX text node: >Capitalized Plain English<

@@ -60,5 +60,45 @@
 >GO<
 >NO-GO<
 
-# ── Out of scope (dev-spec §9 — phase 2 files) ──────────────────────────────
-src/pages/run-detail/page.tsx
+# ── Phase 2b run-detail: PDF export HTML cells (external output, locked EN) ──
+# Dev Spec §4-5 / Design Spec §15-1. These strings live inside the
+# handleExportPDF template literal and are forwarded to a printable window —
+# translating them would break the exported report for external stakeholders.
+#
+# The scanner's JSX regex matches the short `>Word<` snippet, so we allowlist
+# each PDF HTML label bare. These strings are ALSO used inside runs.* bundle
+# values for the live UI (e.g. common.passed = 'Passed'), which is fine —
+# bundle values are not scanned.
+>AI Run Summary<
+>Executive Summary<
+>Key Metrics<
+>Recommendations<
+>Failure Patterns<
+>Metric<
+>Value<
+>Total<
+>Retest<
+# Passed/Failed/Blocked/Untested also live inside the PDF stat-label cells
+# (lines 601-605). They occur only inside the PDF template on run-detail —
+# verified with grep. If future JSX usage appears elsewhere, scope the rule.
+>Passed<
+>Failed<
+>Blocked<
+>Untested<
+# PDF table column headers (line 617-622)
+>Test Case<
+>Priority<
+>Folder<
+>Assignee<
+>Status<
+# Timer placeholder — digits-only format string (§4-5)
+placeholder="00:00"
+# em-dash separator rendered as text (TC list empty folder / assignee fallback)
+>—<
+
+# Phase 2b run-detail: showToast('type', t(...)) pattern — the scanner's
+# showToast regex picks up the first string arg which in run-detail is the
+# type marker 'error' / 'success' (5-7 char), not a translatable message.
+# The actual message is already inside t(...).
+showToast('error'
+showToast('success'
