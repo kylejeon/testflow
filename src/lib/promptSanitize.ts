@@ -48,6 +48,9 @@ const STRUCTURE_TOKEN_REGEX = new RegExp(
 
 // eslint-disable-next-line no-control-regex
 const CONTROL_CHAR_REGEX = /[\x00-\x1F\x7F]/g;
+// Line/paragraph separators (U+2028/U+2029) — JSON-safe but can break prompt structure.
+// BiDi control (U+202A-U+202E) — Trojan Source-style display spoofing defense.
+const UNICODE_WS_REGEX = /[\u2028\u2029\u202A-\u202E]/g;
 const ZERO_WIDTH_REGEX = /[\u200B-\u200D\uFEFF\u2060]/g;
 const STRUCTURAL_CHAR_REGEX = /[`"{}<>]/g;
 const MULTI_SPACE_REGEX = /\s{2,}/g;
@@ -63,6 +66,7 @@ function applySanitize(
 
   s = s.replace(STRUCTURE_TOKEN_REGEX, '');
   s = s.replace(ZERO_WIDTH_REGEX, '');
+  s = s.replace(UNICODE_WS_REGEX, ' ');
   s = s.replace(CONTROL_CHAR_REGEX, ' ');
   s = s.replace(STRUCTURAL_CHAR_REGEX, '');
   s = s.replace(MULTI_SPACE_REGEX, ' ').trim();

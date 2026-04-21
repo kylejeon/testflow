@@ -190,7 +190,7 @@ function buildTitlePromptText(inputText: string): string {
   return `You are a QA engineer creating test cases. Based on the following feature description, generate a list of test case titles.
 
 Feature description:
-${inputText}
+${sanitizeLong(inputText)}
 
 Requirements:
 - Generate 5 to 10 test case titles

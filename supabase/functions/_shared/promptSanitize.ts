@@ -59,6 +59,9 @@ const STRUCTURE_TOKEN_REGEX = new RegExp(
 // eslint-disable-next-line no-control-regex
 const CONTROL_CHAR_REGEX = /[\x00-\x1F\x7F]/g;
 
+/** Line/paragraph separators (U+2028/U+2029) + BiDi control (U+202A-U+202E) */
+const UNICODE_WS_REGEX = /[\u2028\u2029\u202A-\u202E]/g;
+
 /** Zero-width / BOM / word joiner 계열 */
 const ZERO_WIDTH_REGEX = /[\u200B-\u200D\uFEFF\u2060]/g;
 
@@ -98,6 +101,10 @@ function applySanitize(
 
   // 3. Zero-width 제거
   s = s.replace(ZERO_WIDTH_REGEX, '');
+
+  // 3.5. U+2028/U+2029 line-paragraph separators + BiDi control → 공백 치환
+  //      JSON 파서는 통과하지만 프롬프트 레이아웃을 깨뜨릴 수 있어 별도 방어.
+  s = s.replace(UNICODE_WS_REGEX, ' ');
 
   // 4. 제어문자(개행/탭 포함) → 공백 치환
   //    "ignoresystem" 이 아닌 "ignore system" 형태를 유지하기 위해 공백 치환 선택.
