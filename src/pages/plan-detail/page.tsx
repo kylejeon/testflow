@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
@@ -2506,12 +2506,14 @@ export default function PlanDetailPage() {
   // Daily execution counts for last 7 days (from test_results via runs)
   const [dailyExecCounts, setDailyExecCounts] = useState<number[]>([0,0,0,0,0,0,0]);
 
-  useEffect(() => {
-    if (!projectId || !planId) return;
-    load();
-  }, [projectId, planId]);
+  // Race condition guard: bumped on every load() start, checked at each await boundary.
+  // Ensures fast-fire callers (logActivity → load) don't clobber newer load's state.
+  const loadGenRef = useRef(0);
 
-  const load = async () => {
+  const load = useCallback(async () => {
+    const gen = ++loadGenRef.current;
+    const isStale = () => gen !== loadGenRef.current;
+
     setLoading(true);
     setLoadError(false);
     try {
@@ -2555,6 +2557,7 @@ export default function PlanDetailPage() {
           .order('created_at', { ascending: false }).limit(50),
       ]);
 
+      if (isStale()) return;
       if (planRes.error) {
         setLoadError(true);
         return;
@@ -2644,6 +2647,8 @@ export default function PlanDetailPage() {
         testResultsPromise,
         issuesPromise,
       ]);
+
+      if (isStale()) return;
 
       const runAssigneeMap = new Map<string, string>();
       (runAssigneeRes.data || []).forEach((p: any) => runAssigneeMap.set(p.id, p.full_name || p.email));
@@ -2783,6 +2788,7 @@ export default function PlanDetailPage() {
       if (allFetchIds.length > 0) {
         const { data: profileData } = await supabase
           .from('profiles').select('id, full_name, email, avatar_url').in('id', allFetchIds);
+        if (isStale()) return;
         (profileData || []).forEach((p: any) => profileMap.set(p.id, p));
       }
       setProfiles(profileMap);
@@ -2799,11 +2805,17 @@ export default function PlanDetailPage() {
         setIssuesCount(count);
       }
     } catch (err: any) {
-      setLoadError(true);
+      if (!isStale()) setLoadError(true);
     } finally {
-      setLoading(false);
+      if (!isStale()) setLoading(false);
     }
-  };
+  }, [projectId, planId]);
+
+  // Initial load + on planId/projectId change
+  useEffect(() => {
+    if (!projectId || !planId) return;
+    load();
+  }, [load, projectId, planId]);
 
   // Activity log helper — fire-and-forget
   const logActivity = (eventType: string, eventCategory: string, metadata?: Record<string, any>) => {
