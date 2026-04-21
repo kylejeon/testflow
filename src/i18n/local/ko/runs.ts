@@ -8,25 +8,129 @@ export const runs = {
   selectTestCases: '테스트 케이스 선택',
   noRuns: '실행이 없습니다',
   searchPlaceholder: '실행 검색...',
-  
+
   // Run Details
   runDetails: '실행 상세',
   testResults: '테스트 결과',
   progress: '진행률',
   totalTests: '전체 테스트',
   passRate: '통과율',
-  
+
   // Test Execution
   markAs: '상태 변경',
   addComment: '댓글 추가',
   attachFile: '파일 첨부',
   executionHistory: '실행 이력',
-  
+
   // Messages
   runCreated: '실행이 생성되었습니다',
   runUpdated: '실행이 수정되었습니다',
   runDeleted: '실행이 삭제되었습니다',
   resultUpdated: '결과가 업데이트되었습니다',
+
+  // AI Run Summary panel
+  // NOTE: Claude 응답 본문은 AC-9 에 따라 번역 대상이 아님.
+  aiSummary: {
+    title: 'AI 실행 요약',
+    analyzing: '분석 중…',
+    analyzingResultsFor: '결과 {{count}}건의 패턴을 분석 중입니다…',
+    analyzingHint: '보통 10-15초 소요됩니다',
+    tryAgain: '다시 시도',
+    staleBanner: '이 요약이 생성된 이후 테스트 결과가 변경되었습니다.',
+    updating: '갱신 중…',
+    updateCta: '요약 갱신',
+    riskSuffix: '위험도 {{level}}',
+    creditUsed: 'AI 크레딧 1건 사용',
+    failurePatterns: '실패 패턴',
+    noFailurePatterns: '감지된 실패 패턴이 없습니다.',
+    recommendations: '권장 조치',
+    metric: {
+      total: '전체',
+      passed: '통과',
+      failed: '실패',
+      blocked: '차단',
+      passRate: '통과율',
+      skipped: '스킵',
+    },
+    goNoGo: {
+      go: 'GO',
+      noGo: 'NO-GO',
+      conditional: '조건부 GO',
+    },
+    error: {
+      default: '분석을 완료할 수 없습니다',
+      monthlyLimit: '월 AI 한도 도달 ({{used}}/{{limit}})',
+      tooMany: '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.',
+      tierTooLow: 'AI 요약은 Starter 플랜부터 사용할 수 있습니다',
+      noResults: '분석할 테스트 결과가 없습니다',
+      unauthorized: '다시 로그인해 주세요',
+      connection: '연결 오류가 발생했습니다. 다시 시도해 주세요.',
+    },
+    action: {
+      copyMarkdown: 'Markdown으로 복사',
+      copied: '복사됨!',
+      inPdf: 'PDF 포함 ✓',
+      includeInPdf: 'PDF에 포함',
+      share: '공유…',
+      shareSlack: 'Slack으로 공유',
+      shareEmail: '이메일로 공유',
+      createJira: 'Jira 이슈 생성',
+      createGithub: 'GitHub 이슈 생성',
+      rerunFailed: '실패 재실행 ({{count}})',
+      creating: '생성 중…',
+    },
+    jira: {
+      sectionTitle: 'Jira 이슈 생성 중',
+      priorityLabel: '우선순위: {{priority}}',
+      labelsPrefix: '라벨: ai-detected, regression',
+      relatedTcs: '관련 TC {{count}}건 · 설명에 AI 실행 요약 포함',
+      createIssue: '이슈 생성',
+    },
+    github: {
+      sectionTitle: 'GitHub 이슈 생성',
+      titleLabel: '제목',
+      bodyLabel: '본문',
+      willBeCreatedIn: '다음 위치에 생성됩니다:',
+      labelsSuffix: '라벨:',
+      createIssue: '이슈 생성',
+    },
+    slack: {
+      sectionTitle: 'Slack으로 공유',
+      selectChannel: '채널 선택',
+      unnamedChannel: '이름 없는 채널',
+      webhookLabel: 'Slack Webhook URL',
+      webhookPlaceholder: 'https://hooks.slack.com/services/...',
+      noIntegration: 'Slack 연동이 없습니다. Settings › Integrations 에서 연동하거나 위에 webhook URL을 입력하세요.',
+    },
+    email: {
+      sectionTitle: '이메일로 공유',
+      recipientLabel: '수신자 이메일',
+      recipientPlaceholder: 'teammate@company.com',
+    },
+    sending: '전송 중…',
+    send: '전송',
+    toast: {
+      copied: '요약이 Markdown 형식으로 클립보드에 복사되었습니다',
+      copyFailed: '클립보드 복사에 실패했습니다',
+      jiraKeyMissing: '이 프로젝트에 Jira Project Key가 설정되어 있지 않습니다. 프로젝트 설정을 수정해 주세요.',
+      jiraCreated: 'Jira 이슈{{keySuffix}} 생성됨',
+      jiraFailed: 'Jira 이슈 생성에 실패했습니다',
+      githubCreated: 'GitHub 이슈 #{{number}} 생성됨',
+      githubFailed: 'GitHub 이슈 생성에 실패했습니다',
+      slackWebhookRequired: 'Slack webhook URL을 입력해 주세요',
+      slackShared: '요약이 Slack으로 공유되었습니다',
+      slackFailed: 'Slack 전송에 실패했습니다',
+      emailRequired: '이메일 주소를 입력해 주세요',
+      emailShared: '요약이 {{email}}으로 공유되었습니다',
+      emailFailed: '이메일 전송에 실패했습니다',
+      pdfIncluded: 'AI 요약이 PDF 내보내기에 포함됩니다',
+      pdfRemoved: 'PDF 내보내기에서 제외됨',
+      rerunFailedEmpty: '재실행할 실패 테스트 케이스가 없습니다',
+      rerunCreated_one: '실패 테스트 케이스 {{count}}건으로 새 실행 생성됨',
+      rerunCreated_other: '실패 테스트 케이스 {{count}}건으로 새 실행 생성됨',
+      rerunFailed: '재실행 생성에 실패했습니다',
+    },
+  },
 };
 
 export default runs;

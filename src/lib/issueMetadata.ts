@@ -68,6 +68,11 @@ export function mapGitHubState(state: string | null | undefined): IssueStatus {
 /**
  * Relative time formatter — returns "3m", "2h", "1d" etc.
  * Input: ISO 8601 string or null.
+ *
+ * @deprecated i18n-unaware. New callers should use
+ * `formatRelativeTime(iso, t)` from `src/lib/formatRelativeTime.ts`.
+ * This export is kept for non-user-facing call sites (logs, exports)
+ * that must not depend on the active UI locale.
  */
 export function formatRelativeTime(iso: string | null | undefined): string {
   if (!iso) return '—';

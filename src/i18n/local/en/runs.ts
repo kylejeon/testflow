@@ -8,25 +8,131 @@ export const runs = {
   selectTestCases: 'Select Test Cases',
   noRuns: 'No runs found',
   searchPlaceholder: 'Search runs...',
-  
+
   // Run Details
   runDetails: 'Run Details',
   testResults: 'Test Results',
   progress: 'Progress',
   totalTests: 'Total Tests',
   passRate: 'Pass Rate',
-  
+
   // Test Execution
   markAs: 'Mark as',
   addComment: 'Add Comment',
   attachFile: 'Attach File',
   executionHistory: 'Execution History',
-  
+
   // Messages
   runCreated: 'Run created successfully',
   runUpdated: 'Run updated successfully',
   runDeleted: 'Run deleted successfully',
   resultUpdated: 'Result updated successfully',
+
+  // AI Run Summary panel (dev-spec §10 + design-spec §7.20)
+  // NOTE: Only wrapping labels are translated. Claude response body
+  // (summary.narrative, cluster.rootCause, recommendations[i], goNoGoCondition)
+  // is rendered as-is per AC-9.
+  aiSummary: {
+    title: 'AI Run Summary',
+    analyzing: 'Analyzing…',
+    analyzingResultsFor: 'Analyzing {{count}} results for patterns…',
+    analyzingHint: 'Usually takes 10-15 seconds',
+    tryAgain: 'Try Again',
+    staleBanner: 'Test results have been updated since this summary was generated.',
+    updating: 'Updating…',
+    updateCta: 'Update Summary',
+    riskSuffix: '{{level}} RISK',
+    creditUsed: '1 AI credit used',
+    failurePatterns: 'Failure Patterns',
+    noFailurePatterns: 'No failure patterns detected.',
+    recommendations: 'Recommendations',
+    metric: {
+      total: 'Total',
+      passed: 'Passed',
+      failed: 'Failed',
+      blocked: 'Blocked',
+      passRate: 'Pass Rate',
+      skipped: 'Skipped',
+    },
+    goNoGo: {
+      go: 'GO',
+      noGo: 'NO-GO',
+      conditional: 'CONDITIONAL GO',
+    },
+    error: {
+      default: "Analysis couldn't be completed",
+      monthlyLimit: 'Monthly AI limit reached ({{used}}/{{limit}})',
+      tooMany: 'Too many requests. Please wait a moment.',
+      tierTooLow: 'AI Summary requires Starter plan',
+      noResults: 'No test results to analyze',
+      unauthorized: 'Please log in again',
+      connection: 'Connection error. Please try again.',
+    },
+    action: {
+      copyMarkdown: 'Copy as Markdown',
+      copied: 'Copied!',
+      inPdf: 'In PDF ✓',
+      includeInPdf: 'Include in PDF',
+      share: 'Share…',
+      shareSlack: 'Share via Slack',
+      shareEmail: 'Share via Email',
+      createJira: 'Create Jira Issue',
+      createGithub: 'Create GitHub Issue',
+      rerunFailed: 'Re-run Failed ({{count}})',
+      creating: 'Creating…',
+    },
+    jira: {
+      sectionTitle: 'Creating Jira Issue',
+      priorityLabel: 'Priority: {{priority}}',
+      labelsPrefix: 'Labels: ai-detected, regression',
+      relatedTcs: '{{count}} related TCs · AI run summary included in description',
+      createIssue: 'Create Issue',
+    },
+    github: {
+      sectionTitle: 'Create GitHub Issue',
+      titleLabel: 'Title',
+      bodyLabel: 'Body',
+      willBeCreatedIn: 'Will be created in',
+      labelsSuffix: 'Labels:',
+      createIssue: 'Create Issue',
+    },
+    slack: {
+      sectionTitle: 'Share via Slack',
+      selectChannel: 'Select channel',
+      unnamedChannel: 'Unnamed channel',
+      webhookLabel: 'Slack Webhook URL',
+      webhookPlaceholder: 'https://hooks.slack.com/services/...',
+      noIntegration: 'No Slack integration found. Connect one in Settings › Integrations, or paste a webhook URL above.',
+    },
+    email: {
+      sectionTitle: 'Share via Email',
+      recipientLabel: 'Recipient email',
+      recipientPlaceholder: 'teammate@company.com',
+    },
+    sending: 'Sending…',
+    send: 'Send',
+    toast: {
+      copied: 'Summary copied to clipboard as Markdown',
+      copyFailed: 'Failed to copy to clipboard',
+      jiraKeyMissing: 'Jira Project Key is not set for this project. Please edit the project settings.',
+      jiraCreated: 'Jira issue{{keySuffix}} created',
+      jiraFailed: 'Failed to create Jira issue',
+      githubCreated: 'GitHub issue #{{number}} created',
+      githubFailed: 'Failed to create GitHub issue',
+      slackWebhookRequired: 'Please enter a Slack webhook URL',
+      slackShared: 'Summary shared to Slack',
+      slackFailed: 'Failed to send to Slack',
+      emailRequired: 'Please enter an email address',
+      emailShared: 'Summary shared to {{email}}',
+      emailFailed: 'Failed to send email',
+      pdfIncluded: 'AI summary will be included in PDF export',
+      pdfRemoved: 'Removed from PDF export',
+      rerunFailedEmpty: 'No failed test cases found to re-run',
+      rerunCreated_one: 'New run created with {{count}} failed test case',
+      rerunCreated_other: 'New run created with {{count}} failed test cases',
+      rerunFailed: 'Failed to create re-run',
+    },
+  },
 };
 
 export default runs;
