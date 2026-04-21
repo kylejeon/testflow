@@ -289,6 +289,7 @@ export default function ProjectSessions() {
         });
       }
     } catch (error) {
+      // intentional: silent — profile prefetch; defaults applied
       console.error('프로필 로딩 오류:', error);
     }
   };

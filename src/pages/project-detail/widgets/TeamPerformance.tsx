@@ -171,6 +171,7 @@ export default function TeamPerformance({ projectId, period }: { projectId: stri
 
       setMembers(list);
     } catch (e) {
+      // intentional: silent — analytics widget; ErrorBoundary(section) handles render errors
       console.error('TeamPerformance:', e);
     } finally {
       setLoading(false);

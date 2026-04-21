@@ -914,6 +914,7 @@ export default function SessionDetail() {
         }
       }
     } catch (error) {
+      // intentional: silent — integration config prefetch; UI hides Jira CTA if absent
       console.error('Jira 설정 로딩 오류:', error);
     }
   };

@@ -191,6 +191,7 @@ export default function PassRateTrend({ projectId, period }: { projectId: string
         dailyPoints,
       });
     } catch (e) {
+      // intentional: silent — analytics widget; ErrorBoundary(section) handles render errors
       console.error('PassRateTrend:', e);
     } finally {
       setLoading(false);

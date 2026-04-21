@@ -1774,6 +1774,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
         if (error) throw error;
         setProjectMembers(data || []);
       } catch (error) {
+        // intentional: silent — members autocomplete prefetch
         console.error('프로젝트 멤버 조회 오류:', error);
         setProjectMembers([]);
       } finally {
@@ -1828,6 +1829,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
       setComments(formattedComments);
     } catch (error) {
+      // intentional: silent — comments hydration; empty state safe
       console.error('Failed to load comments:', error);
     } finally {
       setLoadingComments(false);

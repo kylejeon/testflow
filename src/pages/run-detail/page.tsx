@@ -760,6 +760,7 @@ export default function RunDetail() {
         });
       }
     } catch (error) {
+      // intentional: silent — user info prefetch; UI falls back gracefully
       console.error('현재 사용자 정보 로딩 오류:', error);
     }
   };
@@ -832,6 +833,7 @@ export default function RunDetail() {
         }));
       }
     } catch (error) {
+      // intentional: silent — integration config prefetch; UI hides Jira CTA if absent
       console.error('Jira 설정 로딩 오류:', error);
     }
   };
@@ -858,6 +860,7 @@ export default function RunDetail() {
         });
       }
     } catch (error) {
+      // intentional: silent — integration config prefetch; UI hides GitHub CTA if absent
       console.error('GitHub 설정 로딩 오류:', error);
     }
   };
@@ -891,6 +894,7 @@ export default function RunDetail() {
 
       setProjectMembers(members);
     } catch (error) {
+      // intentional: silent — members prefetch for autocomplete
       console.error('프로젝트 멤버 로딩 오류:', error);
     }
   };
@@ -1049,6 +1053,7 @@ export default function RunDetail() {
             }
           }
         } catch (e) {
+          // intentional: silent — background auto-link, retried on next run
           console.error('[auto-link] Error:', e);
         }
       }
@@ -1329,6 +1334,7 @@ export default function RunDetail() {
               }
             }
           } catch (e) {
+            // intentional: silent — secondary rollup; next poll retries
             console.error('[plan-status] Error updating plan status:', e);
           }
         } else {

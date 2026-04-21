@@ -207,6 +207,7 @@ export default function TCQualityAnalysis({ projectId }: { projectId: string }) 
         totalTCs: tcs.length, topFailedTCs,
       });
     } catch (e) {
+      // intentional: silent — analytics widget; ErrorBoundary(section) handles render errors
       console.error('TCQualityAnalysis:', e);
     } finally {
       setLoading(false);

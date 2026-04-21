@@ -158,6 +158,7 @@ function AIDailySummary({ projectId }: { projectId: string }) {
           ].filter(Boolean),
         });
       } catch (e) {
+        // intentional: silent — AI summary optional; panel hides on error
         console.error('AIDailySummary:', e);
       }
     }
