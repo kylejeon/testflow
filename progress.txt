@@ -1672,3 +1672,96 @@ f010 i18n 커버리지 Phase 2b 구현 완료. `src/pages/run-detail/page.tsx`
     들고 있는 스모크 세이프티 — 장기적으로 필수 파라미터로 전환 고려
   - AI Summary 버튼 내 `✓` / `⚠️` 이모지는 현재 인라인 하드코딩 —
     상태 아이콘 역할이라 번역 대상 아님 (디자이너 확인 완료)
+
+────────────────────────────────────────────────────────────────────
+# 2026-04-21 세션 — f024 ErrorBoundary i18n + catch→toast (완료)
+────────────────────────────────────────────────────────────────────
+
+## 뭘 했냐
+Dev Spec `docs/specs/dev-spec-f024-error-boundary.md` + Design Spec
+`docs/specs/design-spec-f024-error-boundary.md` 기반 구현 완료.
+
+1. **i18n 번들 42 키 추가** (en/ko 각 42, 총 84값)
+   - `common.errorBoundary.*` 12 키 (Full-Page + Section fallback)
+   - `common.toast.apiErrors.*` 17 키 (getApiErrorMessage 매핑)
+   - `common.toast.exportFailed` 1 키
+   - `runs.toast.*` 6 키 / `sessions.toast.loadFailed` 1
+   - `milestones.toast.{loadFailed,completeFailed}` 2
+   - `projects.toast.membersLoadFailed` 1
+   - `documentation.toast.loadFailed` 1
+   - `testcases.toast.{attachmentDeleteFailed,generateSaveFailed}` 2
+   - `settings.toast.logoutFailed` 1
+
+2. **ErrorBoundary i18n화 + Sentry eventId report**
+   - `componentDidCatch` 가 `Sentry.captureException` 반환값을
+     `state.eventId` 에 저장.
+   - Full-Page fallback 이 `i18n.t()` 싱글톤으로 카피를 해석
+     (class component 라 hook 불가 → singleton 사용).
+   - Report ID 는 production 에서만 노출 (DEV 에선 DSN 미설정·
+     beforeSend drop 시 혼란 방지). eventId 가 null 이면
+     `reportIdMissing` 문구로 대체.
+   - h1 에 `tabIndex={-1}` + mount focus (AC-10, Design Spec §8-1).
+   - Section fallback retry 버튼에 `focus-visible:ring-red-500` 추가.
+   - tertiary mailto 링크 대비 `text-slate-400 → text-slate-500`.
+
+3. **App.tsx 구조 스왑**
+   - `<I18nextProvider>` 가 `<ErrorBoundary>` 바깥으로 이동.
+   - fallback UI 에서 singleton 으로 `t()` 호출 가능.
+
+4. **Toast.tsx `getApiErrorMessage` i18n화**
+   - 13+ 분기 (Supabase 코드 8 + HTTP 상태 5 + 네트워크 문자열 3)
+     모두 `common:toast.apiErrors.*` 키 반환. singleton 사용.
+
+5. **A표 20건 catch → toast 교체**
+   - testcases/page.tsx 1 / run-detail/page.tsx 8 (logout + 7)
+   - project-detail/page.tsx 1 / stats/PassRateReportPage.tsx 1
+   - session-detail/page.tsx 3 / project-documentation/page.tsx 1
+   - project-sessions/page.tsx 1 / milestone-detail/page.tsx 1
+   - project-detail/AnalyticsTab.tsx 1 / TestCaseList.tsx 2
+   - run-detail 는 로컬 `showToast(type, message)` 패턴 사용 (Dev
+     Spec AC-9 — 버그 시그니처 수정은 OOS).
+
+6. **B표 14건 `// intentional: silent —` 주석**
+   - run-detail 6 / session-detail 1 / project-sessions 1
+   - ActivityFeedTab 1 / TCQualityAnalysis · PassRateTrend ·
+     TeamPerformance 3 / TestCaseList 2.
+
+7. **Vitest 테스트 추가 (25건)**
+   - `ErrorBoundary.test.tsx` 5 케이스 (no-throw 통과 / FullPage /
+     Section+sectionName / Section retry state reset / titleGeneric).
+   - `Toast.test.tsx` 19 케이스 (getApiErrorMessage 모든 분기).
+
+## 어디까지 됐냐 — 품질 체크 (전부 PASS)
+- `npx tsc --noEmit` → 0 에러
+- `npm run build` → 성공 (6.95s)
+- `npm run test -- --run` → **127 tests passed** (기존 102 + 신규 25)
+- `npm run scan:i18n` → clean — 0 hardcoded matches across 23 files
+- `npm run scan:i18n:parity` → 0 diff (en ↔ ko parity)
+
+## 어디까지 됐냐 — claude 브랜치 커밋 (5건)
+1. `feat(i18n): f024 ErrorBoundary + apiErrors bundle keys`
+2. `feat(error): ErrorBoundary i18n + Sentry eventId report`
+3. `feat(error): 20 page catch blocks now surface toasts (f024 A-table)`
+4. `chore(error): intentional silent catch annotations (f024 B-table)`
+5. `test(error): ErrorBoundary fallback + getApiErrorMessage unit tests`
+
+## 다음에 할 것
+- `git push origin claude` — CEO 머지 대기
+- follow-up:
+  - **C표 교정 (별도 티켓)** — run-detail/page.tsx 의 로컬
+    `showToast('error', ...)` 버그 시그니처 일괄 수정. 본 티켓은 OOS.
+  - **Section-level ErrorBoundary 래핑** — 위젯별 개별 적용.
+    현재는 최상위 + sectionName="App Routes" 만 래핑됨.
+  - `src/pages/accept-invitation/page.tsx` L80/L145 —
+    `error.message` 직접 노출 대신 `getApiErrorMessage(err)` 사용 권장.
+    본 티켓에서는 Auth 회귀 리스크로 미처리.
+  - Report ID 클립보드 복사 버튼 (Dev Spec §9 OOS).
+  - ErrorBoundary fallback 다크모드 대응 (현재 light-only).
+
+## 포함 안 된 것 (금기 준수)
+- `react-error-boundary` 의존성 추가 X (BR-1)
+- `withSentryErrorBoundary` HOC 중복 레이어링 X (BR-2)
+- C표 버그 시그니처 수정 X (Dev Spec §9 OOS)
+- 기존 번역 키 값 변경 X — 재사용만 (A11 statusUpdateFailed,
+  A2/A3 logoutFailed alias, A16 loadFailed alias)
+- RichTextEditor/QuillEditor 구조 변경 X (AC-7)
