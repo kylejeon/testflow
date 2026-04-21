@@ -2,12 +2,16 @@ import * as Sentry from '@sentry/react';
 
 const dsn = import.meta.env.VITE_SENTRY_DSN as string | undefined;
 
-const environment = (() => {
-  const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
-  if (hostname === 'testably.app') return 'production';
-  if (hostname.includes('vercel.app') || hostname.includes('preview')) return 'preview';
+export function resolveSentryEnvironment(hostname: string): 'production' | 'preview' | 'development' {
+  const host = hostname.replace(/^www\./, '');
+  if (host === 'testably.app') return 'production';
+  if (host.includes('vercel.app') || host.includes('preview')) return 'preview';
   return 'development';
-})();
+}
+
+const environment = resolveSentryEnvironment(
+  typeof window !== 'undefined' ? window.location.hostname : ''
+);
 
 export function initSentry() {
   // Skip if no DSN — build still succeeds, monitoring is just inactive
