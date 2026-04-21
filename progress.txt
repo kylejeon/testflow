@@ -1,3 +1,58 @@
+2026-04-20 (밤 2): Vitest 테스트 인프라 + src/lib 유틸 테스트 초기 배치 @developer
+(dev-spec-vitest-infra, f009)
+
+## 뭘 했냐 (claude 브랜치, 1개 커밋 예정)
+
+Vitest + jsdom + @testing-library/react 기반 단위 테스트 인프라 셋업. 기존 vite.config.ts는 손대지 않고, 별도 vitest.config.ts로 Sentry/AutoImport 분리. src/lib/ 핵심 유틸 4개 테스트 스위트 초기 배치.
+
+### 설치 (devDependencies)
+- vitest@^4.1.4 + @vitest/ui + @vitest/coverage-v8
+- @testing-library/react@^16.3.2 + @testing-library/jest-dom + @testing-library/user-event
+- jsdom@^29.0.2
+
+### 신규 파일 7개
+- vitest.config.ts (루트): jsdom, globals, setupFiles, include=src/**/*.{test,spec}.{ts,tsx}. Sentry/AutoImport 플러그인 의도적으로 제외.
+- src/__tests__/setup.ts: jest-dom matcher import, Supabase env var stub (AC-9), matchMedia mock (AC-6), ResizeObserver mock, RTL afterEach(cleanup).
+- src/__tests__/fakeSupabase.ts: 공용 chainable query builder 팩토리 (select/eq/in/gte/lte/order/limit/maybeSingle/single/then).
+- src/lib/aiUsage.test.ts (14 tests): startOfUtcMonth, getEffectiveOwnerId 4 시나리오 (AC-3a owner tier 우선 / 만료 trial / 멤버십 owner tier=4 → owner 반환 AC-3b / 멤버십 없음 self), getSharedPoolUsage 5 시나리오 (정상 / 50 합산 시나리오 / RPC 에러 → 0 AC-3c / ownerId 빈문자 즉시 0 / 비숫자 → 0), getMySharedPoolUsage 2 시나리오.
+- src/lib/environments.test.ts (28 tests): getEnvironmentDisplayName 3 / heatmapSymbol 8 / cellLabel 3 / passRateToStatus 7-bucket 경계값 7 케이스 × 3 assertion씩 (AC-4) / summaryStatus 1 / groupEnvironmentsByOS 2 / buildEnvironmentHeatmap 4 (정상 집계 / env_id null 제외 / 비실행 status 제외 / legacyRunCount 전달).
+- src/lib/environmentInsights.test.ts (7 tests): 빈 matrix / env_low critical / browser_cross_os_low critical / env_low 우선 / coverageGap untested ≥ 50% / stableBaseline 95%+ / quickStats best/worst.
+- src/lib/statusPill.test.ts (16 tests): humanizeStatus 3 / resolveStatus 2 / getStatusVariant 6 / getProgressTone 7 (100%+overdue→green AC-11, 50%+overdue→red, in_progress→blue, failed→red, completed→green, NaN→0 취급, unknown→gray).
+
+### 수정 파일 2개
+- package.json: scripts 추가 (test / test:watch / test:ui), devDependencies 자동 추가.
+- tsconfig.app.json: compilerOptions.types 에 ["vitest/globals", "@testing-library/jest-dom"] 추가 → 테스트 파일에서 describe/it/expect 글로벌 타입 + jest-dom matcher 타입 인식.
+
+### 결정 사항 / 트레이드오프
+- AC-4 7-bucket은 경계값 양쪽 + 중앙 1개씩 총 21개 assertion (각 버킷 3개). 스펙 "14+" 충족.
+- deriveInsights "빈 matrix" 테스트 원안은 1 env × 1 TC untested 였으나, 실제 코드는 untested/total=1/1=100% ≥ 0.5라서 coverageGap이 걸린다. 진짜 empty (envs=0, tcs=0) 로 바꿈.
+- getEnvironmentDisplayName: name='' + 나머지 다 null이면 join에 '/' 리터럴이 살아남아 `'/'`를 반환. "Environment" fallback은 실제로는 unreachable. 현재 동작을 pinning 테스트로 문서화 (코드 변경 없음).
+- supabase 모듈은 per-test `vi.mock('./supabase')` 패턴. fakeSupabase.ts 헬퍼는 공용 참고용으로 두되 이번 배치는 in-file 헬퍼 (selectEqMaybeSingle 등) 사용.
+- vite.config.ts 건드리지 않음 — 별도 vitest.config.ts로 Sentry upload / AutoImport 사이드이펙트 제거.
+- 컴포넌트 테스트는 Out of Scope (라이브러리 설치만).
+- CI yaml / coverage threshold 미설정.
+
+### 품질 검사
+- `npx tsc --noEmit`: 0 에러.
+- `npm run test`: 65 tests passed / 4 files / Duration 451ms. exit 0.
+- `npm run build`: PASS (6.56s, 기존과 동일). 테스트 파일은 vite 번들 진입점 아니라 dist에 포함 안됨.
+
+## 어디까지 됐냐
+
+Vitest 인프라 + 4개 테스트 스위트 모두 green. 커밋 + claude 브랜치 push 완료.
+
+## 다음 할 것
+
+- (CEO) `npm install` 1회 (로컬 dep 동기화).
+- 이후 Dev Spec AC에 "테스트 파일 경로" 항목이 있으면 바로 작성 가능 (스킵 이력 재발 방지).
+- 후속 티켓 후보 (이번 스코프 아님):
+  - 컴포넌트 테스트 (StatusPill, EnvironmentAIInsights 등)
+  - milestoneRollup, expandSharedSteps 등 나머지 src/lib/ 유틸 테스트
+  - CI .github/workflows/*.yml 에 `npm run test` 게이트 추가
+  - coverage threshold (80%+) 강제
+
+---
+
 2026-04-20 (밤): 성능 감사 후속 일괄 수정 @developer
 
 ## 뭘 했냐 (claude 브랜치, 3개 커밋)
