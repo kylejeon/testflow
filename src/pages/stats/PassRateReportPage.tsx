@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { LogoMark } from '../../components/Logo';
 import { usePassRateReport, type PeriodFilter } from '../../hooks/usePassRateReport';
 import PageLoader from '../../components/PageLoader';
@@ -8,6 +9,7 @@ import { supabase } from '../../lib/supabase';
 import { Avatar } from '../../components/Avatar';
 import { toCanvas } from 'html-to-image';
 import NotificationBell from '../../components/feature/NotificationBell';
+import { useToast } from '../../components/Toast';
 import { queryClient } from '../../lib/queryClient';
 
 const priorityStyle: Record<string, { color: string; bg: string }> = {
@@ -32,6 +34,8 @@ function fmt(n: number): string {
 
 export default function PassRateReportPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation(['common']);
+  const { showToast } = useToast();
   const [period, setPeriod] = useState<PeriodFilter>(
     () => (localStorage.getItem(LS_KEY) as PeriodFilter | null) ?? 'active_run'
   );
@@ -124,6 +128,7 @@ export default function PassRateReportPage() {
       pdf.save(`pass-rate-report-${date}.pdf`);
     } catch (e) {
       console.error('Export PDF error:', e);
+      showToast(t('common:toast.exportFailed'), 'error');
     } finally {
       setExporting(false);
     }

@@ -771,6 +771,7 @@ export default function MilestoneDetail() {
       });
     } catch (e) {
       console.error('complete error:', e);
+      showToast(t('milestones:toast.completeFailed'), 'error');
     }
   };
 

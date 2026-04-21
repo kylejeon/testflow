@@ -1,6 +1,7 @@
 import PageLoader from '../../components/PageLoader';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import ProjectHeader from '../../components/ProjectHeader';
 import { Avatar } from '../../components/Avatar';
@@ -39,6 +40,7 @@ export default function ProjectSessions() {
   const { id: projectId } = useParams();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { t } = useTranslation(['sessions']);
   const [project, setProject] = useState<any>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
@@ -263,6 +265,7 @@ export default function ProjectSessions() {
       setSessions(processedSessions);
     } catch (error) {
       console.error('Error fetching data:', error);
+      showToast(t('sessions:toast.loadFailed'), 'error');
     } finally {
       setLoading(false);
     }

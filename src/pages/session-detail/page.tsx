@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import PageLoader from '../../components/PageLoader';
 import { useToast } from '../../components/Toast';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import QuillEditor from './components/QuillEditor';
 import EditSessionModal from './components/EditSessionModal';
@@ -61,6 +62,7 @@ export default function SessionDetail() {
   const { projectId, sessionId } = useParams();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { t } = useTranslation(['milestones', 'projects', 'sessions']);
   const [session, setSession] = useState<any>(null);
   const [milestone, setMilestone] = useState<any>(null);
   const [milestones, setMilestones] = useState<any[]>([]);
@@ -232,6 +234,7 @@ export default function SessionDetail() {
       setMilestones(data || []);
     } catch (error) {
       console.error('Error fetching milestones:', error);
+      showToast(t('milestones:toast.loadFailed'), 'error');
     }
   };
 
@@ -257,6 +260,7 @@ export default function SessionDetail() {
       }
     } catch (error) {
       console.error('Error fetching project members:', error);
+      showToast(t('projects:toast.membersLoadFailed'), 'error');
     }
   };
 
@@ -316,6 +320,7 @@ export default function SessionDetail() {
       setLogs(logsData || []);
     } catch (error) {
       console.error('Error fetching session data:', error);
+      showToast(t('sessions:toast.loadFailed'), 'error');
     } finally {
       setLoading(false);
     }

@@ -1,13 +1,17 @@
 import { LogoMark } from '../../components/Logo';
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
+import { useToast } from '../../components/Toast';
 import TestCaseList from './components/TestCaseList';
 
 export default function TestCases() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const { t } = useTranslation(['settings']);
+  const { showToast } = useToast();
 
   const handleLogout = async () => {
     try {
@@ -16,6 +20,7 @@ export default function TestCases() {
       navigate('/auth');
     } catch (err) {
       console.error('Logout failed:', err);
+      showToast(t('settings:toast.logoutFailed'), 'error');
     }
   };
 

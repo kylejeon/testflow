@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../../../lib/supabase';
 import ExportImportModal from './ExportImportModal';
 import CloneFromProjectModal from './CloneFromProjectModal';
@@ -301,6 +302,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
   const detailPanelRef = useRef<HTMLDivElement>(null);
 
   const { showToast } = useToast();
+  const { t } = useTranslation(['testcases']);
 
   // 폴더 삭제 확인 모달 상태 추가
   const [showDeleteFolderModal, setShowDeleteFolderModal] = useState(false);
@@ -1650,6 +1652,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       }
     } catch (error) {
       console.error('첨부파일 삭제 오류:', error);
+      showToast(t('testcases:toast.attachmentDeleteFailed'), 'error');
     }
   };
 
@@ -1730,6 +1733,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       }
     } catch (error) {
       console.error('File delete error:', error);
+      showToast(t('testcases:toast.attachmentDeleteFailed'), 'error');
     }
   };
 

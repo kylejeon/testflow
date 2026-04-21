@@ -1,6 +1,7 @@
 import PageLoader from '../../components/PageLoader';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import ProjectHeader from '../../components/ProjectHeader';
 import { Avatar } from '../../components/Avatar';
@@ -84,6 +85,7 @@ export default function ProjectDocumentation() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { t } = useTranslation(['documentation']);
 
   const [project, setProject] = useState<any>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
@@ -177,6 +179,7 @@ export default function ProjectDocumentation() {
       setDocuments(allItems.filter(d => d.category !== '__folder__'));
     } catch (error) {
       console.error('데이터 로딩 오류:', error);
+      showToast(t('documentation:toast.loadFailed'), 'error');
     } finally {
       setLoading(false);
     }

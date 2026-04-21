@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
+import { useToast } from '../../components/Toast';
 import PassRateTrend from './widgets/PassRateTrend';
 import MilestoneTracker from './widgets/MilestoneTracker';
 import ExecutionSummary from './widgets/ExecutionSummary';
@@ -28,6 +30,8 @@ const PERIOD_LABELS: Record<PeriodFilter, string> = {
 
 export default function AnalyticsTab({ projectId, milestones, subscriptionTier }: AnalyticsTabProps) {
   const queryClient = useQueryClient();
+  const { t } = useTranslation(['testcases']);
+  const { showToast } = useToast();
   const [period, setPeriod] = useState<PeriodFilter>('30d');
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string>('');
   const [showCoverageGapModal, setShowCoverageGapModal] = useState(false);
@@ -222,6 +226,7 @@ export default function AnalyticsTab({ projectId, milestones, subscriptionTier }
               setGapTitles([]);
             } catch (error) {
               console.error('Failed to save generated test cases:', error);
+              showToast(t('testcases:toast.generateSaveFailed'), 'error');
             }
           }}
         />

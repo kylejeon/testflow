@@ -122,7 +122,7 @@ export default function RunDetail() {
   const { projectId, runId } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { t, i18n } = useTranslation(['common', 'runs']);
+  const { t, i18n } = useTranslation(['common', 'runs', 'settings']);
   const [project, setProject] = useState<any>(null);
   const [run, setRun] = useState<any>(null);
   const [testCases, setTestCases] = useState<TestCaseWithRunStatus[]>([]);
@@ -797,6 +797,7 @@ export default function RunDetail() {
       setComments(formattedComments);
     } catch (error) {
       console.error('코멘트 로딩 오류:', error);
+      showToast('error', t('runs:toast.commentsLoadFailed'));
     } finally {
       setLoadingComments(false);
     }
@@ -950,6 +951,7 @@ export default function RunDetail() {
       setTestResults(results);
     } catch (error) {
       console.error('결과 로딩 오류:', error);
+      showToast('error', t('runs:toast.resultsLoadFailed'));
     }
   };
 
@@ -1201,6 +1203,7 @@ export default function RunDetail() {
       }
     } catch (error) {
       console.error('데이터 로딩 오류:', error);
+      showToast('error', t('runs:toast.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -1334,6 +1337,7 @@ export default function RunDetail() {
       }
     } catch (error) {
       console.error('Error updating run status:', error);
+      showToast('error', t('runs:toast.statusUpdateFailed'));
     }
   };
 
@@ -2333,6 +2337,7 @@ export default function RunDetail() {
       });
     } catch (error) {
       console.error('첨부파일 삭제 오류:', error);
+      showToast('error', t('runs:toast.attachmentDeleteFailed'));
     }
   };
 
@@ -2423,6 +2428,7 @@ export default function RunDetail() {
       navigate('/auth');
     } catch (err) {
       console.error('Logout failed:', err);
+      showToast('error', t('settings:toast.logoutFailed'));
     }
   };
 
@@ -2715,6 +2721,7 @@ export default function RunDetail() {
       }
     } catch (error) {
       console.error('Assignee 업데이트 오류:', error);
+      showToast('error', t('runs:toast.assigneeUpdateFailed'));
     }
   };
 
@@ -2748,6 +2755,7 @@ export default function RunDetail() {
       setBulkAssignee('');
     } catch (error) {
       console.error('Bulk assignee 업데이트 오류:', error);
+      showToast('error', t('runs:toast.assigneeBulkUpdateFailed'));
     }
   };
 
@@ -4837,7 +4845,7 @@ interface ResultDetailModalProps {
 }
 
 function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, stepsSnapshot, onClose }: ResultDetailModalProps) {
-  const { t, i18n } = useTranslation(['common', 'runs']);
+  const { t, i18n } = useTranslation(['common', 'runs', 'settings']);
   const getJiraIssueUrl = (issueKey: string) => {
     if (!jiraDomain) return '#';
     return `https://${jiraDomain}/browse/${issueKey}`;

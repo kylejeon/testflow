@@ -3,8 +3,10 @@ import PageLoader from '../../components/PageLoader';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
+import { useToast } from '../../components/Toast';
 import { loadProjectDetailData } from './queryFns';
 import { getSharedPoolUsage } from '../../lib/aiUsage';
 import ProjectMembersPanel from './components/ProjectMembersPanel';
@@ -65,6 +67,8 @@ export default function ProjectDetail() {
   const [isExporting, setIsExporting] = useState(false);
   const [exportToast, setExportToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const navigate = useNavigate();
+  const { t } = useTranslation(['settings']);
+  const { showToast } = useToast();
 
   // Dashboard-specific keyboard shortcuts (N → New TC, R → Continue Run)
   useEffect(() => {
@@ -273,6 +277,7 @@ export default function ProjectDetail() {
       navigate('/auth');
     } catch (err) {
       console.error('Logout failed:', err);
+      showToast(t('settings:toast.logoutFailed'), 'error');
     }
   };
 
