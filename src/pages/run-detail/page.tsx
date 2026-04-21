@@ -3641,15 +3641,24 @@ export default function RunDetail() {
                   <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <i className="ri-vip-crown-line text-yellow-500 text-3xl"></i>
                   </div>
-                  <h2 className="text-xl font-bold text-gray-900 mb-2">Starter 플랜 이상 필요</h2>
+                  <h2 className="text-xl font-bold text-gray-900 mb-2">{t('runs:detail.upgradeModal.title')}</h2>
                   <p className="text-gray-600 text-sm mb-6">
-                    Jira 이슈 생성 기능은 <strong>Starter 플랜</strong> 이상에서 사용할 수 있습니다.<br />
-                    업그레이드하면 테스트 결과에서 바로 Jira 이슈를 생성하고 관리할 수 있습니다.
+                    {t('runs:detail.upgradeModal.bodyLine1').split('<1>')[0]}
+                    <strong>{t('runs:detail.upgradeModal.bodyLine1').match(/<1>(.*?)<\/1>/)?.[1] ?? ''}</strong>
+                    {t('runs:detail.upgradeModal.bodyLine1').split('</1>')[1] ?? ''}
+                    <br />
+                    {t('runs:detail.upgradeModal.bodyLine2')}
                   </p>
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 text-left">
-                    <p className="text-sm font-semibold text-yellow-800 mb-2">Starter 플랜 혜택</p>
+                    <p className="text-sm font-semibold text-yellow-800 mb-2">{t('runs:detail.upgradeModal.benefitsTitle')}</p>
                     <ul className="space-y-1.5">
-                      {['프로젝트 10개까지', '팀 멤버 5명까지', 'Jira Integration', '기본 리포팅', 'Testcase Export/Import'].map((f) => (
+                      {[
+                        t('runs:detail.upgradeModal.benefit.projects'),
+                        t('runs:detail.upgradeModal.benefit.members'),
+                        t('runs:detail.upgradeModal.benefit.jira'),
+                        t('runs:detail.upgradeModal.benefit.reporting'),
+                        t('runs:detail.upgradeModal.benefit.exportImport'),
+                      ].map((f) => (
                         <li key={f} className="flex items-center gap-2 text-sm text-yellow-700">
                           <i className="ri-check-line text-yellow-500"></i>
                           {f}
@@ -3662,7 +3671,7 @@ export default function RunDetail() {
                       onClick={() => setShowUpgradeModal(false)}
                       className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-semibold cursor-pointer whitespace-nowrap"
                     >
-                      닫기
+                      {t('common:close')}
                     </button>
                     <button
                       onClick={() => {
@@ -3671,7 +3680,7 @@ export default function RunDetail() {
                       }}
                       className="flex-1 px-4 py-2.5 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
                     >
-                      플랜 업그레이드
+                      {t('runs:detail.upgradeModal.footer.upgrade')}
                     </button>
                   </div>
                 </div>
@@ -3687,16 +3696,16 @@ export default function RunDetail() {
                   <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
                     <i className="ri-links-line text-blue-500 text-2xl"></i>
                   </div>
-                  <h2 className="text-lg font-bold text-gray-900 mb-2">Jira 연동이 필요합니다</h2>
+                  <h2 className="text-lg font-bold text-gray-900 mb-2">{t('runs:detail.jiraSetup.title')}</h2>
                   <p className="text-gray-500 text-sm mb-6">
-                    Jira 이슈를 생성하려면 먼저 Settings에서 Jira 계정을 연결해 주세요.
+                    {t('runs:detail.jiraSetup.body')}
                   </p>
                   <div className="flex gap-3">
                     <button
                       onClick={() => setShowJiraSetupModal(false)}
                       className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-semibold cursor-pointer"
                     >
-                      닫기
+                      {t('common:close')}
                     </button>
                     <button
                       onClick={() => {
@@ -3705,7 +3714,7 @@ export default function RunDetail() {
                       }}
                       className="flex-1 px-4 py-2.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold cursor-pointer"
                     >
-                      Connect Jira
+                      {t('runs:detail.jiraSetup.footer.connect')}
                     </button>
                   </div>
                 </div>
@@ -3718,7 +3727,7 @@ export default function RunDetail() {
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
               <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
                 <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                  <h2 className="text-lg font-semibold text-gray-900">Add result</h2>
+                  <h2 className="text-lg font-semibold text-gray-900">{t('runs:detail.addResult.title')}</h2>
                   <button
                     onClick={() => { resetResultForm(); setShowAddResultModal(false); }}
                     className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
@@ -3732,15 +3741,15 @@ export default function RunDetail() {
                     {/* Status */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Status <span className="text-red-500">*</span>
+                        {t('runs:detail.addResult.status.label')} <span className="text-red-500">*</span>
                       </label>
                       <div className="grid grid-cols-5 gap-2">
                         {[
-                          { value: 'passed', label: 'Passed', icon: 'ri-checkbox-circle-fill', color: 'bg-green-100 text-green-700 border-green-300', iconColor: 'text-green-600' },
-                          { value: 'failed', label: 'Failed', icon: 'ri-close-circle-fill', color: 'bg-red-100 text-red-700 border-red-300', iconColor: 'text-red-600' },
-                          { value: 'blocked', label: 'Blocked', icon: 'ri-forbid-fill', color: 'bg-gray-100 text-gray-700 border-gray-300', iconColor: 'text-gray-600' },
-                          { value: 'retest', label: 'Retest', icon: 'ri-refresh-line', color: 'bg-yellow-100 text-yellow-700 border-yellow-300', iconColor: 'text-yellow-600' },
-                          { value: 'untested', label: 'Untested', icon: 'ri-question-fill', color: 'bg-gray-100 text-gray-500 border-gray-300', iconColor: 'text-gray-500' },
+                          { value: 'passed', label: t('common:passed'), icon: 'ri-checkbox-circle-fill', color: 'bg-green-100 text-green-700 border-green-300', iconColor: 'text-green-600' },
+                          { value: 'failed', label: t('common:failed'), icon: 'ri-close-circle-fill', color: 'bg-red-100 text-red-700 border-red-300', iconColor: 'text-red-600' },
+                          { value: 'blocked', label: t('common:blocked'), icon: 'ri-forbid-fill', color: 'bg-gray-100 text-gray-700 border-gray-300', iconColor: 'text-gray-600' },
+                          { value: 'retest', label: t('common:retest'), icon: 'ri-refresh-line', color: 'bg-yellow-100 text-yellow-700 border-yellow-300', iconColor: 'text-yellow-600' },
+                          { value: 'untested', label: t('common:untested'), icon: 'ri-question-fill', color: 'bg-gray-100 text-gray-500 border-gray-300', iconColor: 'text-gray-500' },
                         ].map((status) => (
                           <button
                             key={status.value}
@@ -3761,35 +3770,35 @@ export default function RunDetail() {
 
                     {/* Note */}
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Note</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">{t('runs:detail.addResult.note.label')}</label>
                       <div className="border border-gray-300 rounded-lg overflow-hidden">
                         <div className="bg-gray-50 border-b border-gray-300 px-3 py-2 flex items-center gap-2">
-                          <button className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded cursor-pointer">
+                          <button className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded cursor-pointer" aria-label={t('runs:detail.addResult.note.toolbar.paragraph')}>
                             <i className="ri-paragraph text-sm"></i>
                           </button>
-                          <button className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded cursor-pointer">
+                          <button className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded cursor-pointer" aria-label={t('runs:detail.addResult.note.toolbar.bold')}>
                             <i className="ri-bold text-sm"></i>
                           </button>
-                          <button className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded cursor-pointer">
+                          <button className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded cursor-pointer" aria-label={t('runs:detail.addResult.note.toolbar.italic')}>
                             <i className="ri-italic text-sm"></i>
                           </button>
-                          <button className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded cursor-pointer">
+                          <button className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded cursor-pointer" aria-label={t('runs:detail.addResult.note.toolbar.underline')}>
                             <i className="ri-underline text-sm"></i>
                           </button>
-                          <button className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded cursor-pointer">
+                          <button className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded cursor-pointer" aria-label={t('runs:detail.addResult.note.toolbar.strikethrough')}>
                             <i className="ri-strikethrough text-sm"></i>
                           </button>
-                          <button className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded cursor-pointer">
+                          <button className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded cursor-pointer" aria-label={t('runs:detail.addResult.note.toolbar.code')}>
                             <i className="ri-code-line text-sm"></i>
                           </button>
                           <div className="w-px h-5 bg-gray-300"></div>
-                          <button className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded cursor-pointer">
+                          <button className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded cursor-pointer" aria-label={t('runs:detail.addResult.note.toolbar.link')}>
                             <i className="ri-link text-sm"></i>
                           </button>
-                          <button className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded cursor-pointer">
+                          <button className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded cursor-pointer" aria-label={t('runs:detail.addResult.note.toolbar.bulletList')}>
                             <i className="ri-list-unordered text-sm"></i>
                           </button>
-                          <button className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded cursor-pointer">
+                          <button className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded cursor-pointer" aria-label={t('runs:detail.addResult.note.toolbar.orderedList')}>
                             <i className="ri-list-ordered text-sm"></i>
                           </button>
                         </div>
@@ -3821,7 +3830,7 @@ export default function RunDetail() {
                         });
                         return (
                           <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-3">Steps</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-3">{t('runs:detail.addResult.steps.label')}</label>
                             <div className="space-y-2">
                               {(() => {
                                 const execGroups: any[] = [];
@@ -3862,10 +3871,10 @@ export default function RunDetail() {
                                           onChange={(e) => handleStepStatusChange(fs.flatIndex, e.target.value)}
                                           className="w-full px-3 py-1.5 border border-gray-300 rounded text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                         >
-                                          <option value="untested">Untested</option>
-                                          <option value="passed">Passed</option>
-                                          <option value="failed">Failed</option>
-                                          <option value="blocked">Blocked</option>
+                                          <option value="untested">{t('common:untested')}</option>
+                                          <option value="passed">{t('common:passed')}</option>
+                                          <option value="failed">{t('common:failed')}</option>
+                                          <option value="blocked">{t('common:blocked')}</option>
                                         </select>
                                       </div>
                                     );
@@ -3896,34 +3905,34 @@ export default function RunDetail() {
                                               else { setExpandedDiffKey(diffKey2!); if (ref2) fetchOldVersionSteps(ref2.shared_step_id, ref2.shared_step_version); }
                                             }}
                                             className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[0.5625rem] font-bold cursor-pointer transition-all duration-200 flex-shrink-0 ${canUp2 ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-slate-100 text-slate-500'}`}
-                                            title={canUp2 ? `New version: v${latestInfo2!.version}` : 'Locked: test result recorded'}
+                                            title={canUp2 ? t('runs:detail.addResult.steps.sharedUpdateBadgeTitle', { version: latestInfo2!.version }) : t('runs:detail.tcList.versionBadge.locked')}
                                           >
                                             {canUp2 ? <><i className="ri-arrow-up-line text-[0.5rem]" /> v{latestInfo2!.version}</> : <><i className="ri-lock-line text-[0.5rem]" /> v{latestInfo2!.version}</>}
                                           </span>
                                         )}
-                                        <span className="text-[0.6rem] font-bold text-indigo-500 bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-full uppercase tracking-wide flex-shrink-0">Shared</span>
+                                        <span className="text-[0.6rem] font-bold text-indigo-500 bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-full uppercase tracking-wide flex-shrink-0">{t('runs:detail.addResult.steps.sharedBadge')}</span>
                                       </div>
                                       {isDiff2 && hasNew2 && (
                                         <div className="border-b border-indigo-200 overflow-hidden">
                                           <div className="flex items-center justify-between px-3 py-2 bg-amber-50 border-b border-amber-200">
-                                            <span className="text-xs font-semibold text-amber-700">v{ref2.shared_step_version} → v{latestInfo2!.version} Changes</span>
+                                            <span className="text-xs font-semibold text-amber-700">{t('runs:detail.addResult.steps.diffBannerPrefix', { from: ref2.shared_step_version, to: latestInfo2!.version })}</span>
                                             <div className="flex items-center gap-2">
-                                              {canUp2 && <button onClick={() => handleUpdateSSVersion(selectedTestCase.id, ref2.shared_step_id)} className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[0.625rem] font-bold rounded cursor-pointer transition-colors duration-200">Update</button>}
-                                              {!canUp2 && <span className="flex items-center gap-1 text-[0.625rem] text-slate-500"><i className="ri-lock-line" /> Locked to preserve test results</span>}
+                                              {canUp2 && <button onClick={() => handleUpdateSSVersion(selectedTestCase.id, ref2.shared_step_id)} className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[0.625rem] font-bold rounded cursor-pointer transition-colors duration-200">{t('runs:detail.addResult.steps.updateButton')}</button>}
+                                              {!canUp2 && <span className="flex items-center gap-1 text-[0.625rem] text-slate-500"><i className="ri-lock-line" /> {t('runs:detail.addResult.steps.lockedBanner')}</span>}
                                             </div>
                                           </div>
                                           <div className="grid grid-cols-2 divide-x divide-gray-200">
                                             <div className="p-2">
-                                              <div className="text-[0.5625rem] font-bold text-red-500 uppercase tracking-wider mb-1.5">Current (v{ref2.shared_step_version})</div>
+                                              <div className="text-[0.5625rem] font-bold text-red-500 uppercase tracking-wider mb-1.5">{t('runs:detail.addResult.steps.diffCurrent', { version: ref2.shared_step_version })}</div>
                                               {oldKey2 && oldVersionStepsCache[oldKey2] !== undefined
                                                 ? (oldVersionStepsCache[oldKey2] as any[]).length > 0
                                                   ? (oldVersionStepsCache[oldKey2] as any[]).map((s: any, i: number) => <div key={i} className="text-[0.6875rem] text-red-700 bg-red-50 px-2 py-1 rounded leading-relaxed mb-1"><span className="font-semibold text-red-400 mr-1">{i+1}.</span>{s.step}</div>)
-                                                  : <div className="text-[0.6875rem] text-gray-400 py-2 italic">Version history unavailable</div>
-                                                : <div className="text-[0.6875rem] text-gray-400 py-2">Loading...</div>
+                                                  : <div className="text-[0.6875rem] text-gray-400 py-2 italic">{t('runs:detail.addResult.steps.diffUnavailable')}</div>
+                                                : <div className="text-[0.6875rem] text-gray-400 py-2">{t('runs:detail.addResult.steps.diffLoading')}</div>
                                               }
                                             </div>
                                             <div className="p-2">
-                                              <div className="text-[0.5625rem] font-bold text-emerald-500 uppercase tracking-wider mb-1.5">Latest (v{latestInfo2!.version})</div>
+                                              <div className="text-[0.5625rem] font-bold text-emerald-500 uppercase tracking-wider mb-1.5">{t('runs:detail.addResult.steps.diffLatest', { version: latestInfo2!.version })}</div>
                                               {latestInfo2!.steps.map((s: any, i: number) => <div key={i} className="text-[0.6875rem] text-emerald-700 bg-emerald-50 px-2 py-1 rounded leading-relaxed mb-1"><span className="font-semibold text-emerald-400 mr-1">{i+1}.</span>{s.step}</div>)}
                                             </div>
                                           </div>
@@ -3951,10 +3960,10 @@ export default function RunDetail() {
                                               onChange={(e) => handleStepStatusChange(fs.flatIndex, e.target.value)}
                                               className="w-full px-3 py-1.5 border border-gray-300 rounded text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                             >
-                                              <option value="untested">Untested</option>
-                                              <option value="passed">Passed</option>
-                                              <option value="failed">Failed</option>
-                                              <option value="blocked">Blocked</option>
+                                              <option value="untested">{t('common:untested')}</option>
+                                              <option value="passed">{t('common:passed')}</option>
+                                              <option value="failed">{t('common:failed')}</option>
+                                              <option value="blocked">{t('common:blocked')}</option>
                                             </select>
                                           </div>
                                         ))}
@@ -3972,7 +3981,7 @@ export default function RunDetail() {
                       if (!selectedTestCase.expected_result) return null;
                       return (
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-3">Steps</label>
+                          <label className="block text-sm font-semibold text-gray-700 mb-3">{t('runs:detail.addResult.steps.label')}</label>
                           <div className="space-y-3">
                             {selectedTestCase.steps!.split('\n').filter(s => s.trim()).map((step, index) => {
                               const expectedResults = selectedTestCase.expected_result?.split('\n').filter(s => s.trim()) || [];
@@ -4008,10 +4017,10 @@ export default function RunDetail() {
                                     onChange={(e) => handleStepStatusChange(index, e.target.value)}
                                     className="w-full px-3 py-1.5 border border-gray-300 rounded text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                   >
-                                    <option value="untested">Untested</option>
-                                    <option value="passed">Passed</option>
-                                    <option value="failed">Failed</option>
-                                    <option value="blocked">Blocked</option>
+                                    <option value="untested">{t('common:untested')}</option>
+                                    <option value="passed">{t('common:passed')}</option>
+                                    <option value="failed">{t('common:failed')}</option>
+                                    <option value="blocked">{t('common:blocked')}</option>
                                   </select>
                                 </div>
                               );
@@ -4025,26 +4034,26 @@ export default function RunDetail() {
                     <div className="grid grid-cols-2 gap-4">
                       {/* Assign to */}
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Assign to</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">{t('runs:detail.addResult.assignee.label')}</label>
                         <select
                           value={resultFormData.assignTo}
                           onChange={(e) => setResultFormData({ ...resultFormData, assignTo: e.target.value })}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                         >
-                          <option value="">Select assignee</option>
+                          <option value="">{t('runs:detail.addResult.assignee.placeholder')}</option>
                           {projectMembers.map((member) => (
                             <option key={member.id} value={member.user_id}>
                               {member.full_name || member.email}
                             </option>
                           ))}
                         </select>
-                        <p className="text-xs text-gray-500 mt-1">Leave empty to keep current assignment.</p>
+                        <p className="text-xs text-gray-500 mt-1">{t('runs:detail.addResult.assignee.hint')}</p>
                       </div>
 
                       {/* Elapsed */}
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
-                          Elapsed
+                          {t('runs:detail.addResult.elapsed.label')}
                           <i className="ri-information-line text-gray-400 text-sm"></i>
                         </label>
                         <div className="relative">
@@ -4069,7 +4078,7 @@ export default function RunDetail() {
                     {/* Issues */}
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <label className="block text-sm font-semibold text-gray-700">Linked Issues</label>
+                        <label className="block text-sm font-semibold text-gray-700">{t('runs:detail.addResult.issues.label')}</label>
                         <div className="flex items-center gap-1.5">
                           <button
                             type="button"
@@ -4079,7 +4088,7 @@ export default function RunDetail() {
                                 return;
                               }
                               if (!jiraSettings || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.api_token) {
-                                if (confirm('Jira 설정이 필요합니다. Settings 페이지로 이동하시겠습니까?')) {
+                                if (confirm(t('runs:detail.addResult.issues.confirmJiraSetup'))) {
                                   navigate('/settings');
                                 }
                                 return;
@@ -4089,7 +4098,7 @@ export default function RunDetail() {
                             className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200"
                           >
                             <i className="ri-add-line"></i>
-                            Create Jira Issue
+                            {t('runs:detail.addResult.issues.createJira')}
                           </button>
                           {githubSettings?.token && (
                             <button
@@ -4110,7 +4119,7 @@ export default function RunDetail() {
                               className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200"
                             >
                               <i className="ri-github-fill"></i>
-                              Create GitHub Issue
+                              {t('runs:detail.addResult.issues.createGithub')}
                             </button>
                           )}
                         </div>
@@ -4120,10 +4129,10 @@ export default function RunDetail() {
                         value={resultFormData.issues}
                         onChange={(e) => setResultFormData({ ...resultFormData, issues: e.target.value })}
                         onKeyDown={handleIssueKeyDown}
-                        placeholder="Enter issue key (e.g., PROJ-123)"
+                        placeholder={t('runs:detail.addResult.issues.placeholder')}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                       />
-                      <p className="text-xs text-gray-500 mt-1">Jira 이슈 키를 입력하고 Enter를 누르세요 (예: PROJ-123)</p>
+                      <p className="text-xs text-gray-500 mt-1">{t('runs:detail.addResult.issues.hint')}</p>
                       
                       {resultFormData.issuesList.length > 0 && (
                         <div className="mt-3 space-y-2">
@@ -4191,7 +4200,7 @@ export default function RunDetail() {
 
                     {/* Attachments */}
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Attachments</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">{t('runs:detail.addResult.attachments.label')}</label>
                       <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                         <div className="flex items-center justify-center gap-4 text-sm text-gray-600">
                           <input
@@ -4209,9 +4218,9 @@ export default function RunDetail() {
                             }`}
                           >
                             <i className="ri-file-line"></i>
-                            Choose files
+                            {t('runs:detail.addResult.attachments.chooseFiles')}
                           </label>
-                          <span>or</span>
+                          <span>{t('runs:detail.addResult.attachments.or')}</span>
                           <button
                             onClick={handleScreenshot}
                             disabled={uploadingFile}
@@ -4220,16 +4229,16 @@ export default function RunDetail() {
                             }`}
                           >
                             <i className="ri-screenshot-line"></i>
-                            screenshot
+                            {t('runs:detail.addResult.attachments.screenshot')}
                           </button>
                         </div>
-                        <p className="text-xs text-gray-500 mt-2">or drag/paste here</p>
+                        <p className="text-xs text-gray-500 mt-2">{t('runs:detail.addResult.attachments.dropzoneHint')}</p>
                       </div>
-                      
+
                       {uploadingFile && (
                         <div className="mt-3 text-center">
                           <i className="ri-loader-4-line animate-spin text-indigo-500 text-xl"></i>
-                          <p className="text-sm text-gray-600 mt-1">Uploading...</p>
+                          <p className="text-sm text-gray-600 mt-1">{t('runs:detail.addResult.attachments.uploading')}</p>
                         </div>
                       )}
 
@@ -4265,13 +4274,13 @@ export default function RunDetail() {
                     onClick={() => { resetResultForm(); setShowAddResultModal(false); }}
                     className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer whitespace-nowrap"
                   >
-                    Cancel
+                    {t('common:cancel')}
                   </button>
                   <button
                     onClick={handleSubmitResult}
                     className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium cursor-pointer whitespace-nowrap"
                   >
-                    Add result
+                    {t('runs:detail.addResult.footer.submit')}
                   </button>
                 </div>
               </div>
@@ -4283,7 +4292,7 @@ export default function RunDetail() {
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
               <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
                 <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                  <h2 className="text-lg font-semibold text-gray-900">Create Jira Issue</h2>
+                  <h2 className="text-lg font-semibold text-gray-900">{t('runs:detail.jiraIssue.title')}</h2>
                   <button
                     onClick={() => setShowAddIssueModal(false)}
                     className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
@@ -4297,24 +4306,24 @@ export default function RunDetail() {
                     {/* Summary */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Summary <span className="text-red-500">*</span>
+                        {t('runs:detail.jiraIssue.summary.label')} <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         value={issueFormData.summary}
                         onChange={(e) => setIssueFormData({ ...issueFormData, summary: e.target.value })}
-                        placeholder="Brief description of the issue"
+                        placeholder={t('runs:detail.jiraIssue.summary.placeholder')}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                       />
                     </div>
 
                     {/* Description */}
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">{t('common:description')}</label>
                       <textarea
                         value={issueFormData.description}
                         onChange={(e) => setIssueFormData({ ...issueFormData, description: e.target.value })}
-                        placeholder="Detailed description of the issue"
+                        placeholder={t('runs:detail.jiraIssue.description.placeholder')}
                         rows={6}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none"
                       ></textarea>
@@ -4323,78 +4332,78 @@ export default function RunDetail() {
                     {/* Issue Type and Priority */}
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Issue Type</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">{t('runs:detail.jiraIssue.issueType.label')}</label>
                         <select
                           value={issueFormData.issueType}
                           onChange={(e) => setIssueFormData({ ...issueFormData, issueType: e.target.value })}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer"
                         >
-                          <option value="Bug">Bug</option>
-                          <option value="Task">Task</option>
-                          <option value="Story">Story</option>
-                          <option value="Epic">Epic</option>
+                          <option value="Bug">{t('runs:detail.jiraIssue.issueType.option.bug')}</option>
+                          <option value="Task">{t('runs:detail.jiraIssue.issueType.option.task')}</option>
+                          <option value="Story">{t('runs:detail.jiraIssue.issueType.option.story')}</option>
+                          <option value="Epic">{t('runs:detail.jiraIssue.issueType.option.epic')}</option>
                         </select>
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Priority</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">{t('common:priority')}</label>
                         <select
                           value={issueFormData.priority}
                           onChange={(e) => setIssueFormData({ ...issueFormData, priority: e.target.value })}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer"
                         >
-                          <option value="Highest">Highest</option>
-                          <option value="High">High</option>
-                          <option value="Medium">Medium</option>
-                          <option value="Low">Low</option>
-                          <option value="Lowest">Lowest</option>
+                          <option value="Highest">{t('runs:detail.jiraIssue.priority.option.highest')}</option>
+                          <option value="High">{t('runs:detail.jiraIssue.priority.option.high')}</option>
+                          <option value="Medium">{t('runs:detail.jiraIssue.priority.option.medium')}</option>
+                          <option value="Low">{t('runs:detail.jiraIssue.priority.option.low')}</option>
+                          <option value="Lowest">{t('runs:detail.jiraIssue.priority.option.lowest')}</option>
                         </select>
                       </div>
                     </div>
 
                     {/* Labels */}
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Labels</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">{t('runs:detail.jiraIssue.labels.label')}</label>
                       <input
                         type="text"
                         value={issueFormData.labels}
                         onChange={(e) => setIssueFormData({ ...issueFormData, labels: e.target.value })}
-                        placeholder="Enter labels separated by commas (e.g., bug, ui, critical)"
+                        placeholder={t('runs:detail.jiraIssue.labels.placeholder')}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                       />
-                      <p className="text-xs text-gray-500 mt-1">쉼표로 구분하여 여러 라벨을 입력하세요</p>
+                      <p className="text-xs text-gray-500 mt-1">{t('runs:detail.jiraIssue.labels.hint')}</p>
                     </div>
 
                     {/* Assignee */}
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Assignee</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">{t('common:assignee')}</label>
                       <input
                         type="text"
                         value={issueFormData.assignee}
                         onChange={(e) => setIssueFormData({ ...issueFormData, assignee: e.target.value })}
-                        placeholder="Jira 계정 ID 또는 이메일 (예: user@example.com)"
+                        placeholder={t('runs:detail.jiraIssue.assignee.placeholder')}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                       />
-                      <p className="text-xs text-gray-500 mt-1">비워두면 자동 할당됩니다</p>
+                      <p className="text-xs text-gray-500 mt-1">{t('runs:detail.jiraIssue.assignee.hint')}</p>
                     </div>
 
                     {/* Components */}
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Components</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">{t('runs:detail.jiraIssue.components.label')}</label>
                       <input
                         type="text"
                         value={issueFormData.components}
                         onChange={(e) => setIssueFormData({ ...issueFormData, components: e.target.value })}
-                        placeholder="컴포넌트 이름을 쉼표로 구분 (예: Frontend, API, Database)"
+                        placeholder={t('runs:detail.jiraIssue.components.placeholder')}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                       />
-                      <p className="text-xs text-gray-500 mt-1">Jira 프로젝트에 등록된 컴포넌트 이름을 입력하세요</p>
+                      <p className="text-xs text-gray-500 mt-1">{t('runs:detail.jiraIssue.components.hint')}</p>
                     </div>
 
                     {/* Test Case Info */}
                     {selectedTestCase && (
                       <div>
-                        <h4 className="text-sm font-semibold text-gray-700 mb-2">Related Test Case</h4>
+                        <h4 className="text-sm font-semibold text-gray-700 mb-2">{t('runs:detail.jiraIssue.relatedTc')}</h4>
                         <div className="bg-gray-50 rounded-lg p-4">
                           <p className="text-sm text-gray-900 font-normal">{selectedTestCase.title}</p>
                           {selectedTestCase.description && (
@@ -4412,7 +4421,7 @@ export default function RunDetail() {
                     disabled={creatingIssue}
                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Cancel
+                    {t('common:cancel')}
                   </button>
                   <button
                     onClick={() => handleCreateJiraIssue(activeTab === 'issues')}
@@ -4422,12 +4431,12 @@ export default function RunDetail() {
                     {creatingIssue ? (
                       <>
                         <i className="ri-loader-4-line animate-spin"></i>
-                        Creating...
+                        {t('runs:detail.jiraIssue.footer.creating')}
                       </>
                     ) : (
                       <>
                         <i className="ri-add-line"></i>
-                        Create Issue
+                        {t('runs:detail.jiraIssue.footer.submit')}
                       </>
                     )}
                   </button>
@@ -4442,7 +4451,7 @@ export default function RunDetail() {
               <div className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden">
                 <div className="flex items-center justify-between p-4 border-b border-gray-200">
                   <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    <i className="ri-github-fill"></i> Create GitHub Issue
+                    <i className="ri-github-fill"></i> {t('runs:detail.githubIssue.title')}
                   </h2>
                   <button
                     onClick={() => setShowGithubIssueModal(false)}
@@ -4454,22 +4463,22 @@ export default function RunDetail() {
                 <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-6 space-y-4">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Title <span className="text-red-500">*</span>
+                      {t('runs:detail.githubIssue.titleField.label')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={githubIssueFormData.title}
                       onChange={(e) => setGithubIssueFormData({ ...githubIssueFormData, title: e.target.value })}
-                      placeholder="Issue title"
+                      placeholder={t('runs:detail.githubIssue.titleField.placeholder')}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">{t('common:description')}</label>
                     <textarea
                       value={githubIssueFormData.body}
                       onChange={(e) => setGithubIssueFormData({ ...githubIssueFormData, body: e.target.value })}
-                      placeholder="Describe the issue (Markdown supported)"
+                      placeholder={t('runs:detail.githubIssue.body.placeholder')}
                       rows={5}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none"
                     />
@@ -4477,7 +4486,7 @@ export default function RunDetail() {
                   <div className="grid grid-cols-2 gap-4">
                     {/* Labels — chip input */}
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Labels</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">{t('runs:detail.githubIssue.labels.label')}</label>
                       {getGithubLabelsArray().length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mb-2">
                           {getGithubLabelsArray().map((label, i) => (
@@ -4516,13 +4525,13 @@ export default function RunDetail() {
                         }}
                         onCompositionStart={() => setGithubLabelComposing(true)}
                         onCompositionEnd={() => setGithubLabelComposing(false)}
-                        placeholder="Type label, press Enter"
+                        placeholder={t('runs:detail.githubIssue.labels.placeholder')}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                       />
                     </div>
                     {/* Assignee — autocomplete */}
                     <div className="relative" ref={assigneeSuggestRef}>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Assignee</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">{t('common:assignee')}</label>
                       <input
                         type="text"
                         value={assigneeQuery}
@@ -4532,7 +4541,7 @@ export default function RunDetail() {
                           setShowAssigneeSuggest(true);
                         }}
                         onFocus={() => setShowAssigneeSuggest(true)}
-                        placeholder="Search collaborator..."
+                        placeholder={t('runs:detail.githubIssue.assignee.placeholder')}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                       />
                       {showAssigneeSuggest && githubAssignees.filter(a => !assigneeQuery || a.login.toLowerCase().includes(assigneeQuery.toLowerCase())).length > 0 && (
@@ -4561,12 +4570,12 @@ export default function RunDetail() {
                   {githubSettings && (
                     <div className="px-3 py-2 rounded-lg bg-slate-50 border border-slate-100 text-xs text-slate-500 flex items-center gap-1.5">
                       <i className="ri-github-fill"></i>
-                      Will be created in <strong>{githubSettings.owner}/{githubSettings.repo}</strong>
+                      {t('runs:detail.githubIssue.willBeCreatedInPrefix')}<strong>{githubSettings.owner}/{githubSettings.repo}</strong>
                     </div>
                   )}
                   {selectedTestCase && (
                     <div>
-                      <h4 className="text-sm font-semibold text-gray-700 mb-2">Related Test Case</h4>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">{t('runs:detail.jiraIssue.relatedTc')}</h4>
                       <div className="bg-gray-50 rounded-lg p-3">
                         <p className="text-sm text-gray-900">{selectedTestCase.title}</p>
                       </div>
@@ -4579,7 +4588,7 @@ export default function RunDetail() {
                     disabled={creatingGithubIssue}
                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg cursor-pointer whitespace-nowrap disabled:opacity-50"
                   >
-                    Cancel
+                    {t('common:cancel')}
                   </button>
                   <button
                     onClick={handleCreateGithubIssue}
@@ -4587,9 +4596,9 @@ export default function RunDetail() {
                     className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 text-sm font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     {creatingGithubIssue ? (
-                      <><i className="ri-loader-4-line animate-spin"></i>Creating...</>
+                      <><i className="ri-loader-4-line animate-spin"></i>{t('runs:detail.githubIssue.footer.creating')}</>
                     ) : (
-                      <><i className="ri-github-fill"></i>Create Issue</>
+                      <><i className="ri-github-fill"></i>{t('runs:detail.githubIssue.footer.submit')}</>
                     )}
                   </button>
                 </div>
@@ -4617,7 +4626,7 @@ export default function RunDetail() {
                   <div>
                     <h2 className="text-base font-bold text-gray-900">{tcDiffModal.tcTitle}</h2>
                     <p className="text-xs text-gray-500 mt-0.5">
-                      Comparing <span className="font-semibold text-gray-700">v{tcDiffModal.snapMajor}.{tcDiffModal.snapMinor}</span>
+                      {t('runs:detail.tcDiff.comparingPrefix')}<span className="font-semibold text-gray-700">v{tcDiffModal.snapMajor}.{tcDiffModal.snapMinor}</span>
                       {' → '}
                       <span className="font-semibold text-emerald-600">v{tcDiffModal.liveMajor}.{tcDiffModal.liveMinor}</span>
                     </p>
@@ -4631,25 +4640,25 @@ export default function RunDetail() {
                 <div className="flex-1 overflow-y-auto">
                   {tcDiffModal.loading ? (
                     <div className="flex items-center justify-center py-12 text-sm text-gray-400 gap-2">
-                      <i className="ri-loader-4-line animate-spin" /> Loading…
+                      <i className="ri-loader-4-line animate-spin" /> {t('runs:detail.tcDiff.loading')}
                     </div>
                   ) : (<>
                     {/* Sticky column headers */}
                     <div className="sticky top-0 z-10 grid grid-cols-2 divide-x divide-gray-200 border-b border-gray-200">
                       <div className="bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                        v{tcDiffModal.snapMajor}.{tcDiffModal.snapMinor} (current in run)
+                        {t('runs:detail.tcDiff.columnHeader.current', { major: tcDiffModal.snapMajor, minor: tcDiffModal.snapMinor })}
                       </div>
                       <div className="bg-emerald-50 px-4 py-2 text-xs font-semibold text-emerald-600 uppercase tracking-wide">
-                        v{tcDiffModal.liveMajor}.{tcDiffModal.liveMinor} (updated)
+                        {t('runs:detail.tcDiff.columnHeader.updated', { major: tcDiffModal.liveMajor, minor: tcDiffModal.liveMinor })}
                       </div>
                     </div>
 
                     {/* Metadata rows — each field aligned side by side */}
                     {([
-                      { label: 'Title',        snap: tcDiffModal.snapTitle,       live: tcDiffModal.liveTitle },
-                      { label: 'Tags',         snap: tcDiffModal.snapTags,        live: tcDiffModal.liveTags },
-                      { label: 'Precondition', snap: tcDiffModal.snapPrecondition, live: tcDiffModal.livePrecondition },
-                      { label: 'Description',  snap: tcDiffModal.snapDescription,  live: tcDiffModal.liveDescription },
+                      { label: t('runs:detail.tcDiff.metadata.title'),        snap: tcDiffModal.snapTitle,       live: tcDiffModal.liveTitle },
+                      { label: t('runs:detail.tcDiff.metadata.tags'),         snap: tcDiffModal.snapTags,        live: tcDiffModal.liveTags },
+                      { label: t('runs:detail.tcDiff.metadata.precondition'), snap: tcDiffModal.snapPrecondition, live: tcDiffModal.livePrecondition },
+                      { label: t('common:description'),  snap: tcDiffModal.snapDescription,  live: tcDiffModal.liveDescription },
                     ] as { label: string; snap?: string; live?: string }[]).map(({ label, snap, live }) => {
                       const changed = snap !== undefined && snap !== live;
                       return (
@@ -4668,13 +4677,13 @@ export default function RunDetail() {
 
                     {/* Steps separator */}
                     <div className="grid grid-cols-2 divide-x divide-gray-200 border-b border-gray-200 bg-gray-50">
-                      <div className="px-4 py-1.5 text-[0.625rem] font-semibold text-gray-400 uppercase tracking-wide">Steps</div>
-                      <div className="px-4 py-1.5 text-[0.625rem] font-semibold text-gray-400 uppercase tracking-wide">Steps</div>
+                      <div className="px-4 py-1.5 text-[0.625rem] font-semibold text-gray-400 uppercase tracking-wide">{t('runs:detail.tcDiff.steps.sectionTitle')}</div>
+                      <div className="px-4 py-1.5 text-[0.625rem] font-semibold text-gray-400 uppercase tracking-wide">{t('runs:detail.tcDiff.steps.sectionTitle')}</div>
                     </div>
 
                     {/* Step rows — each index aligned */}
                     {tcDiffModal.snapSteps.length === 0 && tcDiffModal.liveSteps.length === 0 ? (
-                      <p className="px-4 py-6 text-xs text-gray-400 text-center">No steps</p>
+                      <p className="px-4 py-6 text-xs text-gray-400 text-center">{t('runs:detail.tcDiff.steps.noSteps')}</p>
                     ) : (
                       Array.from({ length: Math.max(tcDiffModal.snapSteps.length, tcDiffModal.liveSteps.length) }).map((_, i) => {
                         const sn = tcDiffModal.snapSteps[i];
@@ -4705,8 +4714,8 @@ export default function RunDetail() {
 
                     {/* Expected Result separator */}
                     <div className="grid grid-cols-2 divide-x divide-gray-200 border-b border-gray-200 bg-gray-50 border-t border-t-gray-200">
-                      <div className="px-4 py-1.5 text-[0.625rem] font-semibold text-gray-400 uppercase tracking-wide">Expected Result</div>
-                      <div className="px-4 py-1.5 text-[0.625rem] font-semibold text-gray-400 uppercase tracking-wide">Expected Result</div>
+                      <div className="px-4 py-1.5 text-[0.625rem] font-semibold text-gray-400 uppercase tracking-wide">{t('runs:detail.tcDiff.expectedResult.sectionTitle')}</div>
+                      <div className="px-4 py-1.5 text-[0.625rem] font-semibold text-gray-400 uppercase tracking-wide">{t('runs:detail.tcDiff.expectedResult.sectionTitle')}</div>
                     </div>
 
                     {/* Expected Result content */}
@@ -4752,14 +4761,14 @@ export default function RunDetail() {
                     onClick={() => setTcDiffModal(null)}
                     className="px-4 py-2 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-all cursor-pointer"
                   >
-                    Cancel
+                    {t('common:cancel')}
                   </button>
                   <button
                     onClick={() => { handleUpdateTCVersion(tcDiffModal.tcId); setTcDiffModal(null); }}
                     className="px-4 py-2 text-sm bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium transition-all cursor-pointer flex items-center gap-1.5"
                   >
                     <i className="ri-arrow-up-line" />
-                    Update to v{tcDiffModal.liveMajor}.{tcDiffModal.liveMinor}
+                    {t('runs:detail.tcDiff.footer.updateTo', { major: tcDiffModal.liveMajor, minor: tcDiffModal.liveMinor })}
                   </button>
                 </div>
               </div>
