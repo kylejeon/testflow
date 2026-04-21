@@ -1,7 +1,7 @@
 {
   "generated_at": "2026-04-20",
   "updated_at": "2026-04-21",
-  "total_count": 31,
+  "total_count": 30,
   "features": [
     {
       "id": "f001",
@@ -184,19 +184,6 @@
       "dependencies": [],
       "status": "backlog",
       "notes": "OOS"
-    },
-    {
-      "id": "f017",
-      "title": "Milestone AI Risk — Prompt Injection 대응 (name sanitize)",
-      "category": "security",
-      "description": "milestone.name이 escape 없이 Claude 프롬프트에 삽입됨. 50자 truncate + 특수문자 sanitize(쌍따옴표, 개행, 제어문자). 프롬프트 구조 보호.",
-      "priority": "P1",
-      "impact": "medium",
-      "effort": "small",
-      "source": "qa-report-milestone-overview-v2",
-      "dependencies": [],
-      "status": "backlog",
-      "notes": "SEC-H-1. Claude system prompt가 우선이지만 방어선 추가"
     },
     {
       "id": "f018",
