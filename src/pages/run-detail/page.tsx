@@ -13,6 +13,7 @@ import AIRunSummaryPanel, { type AISummaryResult } from './components/AIRunSumma
 import { type AnyStep, isSharedStepRef } from '../../types/shared-steps';
 import { type FlatStep, type SharedStepCache, expandFlatSteps } from '../../lib/expandSharedSteps';
 import { ExportModal, type ExportFormat } from '../../components/ExportModal';
+import { useToast } from '../../components/Toast';
 import { formatShortDate, formatLongDateTime } from '../../lib/dateFormat';
 
 interface TestCase {
@@ -179,7 +180,7 @@ export default function RunDetail() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showAddIssueModal, setShowAddIssueModal] = useState(false);
   const [showJiraSetupModal, setShowJiraSetupModal] = useState(false);
-  const [toast, setToast] = useState<{type: 'success' | 'error'; message: string} | null>(null);
+  const { showToast: globalShowToast } = useToast();
   const [jiraSettings, setJiraSettings] = useState<JiraSettings | null>(null);
   const [githubSettings, setGithubSettings] = useState<GitHubSettings | null>(null);
   const [showGithubIssueModal, setShowGithubIssueModal] = useState(false);
@@ -1389,9 +1390,11 @@ export default function RunDetail() {
       .replace(/\{precondition\}/g, stripHtml(tc.precondition || '') || 'None');
   };
 
+  // Local adapter: historical (type, message) signature routes through the
+  // global ToastProvider (which uses (message, type)). 36 call sites remain
+  // unchanged — risk-controlled follow-up after f024 QA M-1.
   const showToast = (type: 'success' | 'error', message: string) => {
-    setToast({ type, message });
-    setTimeout(() => setToast(null), type === 'success' ? 3000 : 5000);
+    globalShowToast(message, type);
   };
 
   const mapTestPriorityToJira = (priority?: string): string => {
@@ -2842,22 +2845,6 @@ export default function RunDetail() {
       );
     })()}
     <div className="flex h-screen bg-white">
-      {/* Toast Notification */}
-      {toast && (
-        <div
-          className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 ${
-            toast.type === 'success'
-              ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
-              : 'bg-rose-50 border border-rose-200 text-rose-800'
-          }`}
-        >
-          <i className={toast.type === 'success' ? 'ri-check-line text-emerald-500' : 'ri-error-warning-line text-rose-500'} />
-          <span className="text-[0.8125rem] font-medium">{toast.message}</span>
-          <button onClick={() => setToast(null)} className="ml-2 text-current opacity-50 hover:opacity-100 cursor-pointer">
-            <i className="ri-close-line" />
-          </button>
-        </div>
-      )}
       <ErrorBoundary section sectionName="Run Detail">
       <div className="flex-1 flex flex-col overflow-hidden">
         <ProjectHeader projectId={projectId || ''} projectName={project?.name || ''} />
