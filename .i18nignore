@@ -61,5 +61,4 @@
 >NO-GO<
 
 # ── Out of scope (dev-spec §9 — phase 2 files) ──────────────────────────────
-src/pages/plan-detail/page.tsx
 src/pages/run-detail/page.tsx

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import ProjectHeader from '../../components/ProjectHeader';
@@ -17,6 +17,8 @@ import {
 } from '../../lib/environments';
 import EnvironmentAIInsights from '../../components/EnvironmentAIInsights';
 import type { Environment } from '../../types/environment';
+import { formatShortDate, formatShortDateTime, formatShortTime } from '../../lib/dateFormat';
+import { formatRelativeTime } from '../../lib/formatRelativeTime';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -126,30 +128,33 @@ const FOLDER_COLOR_MAP: Record<string, { bg: string; fg: string }> = {
   gray:    { bg: '#F3F4F6', fg: '#6B7280' },
 };
 
-const STATUS_CONFIG = {
-  planning:  { label: 'Planning',     badgeCls: 'badge badge-neutral' },
-  active:    { label: 'In Progress',  badgeCls: 'badge badge-warning' },
-  completed: { label: 'Completed',    badgeCls: 'badge badge-success' },
-  cancelled: { label: 'Cancelled',    badgeCls: 'badge badge-danger'  },
+// Class maps (values only — labels are built in the component via useMemo so t() works).
+const STATUS_BADGE_CLS: Record<string, string> = {
+  planning:  'badge badge-neutral',
+  active:    'badge badge-warning',
+  completed: 'badge badge-success',
+  cancelled: 'badge badge-danger',
+  archived:  'badge badge-neutral',
 };
 
-const PRIORITY_CONFIG = {
-  critical: { label: 'P1 Critical', priCls: 'pri-badge pri-p1' },
-  high:     { label: 'P2 High',     priCls: 'pri-badge pri-p2' },
-  medium:   { label: 'P3 Medium',   priCls: 'pri-badge pri-p3' },
-  low:      { label: 'P3 Low',      priCls: 'pri-badge pri-p3' },
+const PRIORITY_PRI_CLS: Record<string, string> = {
+  critical: 'pri-badge pri-p1',
+  high:     'pri-badge pri-p2',
+  medium:   'pri-badge pri-p3',
+  low:      'pri-badge pri-p3',
 };
 
-const TABS = [
-  { key: 'testcases',    label: 'Test Cases',   iconEl: <svg style={{width:13,height:13,flex:'none'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> },
-  { key: 'runs',         label: 'Runs',         iconEl: <svg style={{width:13,height:13,flex:'none'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> },
-  { key: 'activity',    label: 'Activity',      iconEl: <svg style={{width:13,height:13,flex:'none'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> },
-  { key: 'issues',       label: 'Issues',       iconEl: <svg style={{width:13,height:13,flex:'none'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> },
-  { key: 'environments', label: 'Environments', iconEl: <svg style={{width:13,height:13,flex:'none'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2"/></svg> },
-  { key: 'settings',     label: 'Settings',     iconEl: <svg style={{width:13,height:13,flex:'none'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 10v6m11-11h-6M7 12H1"/></svg> },
-] as const;
+// Tab icons (static JSX) — labels provided by useMemo inside the component.
+const TAB_ICON_EL: Record<string, JSX.Element> = {
+  testcases:    <svg style={{width:13,height:13,flex:'none'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>,
+  runs:         <svg style={{width:13,height:13,flex:'none'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>,
+  activity:     <svg style={{width:13,height:13,flex:'none'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+  issues:       <svg style={{width:13,height:13,flex:'none'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
+  environments: <svg style={{width:13,height:13,flex:'none'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2"/></svg>,
+  settings:     <svg style={{width:13,height:13,flex:'none'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 10v6m11-11h-6M7 12H1"/></svg>,
+};
 
-type TabKey = typeof TABS[number]['key'];
+type TabKey = 'testcases' | 'runs' | 'activity' | 'issues' | 'environments' | 'settings';
 
 // ─── Plan Sidebar (shared across all tabs) ────────────────────────────────────
 
@@ -159,6 +164,8 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
     planTcs: PlanTestCase[]; runs: PlanRun[]; tcResultMap: Map<string, { result: string; assignee: string | null }>;
     dailyExecCounts: number[]; projectId: string; currentUserProfile: Profile | null; }) {
   const { showToast } = useToast();
+  const { t, i18n } = useTranslation(['milestones', 'common']);
+  const lang = i18n.language;
   const owner = plan.owner_id ? profiles.get(plan.owner_id) : null;
   const lockedByUser = owner || currentUserProfile;
 
@@ -167,7 +174,7 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
   const sparkDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(today);
     d.setDate(today.getDate() - (6 - i));
-    return d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+    return formatShortDate(d, lang);
   });
   const sparkValues = dailyExecCounts.length === 7 ? dailyExecCounts : [0,0,0,0,0,0,0];
   const maxSpark = Math.max(...sparkValues, 1);
@@ -224,7 +231,7 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
 
   const handleRunRiskScan = async () => {
     if (planTcs.length === 0) {
-      showToast('Add test cases to this plan first', 'warning');
+      showToast(t('milestones:planDetail.toast.aiRisk.needTcs'), 'warning');
       return;
     }
     setRiskLoading(true);
@@ -246,11 +253,11 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
       const data = await res.json();
       if (!res.ok) {
         if (res.status === 403) {
-          showToast(data.error || 'Starter plan required for AI Risk Predictor', 'warning');
+          showToast(data.error || t('milestones:planDetail.aiRiskPredictor.error.tierTooLow'), 'warning');
         } else if (res.status === 429) {
-          showToast(data.error || 'Monthly AI credit limit reached', 'warning');
+          showToast(data.error || t('milestones:planDetail.aiRiskPredictor.error.monthlyLimit'), 'warning');
         } else {
-          throw new Error(data.error || 'Risk scan failed');
+          throw new Error(data.error || t('milestones:planDetail.aiRiskPredictor.error.default'));
         }
         setRiskError(data.error);
         return;
@@ -258,12 +265,12 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
 
       setRiskData({ ...data, _scanned_at: new Date().toISOString() });
       if (data.meta) {
-        showToast(`Risk scan complete (${data.meta.credits_used} credit used)`, 'success');
+        showToast(t('milestones:planDetail.toast.aiRisk.scanComplete', { credits: data.meta.credits_used }), 'success');
       }
     } catch (err: any) {
       console.error('Risk scan error:', err);
       setRiskError(err.message);
-      showToast(`Risk scan failed: ${err.message}`, 'error');
+      showToast(t('milestones:planDetail.toast.aiRisk.scanFailed', { message: err.message }), 'error');
     } finally {
       setRiskLoading(false);
     }
@@ -272,6 +279,13 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
   return (
     <aside className="plan-side">
 
+      {/*
+       * i18n policy (dev-spec-i18n-coverage-phase2-plan-detail AC-9 / Phase 1 §6):
+       * Wrapping labels are translated. Claude response body fields
+       * (forecast_date, forecast_note, risk_signals[].signal, risk_signals[].badge,
+       * recommendation, summary, confidence_label) are rendered as-is.
+       * Multi-locale prompts tracked in separate spec.
+       */}
       {/* ── AI Risk Predictor (mockup full version) ── */}
       <div style={{
         background:'linear-gradient(160deg, #f5f3ff 0%, #ede9fe 50%, #e0e7ff 100%)',
@@ -287,11 +301,14 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
             <svg style={{width:15,height:15,color:'#fff'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2"/></svg>
           </div>
           <div style={{flex:1}}>
-            <div style={{fontWeight:700, fontSize:14, color:'#3730a3'}}>AI Risk Predictor</div>
+            <div style={{fontWeight:700, fontSize:14, color:'#3730a3'}}>{t('milestones:planDetail.aiRiskPredictor.title')}</div>
             <div style={{color:'#7c3aed', fontSize:11, opacity:0.8, marginTop:1}}>
               {riskData?._scanned_at
-                ? `Scanned ${new Date(riskData._scanned_at).toLocaleDateString('en-US', { month:'short', day:'numeric' })} · ${new Date(riskData._scanned_at).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' })}`
-                : 'Failure risk diagnostic'}
+                ? t('milestones:planDetail.aiRiskPredictor.scannedAt', {
+                    date: formatShortDate(riskData._scanned_at, lang),
+                    time: formatShortTime(riskData._scanned_at, lang),
+                  })
+                : t('milestones:planDetail.aiRiskPredictor.subtitle')}
             </div>
           </div>
         </div>
@@ -302,19 +319,19 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
               {/* Forecast + Confidence */}
               <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
                 <div style={{display:'flex', flexDirection:'column', gap:2}}>
-                  <div style={{fontSize:10, fontWeight:600, color:'#6d28d9', textTransform:'uppercase', letterSpacing:'0.06em'}}>Forecast Completion</div>
+                  <div style={{fontSize:10, fontWeight:600, color:'#6d28d9', textTransform:'uppercase', letterSpacing:'0.06em'}}>{t('milestones:planDetail.aiRiskPredictor.forecastCompletion')}</div>
                   <div style={{fontSize:22, fontWeight:800, letterSpacing:'-0.02em', color:'#1e1b4b', lineHeight:1.1}}>{riskData.forecast_date}</div>
                   <div style={{fontSize:11, color:'#7c3aed'}}>{riskData.forecast_note}</div>
                 </div>
                 <div style={{display:'flex', flexDirection:'column', gap:2, textAlign:'right'}}>
-                  <div style={{fontSize:10, fontWeight:600, color:'#6d28d9', textTransform:'uppercase', letterSpacing:'0.06em'}}>Confidence</div>
+                  <div style={{fontSize:10, fontWeight:600, color:'#6d28d9', textTransform:'uppercase', letterSpacing:'0.06em'}}>{t('milestones:planDetail.aiRiskPredictor.confidence')}</div>
                   <div style={{fontSize:22, fontWeight:800, color: riskData.confidence >= 80 ? '#22c55e' : riskData.confidence >= 50 ? '#f59e0b' : 'var(--danger)', lineHeight:1.1}}>{riskData.confidence}%</div>
                   <div style={{fontSize:11, color:'var(--text-muted)'}}>{riskData.confidence_label}</div>
                 </div>
               </div>
               {/* Top Risk Signals */}
               <div style={{background:'rgba(255,255,255,0.65)', border:'1px solid #c4b5fd', borderRadius:8, padding:'9px 11px'}}>
-                <div style={{fontSize:10, fontWeight:700, color:'#6d28d9', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:7}}>Top Risk Signals</div>
+                <div style={{fontSize:10, fontWeight:700, color:'#6d28d9', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:7}}>{t('milestones:planDetail.aiRiskPredictor.topRiskSignals')}</div>
                 {(riskData.risk_signals || []).map((r, i) => (
                   <div key={i} style={{display:'flex', justifyContent:'space-between', alignItems:'baseline', fontSize:12, gap:8, padding:'2px 0', ...(i > 0 ? {borderTop:'1px solid rgba(196,181,253,0.35)', paddingTop:5, marginTop:3} : {})}}>
                     <div style={{display:'flex', alignItems:'flex-start', gap:6, color:'#374151', flex:1}}>
@@ -327,14 +344,14 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
               </div>
               {/* Recommendation */}
               <div style={{background:'rgba(255,255,255,0.8)', border:'1px solid #ddd6fe', borderRadius:8, padding:'10px 12px'}}>
-                <div style={{fontSize:11, fontWeight:700, color:'#7c3aed', display:'flex', alignItems:'center', gap:5, marginBottom:5}}>Recommendation</div>
+                <div style={{fontSize:11, fontWeight:700, color:'#7c3aed', display:'flex', alignItems:'center', gap:5, marginBottom:5}}>{t('milestones:planDetail.aiRiskPredictor.recommendation')}</div>
                 <div style={{fontSize:12, lineHeight:1.55, color:'#374151'}}>{riskData.recommendation}</div>
               </div>
               {/* Re-scan button */}
               <button className="pd-btn pd-btn-sm" onClick={handleRunRiskScan} disabled={riskLoading}
                 style={{width:'100%', justifyContent:'center', background:'#fff', borderColor:'#ddd6fe', color:'var(--violet)', fontWeight:500, opacity: riskLoading ? 0.6 : 1}}>
                 <svg style={{width:12,height:12}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                {riskLoading ? 'Scanning...' : 'Re-scan'}
+                {riskLoading ? t('milestones:planDetail.aiRiskPredictor.scanning') : t('milestones:planDetail.aiRiskPredictor.rescan')}
               </button>
             </>
           ) : (
@@ -342,18 +359,18 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
               {/* Empty state — scan not run yet */}
               <div style={{textAlign:'center', padding:'8px 0'}}>
                 <div style={{fontSize:12, color:'#6d28d9', lineHeight:1.5, marginBottom:12}}>
-                  Run an AI-powered risk analysis to get failure predictions, risk signals, and actionable recommendations.
+                  {t('milestones:planDetail.aiRiskPredictor.empty.description')}
                 </div>
                 <div style={{fontSize:11, color:'var(--text-muted)', marginBottom:4}}>
-                  Costs 1 AI credit · Requires Starter plan
+                  {t('milestones:planDetail.aiRiskPredictor.empty.cost')}
                 </div>
               </div>
               <button className="pd-btn pd-btn-sm" onClick={handleRunRiskScan} disabled={riskLoading || planTcs.length === 0}
                 style={{width:'100%', justifyContent:'center', background:'linear-gradient(135deg,#6366F1,#8B5CF6)', borderColor:'transparent', color:'#fff', fontWeight:500, opacity: (riskLoading || planTcs.length === 0) ? 0.6 : 1}}>
                 {riskLoading ? (
-                  <><svg style={{width:12,height:12,animation:'spin 1s linear infinite'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Scanning...</>
+                  <><svg style={{width:12,height:12,animation:'spin 1s linear infinite'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> {t('milestones:planDetail.aiRiskPredictor.scanning')}</>
                 ) : (
-                  <><svg style={{width:12,height:12}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2"/></svg> Run Risk Scan</>
+                  <><svg style={{width:12,height:12}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2"/></svg> {t('milestones:planDetail.aiRiskPredictor.runScan')}</>
                 )}
               </button>
               {riskError && (
@@ -368,23 +385,23 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
       <div className="side-card" style={plan.is_locked ? {borderColor:'var(--violet)', borderWidth:1.5} : {}}>
         <div className="side-card-title">
           <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          Snapshot
+          {t('milestones:planDetail.snapshot.title')}
           {plan.is_locked
-            ? <span className="badge" style={{marginLeft:'auto', background:'#ede9fe', color:'var(--violet)', border:'1px solid #ddd6fe', fontSize:'10px', fontWeight:600}}>LOCKED</span>
-            : <span className="badge badge-neutral" style={{marginLeft:'auto', fontSize:'10px'}}>Unlocked</span>
+            ? <span className="badge" style={{marginLeft:'auto', background:'#ede9fe', color:'var(--violet)', border:'1px solid #ddd6fe', fontSize:'10px', fontWeight:600}}>{t('milestones:planDetail.snapshot.badge.locked')}</span>
+            : <span className="badge badge-neutral" style={{marginLeft:'auto', fontSize:'10px'}}>{t('milestones:planDetail.snapshot.badge.unlocked')}</span>
           }
         </div>
         {plan.is_locked ? (
           <>
             {plan.snapshot_locked_at && (
               <div className="side-row">
-                <span className="k">Locked at</span>
-                <span className="v">{new Date(plan.snapshot_locked_at).toLocaleDateString('en-US', { month:'short', day:'numeric' })} · {new Date(plan.snapshot_locked_at).toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', hour12:false })}</span>
+                <span className="k">{t('milestones:planDetail.snapshot.lockedAt')}</span>
+                <span className="v">{formatShortDateTime(plan.snapshot_locked_at, lang)}</span>
               </div>
             )}
             {lockedByUser && (
               <div className="side-row">
-                <span className="k">Locked by</span>
+                <span className="k">{t('milestones:planDetail.snapshot.lockedBy')}</span>
                 <span className="v" style={{display:'inline-flex', alignItems:'center', gap:4}}>
                   <Avatar userId={lockedByUser.id} name={lockedByUser.full_name || undefined} email={lockedByUser.email || undefined} size="xs" />
                   <span>{lockedByUser.full_name || lockedByUser.email}</span>
@@ -392,7 +409,7 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
               </div>
             )}
             <div className="side-row">
-              <span className="k">TC revision</span>
+              <span className="k">{t('milestones:planDetail.snapshot.tcRevision')}</span>
               <span className="v" style={{fontFamily:'JetBrains Mono,monospace', fontSize:11}}>
                 {plan.snapshot_locked_at
                   ? `rev.${new Date(plan.snapshot_locked_at).toISOString().slice(0,10).replace(/-/g,'.')}-a`
@@ -400,40 +417,40 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
               </span>
             </div>
             <div className="side-row">
-              <span className="k">Drift from live</span>
+              <span className="k">{t('milestones:planDetail.snapshot.driftFromLive')}</span>
               <span className="v">
                 {driftCount > 0
-                  ? <span style={{color:'var(--warning)', fontWeight:600}}>{driftCount} TC edited <span title="TCs modified after snapshot was locked" style={{cursor:'help', fontSize:12}}>ⓘ</span></span>
-                  : <span style={{color:'var(--success-600)'}}>Up to date</span>
+                  ? <span style={{color:'var(--warning)', fontWeight:600}}>{t('milestones:planDetail.snapshot.tcEdited', { count: driftCount })} <span title={t('milestones:planDetail.snapshot.driftTooltip')} style={{cursor:'help', fontSize:12}}>ⓘ</span></span>
+                  : <span style={{color:'var(--success-600)'}}>{t('milestones:planDetail.snapshot.upToDate')}</span>
                 }
               </span>
             </div>
             <div style={{display:'flex', gap:6, marginTop:8}}>
               <button className="pd-btn pd-btn-sm" onClick={onRebase}
                 disabled={driftCount === 0}
-                style={{flex:1, justifyContent:'center', opacity: driftCount === 0 ? 0.5 : 1, cursor: driftCount === 0 ? 'not-allowed' : 'pointer'}} title={driftCount === 0 ? 'No drift detected' : 'Update baseline to latest TC revisions'}>
-                ↻ Rebase
+                style={{flex:1, justifyContent:'center', opacity: driftCount === 0 ? 0.5 : 1, cursor: driftCount === 0 ? 'not-allowed' : 'pointer'}} title={driftCount === 0 ? t('milestones:planDetail.snapshot.rebaseTooltip.noDrift') : t('milestones:planDetail.snapshot.rebaseTooltip.updateBaseline')}>
+                {t('milestones:planDetail.snapshot.rebase')}
               </button>
               <button className="pd-btn pd-btn-sm" onClick={onUnlock}
                 style={{flex:1, justifyContent:'center', color:'var(--danger)', borderColor:'var(--danger-200)'}}>
                 <svg style={{width:11,height:11}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
-                Unlock
+                {t('milestones:planDetail.snapshot.unlock')}
               </button>
             </div>
           </>
         ) : (
           <>
             <div style={{fontSize:12, color:'var(--text-muted)', lineHeight:1.5, marginBottom:10}}>
-              Lock the TC scope to prevent drift. Required before starting a tracked run.
+              {t('milestones:planDetail.snapshot.emptyDescription')}
             </div>
             {planTcs.length > 0 ? (
               <button className="pd-btn pd-btn-sm" onClick={onLock}
                 style={{width:'100%', justifyContent:'center', background:'var(--violet)', borderColor:'var(--violet)', color:'#fff'}}>
                 <svg style={{width:11,height:11}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                Lock Snapshot
+                {t('milestones:planDetail.snapshot.lockCta')}
               </button>
             ) : (
-              <div style={{fontSize:11.5, color:'var(--text-subtle)'}}>Add TCs to enable locking.</div>
+              <div style={{fontSize:11.5, color:'var(--text-subtle)'}}>{t('milestones:planDetail.snapshot.emptyAddTcs')}</div>
             )}
           </>
         )}
@@ -443,7 +460,7 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
       <div className="side-card">
         <div className="side-card-title">
           <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          Execution Pace
+          {t('milestones:planDetail.executionPace.title')}
         </div>
         {/* 7-day sparkline bar chart */}
         <div style={{display:'flex', alignItems:'flex-end', gap:3, height:40, marginBottom:8}}>
@@ -464,14 +481,14 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
         </div>
         <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:8}}>
           <div style={{background:'var(--bg-subtle)', borderRadius:8, padding:'8px 10px', border:'1px solid var(--border)'}}>
-            <div style={{fontSize:10, color:'var(--text-muted)', fontWeight:600, marginBottom:2, textTransform:'uppercase', letterSpacing:'0.04em'}}>Avg TC/day</div>
+            <div style={{fontSize:10, color:'var(--text-muted)', fontWeight:600, marginBottom:2, textTransform:'uppercase', letterSpacing:'0.04em'}}>{t('milestones:planDetail.executionPace.avgTcPerDay')}</div>
             <div style={{fontSize:18, fontWeight:700, color:'var(--text)', fontFamily:'JetBrains Mono,monospace'}}>{avgTcPerDay}</div>
           </div>
           <div style={{background:'var(--bg-subtle)', borderRadius:8, padding:'8px 10px', border:'1px solid var(--border)'}}>
-            <div style={{fontSize:10, color:'var(--text-muted)', fontWeight:600, marginBottom:2, textTransform:'uppercase', letterSpacing:'0.04em'}}>Remaining</div>
+            <div style={{fontSize:10, color:'var(--text-muted)', fontWeight:600, marginBottom:2, textTransform:'uppercase', letterSpacing:'0.04em'}}>{t('milestones:planDetail.executionPace.remaining')}</div>
             <div style={{fontSize:18, fontWeight:700, color:'var(--text)', fontFamily:'JetBrains Mono,monospace'}}>
-              {untested > 0 ? `${untested} TC` : '0'}
-              {daysEst !== null && untested > 0 ? <span style={{fontSize:11, fontWeight:500, color:'var(--text-muted)'}}> ~{daysEst}d</span> : null}
+              {untested > 0 ? t('milestones:planDetail.executionPace.tcCount', { count: untested }) : '0'}
+              {daysEst !== null && untested > 0 ? <span style={{fontSize:11, fontWeight:500, color:'var(--text-muted)'}}> {t('milestones:planDetail.executionPace.daysEstSuffix', { days: daysEst })}</span> : null}
             </div>
           </div>
         </div>
@@ -502,6 +519,7 @@ function TestCasesTab({
   currentUserProfile: Profile | null;
   onUpdateCriteriaMet: (type: 'entry' | 'exit', met: boolean[]) => void;
 }) {
+  const { t } = useTranslation(['milestones', 'common']);
   const [search, setSearch] = useState('');
   const [showPicker, setShowPicker] = useState(false);
   const [pickerSearch, setPickerSearch] = useState('');
@@ -526,12 +544,12 @@ function TestCasesTab({
     (!pickerSearch || tc.title.toLowerCase().includes(pickerSearch.toLowerCase()))
   );
 
-  const TC_PRI: Record<string, { label: string; cls: string }> = {
-    critical: { label: 'Critical', cls: 'pri-badge pri-p1' },
-    high:     { label: 'High',     cls: 'pri-badge pri-p2' },
-    medium:   { label: 'Medium',   cls: 'pri-badge pri-p3' },
-    low:      { label: 'Low',      cls: 'pri-badge pri-p3' },
-  };
+  const TC_PRI: Record<string, { label: string; cls: string }> = useMemo(() => ({
+    critical: { label: t('milestones:planDetail.priorityLabel.criticalShort'), cls: 'pri-badge pri-p1' },
+    high:     { label: t('milestones:planDetail.priorityLabel.highShort'),     cls: 'pri-badge pri-p2' },
+    medium:   { label: t('milestones:planDetail.priorityLabel.mediumShort'),   cls: 'pri-badge pri-p3' },
+    low:      { label: t('milestones:planDetail.priorityLabel.lowShort'),      cls: 'pri-badge pri-p3' },
+  }), [t]);
   const RESULT_CLS: Record<string, string> = {
     passed: 'sb-pass', failed: 'sb-fail', blocked: 'sb-block', untested: 'sb-untested',
   };
@@ -555,34 +573,34 @@ function TestCasesTab({
   const highPassed = highTCs.filter(p => tcResultMap.get(p.test_case_id)?.result === 'passed').length;
 
   const autoEvaluate = (text: string): { isAuto: boolean; met: boolean } => {
-    const t = text.toLowerCase().trim();
+    const s = text.toLowerCase().trim();
     // Pass rate ≥ N%  |  >= N% passed  |  N% pass rate
-    const passMatch = t.match(/(?:[≥>=]+\s*(\d+)\s*%\s*pass)|(?:pass\s*(?:rate)?\s*[≥>=]+\s*(\d+)\s*%)|(?:(\d+)\s*%\s*pass\s*rate)/);
+    const passMatch = s.match(/(?:[≥>=]+\s*(\d+)\s*%\s*pass)|(?:pass\s*(?:rate)?\s*[≥>=]+\s*(\d+)\s*%)|(?:(\d+)\s*%\s*pass\s*rate)/);
     if (passMatch) { const n = Number(passMatch[1] || passMatch[2] || passMatch[3]); return { isAuto: true, met: passRate >= n }; }
     // Completion rate ≥ N%
-    const compMatch = t.match(/completion\s*rate\s*[≥>=]+\s*(\d+)\s*%/);
+    const compMatch = s.match(/completion\s*rate\s*[≥>=]+\s*(\d+)\s*%/);
     if (compMatch) return { isAuto: true, met: completionRate >= Number(compMatch[1]) };
     // 0 critical failures  |  no critical failures  |  all critical TCs passed
-    if (/(?:0|no|zero)\s*critical\s*(failure|fail|bug|defect|issue)/i.test(t))
+    if (/(?:0|no|zero)\s*critical\s*(failure|fail|bug|defect|issue)/i.test(s))
       return { isAuto: true, met: criticalTCs.filter(p => tcResultMap.get(p.test_case_id)?.result === 'failed').length === 0 };
-    if (/all\s*critical\s*(tc|test\s*case)s?\s*passed/i.test(t))
+    if (/all\s*critical\s*(tc|test\s*case)s?\s*passed/i.test(s))
       return { isAuto: true, met: criticalTCs.length > 0 && criticalPassed === criticalTCs.length };
     // 0 high failures  |  all high TCs passed
-    if (/(?:0|no|zero)\s*high\s*(failure|fail|bug|defect|issue)/i.test(t))
+    if (/(?:0|no|zero)\s*high\s*(failure|fail|bug|defect|issue)/i.test(s))
       return { isAuto: true, met: highTCs.filter(p => tcResultMap.get(p.test_case_id)?.result === 'failed').length === 0 };
-    if (/all\s*high\s*(tc|test\s*case)s?\s*passed/i.test(t))
+    if (/all\s*high\s*(tc|test\s*case)s?\s*passed/i.test(s))
       return { isAuto: true, met: highTCs.length > 0 && highPassed === highTCs.length };
     // No blocked  |  0 blocked
-    if (/(?:0|no|zero)\s*blocked/i.test(t)) return { isAuto: true, met: blockedTCs === 0 };
+    if (/(?:0|no|zero)\s*blocked/i.test(s)) return { isAuto: true, met: blockedTCs === 0 };
     // No failed  |  0 failed
-    if (/(?:0|no|zero)\s*fail/i.test(t)) return { isAuto: true, met: failedTCs === 0 };
+    if (/(?:0|no|zero)\s*fail/i.test(s)) return { isAuto: true, met: failedTCs === 0 };
     // All TCs executed  |  100% execution
-    if (/all\s*(tc|test\s*case)s?\s*executed/i.test(t) || /100\s*%\s*(execution|completion)/i.test(t))
+    if (/all\s*(tc|test\s*case)s?\s*executed/i.test(s) || /100\s*%\s*(execution|completion)/i.test(s))
       return { isAuto: true, met: totalTCs > 0 && untestedTCs === 0 };
     // N untested TCs pending  |  untested ≤ N  |  N or fewer untested
-    const untestedMatch = t.match(/(\d+)\s*(?:or\s*fewer\s*)?untested\s*(tc|test\s*case)?s?\s*(?:pending|remaining|left)?/);
+    const untestedMatch = s.match(/(\d+)\s*(?:or\s*fewer\s*)?untested\s*(tc|test\s*case)?s?\s*(?:pending|remaining|left)?/);
     if (untestedMatch) return { isAuto: true, met: untestedTCs <= Number(untestedMatch[1]) };
-    const untestedMatch2 = t.match(/untested\s*[≤<=]+\s*(\d+)/);
+    const untestedMatch2 = s.match(/untested\s*[≤<=]+\s*(\d+)/);
     if (untestedMatch2) return { isAuto: true, met: untestedTCs <= Number(untestedMatch2[1]) };
     return { isAuto: false, met: false };
   };
@@ -625,11 +643,11 @@ function TestCasesTab({
           <div className="lock-strip">
             <svg style={{width:16,height:16,color:'var(--violet)',flex:'none'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             <div style={{flex:1}}>
-              <b>Snapshot locked</b> — TC scope is fixed. New TC changes in the library won't affect this plan.
+              <b>{t('milestones:planDetail.testCasesTab.lockStrip.titleB')}</b>{t('milestones:planDetail.testCasesTab.lockStrip.body')}
             </div>
             <div style={{marginLeft:'auto', display:'flex', gap:8, alignItems:'center'}}>
-              <button className="pd-btn pd-btn-sm" onClick={onRebase}>↻ Rebase</button>
-              <button className="pd-btn pd-btn-sm" onClick={onUnlock} style={{color:'var(--danger)', borderColor:'var(--danger-200)'}}>Unlock</button>
+              <button className="pd-btn pd-btn-sm" onClick={onRebase}>{t('milestones:planDetail.testCasesTab.lockStrip.rebase')}</button>
+              <button className="pd-btn pd-btn-sm" onClick={onUnlock} style={{color:'var(--danger)', borderColor:'var(--danger-200)'}}>{t('milestones:planDetail.testCasesTab.lockStrip.unlock')}</button>
             </div>
           </div>
         )}
@@ -641,15 +659,15 @@ function TestCasesTab({
             <div className="criteria-block">
               <div className="criteria-title">
                 <svg style={{width:13,height:13,color:'var(--success-600)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-                Entry Criteria
-                <span className="badge badge-success" style={{marginLeft:'auto'}}>{entryFinal.filter(f => f.met).length} / {entryCriteria.length} met</span>
+                {t('milestones:planDetail.testCasesTab.criteria.entryTitle')}
+                <span className="badge badge-success" style={{marginLeft:'auto'}}>{t('milestones:planDetail.testCasesTab.criteria.metSuffix', { met: entryFinal.filter(f => f.met).length, total: entryCriteria.length })}</span>
               </div>
               {entryFinal.map((item, i) => (
                 <div key={i} className="criterion">
                   <div className={item.met ? 'crit-check' : 'crit-check pending'}
                     style={{cursor: item.isAuto ? 'default' : 'pointer', ...(item.isAuto && item.met ? {background:'var(--primary-50)', borderColor:'var(--primary)'} : {})}}
                     onClick={() => handleToggleCriteria('entry', i)}
-                    title={item.isAuto ? 'Auto-evaluated based on test results' : 'Click to toggle'}>
+                    title={item.isAuto ? t('milestones:planDetail.testCasesTab.criteria.autoEvalTooltip') : t('milestones:planDetail.testCasesTab.criteria.clickToggleTooltip')}>
                     {item.met
                       ? item.isAuto
                         ? <svg style={{width:10,height:10,color:'var(--primary)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
@@ -659,22 +677,22 @@ function TestCasesTab({
                   </div>
                   <span style={{fontSize:13, textDecoration: item.met ? 'line-through' : 'none', color: item.met ? 'var(--text-muted)' : 'inherit', flex:1}}>{item.text}</span>
                   {item.isAuto && (
-                    <span title="Auto-evaluated" style={{fontSize:10, color:'var(--primary)', display:'inline-flex', alignItems:'center', gap:2, background:'var(--primary-50)', padding:'1px 6px', borderRadius:8, fontWeight:600, whiteSpace:'nowrap'}}>
+                    <span title={t('milestones:planDetail.testCasesTab.criteria.autoTooltip')} style={{fontSize:10, color:'var(--primary)', display:'inline-flex', alignItems:'center', gap:2, background:'var(--primary-50)', padding:'1px 6px', borderRadius:8, fontWeight:600, whiteSpace:'nowrap'}}>
                       <svg style={{width:10,height:10}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                      Auto
+                      {t('milestones:planDetail.testCasesTab.criteria.autoBadge')}
                     </span>
                   )}
                 </div>
               ))}
-              {entryCriteria.length === 0 && <div style={{fontSize:12, color:'var(--text-muted)'}}>No entry criteria defined.</div>}
+              {entryCriteria.length === 0 && <div style={{fontSize:12, color:'var(--text-muted)'}}>{t('milestones:planDetail.testCasesTab.criteria.emptyEntry')}</div>}
             </div>
             {/* Exit Criteria */}
             <div className="criteria-block">
               <div className="criteria-title">
                 <svg style={{width:13,height:13,color:'var(--warning)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                Exit Criteria
+                {t('milestones:planDetail.testCasesTab.criteria.exitTitle')}
                 <span className="badge badge-warning" style={{marginLeft:'auto'}}>
-                  {exitFinal.filter(f => f.met).length} / {exitCriteria.length} met
+                  {t('milestones:planDetail.testCasesTab.criteria.metSuffix', { met: exitFinal.filter(f => f.met).length, total: exitCriteria.length })}
                 </span>
               </div>
               {exitFinal.map((item, i) => (
@@ -682,7 +700,7 @@ function TestCasesTab({
                   <div className={item.met ? 'crit-check' : 'crit-check pending'}
                     style={{cursor: item.isAuto ? 'default' : 'pointer', ...(item.isAuto && item.met ? {background:'var(--primary-50)', borderColor:'var(--primary)'} : {})}}
                     onClick={() => handleToggleCriteria('exit', i)}
-                    title={item.isAuto ? 'Auto-evaluated based on test results' : 'Click to toggle'}>
+                    title={item.isAuto ? t('milestones:planDetail.testCasesTab.criteria.autoEvalTooltip') : t('milestones:planDetail.testCasesTab.criteria.clickToggleTooltip')}>
                     {item.met
                       ? item.isAuto
                         ? <svg style={{width:10,height:10,color:'var(--primary)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
@@ -692,14 +710,14 @@ function TestCasesTab({
                   </div>
                   <span style={{fontSize:13, textDecoration: item.met ? 'line-through' : 'none', color: item.met ? 'var(--text-muted)' : 'inherit', flex:1}}>{item.text}</span>
                   {item.isAuto && (
-                    <span title="Auto-evaluated" style={{fontSize:10, color:'var(--primary)', display:'inline-flex', alignItems:'center', gap:2, background:'var(--primary-50)', padding:'1px 6px', borderRadius:8, fontWeight:600, whiteSpace:'nowrap'}}>
+                    <span title={t('milestones:planDetail.testCasesTab.criteria.autoTooltip')} style={{fontSize:10, color:'var(--primary)', display:'inline-flex', alignItems:'center', gap:2, background:'var(--primary-50)', padding:'1px 6px', borderRadius:8, fontWeight:600, whiteSpace:'nowrap'}}>
                       <svg style={{width:10,height:10}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                      Auto
+                      {t('milestones:planDetail.testCasesTab.criteria.autoBadge')}
                     </span>
                   )}
                 </div>
               ))}
-              {exitCriteria.length === 0 && <div style={{fontSize:12, color:'var(--text-muted)'}}>No exit criteria defined.</div>}
+              {exitCriteria.length === 0 && <div style={{fontSize:12, color:'var(--text-muted)'}}>{t('milestones:planDetail.testCasesTab.criteria.emptyExit')}</div>}
             </div>
           </div>
         )}
@@ -708,27 +726,27 @@ function TestCasesTab({
         <div style={{background:'#fff', border:'1px solid var(--border)', borderRadius:10, padding:'10px 14px', display:'flex', alignItems:'center', gap:10, marginBottom:12, flexWrap:'wrap'}}>
           <div style={{position:'relative', flex:1, minWidth:200}}>
             <svg style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',width:13,height:13,color:'var(--text-subtle)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search in plan…"
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder={t('milestones:planDetail.testCasesTab.filter.searchPlaceholder')}
               style={{width:'100%', padding:'6px 10px 6px 32px', border:'1px solid var(--border)', borderRadius:8, background:'var(--bg-muted)', fontSize:13, outline:'none', boxSizing:'border-box'}} />
           </div>
           <select value={filterPri} onChange={e=>setFilterPri(e.target.value)}
             style={{padding:'6px 10px', border:'1px solid var(--border)', borderRadius:6, fontSize:12, background:'#fff', outline:'none'}}>
-            <option value="">All Priority</option>
-            <option value="critical">P1 Critical</option>
-            <option value="high">P2 High</option>
-            <option value="medium">P3 Medium</option>
+            <option value="">{t('milestones:planDetail.testCasesTab.filter.allPriority')}</option>
+            <option value="critical">{t('milestones:planDetail.priorityLabel.critical')}</option>
+            <option value="high">{t('milestones:planDetail.priorityLabel.high')}</option>
+            <option value="medium">{t('milestones:planDetail.priorityLabel.medium')}</option>
           </select>
           <div style={{marginLeft:'auto', display:'flex', gap:6}}>
             {!plan.is_locked && planTcs.length > 0 && (
               <button onClick={onLock} className="pd-btn pd-btn-sm">
                 <svg style={{width:12,height:12}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                Lock Snapshot
+                {t('milestones:planDetail.testCasesTab.filter.lockSnapshot')}
               </button>
             )}
             {!plan.is_locked && (
               <button onClick={()=>setShowPicker(true)} className="pd-btn pd-btn-sm pd-btn-primary">
                 <svg style={{width:12,height:12}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Add TCs
+                {t('milestones:planDetail.testCasesTab.filter.addTcs')}
               </button>
             )}
           </div>
@@ -738,28 +756,28 @@ function TestCasesTab({
         <div className="tc-card">
           <div className="tc-head-row">
             <div />
-            <div>ID</div>
-            <div>Title</div>
-            <div>Folder</div>
-            <div>Priority</div>
-            <div>Status</div>
-            <div>Assignee</div>
+            <div>{t('milestones:planDetail.testCasesTab.table.id')}</div>
+            <div>{t('milestones:planDetail.testCasesTab.table.title')}</div>
+            <div>{t('milestones:planDetail.testCasesTab.table.folder')}</div>
+            <div>{t('milestones:planDetail.testCasesTab.table.priority')}</div>
+            <div>{t('milestones:planDetail.testCasesTab.table.status')}</div>
+            <div>{t('milestones:planDetail.testCasesTab.table.assignee')}</div>
             <div />
           </div>
           {filtered.length === 0 ? (
             <div style={{textAlign:'center', padding:'3rem 1rem', borderTop:'1px solid var(--border)'}}>
               <svg style={{width:32,height:32,color:'#CBD5E1',margin:'0 auto 12px',display:'block'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
               <p style={{color:'var(--text-muted)', fontSize:13, margin:0}}>
-                {search ? 'No test cases match your search.' : 'No test cases added yet. Click "Add TCs" to start.'}
+                {search ? t('milestones:planDetail.testCasesTab.table.emptySearch') : t('milestones:planDetail.testCasesTab.table.emptyInitial')}
               </p>
             </div>
           ) : (
             filtered.map(ptc => {
               const pri = ptc.test_case.priority as string;
-              const priCfg = TC_PRI[pri] || { label: pri || 'Medium', cls: 'pri-badge pri-p3' };
+              const priCfg = TC_PRI[pri] || { label: pri || t('milestones:planDetail.priorityLabel.mediumShort'), cls: 'pri-badge pri-p3' };
               const tcEntry = tcResultMap.get(ptc.test_case_id);
               const result = tcEntry?.result || 'untested';
-              const resultLabel = result.charAt(0).toUpperCase() + result.slice(1);
+              const resultLabel = t(`common:${result}`);
               const sbClass = RESULT_CLS[result] || 'sb-untested';
               const assigneeId = tcEntry?.assignee;
               const assignee = assigneeId ? profiles.get(assigneeId) : null;
@@ -774,8 +792,8 @@ function TestCasesTab({
                     <div style={{fontWeight:500, fontSize:13}}>{ptc.test_case.title}</div>
                     {Array.isArray(ptc.test_case.tags) && ptc.test_case.tags.length > 0 && (
                       <div style={{fontSize:11, color:'var(--text-muted)', marginTop:2, display:'flex', gap:4}}>
-                        {ptc.test_case.tags.slice(0,2).map(t=>(
-                          <span key={t} style={{fontFamily:'JetBrains Mono,monospace', fontSize:10, background:'var(--bg-subtle)', padding:'1px 4px', borderRadius:3}}>#{t}</span>
+                        {ptc.test_case.tags.slice(0,2).map(tag=>(
+                          <span key={tag} style={{fontFamily:'JetBrains Mono,monospace', fontSize:10, background:'var(--bg-subtle)', padding:'1px 4px', borderRadius:3}}>#{tag}</span>
                         ))}
                       </div>
                     )}
@@ -817,11 +835,11 @@ function TestCasesTab({
             })
           )}
           <div style={{padding:'10px 16px', borderTop:'1px solid var(--border)', display:'flex', fontSize:12, color:'var(--text-muted)', alignItems:'center'}}>
-            Showing {filtered.length} of {planTcs.length}
+            {t('milestones:planDetail.testCasesTab.pagination.showing', { shown: filtered.length, total: planTcs.length })}
             {planTcs.length > filtered.length && (
               <div style={{marginLeft:'auto', display:'flex', gap:6}}>
-                <button className="pd-btn pd-btn-sm">Previous</button>
-                <button className="pd-btn pd-btn-sm">Next</button>
+                <button className="pd-btn pd-btn-sm">{t('milestones:planDetail.testCasesTab.pagination.previous')}</button>
+                <button className="pd-btn pd-btn-sm">{t('milestones:planDetail.testCasesTab.pagination.next')}</button>
               </div>
             )}
           </div>
@@ -864,7 +882,7 @@ function TestCasesTab({
                   <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center">
                     <svg style={{width:14,height:14,color:'#6366f1'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
                   </div>
-                  <span className="text-[0.9375rem] font-bold text-gray-900">Add Test Cases</span>
+                  <span className="text-[0.9375rem] font-bold text-gray-900">{t('milestones:planDetail.tcPicker.title')}</span>
                 </div>
                 <button onClick={closePicker} className="text-gray-400 hover:text-gray-600 cursor-pointer p-1 rounded-lg hover:bg-gray-100">
                   <svg style={{width:18,height:18}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -875,15 +893,15 @@ function TestCasesTab({
                 <div className="relative flex-1 min-w-[140px]">
                   <svg style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',width:13,height:13,color:'#94a3b8'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                   <input type="text" value={pickerSearch} onChange={e=>setPickerSearch(e.target.value)}
-                    placeholder="Search test cases..." autoFocus
+                    placeholder={t('milestones:planDetail.tcPicker.filter.searchPlaceholder')} autoFocus
                     className="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400" />
                 </div>
                 {uniqueFolders.length > 0 && (
                   <select value={pickerFolder} onChange={e=>setPickerFolder(e.target.value)}
                     className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-400 cursor-pointer bg-white">
-                    <option value="">All Folders</option>
+                    <option value="">{t('milestones:planDetail.tcPicker.filter.allFolders')}</option>
                     {uniqueFolders.map(f => <option key={f} value={f}>{f}</option>)}
-                    <option value="__none__">No Folder</option>
+                    <option value="__none__">{t('milestones:planDetail.tcPicker.filter.noFolder')}</option>
                   </select>
                 )}
                 <div className="flex items-center gap-2 flex-shrink-0">
@@ -893,15 +911,15 @@ function TestCasesTab({
                     <span className="absolute top-[3px] left-0 w-[18px] h-[18px] bg-white rounded-full shadow transition-transform duration-200"
                       style={{transform: pickerIncludeDraft ? 'translateX(21px)' : 'translateX(3px)'}} />
                   </button>
-                  <span className="text-xs text-gray-600 font-medium whitespace-nowrap">Include Draft TCs</span>
+                  <span className="text-xs text-gray-600 font-medium whitespace-nowrap">{t('milestones:planDetail.tcPicker.filter.includeDraft')}</span>
                   {!pickerIncludeDraft && draftCount > 0 && (
-                    <span className="text-[10px] text-gray-400">{draftCount} hidden</span>
+                    <span className="text-[10px] text-gray-400">{t('milestones:planDetail.tcPicker.filter.draftHidden', { count: draftCount })}</span>
                   )}
                 </div>
               </div>
               {/* Summary row */}
               <div className="px-5 py-2 bg-gray-50 border-b border-gray-100 text-xs text-gray-500">
-                {visibleTcs.length} test case{visibleTcs.length !== 1 ? 's' : ''} available
+                {t('milestones:planDetail.tcPicker.summary', { count: visibleTcs.length })}
               </div>
               {/* TC table */}
               <div className="max-h-[42vh] overflow-y-auto">
@@ -919,10 +937,10 @@ function TestCasesTab({
                             }
                           }} />
                       </th>
-                      <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">ID</th>
-                      <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Title</th>
-                      <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Status</th>
-                      <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Priority</th>
+                      <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{t('milestones:planDetail.tcPicker.table.id')}</th>
+                      <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{t('milestones:planDetail.tcPicker.table.title')}</th>
+                      <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{t('milestones:planDetail.tcPicker.table.status')}</th>
+                      <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{t('milestones:planDetail.tcPicker.table.priority')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
@@ -948,7 +966,7 @@ function TestCasesTab({
                             <span className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${
                               isDraft ? 'bg-yellow-50 text-yellow-800 border-yellow-200' : 'bg-green-50 text-green-800 border-green-200'
                             }`}>
-                              {isDraft ? 'Draft' : 'Active'}
+                              {isDraft ? t('milestones:planDetail.tcPicker.table.statusDraft') : t('milestones:planDetail.tcPicker.table.statusActive')}
                             </span>
                           </td>
                           <td className="px-3 py-2.5">
@@ -964,7 +982,7 @@ function TestCasesTab({
                     })}
                     {visibleTcs.length === 0 && (
                       <tr><td colSpan={5} className="px-5 py-8 text-center text-xs text-gray-400">
-                        {pickerSearch ? 'No test cases match your search.' : 'All test cases already added.'}
+                        {pickerSearch ? t('milestones:planDetail.tcPicker.table.emptySearch') : t('milestones:planDetail.tcPicker.table.emptyAll')}
                       </td></tr>
                     )}
                   </tbody>
@@ -973,16 +991,22 @@ function TestCasesTab({
               {/* Footer */}
               <div className="flex items-center justify-between px-5 py-3.5 border-t border-gray-100 bg-gray-50">
                 <span className="text-xs text-gray-500">
-                  <strong className="text-gray-900 text-sm">{pickerSelectedIds.size}</strong> selected
+                  <Trans
+                    i18nKey="milestones:planDetail.tcPicker.footer.selected"
+                    values={{ count: pickerSelectedIds.size }}
+                    components={{ 1: <strong className="text-gray-900 text-sm" /> }}
+                  />
                 </span>
                 <div className="flex gap-2">
                   <button onClick={closePicker}
-                    className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer">Cancel</button>
+                    className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer">{t('common:cancel')}</button>
                   <button
                     onClick={() => { onAddTcs([...pickerSelectedIds]); closePicker(); }}
                     disabled={pickerSelectedIds.size === 0}
                     className="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-semibold cursor-pointer disabled:opacity-50">
-                    Add {pickerSelectedIds.size > 0 ? `${pickerSelectedIds.size} TC${pickerSelectedIds.size > 1 ? 's' : ''}` : 'TCs'}
+                    {pickerSelectedIds.size > 0
+                      ? t('milestones:planDetail.tcPicker.footer.addTcs', { count: pickerSelectedIds.size })
+                      : t('milestones:planDetail.tcPicker.footer.addTcsZero')}
                   </button>
                 </div>
               </div>
@@ -1006,6 +1030,8 @@ function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilest
   currentUserProfile: Profile | null;
 }) {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation(['milestones', 'common']);
+  const lang = i18n.language;
   const totalRuns = runs.length;
 
   // Best pass rate + which run
@@ -1016,20 +1042,12 @@ function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilest
     const rate = executed > 0 ? Math.round(r.passed / executed * 100) : 0;
     if (rate > bestPassRate) {
       bestPassRate = rate;
-      bestRunLabel = `${r.name} (${new Date(r.created_at).toLocaleDateString('en-US', {month:'short',day:'numeric'})})`;
+      bestRunLabel = t('milestones:planDetail.runsTab.strip.bestRunLabel', { name: r.name, date: formatShortDate(r.created_at, lang) });
     }
   });
 
   const latest = runs[0];
-  const latestAgo = latest ? (() => {
-    const diff = Date.now() - new Date(latest.created_at).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    const days = Math.floor(hrs / 24);
-    return `${days}d ago`;
-  })() : '';
+  const latestAgo = latest ? formatRelativeTime(latest.created_at, t) : '';
 
   // Env coverage
   const envs = new Set(runs.map(r => r.environment).filter(Boolean));
@@ -1064,29 +1082,29 @@ function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilest
         {/* Runs summary strip */}
         <div className="runs-strip" style={{margin:0, marginBottom:14}}>
           <div className="strip-stat">
-            <div className="l">Total Runs</div>
+            <div className="l">{t('milestones:planDetail.runsTab.strip.totalRuns')}</div>
             <div className="v">{totalRuns}</div>
-            <div className="sub">{totalRuns > 0 ? 'plan-linked' : 'no runs yet'}</div>
+            <div className="sub">{totalRuns > 0 ? t('milestones:planDetail.runsTab.strip.sub.planLinked') : t('milestones:planDetail.runsTab.strip.sub.noRuns')}</div>
           </div>
           <div className="strip-stat">
-            <div className="l">Best Pass Rate</div>
+            <div className="l">{t('milestones:planDetail.runsTab.strip.bestPassRate')}</div>
             <div className="v" style={{color: bestPassRate >= 90 ? 'var(--success-600)' : bestPassRate >= 70 ? 'var(--warning)' : totalRuns > 0 ? 'var(--danger-600)' : 'var(--text-muted)'}}>{totalRuns > 0 ? `${bestPassRate}%` : '—'}</div>
             <div className="sub">{totalRuns > 0 ? bestRunLabel : '—'}</div>
           </div>
           <div className="strip-stat">
-            <div className="l">Latest</div>
+            <div className="l">{t('milestones:planDetail.runsTab.strip.latest')}</div>
             <div className="v" style={{fontSize:16, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{latest ? latest.name : '—'}</div>
             <div className="sub">{latest ? `${latestAgo}${latest.assignee_names?.length ? ` · ${latest.assignee_names[0]}` : ''}` : '—'}</div>
           </div>
           <div className="strip-stat">
-            <div className="l">Envs Covered</div>
+            <div className="l">{t('milestones:planDetail.runsTab.strip.envsCovered')}</div>
             <div className="v">{envCount > 0 ? envCount : '—'}</div>
-            <div className="sub">{envCount > 0 ? [...envs].slice(0, 3).join(', ') : 'no env data'}</div>
+            <div className="sub">{envCount > 0 ? [...envs].slice(0, 3).join(', ') : t('milestones:planDetail.runsTab.strip.sub.noEnvData')}</div>
           </div>
           <div>
             <button className="pd-btn pd-btn-primary" onClick={startNewRun}>
               <svg style={{width:12,height:12}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-              New Run
+              {t('milestones:planDetail.runsTab.strip.newRun')}
             </button>
           </div>
         </div>
@@ -1101,17 +1119,8 @@ function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilest
             const passW = executed > 0 ? (r.passed / executed * 100) : 0;
             const failW = executed > 0 ? (r.failed / executed * 100) : 0;
             const iconType = getRunIcon(r);
-            const createdDate = new Date(r.created_at);
-            const dateStr = createdDate.toLocaleDateString('en-US', {month:'short',day:'numeric'});
-            const timeStr = createdDate.toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit',hour12:false});
-            const ago = (() => {
-              const diff = Date.now() - createdDate.getTime();
-              const mins = Math.floor(diff / 60000);
-              if (mins < 60) return `${mins}m ago`;
-              const hrs = Math.floor(mins / 60);
-              if (hrs < 24) return `${hrs}h ago`;
-              return `${Math.floor(hrs / 24)}d ago`;
-            })();
+            const dateTimeStr = formatShortDateTime(r.created_at, lang);
+            const ago = formatRelativeTime(r.created_at, t);
 
             return (
               <div key={r.id} className="run-card" style={{
@@ -1133,11 +1142,11 @@ function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilest
                 <div style={{minWidth:0}}>
                   <div style={{fontSize:14,fontWeight:600,color:'var(--text)',display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
                     <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r.name}</span>
-                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,background:'var(--bg-subtle)',color:'var(--text-muted)',padding:'1px 6px',borderRadius:3,fontWeight:500,flexShrink:0}}>Run #{runNumber}</span>
+                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,background:'var(--bg-subtle)',color:'var(--text-muted)',padding:'1px 6px',borderRadius:3,fontWeight:500,flexShrink:0}}>{t('milestones:planDetail.runsTab.runCard.runNumber', { n: runNumber })}</span>
                   </div>
                   <div style={{fontSize:12,color:'var(--text-muted)',marginTop:4,display:'flex',gap:10,flexWrap:'wrap',alignItems:'center'}}>
-                    <span><b style={{color:'var(--text)',fontWeight:500}}>{dateStr}, {timeStr}</b> · {ago}</span>
-                    <span>{executed} of {totalTc} executed{r.untested > 0 ? ` · ${r.untested} untested` : ''}</span>
+                    <span><b style={{color:'var(--text)',fontWeight:500}}>{dateTimeStr}</b>{t('milestones:planDetail.runsTab.runCard.ago', { ago })}</span>
+                    <span>{t('milestones:planDetail.runsTab.runCard.executedOfTotal', { executed, total: totalTc })}{r.untested > 0 ? t('milestones:planDetail.runsTab.runCard.untestedSuffix', { count: r.untested }) : ''}</span>
                     {r.environment && (
                       <span style={{fontSize:10.5,background:'var(--bg-subtle)',border:'1px solid var(--border)',borderRadius:4,padding:'1px 6px'}}>{r.environment}</span>
                     )}
@@ -1155,7 +1164,7 @@ function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilest
                     <div style={{position:'absolute',left:`${passW}%`,top:0,bottom:0,background:'var(--danger)',width:`${failW}%`}} />
                   </div>
                   <div style={{fontSize:10.5,color:'var(--text-muted)',marginTop:3}}>
-                    {r.passed} pass · {r.failed} fail{r.blocked > 0 ? ` · ${r.blocked} block` : ''}
+                    {t('milestones:planDetail.runsTab.runCard.passSuffix', { count: r.passed })}{t('milestones:planDetail.runsTab.runCard.failSuffix', { count: r.failed })}{r.blocked > 0 ? t('milestones:planDetail.runsTab.runCard.blockSuffix', { count: r.blocked }) : ''}
                   </div>
                 </div>
 
@@ -1173,12 +1182,12 @@ function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilest
                       <div>
                         <div style={{fontSize:12,fontWeight:500}}>{r.assignee_names![0]}</div>
                         {r.assignee_names!.length > 1 && (
-                          <div style={{fontSize:11,color:'var(--text-muted)'}}>+{r.assignee_names!.length - 1} more</div>
+                          <div style={{fontSize:11,color:'var(--text-muted)'}}>{t('milestones:planDetail.runsTab.runCard.moreSuffix', { count: r.assignee_names!.length - 1 })}</div>
                         )}
                       </div>
                     </>
                   ) : (
-                    <div style={{fontSize:12,color:'var(--text-muted)'}}>Unassigned</div>
+                    <div style={{fontSize:12,color:'var(--text-muted)'}}>{t('milestones:planDetail.runsTab.runCard.unassigned')}</div>
                   )}
                 </div>
 
@@ -1186,7 +1195,7 @@ function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilest
                 <div>
                   <button className="pd-btn pd-btn-sm" onClick={e=>{e.stopPropagation();navigate(`/projects/${projectId}/runs/${r.id}`);}}>
                     <svg style={{width:11,height:11}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    View
+                    {t('milestones:planDetail.runsTab.runCard.view')}
                   </button>
                 </div>
               </div>
@@ -1196,12 +1205,12 @@ function RunsTab({ runs, projectId, planId, planTcCount, milestone, parentMilest
           {/* New Run CTA */}
           <div className="new-run-card" onClick={startNewRun} style={{marginTop:4}}>
             <svg style={{width:18,height:18}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Start a new Run with these {planTcCount} TCs
-            <span style={{fontSize:11.5, color:'var(--text-muted)', fontWeight:400}}>· opens New Run modal with Plan pre-selected</span>
+            {t('milestones:planDetail.runsTab.newRunCta', { count: planTcCount })}
+            <span style={{fontSize:11.5, color:'var(--text-muted)', fontWeight:400}}>{t('milestones:planDetail.runsTab.newRunCtaHint')}</span>
           </div>
 
           {runs.length === 0 && (
-            <div style={{textAlign:'center', padding:'2rem', color:'var(--text-muted)', fontSize:13, marginTop:8}}>No runs linked to this plan yet.</div>
+            <div style={{textAlign:'center', padding:'2rem', color:'var(--text-muted)', fontSize:13, marginTop:8}}>{t('milestones:planDetail.runsTab.empty')}</div>
           )}
         </div>
       </div>
@@ -1223,6 +1232,8 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCo
   runs: PlanRun[]; tcResultMap: Map<string, { result: string; assignee: string | null }>; dailyExecCounts: number[];
   currentUserProfile: Profile | null;
 }) {
+  const { t, i18n } = useTranslation(['milestones', 'common']);
+  const lang = i18n.language;
   const [activeFilter, setActiveFilter] = useState('all');
   const [dateRange, setDateRange] = useState<'7d' | '14d' | '30d' | 'all'>('14d');
   const [showDateMenu, setShowDateMenu] = useState(false);
@@ -1244,19 +1255,19 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCo
     return logs.filter(l => new Date(l.created_at) >= cutoff);
   }, [logs, dateRange]);
 
-  const isResultEvent = (t: string) => t.includes('test_result') || t.includes('result');
-  const isRunEvent = (t: string) => t.includes('run') && !t.includes('result');
-  const isTcEvent = (t: string) => t.includes('tc_') || t.includes('test_case');
-  const isAiEvent = (t: string) => t.startsWith('ai_') || t.includes('_ai_') || t === 'ai';
-  const isStatusEvent = (t: string) => t.includes('status') || t.includes('snapshot') || t.includes('lock') || t.includes('plan_') || t.includes('criteria') || t.includes('update');
+  const isResultEvent = (type: string) => type.includes('test_result') || type.includes('result');
+  const isRunEvent = (type: string) => type.includes('run') && !type.includes('result');
+  const isTcEvent = (type: string) => type.includes('tc_') || type.includes('test_case');
+  const isAiEvent = (type: string) => type.startsWith('ai_') || type.includes('_ai_') || type === 'ai';
+  const isStatusEvent = (type: string) => type.includes('status') || type.includes('snapshot') || type.includes('lock') || type.includes('plan_') || type.includes('criteria') || type.includes('update');
 
   const filters = [
-    { key: 'all',     label: 'All',      dot: '', count: dateLogs.length },
-    { key: 'results', label: 'Results',  dot: 'var(--success)', count: dateLogs.filter(l=>isResultEvent(l.event_type||'')).length },
-    { key: 'runs',    label: 'Runs',     dot: 'var(--blue,#3B82F6)', count: dateLogs.filter(l=>isRunEvent(l.event_type||'')).length },
-    { key: 'tc',      label: 'TC Edits', dot: 'var(--warning)', count: dateLogs.filter(l=>isTcEvent(l.event_type||'')).length },
-    { key: 'ai',      label: 'AI',       dot: 'var(--violet)', count: dateLogs.filter(l=>isAiEvent(l.event_type||'')).length },
-    { key: 'status',  label: 'Status',   dot: 'var(--text-subtle)', count: dateLogs.filter(l=>isStatusEvent(l.event_type||'')).length },
+    { key: 'all',     label: t('milestones:planDetail.activityTab.filter.all'),     dot: '', count: dateLogs.length },
+    { key: 'results', label: t('milestones:planDetail.activityTab.filter.results'), dot: 'var(--success)', count: dateLogs.filter(l=>isResultEvent(l.event_type||'')).length },
+    { key: 'runs',    label: t('milestones:planDetail.activityTab.filter.runs'),    dot: 'var(--blue,#3B82F6)', count: dateLogs.filter(l=>isRunEvent(l.event_type||'')).length },
+    { key: 'tc',      label: t('milestones:planDetail.activityTab.filter.tc'),      dot: 'var(--warning)', count: dateLogs.filter(l=>isTcEvent(l.event_type||'')).length },
+    { key: 'ai',      label: t('milestones:planDetail.activityTab.filter.ai'),      dot: 'var(--violet)', count: dateLogs.filter(l=>isAiEvent(l.event_type||'')).length },
+    { key: 'status',  label: t('milestones:planDetail.activityTab.filter.status'),  dot: 'var(--text-subtle)', count: dateLogs.filter(l=>isStatusEvent(l.event_type||'')).length },
   ];
 
   const filtered = activeFilter === 'all' ? dateLogs
@@ -1334,7 +1345,7 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCo
     return { cls: 'info', iconCls: 'info', icon: <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> };
   };
 
-  const formatTime = (ts: string) => new Date(ts).toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', hour12: false });
+  const formatTime = (ts: string) => formatShortTime(ts, lang);
 
   const isToday = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -1349,8 +1360,8 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCo
   };
 
   const getDayLabel = (dateStr: string, firstLog: ActivityLog) => {
-    if (isToday(firstLog.created_at)) return `Today · ${new Date(firstLog.created_at).toLocaleDateString('en-US', {month:'short',day:'numeric'})}`;
-    if (isYesterday(firstLog.created_at)) return `Yesterday · ${new Date(firstLog.created_at).toLocaleDateString('en-US', {month:'short',day:'numeric'})}`;
+    if (isToday(firstLog.created_at)) return t('milestones:planDetail.activityTab.dayHeader.today', { date: formatShortDate(firstLog.created_at, lang) });
+    if (isYesterday(firstLog.created_at)) return t('milestones:planDetail.activityTab.dayHeader.yesterday', { date: formatShortDate(firstLog.created_at, lang) });
     return dateStr;
   };
 
@@ -1369,12 +1380,12 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCo
           <div style={{marginLeft:'auto', display:'flex', gap:6}}>
             <div ref={dateMenuRef} style={{position:'relative'}}>
               <button className="pd-btn pd-btn-sm" onClick={()=>setShowDateMenu(!showDateMenu)}>
-                {dateRange === 'all' ? 'All time' : `Last ${dateRange}`} <svg style={{width:10,height:10,marginLeft:2}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
+                {dateRange === 'all' ? t('milestones:planDetail.activityTab.dateRange.allTime') : dateRange === '7d' ? t('milestones:planDetail.activityTab.dateRange.last7d') : dateRange === '14d' ? t('milestones:planDetail.activityTab.dateRange.last14d') : t('milestones:planDetail.activityTab.dateRange.last30d')} <svg style={{width:10,height:10,marginLeft:2}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
               </button>
               {showDateMenu && (
                 <div style={{position:'absolute',right:0,top:'100%',marginTop:4,background:'#fff',border:'1px solid var(--border)',borderRadius:8,boxShadow:'0 4px 12px rgba(0,0,0,.1)',zIndex:20,minWidth:120,overflow:'hidden'}}>
-                  {([['7d','Last 7d'],['14d','Last 14d'],['30d','Last 30d'],['all','All time']] as const).map(([v,l])=>(
-                    <div key={v} onClick={()=>{setDateRange(v); setShowDateMenu(false);}}
+                  {([['7d', t('milestones:planDetail.activityTab.dateRange.last7d')],['14d', t('milestones:planDetail.activityTab.dateRange.last14d')],['30d', t('milestones:planDetail.activityTab.dateRange.last30d')],['all', t('milestones:planDetail.activityTab.dateRange.allTime')]] as const).map(([v,l])=>(
+                    <div key={v} onClick={()=>{setDateRange(v as '7d' | '14d' | '30d' | 'all'); setShowDateMenu(false);}}
                       style={{padding:'8px 12px',fontSize:12,cursor:'pointer',fontWeight:dateRange===v?600:400,color:dateRange===v?'var(--primary)':'var(--text)',background:dateRange===v?'var(--primary-50)':'transparent'}}
                       onMouseEnter={e=>{if(dateRange!==v) e.currentTarget.style.background='var(--bg-subtle)';}}
                       onMouseLeave={e=>{if(dateRange!==v) e.currentTarget.style.background='transparent';}}>
@@ -1386,7 +1397,7 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCo
             </div>
             <button className="pd-btn pd-btn-sm" onClick={handleExport}>
               <svg style={{width:11,height:11}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Export
+              {t('milestones:planDetail.activityTab.export')}
             </button>
           </div>
         </div>
@@ -1394,20 +1405,20 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCo
         {/* Timeline */}
         {Object.keys(grouped).length === 0 ? (
           <div style={{textAlign:'center', padding:'3rem 1rem', border:'2px dashed var(--border)', borderRadius:10}}>
-            <p style={{color:'var(--text-muted)', fontSize:13, margin:0}}>No activity recorded yet.</p>
+            <p style={{color:'var(--text-muted)', fontSize:13, margin:0}}>{t('milestones:planDetail.activityTab.empty')}</p>
           </div>
         ) : (
           Object.entries(grouped).map(([day, dayLogs]) => (
             <div key={day}>
               <div className="day-header">
                 {getDayLabel(day, dayLogs[0])}
-                {isToday(dayLogs[0].created_at) && <span className="today">{dayLogs.length} events</span>}
+                {isToday(dayLogs[0].created_at) && <span className="today">{t('milestones:planDetail.activityTab.dayHeader.events', { count: dayLogs.length })}</span>}
                 {!isToday(dayLogs[0].created_at) && <span style={{background:'var(--bg-subtle)', color:'var(--text-muted)', padding:'2px 8px', borderRadius:10, fontSize:10}}>{dayLogs.length}</span>}
               </div>
               <div className="timeline">
                 {dayLogs.map(log => {
                   const actor = profiles.get(log.actor_id);
-                  const actorName = actor?.full_name || actor?.email || 'System';
+                  const actorName = actor?.full_name || actor?.email || t('milestones:planDetail.activityTab.systemActor');
                   const { cls, iconCls, icon } = eventStyle(log.event_type || '');
                   const evtType = log.event_type || '';
                   const metaDetails = log.metadata?.details;
@@ -1417,23 +1428,23 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCo
                   let desc = '';
                   let metaLine = metaDetails || '';
                   const md = log.metadata || {};
-                  if (evtType.includes('test_result_passed')) { desc = 'recorded'; metaLine = `${md.tc_custom_id || ''} ${md.tc_title || ''} · ${md.run_name || ''}`.trim(); }
-                  else if (evtType.includes('test_result_failed')) { desc = 'recorded'; metaLine = `${md.tc_custom_id || ''} ${md.tc_title || ''} · ${md.run_name || ''} · ${md.priority || ''}`.trim(); }
-                  else if (evtType.includes('test_result_blocked')) { desc = 'recorded'; metaLine = `${md.tc_custom_id || ''} ${md.tc_title || ''} · ${md.run_name || ''}`.trim(); }
-                  else if (evtType.includes('test_result_retest')) { desc = 'recorded'; metaLine = `${md.tc_custom_id || ''} ${md.tc_title || ''} · ${md.run_name || ''}`.trim(); }
-                  else if (evtType.includes('run_status')) { desc = `changed run status`; metaLine = md.run_name || md.name || ''; }
-                  else if (evtType.includes('tc_added')) desc = 'added test cases to the plan';
-                  else if (evtType.includes('tc_removed')) desc = 'removed a test case from the plan';
-                  else if (evtType.includes('snapshot_locked')) desc = 'locked the snapshot';
-                  else if (evtType.includes('snapshot_unlocked')) desc = 'unlocked the snapshot';
-                  else if (evtType.includes('snapshot_rebased')) desc = 'rebased snapshot to latest';
-                  else if (evtType.includes('status_changed')) desc = 'changed plan status';
-                  else if (evtType.includes('criteria_updated')) desc = 'updated entry/exit criteria';
-                  else if (evtType.includes('plan_updated')) desc = 'updated plan settings';
-                  else if (evtType.includes('plan_deleted')) desc = 'deleted the plan';
-                  else if (evtType.includes('plan_created') || evtType.includes('test_plan_created')) desc = 'created the plan';
-                  else if (evtType.includes('milestone')) desc = evtType.replace(/_/g, ' ');
-                  else desc = evtType.replace(/_/g, ' ');
+                  if (evtType.includes('test_result_passed')) { desc = t('milestones:planDetail.activityTab.desc.recorded'); metaLine = `${md.tc_custom_id || ''} ${md.tc_title || ''} · ${md.run_name || ''}`.trim(); }
+                  else if (evtType.includes('test_result_failed')) { desc = t('milestones:planDetail.activityTab.desc.recorded'); metaLine = `${md.tc_custom_id || ''} ${md.tc_title || ''} · ${md.run_name || ''} · ${md.priority || ''}`.trim(); }
+                  else if (evtType.includes('test_result_blocked')) { desc = t('milestones:planDetail.activityTab.desc.recorded'); metaLine = `${md.tc_custom_id || ''} ${md.tc_title || ''} · ${md.run_name || ''}`.trim(); }
+                  else if (evtType.includes('test_result_retest')) { desc = t('milestones:planDetail.activityTab.desc.recorded'); metaLine = `${md.tc_custom_id || ''} ${md.tc_title || ''} · ${md.run_name || ''}`.trim(); }
+                  else if (evtType.includes('run_status')) { desc = t('milestones:planDetail.activityTab.desc.runStatusChanged'); metaLine = md.run_name || md.name || ''; }
+                  else if (evtType.includes('tc_added')) desc = t('milestones:planDetail.activityTab.desc.tcAdded');
+                  else if (evtType.includes('tc_removed')) desc = t('milestones:planDetail.activityTab.desc.tcRemoved');
+                  else if (evtType.includes('snapshot_locked')) desc = t('milestones:planDetail.activityTab.desc.snapshotLocked');
+                  else if (evtType.includes('snapshot_unlocked')) desc = t('milestones:planDetail.activityTab.desc.snapshotUnlocked');
+                  else if (evtType.includes('snapshot_rebased')) desc = t('milestones:planDetail.activityTab.desc.snapshotRebased');
+                  else if (evtType.includes('status_changed')) desc = t('milestones:planDetail.activityTab.desc.statusChanged');
+                  else if (evtType.includes('criteria_updated')) desc = t('milestones:planDetail.activityTab.desc.criteriaUpdated');
+                  else if (evtType.includes('plan_updated')) desc = t('milestones:planDetail.activityTab.desc.planUpdated');
+                  else if (evtType.includes('plan_deleted')) desc = t('milestones:planDetail.activityTab.desc.planDeleted');
+                  else if (evtType.includes('plan_created') || evtType.includes('test_plan_created')) desc = t('milestones:planDetail.activityTab.desc.planCreated');
+                  else if (evtType.includes('milestone')) desc = t('milestones:planDetail.activityTab.desc.milestoneLinked');
+                  else desc = t('milestones:planDetail.activityTab.desc.defaultFallback', { type: evtType.replace(/_/g, ' ') });
 
                   // Status from metadata
                   const displayStatus = metaStatus || md.status;
@@ -1444,7 +1455,11 @@ function ActivityTab({ logs, profiles, plan, milestone, parentMilestone, driftCo
                       <div className="t-event-body">
                         <div className="what">
                           <b>{actorName}</b> {desc}
-                          {displayStatus && <> <span className={`pill ${displayStatus === 'passed' || displayStatus === 'completed' ? 'success' : displayStatus === 'failed' ? 'danger' : displayStatus === 'blocked' ? 'danger' : displayStatus === 'active' || displayStatus === 'in_progress' ? 'violet' : ''}`}>{displayStatus.replace(/_/g,' ')}</span></>}
+                          {displayStatus && <> <span className={`pill ${displayStatus === 'passed' || displayStatus === 'completed' ? 'success' : displayStatus === 'failed' ? 'danger' : displayStatus === 'blocked' ? 'danger' : displayStatus === 'active' || displayStatus === 'in_progress' ? 'violet' : ''}`}>{(() => {
+                            const key = displayStatus === 'in_progress' ? 'started' : displayStatus;
+                            const translated = t(`common:${key}`, { defaultValue: displayStatus.replace(/_/g,' ') });
+                            return translated;
+                          })()}</span></>}
                           {md.tc_custom_id && !metaLine && <> on <span className="pill">{md.tc_custom_id}</span></>}
                         </div>
                         {metaLine && (
@@ -1925,6 +1940,7 @@ function EnvironmentCellDrillModal({
   entries: DrillRunEntry[];
   onClose: () => void;
 }) {
+  const { t } = useTranslation(['environments', 'common']);
   const passed = entries.filter(e => e.resultStatus === 'passed').length;
   const executed = entries.filter(e => e.resultStatus !== 'untested').length;
   const pct = executed > 0 ? Math.round((passed / executed) * 100) : 0;
@@ -1956,7 +1972,7 @@ function EnvironmentCellDrillModal({
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600, marginBottom: 4 }}>
-              TC × Environment
+              {t('environments:drillModal.header')}
             </div>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {selection.tcLabel}
@@ -1970,7 +1986,7 @@ function EnvironmentCellDrillModal({
               {executed > 0 ? `${pct}%` : '—'}
             </div>
             <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
-              {passed}/{executed} passed
+              {t('environments:drillModal.passedOfExecuted', { passed, executed })}
             </div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'var(--text-muted)' }}>
@@ -1980,12 +1996,13 @@ function EnvironmentCellDrillModal({
         <div style={{ overflow: 'auto', padding: '12px 20px', flex: 1 }}>
           {entries.length === 0 ? (
             <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
-              No runs found for this combination.
+              {t('environments:drillModal.noRuns')}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {entries.map((entry, i) => {
                 const c = resultColor(entry.resultStatus);
+                const resultLabel = t(`common:${entry.resultStatus}`, { defaultValue: entry.resultStatus });
                 return (
                   <Link
                     key={i}
@@ -2003,11 +2020,11 @@ function EnvironmentCellDrillModal({
                         {entry.runName}
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                        {entry.executedAt ? new Date(entry.executedAt).toLocaleString() : '—'} · Run {entry.runStatus}
+                        {entry.executedAt ? new Date(entry.executedAt).toLocaleString() : '—'} · {t('environments:drillModal.runStatusSuffix', { status: entry.runStatus })}
                       </div>
                     </div>
                     <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 4, background: c.bg, color: c.color, textTransform: 'capitalize' }}>
-                      {entry.resultStatus}
+                      {resultLabel}
                     </span>
                     <svg style={{ width: 14, height: 14, color: 'var(--text-subtle)', flex: 'none' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
                   </Link>
@@ -2056,6 +2073,7 @@ function SettingsTab({
   const entryPresetRef = useRef<HTMLDivElement>(null);
   const exitPresetRef = useRef<HTMLDivElement>(null);
   const { showToast } = useToast();
+  const { t } = useTranslation(['milestones', 'common']);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -2087,7 +2105,7 @@ function SettingsTab({
         exit_criteria: exitCriteria,
       });
       setDirty(false);
-      showToast('Settings saved', 'success');
+      showToast(t('milestones:planDetail.toast.settings.saved'), 'success');
     } finally {
       setSaving(false);
     }
@@ -2099,23 +2117,23 @@ function SettingsTab({
       <div className="section-card">
         <div className="section-title">
           <span className="icn"><svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
-          Basic Information
+          {t('milestones:planDetail.settings.basicInfo.sectionTitle')}
         </div>
         <div className="form-grid">
           {/* Plan Name — full width */}
           <div className="form-row-2">
-            <label className="form-label">Plan Name *</label>
+            <label className="form-label">{t('milestones:planDetail.settings.basicInfo.label.planName')}</label>
             <input className="form-input" value={form.name} onChange={e=>setFormField('name',e.target.value)} />
           </div>
           {/* Description — full width */}
           <div className="form-row-2">
-            <label className="form-label">Description</label>
+            <label className="form-label">{t('milestones:planDetail.settings.basicInfo.label.description')}</label>
             <textarea className="form-input" value={form.description} onChange={e=>setFormField('description',e.target.value)}
               rows={3} style={{resize:'vertical', fontFamily:'inherit'}} />
           </div>
           {/* Owner (left) + Priority (right) */}
           <div>
-            <label className="form-label">Owner</label>
+            <label className="form-label">{t('milestones:planDetail.settings.basicInfo.label.owner')}</label>
             <div style={{position:'relative'}}>
               {form.owner_id && (() => {
                 const owner = memberProfiles.find(p=>p.id===form.owner_id) || profiles.get(form.owner_id);
@@ -2128,7 +2146,7 @@ function SettingsTab({
               })()}
               <select className="form-input" value={form.owner_id} onChange={e=>setFormField('owner_id',e.target.value)}
                 style={{paddingLeft: form.owner_id && (memberProfiles.find(p=>p.id===form.owner_id) || profiles.get(form.owner_id)) ? 40 : 10}}>
-                <option value="">— Unassigned —</option>
+                <option value="">{t('milestones:planDetail.settings.basicInfo.ownerUnassigned')}</option>
                 {(memberProfiles.length > 0 ? memberProfiles : [...profiles.values()]).map(p => (
                   <option key={p.id} value={p.id}>{p.full_name || p.email}</option>
                 ))}
@@ -2136,7 +2154,7 @@ function SettingsTab({
             </div>
           </div>
           <div>
-            <label className="form-label">Priority</label>
+            <label className="form-label">{t('milestones:planDetail.settings.basicInfo.label.priority')}</label>
             <div style={{display:'flex',gap:6}}>
               {(['critical','high','medium'] as const).map(p => (
                 <button key={p} onClick={()=>setFormField('priority',p)}
@@ -2152,33 +2170,33 @@ function SettingsTab({
           </div>
           {/* Dates — full width, two inputs side-by-side */}
           <div className="form-row-2">
-            <label className="form-label">Dates</label>
+            <label className="form-label">{t('milestones:planDetail.settings.basicInfo.label.dates')}</label>
             <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10}}>
               <input type="date" className="form-input" value={form.start_date} onChange={e=>setFormField('start_date',e.target.value)}
-                placeholder="Start date" />
+                placeholder={t('milestones:planDetail.settings.basicInfo.startPlaceholder')} />
               <input type="date" className="form-input" value={form.end_date} onChange={e=>setFormField('end_date',e.target.value)}
-                placeholder="End date" />
+                placeholder={t('milestones:planDetail.settings.basicInfo.endPlaceholder')} />
             </div>
           </div>
           {/* Linked Milestone (left) + Status (right) */}
           <div>
-            <label className="form-label">Linked Milestone</label>
+            <label className="form-label">{t('milestones:planDetail.settings.basicInfo.label.linkedMilestone')}</label>
             <select className="form-input" value={form.milestone_id} onChange={e=>setFormField('milestone_id',e.target.value)}>
-              <option value="">— Ad-hoc (no milestone) —</option>
+              <option value="">{t('milestones:planDetail.settings.basicInfo.milestoneAdhoc')}</option>
               {milestones.map(m => (
                 <option key={m.id} value={m.id}>
-                  {m.parent_milestone_id ? `↳ ${m.name} (sub-milestone)` : m.name}
+                  {m.parent_milestone_id ? t('milestones:planDetail.settings.basicInfo.subMilestoneSuffix', { name: m.name }) : m.name}
                 </option>
               ))}
             </select>
           </div>
           <div>
-            <label className="form-label">Status</label>
+            <label className="form-label">{t('milestones:planDetail.settings.basicInfo.label.status')}</label>
             <select className="form-input" value={form.status} onChange={e=>setFormField('status',e.target.value as any)}>
-              <option value="planning">Planning</option>
-              <option value="active">In Progress</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="planning">{t('milestones:planDetail.statusConfig.planning')}</option>
+              <option value="active">{t('milestones:planDetail.statusConfig.active')}</option>
+              <option value="completed">{t('milestones:planDetail.statusConfig.completed')}</option>
+              <option value="cancelled">{t('milestones:planDetail.statusConfig.cancelled')}</option>
             </select>
           </div>
         </div>
@@ -2191,8 +2209,8 @@ function SettingsTab({
       <div className="section-card" style={{marginBottom:0}}>
         <div className="section-title">
           <span className="icn success"><svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg></span>
-          Entry Criteria
-          <span className="badge badge-neutral" style={{marginLeft:'auto'}}>{entryCriteria.length} items</span>
+          {t('milestones:planDetail.settings.criteria.entryTitle')}
+          <span className="badge badge-neutral" style={{marginLeft:'auto'}}>{t('milestones:planDetail.settings.criteria.itemsBadge', { count: entryCriteria.length })}</span>
         </div>
         {entryCriteria.map((c, i) => (
           <div key={i} className="criterion-item">
@@ -2200,10 +2218,10 @@ function SettingsTab({
               {i + 1}
             </span>
             <input value={c} onChange={e=>{const a=[...entryCriteria]; a[i]=e.target.value; setEntryCriteria(a); setDirty(true);}}
-              placeholder="e.g. All critical TCs passed"
+              placeholder={t('milestones:planDetail.settings.criteria.entryPlaceholder')}
               style={{border:'none',outline:'none',fontSize:13,background:'transparent',width:'100%',fontFamily:'inherit'}} />
             {c.trim() && !entryPresets.includes(c.trim()) && (
-              <button onClick={()=>onSavePreset('entry', c.trim())} title="Save as preset"
+              <button onClick={()=>onSavePreset('entry', c.trim())} title={t('milestones:planDetail.settings.criteria.savePresetTooltip')}
                 style={{background:'none',border:'none',cursor:'pointer',color:'var(--primary)',fontSize:12,padding:'0 2px',whiteSpace:'nowrap'}}>
                 <svg style={{width:12,height:12}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
               </button>
@@ -2216,13 +2234,13 @@ function SettingsTab({
           <div style={{flex:1,border:'1px dashed var(--border)',borderRadius:8,padding:'10px 12px',display:'flex',alignItems:'center',gap:8,color:'var(--text-muted)',fontSize:13,cursor:'pointer'}}
             onClick={()=>{setEntryCriteria([...entryCriteria,'']); setDirty(true);}}>
             <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add criterion
+            {t('milestones:planDetail.settings.criteria.addCriterion')}
           </div>
           <div ref={entryPresetRef} style={{position:'relative'}}>
               <button className="pd-btn pd-btn-sm" onClick={()=>setShowEntryPresets(!showEntryPresets)}
                 style={{height:'100%',fontSize:12,gap:4,whiteSpace:'nowrap'}}>
                 <svg style={{width:12,height:12}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-                Presets
+                {t('milestones:planDetail.settings.criteria.presetsButton')}
               </button>
               {showEntryPresets && (
                 <div style={{position:'absolute',right:0,top:'100%',marginTop:4,background:'#fff',border:'1px solid var(--border)',borderRadius:8,boxShadow:'0 4px 12px rgba(0,0,0,.1)',zIndex:20,minWidth:260,maxHeight:200,overflowY:'auto'}}>
@@ -2235,10 +2253,10 @@ function SettingsTab({
                     </div>
                   ))}
                   {entryPresets.length === 0 && (
-                    <div style={{padding:'8px 12px',fontSize:12,color:'var(--text-muted)'}}>No presets saved yet</div>
+                    <div style={{padding:'8px 12px',fontSize:12,color:'var(--text-muted)'}}>{t('milestones:planDetail.settings.criteria.emptyPresets')}</div>
                   )}
                   {entryPresets.length > 0 && entryPresets.filter(p => !entryCriteria.includes(p)).length === 0 && (
-                    <div style={{padding:'8px 12px',fontSize:12,color:'var(--text-muted)'}}>All presets already added</div>
+                    <div style={{padding:'8px 12px',fontSize:12,color:'var(--text-muted)'}}>{t('milestones:planDetail.settings.criteria.allPresetsAdded')}</div>
                   )}
                 </div>
               )}
@@ -2250,8 +2268,8 @@ function SettingsTab({
       <div className="section-card" style={{marginBottom:0}}>
         <div className="section-title">
           <span className="icn warning"><svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
-          Exit Criteria
-          <span className="badge badge-neutral" style={{marginLeft:'auto'}}>{exitCriteria.length} items</span>
+          {t('milestones:planDetail.settings.criteria.exitTitle')}
+          <span className="badge badge-neutral" style={{marginLeft:'auto'}}>{t('milestones:planDetail.settings.criteria.itemsBadge', { count: exitCriteria.length })}</span>
         </div>
         {exitCriteria.map((c, i) => (
           <div key={i} className="criterion-item">
@@ -2259,10 +2277,10 @@ function SettingsTab({
               {i + 1}
             </span>
             <input value={c} onChange={e=>{const a=[...exitCriteria]; a[i]=e.target.value; setExitCriteria(a); setDirty(true);}}
-              placeholder="e.g. Pass rate ≥ 95%"
+              placeholder={t('milestones:planDetail.settings.criteria.exitPlaceholder')}
               style={{border:'none',outline:'none',fontSize:13,background:'transparent',width:'100%',fontFamily:'inherit'}} />
             {c.trim() && !exitPresets.includes(c.trim()) && (
-              <button onClick={()=>onSavePreset('exit', c.trim())} title="Save as preset"
+              <button onClick={()=>onSavePreset('exit', c.trim())} title={t('milestones:planDetail.settings.criteria.savePresetTooltip')}
                 style={{background:'none',border:'none',cursor:'pointer',color:'var(--primary)',fontSize:12,padding:'0 2px',whiteSpace:'nowrap'}}>
                 <svg style={{width:12,height:12}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
               </button>
@@ -2275,13 +2293,13 @@ function SettingsTab({
           <div style={{flex:1,border:'1px dashed var(--border)',borderRadius:8,padding:'10px 12px',display:'flex',alignItems:'center',gap:8,color:'var(--text-muted)',fontSize:13,cursor:'pointer'}}
             onClick={()=>{setExitCriteria([...exitCriteria,'']); setDirty(true);}}>
             <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add criterion
+            {t('milestones:planDetail.settings.criteria.addCriterion')}
           </div>
           <div ref={exitPresetRef} style={{position:'relative'}}>
               <button className="pd-btn pd-btn-sm" onClick={()=>setShowExitPresets(!showExitPresets)}
                 style={{height:'100%',fontSize:12,gap:4,whiteSpace:'nowrap'}}>
                 <svg style={{width:12,height:12}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-                Presets
+                {t('milestones:planDetail.settings.criteria.presetsButton')}
               </button>
               {showExitPresets && (
                 <div style={{position:'absolute',right:0,top:'100%',marginTop:4,background:'#fff',border:'1px solid var(--border)',borderRadius:8,boxShadow:'0 4px 12px rgba(0,0,0,.1)',zIndex:20,minWidth:260,maxHeight:200,overflowY:'auto'}}>
@@ -2294,10 +2312,10 @@ function SettingsTab({
                     </div>
                   ))}
                   {exitPresets.length === 0 && (
-                    <div style={{padding:'8px 12px',fontSize:12,color:'var(--text-muted)'}}>No presets saved yet</div>
+                    <div style={{padding:'8px 12px',fontSize:12,color:'var(--text-muted)'}}>{t('milestones:planDetail.settings.criteria.emptyPresets')}</div>
                   )}
                   {exitPresets.length > 0 && exitPresets.filter(p => !exitCriteria.includes(p)).length === 0 && (
-                    <div style={{padding:'8px 12px',fontSize:12,color:'var(--text-muted)'}}>All presets already added</div>
+                    <div style={{padding:'8px 12px',fontSize:12,color:'var(--text-muted)'}}>{t('milestones:planDetail.settings.criteria.allPresetsAdded')}</div>
                   )}
                 </div>
               )}
@@ -2312,12 +2330,12 @@ function SettingsTab({
         <div className="save-bar">
           <span style={{fontSize:12,color:'var(--warning)',display:'flex',alignItems:'center',gap:5}}>
             <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
-            Unsaved changes
+            {t('milestones:planDetail.settings.saveBar.unsaved')}
           </span>
           <div style={{marginLeft:'auto',display:'flex',gap:8}}>
-            <button className="pd-btn pd-btn-sm" onClick={()=>setDirty(false)}>Discard</button>
+            <button className="pd-btn pd-btn-sm" onClick={()=>setDirty(false)}>{t('milestones:planDetail.settings.saveBar.discard')}</button>
             <button className="pd-btn pd-btn-sm pd-btn-primary" onClick={handleSave} disabled={saving}>
-              {saving ? 'Saving…' : 'Save Changes'}
+              {saving ? t('milestones:planDetail.settings.saveBar.saving') : t('milestones:planDetail.settings.saveBar.save')}
             </button>
           </div>
         </div>
@@ -2327,33 +2345,33 @@ function SettingsTab({
       <div className="section-card" style={{borderColor:'var(--danger-100)',background:'#fef2f2'}}>
         <div className="section-title" style={{color:'var(--danger-600)',borderColor:'var(--danger-100)'}}>
           <span className="icn danger"><svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg></span>
-          Danger Zone
+          {t('milestones:planDetail.settings.dangerZone.sectionTitle')}
         </div>
         <div style={{display:'grid',gridTemplateColumns:'1fr',gap:12}}>
           <div style={{padding:12,border:'1px solid var(--border)',borderRadius:6,background:'#fff'}}>
             <div style={{fontWeight:600,marginBottom:4,fontSize:13}}>
-              {plan.status === 'archived' ? 'Unarchive plan' : 'Archive plan'}
+              {plan.status === 'archived' ? t('milestones:planDetail.settings.dangerZone.archive.titleArchived') : t('milestones:planDetail.settings.dangerZone.archive.titleActive')}
             </div>
             <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:8}}>
               {plan.status === 'archived'
-                ? 'Restore the plan to Planning status so it can be edited again.'
-                : 'Plan becomes read-only. Existing run data is preserved.'}
+                ? t('milestones:planDetail.settings.dangerZone.archive.descArchived')
+                : t('milestones:planDetail.settings.dangerZone.archive.descActive')}
             </div>
             {plan.status === 'archived' ? (
-              <button className="pd-btn pd-btn-sm" onClick={onUnarchive}>Unarchive</button>
+              <button className="pd-btn pd-btn-sm" onClick={onUnarchive}>{t('milestones:planDetail.settings.dangerZone.archive.ctaUnarchive')}</button>
             ) : (
-              <button className="pd-btn pd-btn-sm" onClick={onArchive}>Archive</button>
+              <button className="pd-btn pd-btn-sm" onClick={onArchive}>{t('milestones:planDetail.settings.dangerZone.archive.ctaArchive')}</button>
             )}
           </div>
           <div style={{padding:12,border:'1px solid var(--border)',borderRadius:6,background:'#fff'}}>
-            <div style={{fontWeight:600,marginBottom:4,fontSize:13}}>Duplicate plan</div>
-            <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:8}}>Create a new plan with the same TC snapshot.</div>
-            <button className="pd-btn pd-btn-sm" onClick={onDuplicate} style={{borderColor:'var(--primary-100)',color:'var(--primary)'}}>Duplicate</button>
+            <div style={{fontWeight:600,marginBottom:4,fontSize:13}}>{t('milestones:planDetail.settings.dangerZone.duplicate.title')}</div>
+            <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:8}}>{t('milestones:planDetail.settings.dangerZone.duplicate.description')}</div>
+            <button className="pd-btn pd-btn-sm" onClick={onDuplicate} style={{borderColor:'var(--primary-100)',color:'var(--primary)'}}>{t('milestones:planDetail.settings.dangerZone.duplicate.cta')}</button>
           </div>
           <div style={{padding:12,border:'1px solid var(--danger)',borderRadius:6,background:'var(--danger-50)'}}>
-            <div style={{fontWeight:600,marginBottom:4,fontSize:13,color:'var(--danger-600)'}}>Delete plan</div>
-            <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:8}}>Cannot be undone. All runs and issues will be orphaned.</div>
-            <button onClick={onDelete} style={{background:'var(--danger)',color:'#fff',border:'1px solid var(--danger)',padding:'6px 12px',borderRadius:6,fontSize:12,cursor:'pointer',fontWeight:500}}>Delete permanently</button>
+            <div style={{fontWeight:600,marginBottom:4,fontSize:13,color:'var(--danger-600)'}}>{t('milestones:planDetail.settings.dangerZone.delete.title')}</div>
+            <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:8}}>{t('milestones:planDetail.settings.dangerZone.delete.description')}</div>
+            <button onClick={onDelete} style={{background:'var(--danger)',color:'#fff',border:'1px solid var(--danger)',padding:'6px 12px',borderRadius:6,fontSize:12,cursor:'pointer',fontWeight:500}}>{t('milestones:planDetail.settings.dangerZone.delete.cta')}</button>
           </div>
         </div>
       </div>
@@ -2363,15 +2381,14 @@ function SettingsTab({
 
 // ─── Run Button Helpers ───────────────────────────────────────────────────────
 
-function getRunButtonState(planRuns: PlanRun[]): { label: string; mode: 'start' | 'continue' | 'multiple'; runs: PlanRun[] } {
+function getRunButtonState(planRuns: PlanRun[]): { mode: 'start' | 'continue' | 'multiple'; runs: PlanRun[] } {
   const inProgress = planRuns.filter(r => r.status === 'in_progress');
-  if (inProgress.length === 0) return { label: 'Start Run', mode: 'start', runs: [] };
-  if (inProgress.length === 1) return { label: 'Continue Run', mode: 'continue', runs: inProgress };
-  return { label: `${inProgress.length} Runs In Progress`, mode: 'multiple', runs: inProgress };
+  if (inProgress.length === 0) return { mode: 'start', runs: [] };
+  if (inProgress.length === 1) return { mode: 'continue', runs: inProgress };
+  return { mode: 'multiple', runs: inProgress };
 }
 
-function SplitButton({ label, mode, inProgressRuns, onStartNew, projectId, navigate, planTcs }: {
-  label: string;
+function SplitButton({ mode, inProgressRuns, onStartNew, projectId, navigate, planTcs }: {
   mode: 'start' | 'continue' | 'multiple';
   inProgressRuns: PlanRun[];
   onStartNew: () => void;
@@ -2379,8 +2396,15 @@ function SplitButton({ label, mode, inProgressRuns, onStartNew, projectId, navig
   navigate: (path: string) => void;
   planTcs: PlanTestCase[];
 }) {
+  const { t } = useTranslation(['milestones', 'common']);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  const label = mode === 'start'
+    ? t('milestones:planDetail.runButton.startRun')
+    : mode === 'continue'
+      ? t('milestones:planDetail.runButton.continueRun')
+      : t('milestones:planDetail.runButton.multipleInProgress', { count: inProgressRuns.length });
 
   useEffect(() => {
     if (!open) return;
@@ -2431,9 +2455,9 @@ function SplitButton({ label, mode, inProgressRuns, onStartNew, projectId, navig
               style={{width:'100%', display:'flex', flexDirection:'column', gap:2, padding:'10px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, textAlign:'left'}}
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-subtle)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-              <span style={{fontWeight:500, color:'var(--text)'}}>Continue: {r.name}</span>
+              <span style={{fontWeight:500, color:'var(--text)'}}>{t('milestones:planDetail.runButton.continueSuffix', { name: r.name })}</span>
               <span style={{fontSize:11, color:'var(--text-muted)'}}>
-                {r.passed + r.failed + r.blocked + r.retest}/{planTcs.length} executed
+                {t('milestones:planDetail.runButton.executedOfTotal', { executed: r.passed + r.failed + r.blocked + r.retest, total: planTcs.length })}
               </span>
             </button>
           ))}
@@ -2443,7 +2467,7 @@ function SplitButton({ label, mode, inProgressRuns, onStartNew, projectId, navig
             style={{width:'100%', display:'flex', alignItems:'center', gap:6, padding:'10px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, color:'var(--primary)', fontWeight:500}}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-subtle)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-            ＋ Start New Run
+            {t('milestones:planDetail.runButton.startNewRun')}
           </button>
         </div>
       )}
@@ -2462,6 +2486,24 @@ export default function PlanDetailPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const { t, i18n } = useTranslation(['milestones', 'common']);
+
+  // Status / Priority / Tabs config — labels rebuilt on language change (AC-9/10).
+  const STATUS_CONFIG = useMemo(() => ({
+    planning:  { label: t('planDetail.statusConfig.planning'),  badgeCls: STATUS_BADGE_CLS.planning },
+    active:    { label: t('planDetail.statusConfig.active'),    badgeCls: STATUS_BADGE_CLS.active },
+    completed: { label: t('planDetail.statusConfig.completed'), badgeCls: STATUS_BADGE_CLS.completed },
+    cancelled: { label: t('planDetail.statusConfig.cancelled'), badgeCls: STATUS_BADGE_CLS.cancelled },
+    archived:  { label: t('planDetail.statusConfig.archived'),  badgeCls: STATUS_BADGE_CLS.archived },
+  }), [t]);
+  const TABS = useMemo(() => [
+    { key: 'testcases' as const,    label: t('planDetail.tab.testCases'),    iconEl: TAB_ICON_EL.testcases },
+    { key: 'runs' as const,         label: t('planDetail.tab.runs'),         iconEl: TAB_ICON_EL.runs },
+    { key: 'activity' as const,     label: t('planDetail.tab.activity'),     iconEl: TAB_ICON_EL.activity },
+    { key: 'issues' as const,       label: t('planDetail.tab.issues'),       iconEl: TAB_ICON_EL.issues },
+    { key: 'environments' as const, label: t('planDetail.tab.environments'), iconEl: TAB_ICON_EL.environments },
+    { key: 'settings' as const,     label: t('planDetail.tab.settings'),     iconEl: TAB_ICON_EL.settings },
+  ], [t]);
 
   const [project, setProject] = useState<any>(null);
   const [plan, setPlan] = useState<TestPlan | null>(null);
@@ -2839,27 +2881,27 @@ export default function PlanDetailPage() {
   const handleUpdateCriteriaMet = async (type: 'entry' | 'exit', met: boolean[]) => {
     const field = type === 'entry' ? 'entry_criteria_met' : 'exit_criteria_met';
     const { error } = await supabase.from('test_plans').update({ [field]: met }).eq('id', planId!);
-    if (error) { showToast('Failed to save criteria state', 'error'); return; }
+    if (error) { showToast(t('milestones:planDetail.toast.criteria.saveFailed'), 'error'); return; }
     setPlan(p => p ? { ...p, [field]: met } : p);
   };
 
   const handleSavePreset = async (type: 'entry' | 'exit', text: string) => {
     const { error } = await supabase.from('criteria_presets').insert({ project_id: projectId!, type, text });
     if (error) {
-      if (error.code === '23505') { showToast('Preset already exists', 'info'); return; }
-      showToast('Failed to save preset', 'error'); return;
+      if (error.code === '23505') { showToast(t('milestones:planDetail.toast.preset.exists'), 'info'); return; }
+      showToast(t('milestones:planDetail.toast.preset.saveFailed'), 'error'); return;
     }
     if (type === 'entry') setEntryPresets(prev => [...prev, text]);
     else setExitPresets(prev => [...prev, text]);
-    showToast('Saved as preset', 'success');
+    showToast(t('milestones:planDetail.toast.preset.saved'), 'success');
   };
 
   const handleAddTc = async (tcId: string) => {
     const { error } = await supabase.from('test_plan_test_cases').insert({ test_plan_id: planId, test_case_id: tcId });
-    if (error) { showToast('Failed to add test case', 'error'); return; }
-    const tc = allTcs.find(t => t.id === tcId);
+    if (error) { showToast(t('milestones:planDetail.toast.tc.addFailed'), 'error'); return; }
+    const tc = allTcs.find(tc0 => tc0.id === tcId);
     if (tc) setPlanTcs(prev => [...prev, { test_plan_id: planId!, test_case_id: tcId, added_at: new Date().toISOString(), test_case: tc } as PlanTestCase]);
-    showToast('Test case added', 'success');
+    showToast(t('milestones:planDetail.toast.tc.added'), 'success');
     logActivity('tc_added', 'test_case', { details: `Added TC "${tc?.title || tcId}"` });
   };
 
@@ -2868,26 +2910,26 @@ export default function PlanDetailPage() {
     try {
       const inserts = ids.map(tcId => ({ test_plan_id: planId!, test_case_id: tcId }));
       const { error } = await supabase.from('test_plan_test_cases').insert(inserts);
-      if (error) { showToast('Failed to add test cases: ' + error.message, 'error'); return; }
-      const addedTcs = allTcs.filter(t => ids.includes(t.id));
+      if (error) { showToast(t('milestones:planDetail.toast.tc.addMultipleFailed', { message: error.message }), 'error'); return; }
+      const addedTcs = allTcs.filter(tc0 => ids.includes(tc0.id));
       setPlanTcs(prev => [...prev, ...addedTcs.map(tc => ({
         test_plan_id: planId!, test_case_id: tc.id,
         added_at: new Date().toISOString(), test_case: tc,
       } as PlanTestCase))]);
-      showToast(`Added ${ids.length} test case${ids.length > 1 ? 's' : ''}`, 'success');
+      showToast(t('milestones:planDetail.toast.tc.addedMultiple', { count: ids.length }), 'success');
       logActivity('tc_added', 'test_case', { details: `Added ${ids.length} TCs to plan` });
     } catch (err) {
       console.error('handleAddTcs error:', err);
-      showToast('Failed to add test cases', 'error');
+      showToast(t('milestones:planDetail.toast.tc.addMultipleGeneric'), 'error');
     }
   };
 
   const handleRemoveTc = async (tcId: string) => {
     const { error } = await supabase.from('test_plan_test_cases').delete().eq('test_plan_id', planId!).eq('test_case_id', tcId);
-    if (error) { showToast('Failed to remove test case', 'error'); return; }
+    if (error) { showToast(t('milestones:planDetail.toast.tc.removeFailed'), 'error'); return; }
     const removed = planTcs.find(p => p.test_case_id === tcId);
     setPlanTcs(prev => prev.filter(p => p.test_case_id !== tcId));
-    showToast('Test case removed', 'success');
+    showToast(t('milestones:planDetail.toast.tc.removed'), 'success');
     logActivity('tc_removed', 'test_case', { details: `Removed TC "${removed?.test_case?.title || tcId}"` });
   };
 
@@ -2897,9 +2939,9 @@ export default function PlanDetailPage() {
     const { error } = await supabase.from('test_plans')
       .update({ is_locked: true, snapshot_id: snapId, snapshot_locked_at: now })
       .eq('id', planId!);
-    if (error) { showToast('Failed to lock snapshot', 'error'); return; }
+    if (error) { showToast(t('milestones:planDetail.toast.snapshot.lockFailed'), 'error'); return; }
     setPlan(p => p ? { ...p, is_locked: true, snapshot_id: snapId, snapshot_locked_at: now } : p);
-    showToast('Snapshot locked', 'success');
+    showToast(t('milestones:planDetail.toast.snapshot.locked'), 'success');
     logActivity('snapshot_locked', 'status', { details: 'Snapshot locked — TC scope is fixed' });
   };
 
@@ -2910,9 +2952,9 @@ export default function PlanDetailPage() {
     const { error } = await supabase.from('test_plans')
       .update({ is_locked: false, snapshot_id: null, snapshot_locked_at: null })
       .eq('id', planId!);
-    if (error) { showToast('Failed to unlock snapshot', 'error'); return; }
+    if (error) { showToast(t('milestones:planDetail.toast.snapshot.unlockFailed'), 'error'); return; }
     setPlan(p => p ? { ...p, is_locked: false, snapshot_id: null, snapshot_locked_at: null } : p);
-    showToast('Snapshot unlocked', 'success');
+    showToast(t('milestones:planDetail.toast.snapshot.unlocked'), 'success');
     logActivity('snapshot_unlocked', 'status', { details: 'Snapshot unlocked — TC scope is open' });
   };
 
@@ -2921,15 +2963,15 @@ export default function PlanDetailPage() {
     const { error } = await supabase.from('test_plans')
       .update({ snapshot_locked_at: now })
       .eq('id', planId!);
-    if (error) { showToast('Failed to rebase snapshot', 'error'); return; }
+    if (error) { showToast(t('milestones:planDetail.toast.snapshot.rebaseFailed'), 'error'); return; }
     setPlan(p => p ? { ...p, snapshot_locked_at: now } : p);
-    showToast('Snapshot rebased to latest', 'success');
+    showToast(t('milestones:planDetail.toast.snapshot.rebased'), 'success');
     logActivity('snapshot_rebased', 'status', { details: 'Snapshot rebased to latest TC revisions' });
   };
 
   const handleUpdate = async (data: Partial<TestPlan>) => {
     const { error } = await supabase.from('test_plans').update(data).eq('id', planId!);
-    if (error) { showToast('Failed to update plan', 'error'); throw error; }
+    if (error) { showToast(t('milestones:planDetail.toast.plan.updateFailed'), 'error'); throw error; }
     const prev = plan;
     setPlan(p => p ? { ...p, ...data } : p);
     // Log significant changes
@@ -2944,10 +2986,10 @@ export default function PlanDetailPage() {
 
   const handleDelete = async () => {
     const { error } = await supabase.from('test_plans').delete().eq('id', planId!);
-    if (error) { showToast('Failed to delete plan', 'error'); return; }
+    if (error) { showToast(t('milestones:planDetail.toast.plan.deleteFailed'), 'error'); return; }
     logActivity('plan_deleted', 'status', { details: `Plan "${plan?.name}" deleted` });
     navigate(`/projects/${projectId}/milestones`);
-    showToast('Plan deleted', 'success');
+    showToast(t('milestones:planDetail.toast.plan.deleted'), 'success');
   };
 
   const invalidateMilestoneCaches = () => {
@@ -2962,11 +3004,11 @@ export default function PlanDetailPage() {
       .from('test_plans')
       .update({ status: 'archived' })
       .eq('id', planId!);
-    if (error) { showToast('Failed to archive plan: ' + error.message, 'error'); return; }
+    if (error) { showToast(t('milestones:planDetail.toast.plan.archiveFailed', { message: error.message }), 'error'); return; }
     setPlan(prev => prev ? { ...prev, status: 'archived' } : prev);
     invalidateMilestoneCaches();
     logActivity('plan_archived', 'status', { details: `Plan "${plan.name}" archived` });
-    showToast('Plan archived', 'success');
+    showToast(t('milestones:planDetail.toast.plan.archived'), 'success');
     setShowArchiveConfirm(false);
   };
 
@@ -2976,11 +3018,11 @@ export default function PlanDetailPage() {
       .from('test_plans')
       .update({ status: 'planning' })
       .eq('id', planId!);
-    if (error) { showToast('Failed to unarchive plan: ' + error.message, 'error'); return; }
+    if (error) { showToast(t('milestones:planDetail.toast.plan.unarchiveFailed', { message: error.message }), 'error'); return; }
     setPlan(prev => prev ? { ...prev, status: 'planning' } : prev);
     invalidateMilestoneCaches();
     logActivity('plan_unarchived', 'status', { details: `Plan "${plan.name}" unarchived` });
-    showToast('Plan restored to Planning', 'success');
+    showToast(t('milestones:planDetail.toast.plan.unarchived'), 'success');
     setShowUnarchiveConfirm(false);
   };
 
@@ -3006,7 +3048,7 @@ export default function PlanDetailPage() {
       }])
       .select()
       .single();
-    if (insertErr || !newPlan) { showToast('Failed to duplicate plan: ' + (insertErr?.message ?? ''), 'error'); return; }
+    if (insertErr || !newPlan) { showToast(t('milestones:planDetail.toast.plan.duplicateFailed', { message: insertErr?.message ?? '' }), 'error'); return; }
 
     // Copy test_plan_test_cases
     if (planTcs.length > 0) {
@@ -3016,14 +3058,14 @@ export default function PlanDetailPage() {
       }));
       const { error: tcErr } = await supabase.from('test_plan_test_cases').insert(rows);
       if (tcErr) {
-        showToast('Plan created but TCs not copied: ' + tcErr.message, 'warning');
+        showToast(t('milestones:planDetail.toast.plan.tcsNotCopied', { message: tcErr.message }), 'warning');
         navigate(`/projects/${projectId}/plans/${(newPlan as any).id}`);
         return;
       }
     }
 
     logActivity('plan_duplicated', 'status', { details: `Duplicated from "${plan.name}"` });
-    showToast('Plan duplicated', 'success');
+    showToast(t('milestones:planDetail.toast.plan.duplicated'), 'success');
     setShowDuplicateConfirm(false);
     navigate(`/projects/${projectId}/plans/${(newPlan as any).id}`);
   };
@@ -3036,21 +3078,21 @@ export default function PlanDetailPage() {
         <svg style={{width:48,height:48,color:'#CBD5E1'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         <div style={{textAlign:'center'}}>
           <p style={{fontSize:15,fontWeight:600,color:'var(--text)',margin:'0 0 4px'}}>
-            {loadError ? 'Failed to load plan' : 'Plan not found'}
+            {loadError ? t('milestones:planDetail.errorState.loadFailedTitle') : t('milestones:planDetail.errorState.notFoundTitle')}
           </p>
           <p style={{fontSize:13,margin:0}}>
-            {loadError ? 'The plan may have been deleted or you may not have access.' : 'This plan does not exist or has been deleted.'}
+            {loadError ? t('milestones:planDetail.errorState.loadFailedBody') : t('milestones:planDetail.errorState.notFoundBody')}
           </p>
         </div>
         <div style={{display:'flex',gap:8}}>
           <button onClick={() => navigate(`/projects/${projectId}/milestones`)}
             style={{padding:'8px 16px',border:'1px solid var(--border)',borderRadius:8,fontSize:13,fontWeight:500,cursor:'pointer',background:'#fff',color:'var(--text)'}}>
-            ← Back to Milestones
+            {t('milestones:planDetail.errorState.backToMilestones')}
           </button>
           {loadError && (
             <button onClick={() => load()}
               style={{padding:'8px 16px',border:'1px solid var(--primary)',borderRadius:8,fontSize:13,fontWeight:500,cursor:'pointer',background:'var(--primary-50)',color:'var(--primary)'}}>
-              Retry
+              {t('milestones:planDetail.errorState.retry')}
             </button>
           )}
         </div>
@@ -3078,7 +3120,7 @@ export default function PlanDetailPage() {
   // Story 7: TC 0 guard — block new run start if no TCs added
   const handleStartNewRun = () => {
     if (planTcs.length === 0) {
-      showToast('Add at least one test case before starting a run.', 'warning');
+      showToast(t('milestones:planDetail.toast.run.needTcs'), 'warning');
       setActiveTab('testcases');
       return;
     }
@@ -3094,7 +3136,7 @@ export default function PlanDetailPage() {
 
         {/* Breadcrumb */}
         <div className="breadcrumb">
-          <Link to={`/projects/${projectId}/milestones`}>Milestones</Link>
+          <Link to={`/projects/${projectId}/milestones`}>{t('milestones:planDetail.shell.breadcrumb.milestones')}</Link>
           {parentMilestone && (
             <>
               <span className="sep">›</span>
@@ -3115,7 +3157,7 @@ export default function PlanDetailPage() {
           <span className="sep">›</span>
           <Link to={milestone
             ? `/projects/${projectId}/milestones/${milestone.id}`
-            : `/projects/${projectId}/milestones`}>Plans</Link>
+            : `/projects/${projectId}/milestones`}>{t('milestones:planDetail.shell.breadcrumb.plans')}</Link>
           <span className="sep">›</span>
           <span style={{color:'var(--text)', fontWeight:500}}>{plan.name}</span>
         </div>
@@ -3131,15 +3173,15 @@ export default function PlanDetailPage() {
           {(plan.start_date || plan.end_date) && (
             <span className="detail-meta">
               <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              {plan.start_date ? new Date(plan.start_date).toLocaleDateString('en-US', { month:'short', day:'numeric' }) : '?'}
-              {' – '}
-              {plan.end_date ? new Date(plan.end_date).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : '?'}
+              {plan.start_date ? formatShortDate(plan.start_date, i18n.language) : t('milestones:planDetail.shell.detailHead.dateRangeFallback')}
+              {t('milestones:planDetail.shell.detailHead.dateRangeSep')}
+              {plan.end_date ? formatShortDate(plan.end_date, i18n.language, { withYear: true }) : t('milestones:planDetail.shell.detailHead.dateRangeFallback')}
             </span>
           )}
           {!plan.start_date && !plan.end_date && plan.target_date && (
             <span className="detail-meta">
               <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
-              Due {new Date(plan.target_date).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })}
+              {t('milestones:planDetail.shell.detailHead.due', { date: formatShortDate(plan.target_date, i18n.language, { withYear: true }) })}
             </span>
           )}
           {milestone && (
@@ -3153,20 +3195,19 @@ export default function PlanDetailPage() {
           {parentMilestone && milestone?.parent_milestone_id && (
             <span className="meta-inherited">
               <svg style={{width:11,height:11}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h13"/><path d="M16 6l6 6-6 6"/></svg>
-              Inherited from <b style={{color:'var(--text)', fontWeight:600, marginLeft:2}}>{parentMilestone.name}</b>
+              {t('milestones:planDetail.shell.detailHead.inheritedFrom')} <b style={{color:'var(--text)', fontWeight:600, marginLeft:2}}>{parentMilestone.name}</b>
             </span>
           )}
           <div className="detail-head-right">
             <button className="pd-btn pd-btn-ai" onClick={() => setShowAIModal(true)}>
               <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2"/></svg>
-              AI Optimize
+              {t('milestones:planDetail.shell.detailHead.aiOptimize')}
             </button>
             <button className="pd-btn" onClick={()=>setActiveTab('settings')}>
               <svg style={{width:13,height:13}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              Edit
+              {t('common:edit')}
             </button>
             <SplitButton
-              label={runButtonState.label}
               mode={runButtonState.mode}
               inProgressRuns={runButtonState.runs}
               onStartNew={handleStartNewRun}
@@ -3190,14 +3231,26 @@ export default function PlanDetailPage() {
 
         {/* Stats row */}
         <div className="stats-row">
-          <span className="stat"><span className="dot dot-success" />Passed <b>{passed}</b></span>
-          <span className="stat"><span className="dot dot-danger" />Failed <b>{failed}</b></span>
-          <span className="stat"><span className="dot dot-warning" />Blocked <b>{blocked}</b></span>
-          <span className="stat"><span className="dot dot-neutral" />Untested <b>{untested}</b></span>
+          <span className="stat"><span className="dot dot-success" />{t('common:passed')} <b>{passed}</b></span>
+          <span className="stat"><span className="dot dot-danger" />{t('common:failed')} <b>{failed}</b></span>
+          <span className="stat"><span className="dot dot-warning" />{t('common:blocked')} <b>{blocked}</b></span>
+          <span className="stat"><span className="dot dot-neutral" />{t('common:untested')} <b>{untested}</b></span>
           <span className="sep" />
-          <span className="stat">{executed}/{totalTCs} executed · <b>{totalTCs > 0 ? Math.round(executed / totalTCs * 100) : 0}%</b></span>
+          <span className="stat">
+            <Trans
+              i18nKey="milestones:planDetail.shell.stats.executedOfTotal"
+              values={{ executed, total: totalTCs, pct: totalTCs > 0 ? Math.round(executed / totalTCs * 100) : 0 }}
+              components={{ 1: <b /> }}
+            />
+          </span>
           <span className="sep" />
-          <span className="stat">Pass Rate <b>{passRate}%</b></span>
+          <span className="stat">
+            <Trans
+              i18nKey="milestones:planDetail.shell.stats.passRate"
+              values={{ pct: passRate }}
+              components={{ 1: <b /> }}
+            />
+          </span>
         </div>
 
         {/* Tab navigation */}
@@ -3269,20 +3322,20 @@ export default function PlanDetailPage() {
             const existingIds = new Set(planTcs.map(p => p.test_case_id));
             const newIds = tcIds.filter(id => !existingIds.has(id));
             if (newIds.length === 0) {
-              showToast('All recommended TCs are already in this plan', 'info');
+              showToast(t('milestones:planDetail.toast.aiOptimize.allAlreadyIn'), 'info');
               setShowAIModal(false);
               return;
             }
             const inserts = newIds.map(tcId => ({ test_plan_id: planId, test_case_id: tcId }));
             const { error } = await supabase.from('test_plan_test_cases').insert(inserts);
-            if (error) { showToast('Failed to add TCs: ' + error.message, 'error'); return; }
-            const addedTcs = allTcs.filter(t => newIds.includes(t.id));
+            if (error) { showToast(t('milestones:planDetail.toast.aiOptimize.addFailed', { message: error.message }), 'error'); return; }
+            const addedTcs = allTcs.filter(tc0 => newIds.includes(tc0.id));
             setPlanTcs(prev => [...prev, ...addedTcs.map(tc => ({
               test_plan_id: planId!, test_case_id: tc.id,
               added_at: new Date().toISOString(), test_case: tc,
             } as PlanTestCase))]);
             setShowAIModal(false);
-            showToast(`Added ${newIds.length} AI-recommended TCs to plan`, 'success');
+            showToast(t('milestones:planDetail.toast.aiOptimize.added', { count: newIds.length }), 'success');
             setActiveTab('testcases');
           }}
         />
@@ -3296,19 +3349,19 @@ export default function PlanDetailPage() {
               <div style={{width:40,height:40,borderRadius:'50%',background:'var(--warning-100)',display:'flex',alignItems:'center',justifyContent:'center'}}>
                 <svg style={{width:18,height:18,color:'var(--warning)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
               </div>
-              <h3 style={{fontSize:16,fontWeight:600,margin:0}}>Unlock Snapshot</h3>
+              <h3 style={{fontSize:16,fontWeight:600,margin:0}}>{t('milestones:planDetail.modal.unlock.title')}</h3>
             </div>
             <p style={{fontSize:14,color:'var(--text-muted)',marginBottom:8,lineHeight:1.6}}>
-              Unlocking the snapshot will allow TC additions and removals.
+              {t('milestones:planDetail.modal.unlock.body1')}
             </p>
             <p style={{fontSize:14,color:'var(--text-muted)',marginBottom:20,lineHeight:1.6}}>
-              Existing runs will not be affected, but plan scope may shift. Are you sure you want to proceed?
+              {t('milestones:planDetail.modal.unlock.body2')}
             </p>
             <div style={{display:'flex',gap:10,justifyContent:'flex-end'}}>
-              <button onClick={()=>setShowUnlockConfirm(false)} className="pd-btn pd-btn-sm">Cancel</button>
+              <button onClick={()=>setShowUnlockConfirm(false)} className="pd-btn pd-btn-sm">{t('common:cancel')}</button>
               <button onClick={handleUnlockConfirm}
                 style={{padding:'6px 16px',border:'none',borderRadius:6,background:'var(--warning)',color:'#fff',fontSize:13,fontWeight:500,cursor:'pointer'}}>
-                Unlock
+                {t('milestones:planDetail.modal.unlock.cta')}
               </button>
             </div>
           </div>
@@ -3323,16 +3376,20 @@ export default function PlanDetailPage() {
               <div style={{width:40,height:40,borderRadius:'50%',background:'var(--danger-50)',display:'flex',alignItems:'center',justifyContent:'center'}}>
                 <svg style={{width:18,height:18,color:'var(--danger)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
               </div>
-              <h3 style={{fontSize:16,fontWeight:600,margin:0}}>Delete Test Plan</h3>
+              <h3 style={{fontSize:16,fontWeight:600,margin:0}}>{t('milestones:planDetail.modal.delete.title')}</h3>
             </div>
             <p style={{fontSize:14,color:'var(--text-muted)',marginBottom:20}}>
-              Are you sure you want to delete <strong>"{plan.name}"</strong>? This action cannot be undone.
+              <Trans
+                i18nKey="milestones:planDetail.modal.delete.body"
+                values={{ planName: plan.name }}
+                components={{ 1: <strong /> }}
+              />
             </p>
             <div style={{display:'flex',gap:10,justifyContent:'flex-end'}}>
-              <button onClick={()=>setShowDeleteConfirm(false)} className="pd-btn pd-btn-sm">Cancel</button>
+              <button onClick={()=>setShowDeleteConfirm(false)} className="pd-btn pd-btn-sm">{t('common:cancel')}</button>
               <button onClick={handleDelete}
                 style={{padding:'6px 16px',border:'none',borderRadius:6,background:'var(--danger)',color:'#fff',fontSize:13,fontWeight:500,cursor:'pointer'}}>
-                Delete Plan
+                {t('milestones:planDetail.modal.delete.cta')}
               </button>
             </div>
           </div>
@@ -3347,16 +3404,20 @@ export default function PlanDetailPage() {
               <div style={{width:40,height:40,borderRadius:'50%',background:'var(--warning-50)',display:'flex',alignItems:'center',justifyContent:'center'}}>
                 <svg style={{width:18,height:18,color:'var(--warning)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
               </div>
-              <h3 style={{fontSize:16,fontWeight:600,margin:0}}>Archive Plan</h3>
+              <h3 style={{fontSize:16,fontWeight:600,margin:0}}>{t('milestones:planDetail.modal.archive.title')}</h3>
             </div>
             <p style={{fontSize:14,color:'var(--text-muted)',marginBottom:20,lineHeight:1.6}}>
-              Archive <strong>"{plan.name}"</strong>? The plan will become read-only. Existing run data is preserved and the plan can be unarchived from the status dropdown.
+              <Trans
+                i18nKey="milestones:planDetail.modal.archive.body"
+                values={{ planName: plan.name }}
+                components={{ 1: <strong /> }}
+              />
             </p>
             <div style={{display:'flex',gap:10,justifyContent:'flex-end'}}>
-              <button onClick={()=>setShowArchiveConfirm(false)} className="pd-btn pd-btn-sm">Cancel</button>
+              <button onClick={()=>setShowArchiveConfirm(false)} className="pd-btn pd-btn-sm">{t('common:cancel')}</button>
               <button onClick={handleArchive}
                 style={{padding:'6px 16px',border:'none',borderRadius:6,background:'var(--warning)',color:'#fff',fontSize:13,fontWeight:500,cursor:'pointer'}}>
-                Archive
+                {t('milestones:planDetail.modal.archive.cta')}
               </button>
             </div>
           </div>
@@ -3371,16 +3432,20 @@ export default function PlanDetailPage() {
               <div style={{width:40,height:40,borderRadius:'50%',background:'var(--success-50)',display:'flex',alignItems:'center',justifyContent:'center'}}>
                 <svg style={{width:18,height:18,color:'var(--success-600)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 1 0 9-9"/><polyline points="3 4 3 12 11 12"/></svg>
               </div>
-              <h3 style={{fontSize:16,fontWeight:600,margin:0}}>Unarchive Plan</h3>
+              <h3 style={{fontSize:16,fontWeight:600,margin:0}}>{t('milestones:planDetail.modal.unarchive.title')}</h3>
             </div>
             <p style={{fontSize:14,color:'var(--text-muted)',marginBottom:20,lineHeight:1.6}}>
-              Restore <strong>"{plan.name}"</strong> to <strong>Planning</strong> status? The plan will become editable again.
+              <Trans
+                i18nKey="milestones:planDetail.modal.unarchive.body"
+                values={{ planName: plan.name }}
+                components={{ 1: <strong />, 3: <strong /> }}
+              />
             </p>
             <div style={{display:'flex',gap:10,justifyContent:'flex-end'}}>
-              <button onClick={()=>setShowUnarchiveConfirm(false)} className="pd-btn pd-btn-sm">Cancel</button>
+              <button onClick={()=>setShowUnarchiveConfirm(false)} className="pd-btn pd-btn-sm">{t('common:cancel')}</button>
               <button onClick={handleUnarchive}
                 style={{padding:'6px 16px',border:'none',borderRadius:6,background:'var(--success-600)',color:'#fff',fontSize:13,fontWeight:500,cursor:'pointer'}}>
-                Unarchive
+                {t('milestones:planDetail.modal.unarchive.cta')}
               </button>
             </div>
           </div>
@@ -3395,16 +3460,20 @@ export default function PlanDetailPage() {
               <div style={{width:40,height:40,borderRadius:'50%',background:'var(--primary-50)',display:'flex',alignItems:'center',justifyContent:'center'}}>
                 <svg style={{width:18,height:18,color:'var(--primary)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
               </div>
-              <h3 style={{fontSize:16,fontWeight:600,margin:0}}>Duplicate Plan</h3>
+              <h3 style={{fontSize:16,fontWeight:600,margin:0}}>{t('milestones:planDetail.modal.duplicate.title')}</h3>
             </div>
             <p style={{fontSize:14,color:'var(--text-muted)',marginBottom:20,lineHeight:1.6}}>
-              Create a copy of <strong>"{plan.name}"</strong> with the same TC snapshot ({planTcs.length} test case{planTcs.length === 1 ? '' : 's'})? The new plan will be named <strong>"{plan.name} (Copy)"</strong> and you'll be redirected to it.
+              <Trans
+                i18nKey="milestones:planDetail.modal.duplicate.body"
+                values={{ planName: plan.name, count: planTcs.length }}
+                components={{ 1: <strong />, 3: <strong /> }}
+              />
             </p>
             <div style={{display:'flex',gap:10,justifyContent:'flex-end'}}>
-              <button onClick={()=>setShowDuplicateConfirm(false)} className="pd-btn pd-btn-sm">Cancel</button>
+              <button onClick={()=>setShowDuplicateConfirm(false)} className="pd-btn pd-btn-sm">{t('common:cancel')}</button>
               <button onClick={handleDuplicate}
                 style={{padding:'6px 16px',border:'none',borderRadius:6,background:'var(--primary)',color:'#fff',fontSize:13,fontWeight:500,cursor:'pointer'}}>
-                Duplicate
+                {t('milestones:planDetail.modal.duplicate.cta')}
               </button>
             </div>
           </div>
