@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { notifyProjectMembers } from '../../hooks/useNotifications';
+import { getApiErrorMessage } from '../../components/Toast';
 
 interface InvitationInfo {
   email: string;
@@ -77,7 +78,7 @@ export default function AcceptInvitationPage() {
     } catch (error: any) {
       console.error('초대 확인 오류:', error);
       setStatus('error');
-      setMessage(error.message || "Couldn't verify your invitation. Please try again.");
+      setMessage(getApiErrorMessage(error));
     }
   };
 
@@ -142,7 +143,7 @@ export default function AcceptInvitationPage() {
     } catch (error: any) {
       console.error('초대 수락 오류:', error);
       setStatus('error');
-      setMessage(error.message || "Couldn't accept the invitation. Please try again.");
+      setMessage(getApiErrorMessage(error));
     }
   };
 
