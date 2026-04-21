@@ -59,4 +59,26 @@ export function formatShortTime(
   return new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', hour12: false }).format(d);
 }
 
+/**
+ * Locale-aware long date+time formatter (Phase 2b — run-detail ResultDetailModal).
+ *
+ * Matches: "April 21, 2026, 02:15 PM" (en) / "2026년 4월 21일 오후 2:15" (ko).
+ */
+export function formatLongDateTime(
+  iso: string | Date | null | undefined,
+  lang?: string,
+): string {
+  if (!iso) return '';
+  const d = typeof iso === 'string' ? new Date(iso) : iso;
+  if (!(d instanceof Date) || Number.isNaN(d.getTime())) return '';
+  const locale = lang === 'ko' ? 'ko-KR' : 'en-US';
+  return new Intl.DateTimeFormat(locale, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(d);
+}
+
 export default formatShortDate;

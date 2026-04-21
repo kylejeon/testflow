@@ -74,6 +74,7 @@ export const common = {
   error: '오류가 발생했습니다',
   success: '성공',
   confirmDelete: '정말 삭제하시겠습니까?',
+  unknownError: '알 수 없는 오류',
 
   // Time
   today: '오늘',

@@ -74,6 +74,7 @@ export const common = {
   error: 'An error occurred',
   success: 'Success',
   confirmDelete: 'Are you sure you want to delete this item?',
+  unknownError: 'Unknown error',
 
   // Time
   today: 'Today',

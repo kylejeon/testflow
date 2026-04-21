@@ -131,6 +131,326 @@ export const runs = {
       rerunFailed: '재실행 생성에 실패했습니다',
     },
   },
+
+  // ─────────────────────────────────────────────────────────────────────
+  // Run Detail page (Phase 2b)
+  // ─────────────────────────────────────────────────────────────────────
+  detail: {
+    page: {
+      backToRuns: '실행 목록으로',
+      startedPrefix: '시작 {{date}}',
+      percentCompletedSuffix: '{{percent}}% 완료',
+      testCasesCount_one: '테스트 케이스 {{count}}건',
+      testCasesCount_other: '테스트 케이스 {{count}}건',
+      automatedBadge: '자동화',
+      runNameFallback: '테스트 실행',
+    },
+    runStatus: {
+      completed: '완료',
+      inProgress: '진행 중',
+      underReview: '검토 중',
+      paused: '일시중지',
+      draft: '신규',
+    },
+    headerActions: {
+      export: '내보내기',
+      exportTooltip: 'PDF / CSV / Excel로 내보내기',
+      aiSummary: 'AI 요약',
+      aiSummaryNewBadge: 'NEW',
+      aiSummaryLockedBadge: 'HOBBY',
+      focusMode: 'Focus Mode',
+      focusModeTooltip: 'Focus Mode (Cmd+Shift+F)',
+    },
+    kpi: {
+      totalTests: '전체 테스트',
+    },
+    progress: {
+      title: '실행 진행률',
+      tooltipCount: '{{label}}: {{count}}',
+    },
+    folderSidebar: {
+      title: '폴더',
+      allCases: '전체 케이스',
+      collapseTooltip: '접기',
+      expandTooltip: '펼치기',
+      empty: '폴더 없음',
+    },
+    tcList: {
+      filter: {
+        searchPlaceholder: '테스트 케이스 검색...',
+        allStatus: '전체 상태',
+        allPriority: '전체 우선순위',
+      },
+      header: {
+        idVer: 'ID / 버전',
+        testCase: '테스트 케이스',
+        folder: '폴더',
+      },
+      empty: {
+        title: '테스트 케이스가 없습니다',
+        hint: '이 실행에 테스트 케이스가 포함되어 있지 않습니다.',
+      },
+      assigneeDropdown: {
+        unassigned: '— 담당자 없음 —',
+      },
+      bulk: {
+        selected_one: '{{count}}개 선택됨',
+        selected_other: '{{count}}개 선택됨',
+        assignToLabel: '담당자 지정:',
+        unassigned: '담당자 없음',
+        apply: '적용',
+        clearSelection: '선택 해제',
+      },
+      versionBadge: {
+        tcUpdatedClickable: 'TC가 v{{major}}.{{minor}}로 업데이트됨 — 클릭하여 변경 사항 검토',
+        locked: '잠김: 테스트 결과 기록됨',
+        ssUpdateAvailable: '공유 스텝 업데이트 가능 (v{{version}})',
+      },
+    },
+    ssBanner: {
+      headline_one: '공유 스텝 {{count}}개에 새 버전이 있습니다',
+      headline_other: '공유 스텝 {{count}}개에 새 버전이 있습니다',
+      tcAffected_one: 'TC {{count}}건 영향',
+      tcAffected_other: 'TC {{count}}건 영향',
+      untestedUpdatable_one: ', 미수행 {{count}}건 업데이트 가능',
+      untestedUpdatable_other: ', 미수행 {{count}}건 업데이트 가능',
+      updateAll: '모두 업데이트',
+      dismiss: '닫기',
+    },
+    deprecatedBanner: {
+      title: '이 실행의 일부 TC가 폐기되었습니다.',
+      countSentence_one: '이 실행이 생성된 이후 테스트 케이스 {{count}}건이 폐기되었습니다. 기존 결과는 유지되며, 이 TC들은 새 실행에 나타나지 않습니다.',
+      countSentence_other: '이 실행이 생성된 이후 테스트 케이스 {{count}}건이 폐기되었습니다. 기존 결과는 유지되며, 이 TC들은 새 실행에 나타나지 않습니다.',
+    },
+    addResult: {
+      title: '결과 추가',
+      status: {
+        label: '상태',
+      },
+      note: {
+        label: '메모',
+        toolbar: {
+          paragraph: '문단',
+          bold: '굵게',
+          italic: '기울임',
+          underline: '밑줄',
+          strikethrough: '취소선',
+          code: '코드',
+          link: '링크',
+          bulletList: '글머리 기호 목록',
+          orderedList: '번호 매기기 목록',
+        },
+      },
+      steps: {
+        label: '스텝',
+        sharedBadge: '공유',
+        sharedUpdateBadgeTitle: '새 버전: v{{version}}',
+        diffBannerPrefix: 'v{{from}} → v{{to}} 변경 사항',
+        updateButton: '업데이트',
+        lockedBanner: '테스트 결과 보존을 위해 잠김',
+        diffCurrent: '현재 (v{{version}})',
+        diffLatest: '최신 (v{{version}})',
+        diffUnavailable: '버전 이력을 사용할 수 없습니다',
+        diffLoading: '로딩 중...',
+      },
+      elapsed: {
+        label: '소요 시간',
+      },
+      assignee: {
+        label: '담당자 지정',
+        placeholder: '담당자 선택',
+        hint: '비워두면 현재 담당자가 유지됩니다.',
+      },
+      issues: {
+        label: '연결된 이슈',
+        createJira: 'Jira 이슈 생성',
+        createGithub: 'GitHub 이슈 생성',
+        placeholder: '이슈 키 입력 (예: PROJ-123)',
+        hint: 'Jira 이슈 키를 입력하고 Enter 키를 누르세요 (예: PROJ-123)',
+        confirmJiraSetup: 'Jira 설정이 필요합니다. Settings 페이지로 이동하시겠습니까?',
+      },
+      attachments: {
+        label: '첨부 파일',
+        chooseFiles: '파일 선택',
+        or: '또는',
+        screenshot: '스크린샷',
+        dropzoneHint: '또는 여기에 드래그하거나 붙여넣기',
+        uploading: '업로드 중...',
+      },
+      footer: {
+        submit: '결과 추가',
+      },
+    },
+    jiraIssue: {
+      title: 'Jira 이슈 생성',
+      summary: {
+        label: '요약',
+        placeholder: '이슈에 대한 간단한 설명',
+      },
+      description: {
+        placeholder: '이슈에 대한 상세 설명',
+      },
+      issueType: {
+        label: '이슈 유형',
+        option: {
+          bug: '버그',
+          task: '작업',
+          story: '스토리',
+          epic: '에픽',
+        },
+      },
+      priority: {
+        option: {
+          highest: '최고',
+          high: '높음',
+          medium: '보통',
+          low: '낮음',
+          lowest: '최저',
+        },
+      },
+      labels: {
+        label: '라벨',
+        placeholder: '쉼표로 구분하여 라벨 입력 (예: bug, ui, critical)',
+        hint: '쉼표로 구분하여 여러 라벨을 입력하세요',
+      },
+      assignee: {
+        placeholder: 'Jira 계정 ID 또는 이메일 (예: user@example.com)',
+        hint: '비워두면 자동 할당됩니다',
+      },
+      components: {
+        label: '컴포넌트',
+        placeholder: '컴포넌트 이름을 쉼표로 구분 (예: Frontend, API, Database)',
+        hint: 'Jira 프로젝트에 등록된 컴포넌트 이름을 입력하세요',
+      },
+      relatedTc: '관련 테스트 케이스',
+      footer: {
+        submit: '이슈 생성',
+        creating: '생성 중...',
+      },
+    },
+    githubIssue: {
+      title: 'GitHub 이슈 생성',
+      titleField: {
+        label: '제목',
+        placeholder: '이슈 제목',
+      },
+      body: {
+        placeholder: '이슈 설명 (Markdown 지원)',
+      },
+      labels: {
+        label: '라벨',
+        placeholder: '라벨 입력 후 Enter 키',
+      },
+      assignee: {
+        placeholder: '기여자 검색...',
+      },
+      willBeCreatedInPrefix: '다음 위치에 생성됩니다: ',
+      footer: {
+        submit: '이슈 생성',
+        creating: '생성 중...',
+      },
+    },
+    tcDiff: {
+      comparingPrefix: '비교: ',
+      columnHeader: {
+        current: 'v{{major}}.{{minor}} (실행 내 현재)',
+        updated: 'v{{major}}.{{minor}} (업데이트됨)',
+      },
+      metadata: {
+        title: '제목',
+        tags: '태그',
+        precondition: '사전 조건',
+      },
+      steps: {
+        sectionTitle: '스텝',
+        noSteps: '스텝 없음',
+      },
+      expectedResult: {
+        sectionTitle: '예상 결과',
+      },
+      loading: '로딩 중…',
+      footer: {
+        updateTo: 'v{{major}}.{{minor}}로 업데이트',
+      },
+    },
+    upgradeModal: {
+      title: 'Starter 플랜이 필요합니다',
+      bodyLine1: 'Jira 이슈 생성 기능은 <1>Starter 플랜</1> 이상에서 사용할 수 있습니다.',
+      bodyLine2: '업그레이드하면 테스트 결과에서 바로 Jira 이슈를 생성하고 관리할 수 있습니다.',
+      benefitsTitle: 'Starter 플랜 혜택',
+      benefit: {
+        projects: '프로젝트 10개까지',
+        members: '팀 멤버 5명까지',
+        jira: 'Jira 연동',
+        reporting: '기본 리포팅',
+        exportImport: '테스트 케이스 내보내기/가져오기',
+      },
+      footer: {
+        upgrade: '플랜 업그레이드',
+      },
+    },
+    upgradeNudge: {
+      body: '즉각적인 실패 패턴 분석, Go/No-Go 추천, 원클릭 Jira 이슈 생성을 받아보세요.',
+      cta: 'Hobby로 업그레이드 — $19/mo',
+      subtitle: '월 AI 크레딧 15개 · AI 실행 요약 포함',
+    },
+    jiraSetup: {
+      title: 'Jira 연동이 필요합니다',
+      body: 'Jira 이슈를 생성하려면 먼저 Settings에서 Jira 계정을 연결해 주세요.',
+      footer: {
+        connect: 'Jira 연결',
+      },
+    },
+    resultDetail: {
+      title: '테스트 결과 상세',
+      cicdBadge: 'CI/CD',
+      unknownAuthor: '알 수 없음',
+      elapsedLabel: '소요 시간',
+      stepResultsLabel: '스텝 결과',
+      stepFallback: '스텝 {{index}}',
+      attachmentsLabel_one: '첨부 파일 ({{count}})',
+      attachmentsLabel_other: '첨부 파일 ({{count}})',
+      linkedIssues: '연결된 이슈',
+      githubIssues: 'GitHub 이슈',
+    },
+    imagePreview: {
+      closeA11y: '미리보기 닫기',
+    },
+    fatalError: {
+      userMissing: '사용자 정보를 불러올 수 없습니다. 페이지를 새로고침해 주세요.',
+      runIdMissing: 'Run ID가 없습니다. URL을 확인해 주세요.',
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────
+  // Toast messages emitted from run-detail/page.tsx (Phase 2b)
+  // ─────────────────────────────────────────────────────────────────────
+  toast: {
+    commentSaveFailed: '댓글 저장에 실패했습니다.',
+    commentDeleteFailed: '댓글 삭제에 실패했습니다.',
+    jiraAutoCreated: 'Jira 이슈 {{key}}가 자동 생성되었습니다',
+    jiraAutoCreateFailed: 'Jira 이슈 자동 생성에 실패했습니다',
+    githubAutoCreated: 'GitHub 이슈 #{{number}}가 자동 생성되었습니다',
+    githubAutoCreateFailed: 'GitHub 이슈 자동 생성에 실패했습니다',
+    statusUpdateFailed: '상태 업데이트에 실패했습니다.',
+    addResultFirstThenLink: '먼저 테스트 결과를 추가한 후 이슈를 연결하세요.',
+    runIdNotFound: 'Run ID를 찾을 수 없습니다. 페이지를 새로고침해 주세요.',
+    resultSaveFailed: '결과 저장에 실패했습니다.',
+    ssVersionUpdated: "공유 스텝 '{{name}}' v{{version}}으로 업데이트됨",
+    ssVersionUpdateFailed: '공유 스텝 버전 업데이트에 실패했습니다',
+    tcVersionUpdated: 'TC가 v{{major}}.{{minor}}로 업데이트됨',
+    tcVersionUpdateFailed: 'TC 버전 업데이트에 실패했습니다',
+    uploadFailed: '파일 업로드 실패: {{reason}}',
+    screenshotUnsupported: '이 브라우저는 스크린샷 기능을 지원하지 않습니다.',
+    screenshotUploadFailed: '스크린샷 업로드 실패: {{reason}}',
+    screenshotCaptureFailed: '스크린샷 캡처에 실패했습니다.',
+    summaryRequired: '요약은 필수 항목입니다.',
+    jiraCreated: 'Jira 이슈 {{key}} 생성됨',
+    jiraCreatedAddResult: 'Jira 이슈 {{key}} 생성됨. 결과 추가로 테스트 결과를 기록하면 이슈가 자동으로 연결됩니다.',
+    jiraCreateFailed: 'Jira 이슈 생성 실패: {{reason}}',
+    githubCreated: 'GitHub 이슈 #{{number}} 생성됨',
+    githubCreateFailed: 'GitHub 이슈 생성 실패: {{reason}}',
+  },
 };
 
 export default runs;
