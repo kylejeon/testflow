@@ -1,7 +1,7 @@
 {
   "generated_at": "2026-04-20",
   "updated_at": "2026-04-21",
-  "total_count": 30,
+  "total_count": 29,
   "features": [
     {
       "id": "f001",
@@ -262,19 +262,6 @@
       "dependencies": [],
       "status": "backlog",
       "notes": "OOS. v4에서 재평가로 표시"
-    },
-    {
-      "id": "f024",
-      "title": "전역 ErrorBoundary + catch→toast 일괄 업그레이드",
-      "category": "ui",
-      "description": "현재 ErrorBoundary가 RichTextEditor 1곳만. App.tsx 최상위 ErrorBoundary 도입 + 15개 페이지의 catch { console.error } 패턴을 toast.error로 치환. 무음 제품 인상 제거.",
-      "priority": "P1",
-      "impact": "high",
-      "effort": "medium",
-      "source": "Polish_Audit",
-      "dependencies": [],
-      "status": "backlog",
-      "notes": "완성도 감사 Quick Wins 1순위"
     },
     {
       "id": "f025",
