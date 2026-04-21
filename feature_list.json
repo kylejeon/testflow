@@ -1,6 +1,7 @@
 {
   "generated_at": "2026-04-20",
-  "total_count": 32,
+  "updated_at": "2026-04-21",
+  "total_count": 31,
   "features": [
     {
       "id": "f001",
@@ -105,19 +106,6 @@
       "dependencies": [],
       "status": "backlog",
       "notes": "N-3. 이미 progress 노트에 follow-up 기록됨"
-    },
-    {
-      "id": "f009",
-      "title": "Vitest 단위 테스트 인프라 구축",
-      "category": "observability",
-      "description": "프로젝트에 테스트 러너가 미구성 상태. vitest + @testing-library/react 도입, src/lib 유틸(aiUsage, environments 등) 우선 커버리지 확보. CI에서 자동 실행.",
-      "priority": "P1",
-      "impact": "high",
-      "effort": "medium",
-      "source": "dev-spec-ai-usage-shared-pool | progress.txt | qa-report-milestone-overview-v2",
-      "dependencies": [],
-      "status": "backlog",
-      "notes": "AC-10 (aiUsage.test.ts) 및 MAJOR-1 (vitest 인프라)에서 반복 스킵됨"
     },
     {
       "id": "f010",

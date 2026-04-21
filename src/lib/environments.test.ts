@@ -76,19 +76,11 @@ describe('heatmapSymbol', () => {
     ['mixed', '~'],
     ['warn', '!'],
     ['fail', '✕'],
-    ['critical', '✕'], // falls through default
+    ['critical', '–'], // not in switch → falls through default
     ['na', 'N/A'],
     ['untested', '–'],
   ];
   it.each(cases)('maps %s → %s', (status, expected) => {
-    // 'critical' goes through default branch and ends up with '–' actually.
-    // Spec just maps "7개 status 기호"; accept whichever the code returns for
-    // the documented statuses — assert the explicit switch branches only.
-    if (status === 'critical') {
-      // default fallback returns '–'
-      expect(heatmapSymbol(status)).toBe('–');
-      return;
-    }
     expect(heatmapSymbol(status)).toBe(expected);
   });
 });
