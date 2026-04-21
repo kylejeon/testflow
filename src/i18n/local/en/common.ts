@@ -149,6 +149,8 @@ export const common = {
     goHome: 'Go to dashboard',
     reportId: 'Report ID: {{id}}',
     reportIdMissing: "We couldn't capture error details.",
+    copyReportId: 'Copy report ID',
+    reportIdCopied: 'Report ID copied',
     sendReport: 'Send an error report',
     devDetailsSummary: 'Error details',
     section: {

@@ -1,4 +1,4 @@
-import { Component, ReactNode, useEffect, useRef } from 'react';
+import { Component, ReactNode, useEffect, useRef, useState } from 'react';
 import { Sentry } from '../lib/sentry';
 import i18n from '../i18n';
 
@@ -34,6 +34,41 @@ interface State {
   error: Error | null;
   /** Sentry eventId returned from captureException, surfaced as a Report ID. */
   eventId: string | null;
+}
+
+function ReportIdLine({ eventId, t }: { eventId: string; t: (key: string, opts?: Record<string, unknown>) => string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(eventId);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // clipboard API unavailable (permissions/insecure context) — silently no-op
+    }
+  };
+
+  return (
+    <div className="mt-4 flex items-center justify-center gap-2 max-w-xs">
+      <p className="font-mono text-xs text-slate-500 break-all">
+        {t('common:errorBoundary.reportId', { id: eventId })}
+      </p>
+      <button
+        type="button"
+        onClick={handleCopy}
+        aria-label={t('common:errorBoundary.copyReportId')}
+        className="flex-none inline-flex items-center justify-center w-6 h-6 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-colors"
+      >
+        <i className={copied ? 'ri-check-line text-emerald-500' : 'ri-file-copy-line'} />
+      </button>
+      {copied && (
+        <span role="status" className="text-xs text-emerald-600">
+          {t('common:errorBoundary.reportIdCopied')}
+        </span>
+      )}
+    </div>
+  );
 }
 
 function FullPageFallback({ error, eventId, onReset }: { error: Error | null; eventId: string | null; onReset: () => void }) {
@@ -96,9 +131,7 @@ function FullPageFallback({ error, eventId, onReset }: { error: Error | null; ev
       </div>
 
       {showEventId && (
-        <p className="mt-4 font-mono text-xs text-slate-500 break-all max-w-xs">
-          {t('common:errorBoundary.reportId', { id: eventId })}
-        </p>
+        <ReportIdLine eventId={eventId!} t={t} />
       )}
       {showEventIdMissing && (
         <p className="mt-4 text-xs text-slate-500">

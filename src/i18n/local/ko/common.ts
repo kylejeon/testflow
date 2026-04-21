@@ -149,6 +149,8 @@ export const common = {
     goHome: '대시보드로',
     reportId: '문제 보고 번호: {{id}}',
     reportIdMissing: '에러 상세 정보를 수집하지 못했어요.',
+    copyReportId: '보고 번호 복사',
+    reportIdCopied: '보고 번호를 복사했어요',
     sendReport: '문제 신고 메일 보내기',
     devDetailsSummary: '에러 상세 정보',
     section: {
