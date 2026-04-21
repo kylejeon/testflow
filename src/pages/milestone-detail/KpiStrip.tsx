@@ -35,35 +35,35 @@ export default function KpiStrip({
   const etaSubText = !etaHasDate
     ? t('detail.overview.kpi.etaNoDate')
     : etaProjDays == null
-      ? `${etaDaysLeft}d target`
+      ? t('detail.overview.kpi.targetSuffix', { days: etaDaysLeft })
       : etaOnTrack
         ? t('detail.overview.kpi.etaOnTrack', { days: etaProjDays })
         : etaGap != null && etaGap > 0
           ? t('detail.overview.kpi.etaOffTrack', { days: etaGap })
-          : `${etaProjDays}d proj`;
+          : t('detail.overview.kpi.projectedSuffix', { days: etaProjDays });
   const etaColorClass = etaHasDate ? (etaOnTrack ? 'on-track' : 'off-track') : '';
 
   return (
     <div className="mo-kpi-strip">
       <div className="mo-kpi">
-        <div className="l">Remaining</div>
+        <div className="l">{t('detail.overview.kpi.remaining')}</div>
         <div className="v">{remaining}</div>
-        <div className="sub">{total} total</div>
+        <div className="sub">{t('detail.overview.kpi.totalSuffix', { n: total })}</div>
       </div>
       <div className="mo-kpi">
-        <div className="l">Executed</div>
+        <div className="l">{t('detail.overview.kpi.executed')}</div>
         <div className="v">{executed}</div>
-        <div className="sub">of {total}</div>
+        <div className="sub">{t('detail.overview.kpi.ofTotal', { n: total })}</div>
       </div>
       <div className="mo-kpi">
-        <div className="l">Velocity</div>
+        <div className="l">{t('detail.overview.kpi.velocity')}</div>
         <div className="v">{velocityPerDay != null ? velocityPerDay.toFixed(1) : '—'}</div>
-        <div className="sub">TCs / day</div>
+        <div className="sub">{t('detail.overview.kpi.tcsPerDay')}</div>
       </div>
       <div className="mo-kpi">
-        <div className="l">Pass Rate</div>
+        <div className="l">{t('detail.overview.kpi.passRate')}</div>
         <div className="v" style={{ color: passRate >= 70 ? 'var(--success-600)' : passRate >= 40 ? 'var(--warning)' : 'var(--danger-600)' }}>{passRate}%</div>
-        <div className="sub">{passed} passed</div>
+        <div className="sub">{t('detail.overview.kpi.passedSuffix', { count: passed })}</div>
       </div>
       <div className="mo-kpi eta">
         <div className="l">{t('detail.overview.kpi.eta')}</div>

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import StatusPill from '../../components/StatusPill';
 import ProgressBar from '../../components/ProgressBar';
 import SegmentedBar from '../../components/SegmentedBar';
+import { formatShortDate } from '../../lib/dateFormat';
 
 interface SessionActivityCounts {
   note: number;
@@ -86,7 +87,7 @@ export default function ExecutionSections({
   projectId, subMilestones, subMilestoneProgress, plans, plansLoading, plansError,
   planProgressMap, runs, sessions, sessionActivityMap, planMap, formatDateRange,
 }: Props) {
-  const { t } = useTranslation('milestones');
+  const { t, i18n } = useTranslation('milestones');
   const hasSubs = subMilestones.length > 0;
   const hasPlans = plans.length > 0;
   const hasRuns = runs.length > 0;
@@ -112,7 +113,7 @@ export default function ExecutionSections({
       {hasSubs && (
         <>
           <div className="mo-sec-head">
-            <i className="ri-git-branch-line" /> Sub Milestones
+            <i className="ri-git-branch-line" /> {t('detail.overview.sections.subMilestones')}
             <span className="count">{subMilestones.length}</span>
           </div>
           <div className="mo-sec-card">
@@ -151,7 +152,7 @@ export default function ExecutionSections({
       {showPlansBlock && (
         <>
           <div className="mo-sec-head">
-            <i className="ri-folder-chart-line" style={{ color: 'var(--violet)' }} /> Test Plans
+            <i className="ri-folder-chart-line" style={{ color: 'var(--violet)' }} /> {t('detail.overview.sections.testPlans')}
             <span className="count">{plans.length}</span>
           </div>
           {plansLoading ? (
@@ -160,7 +161,7 @@ export default function ExecutionSections({
             </div>
           ) : plansError ? (
             <div style={{ background: 'var(--danger-50)', border: '1px solid var(--danger-100)', padding: '12px 16px', borderRadius: 10, color: 'var(--danger-600)', fontSize: 13 }}>
-              Failed to load plans.
+              {t('detail.overview.sections.loadFailed')}
             </div>
           ) : (
             <div className="mo-sec-card">
@@ -184,8 +185,8 @@ export default function ExecutionSections({
                     <div style={{ minWidth: 0 }}>
                       <div className="mo-row-name">{plan.name}</div>
                       <div className="mo-row-sub">
-                        {plan.priority && <span>Priority: {plan.priority}</span>}
-                        {plan.target_date && <> · Target {new Date(plan.target_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</>}
+                        {plan.priority && <span>{t('detail.overview.sections.plan.priorityLabel', { priority: plan.priority })}</span>}
+                        {plan.target_date && <> · {t('detail.overview.sections.plan.targetLabel', { date: formatShortDate(plan.target_date, i18n.language) })}</>}
                       </div>
                     </div>
                     <div />
@@ -204,18 +205,22 @@ export default function ExecutionSections({
       {hasRuns && (
         <>
           <div className="mo-sec-head">
-            <i className="ri-play-circle-line" style={{ color: 'var(--blue)' }} /> Runs
+            <i className="ri-play-circle-line" style={{ color: 'var(--blue)' }} /> {t('detail.overview.sections.runs')}
             <span className="count">{runs.length}</span>
             <span className="legend">
-              <span className="leg"><span className="run-type-dot planned" />Planned</span>
-              <span className="leg"><span className="run-type-dot mdirect" />Milestone-direct</span>
+              <span className="leg"><span className="run-type-dot planned" />{t('detail.overview.sections.runBadge.planned')}</span>
+              <span className="leg"><span className="run-type-dot mdirect" />{t('detail.overview.sections.runBadge.milestoneDirect')}</span>
             </span>
           </div>
           <div className="mo-sec-card">
             {runs.map(run => {
               const planned = !!run.test_plan_id;
               const linkedPlan = planned ? planMap.get(run.test_plan_id!) : null;
-              const planLabel = planned ? (linkedPlan ? `Plan: ${linkedPlan.name}` : 'Plan: (deleted)') : 'Milestone-direct';
+              const planLabel = planned
+                ? (linkedPlan
+                    ? t('detail.overview.sections.runBadge.planLabel', { name: linkedPlan.name })
+                    : t('detail.overview.sections.runBadge.planDeleted'))
+                : t('detail.overview.sections.runBadge.milestoneDirect');
               const total = (run.passed_count || 0) + (run.failed_count || 0) + (run.blocked_count || 0) + (run.retest_count || 0) + (run.untested_count || 0);
               const done = (run.passed_count || 0) + (run.failed_count || 0) + (run.blocked_count || 0) + (run.retest_count || 0);
               const pct = total > 0 ? Math.round((done / total) * 100) : 0;
@@ -242,10 +247,10 @@ export default function ExecutionSections({
                     </div>
                   </div>
                   <div className="mo-stats-mini">
-                    <span><b>{run.passed_count || 0}</b> passed</span>
-                    <span><b>{run.failed_count || 0}</b> failed</span>
-                    <span><b>{run.blocked_count || 0}</b> blocked</span>
-                    <span><b>{run.untested_count || 0}</b> untested</span>
+                    <span><b>{run.passed_count || 0}</b> {t('detail.overview.sections.stat.passed')}</span>
+                    <span><b>{run.failed_count || 0}</b> {t('detail.overview.sections.stat.failed')}</span>
+                    <span><b>{run.blocked_count || 0}</b> {t('detail.overview.sections.stat.blocked')}</span>
+                    <span><b>{run.untested_count || 0}</b> {t('detail.overview.sections.stat.untested')}</span>
                   </div>
                   <StatusPill status={run.status} />
                   <ProgressBar value={pct} tone={tone} />
@@ -261,7 +266,7 @@ export default function ExecutionSections({
       {hasSessions && (
         <>
           <div className="mo-sec-head">
-            <i className="ri-search-eye-line" style={{ color: 'var(--violet)' }} /> Exploratory
+            <i className="ri-search-eye-line" style={{ color: 'var(--violet)' }} /> {t('detail.overview.sections.exploratory')}
             <span className="count">{sessions.length}</span>
           </div>
           <div className="mo-sec-card">
@@ -275,16 +280,16 @@ export default function ExecutionSections({
                   <div className="mo-row-icon violet"><i className="ri-search-eye-line" /></div>
                   <div style={{ minWidth: 0 }}>
                     <div className="mo-row-name">{session.name}</div>
-                    <div className="mo-row-sub">{new Date(session.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+                    <div className="mo-row-sub">{formatShortDate(session.created_at, i18n.language)}</div>
                   </div>
                   <div />
                   <StatusPill status={session.actualStatus ?? 'new'} />
                   <SegmentedBar
                     segments={[
-                      { count: act.note, className: 'bg-indigo-500', label: 'Note' },
-                      { count: act.bug,  className: 'bg-red-500',    label: 'Bug'  },
-                      { count: act.obs,  className: 'bg-amber-500',  label: 'Obs'  },
-                      { count: act.step, className: 'bg-purple-500', label: 'Step' },
+                      { count: act.note, className: 'bg-indigo-500', label: t('detail.overview.sections.session.segment.note') },
+                      { count: act.bug,  className: 'bg-red-500',    label: t('detail.overview.sections.session.segment.bug')  },
+                      { count: act.obs,  className: 'bg-amber-500',  label: t('detail.overview.sections.session.segment.obs')  },
+                      { count: act.step, className: 'bg-purple-500', label: t('detail.overview.sections.session.segment.step') },
                     ]}
                   />
                   <i className="ri-arrow-right-s-line" style={{ color: 'var(--text-subtle)' }} />

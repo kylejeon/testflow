@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { Trans, useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import BurndownChart from './BurndownChart';
 import KpiStrip from './KpiStrip';
@@ -272,6 +273,7 @@ async function loadOverviewExtra(
 }
 
 export default function OverviewTab(props: OverviewTabProps) {
+  const { t } = useTranslation('milestones');
   const {
     projectId, milestoneId, milestoneStart, milestoneEnd, tcStats, failedBlockedTcs,
     activityLogs, runs, sessions, subMilestones, subMilestoneProgress, contributorProfiles,
@@ -325,17 +327,50 @@ export default function OverviewTab(props: OverviewTabProps) {
 
   const riskBullets: React.ReactNode[] = [];
   if (riskLevel === 'on_track') {
-    riskBullets.push(<>Progress is <b>on track</b>. Current velocity suggests completion before the deadline.</>);
+    riskBullets.push(
+      <Trans
+        key="bullet-ontrack"
+        i18nKey="detail.overview.riskBullet.onTrack"
+        ns="milestones"
+        components={{ b: <b /> }}
+      />
+    );
   } else {
-    riskBullets.push(<>You're <b>behind the ideal burndown</b>. Consider increasing run frequency or reducing scope.</>);
+    riskBullets.push(
+      <Trans
+        key="bullet-behind"
+        i18nKey="detail.overview.riskBullet.behind"
+        ns="milestones"
+        components={{ b: <b /> }}
+      />
+    );
   }
   if (tcStats.failed > 0) {
-    riskBullets.push(<><b>{tcStats.failed} failing TCs</b> are slowing the burn. Prioritise fixing critical failures first.</>);
+    riskBullets.push(
+      <Trans
+        key="bullet-failing"
+        i18nKey="detail.overview.riskBullet.failingCount"
+        ns="milestones"
+        count={tcStats.failed}
+        values={{ count: tcStats.failed }}
+        components={{ b: <b /> }}
+      />
+    );
   } else if (tcStats.total > 0) {
-    riskBullets.push(<>No failing TCs right now — keep the momentum going!</>);
+    riskBullets.push(
+      <span key="bullet-nofailing">{t('detail.overview.riskBullet.noFailing')}</span>
+    );
   }
   if (topFailTags.length > 0) {
-    riskBullets.push(<>Top fail tag: <b>#{topFailTags[0].name}</b> ({topFailTags[0].count} fails). Investigate this area first.</>);
+    riskBullets.push(
+      <Trans
+        key="bullet-toptag"
+        i18nKey="detail.overview.riskBullet.topFailTag"
+        ns="milestones"
+        values={{ tag: topFailTags[0].name, count: topFailTags[0].count }}
+        components={{ b: <b /> }}
+      />
+    );
   }
 
   // Last 24h activity

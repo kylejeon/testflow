@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 interface ContributorsCardProps {
   contributors: Array<[string, number]>; // [author, count]
   contributorProfiles: Map<string, { name: string | null; url: string | null }>;
@@ -17,14 +19,15 @@ export default function ContributorsCard({
   getAuthorColor,
   getContributorInitials,
 }: ContributorsCardProps) {
+  const { t } = useTranslation('milestones');
   return (
-    <aside className="mo-contrib-side" aria-label="Top contributors">
+    <aside className="mo-contrib-side" aria-label={t('detail.overview.contributorsCard.a11y.region')}>
       <div className="mo-contrib-head">
         <i className="ri-team-line" style={{ fontSize: '13px', color: 'var(--primary)' }} aria-hidden="true" />
-        Contributors — Top 5
+        {t('detail.overview.contributorsCard.title')}
       </div>
       {contributors.length === 0 ? (
-        <div className="mo-contrib-empty">No contributors yet</div>
+        <div className="mo-contrib-empty">{t('detail.overview.contributorsCard.empty')}</div>
       ) : (
         contributors.map(([author, count]) => {
           const profile = contributorProfiles.get(author);
@@ -41,7 +44,7 @@ export default function ContributorsCard({
                 </div>
               )}
               <div className="name" title={profile?.name || author}>{profile?.name || author}</div>
-              <span className="cnt">{count} TCs</span>
+              <span className="cnt">{t('detail.overview.contributorsCard.countSuffix', { count })}</span>
             </div>
           );
         })

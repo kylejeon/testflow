@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useToast } from '../../components/Toast';
 import { usePermission } from '../../hooks/usePermission';
 import { useAiFeature } from '../../hooks/useAiFeature';
@@ -36,6 +37,7 @@ export default function RiskInsightContainer({
   aiCache,
   hasTcs,
 }: RiskInsightContainerProps) {
+  const { t } = useTranslation(['milestones', 'common']);
   const { can, loading: permLoading } = usePermission(projectId);
   const ai = useAiFeature('milestone_risk');
   const mutation = useMilestoneAiRisk(milestoneId);
@@ -100,17 +102,17 @@ export default function RiskInsightContainer({
 
   const handleAnalyze = (force: boolean) => {
     if (!hasTcs) {
-      dedupeToast('ai-risk-no-tcs', 'Add test cases first to enable AI analysis.', 'info');
+      dedupeToast('ai-risk-no-tcs', t('milestones:aiRisk.needTcs'), 'info');
       return;
     }
     if (permLoading) return;
     if (!canAnalyze) return;
     if (!ai.tierOk) {
-      dedupeToast('ai-risk-upgrade', 'Upgrade to Hobby to unlock AI analysis.', 'info');
+      dedupeToast('ai-risk-upgrade', t('milestones:aiRisk.upgradeToHobby'), 'info');
       return;
     }
     if (!ai.canUse) {
-      dedupeToast('ai-risk-quota', 'Monthly AI credits exhausted.', 'error');
+      dedupeToast('ai-risk-quota', t('milestones:aiRisk.quotaExhausted'), 'error');
       return;
     }
     if (rateCountdown > 0) return;
@@ -125,9 +127,9 @@ export default function RiskInsightContainer({
           setErrorCode(null);
           setErrorDetail(null);
           if (hadCacheBeforeMutation.current) {
-            dedupeToast('ai-risk-refreshed', 'Analysis refreshed', 'success');
+            dedupeToast('ai-risk-refreshed', t('milestones:toast.analysisRefreshed'), 'success');
           } else {
-            dedupeToast('ai-risk-success', 'AI analysis ready', 'success');
+            dedupeToast('ai-risk-success', t('milestones:toast.analysisReady'), 'success');
             setJustBecameAi(true);
           }
         },
@@ -137,28 +139,28 @@ export default function RiskInsightContainer({
           // Toast dedupe per error code
           switch (err.error) {
             case 'ai_timeout':
-              dedupeToast('ai-risk-timeout', 'AI analysis timed out.', 'error');
+              dedupeToast('ai-risk-timeout', t('milestones:aiRisk.error.timeoutShort'), 'error');
               break;
             case 'upstream_rate_limit': {
               const sec = err.retry_after_sec ?? 60;
               setRateCountdown(sec);
-              dedupeToast('ai-risk-rate', `Claude is rate-limited. Try again in ${sec}s.`, 'error');
+              dedupeToast('ai-risk-rate', t('milestones:aiRisk.error.rateLimitToast', { sec }), 'error');
               break;
             }
             case 'monthly_limit_reached':
-              dedupeToast('ai-risk-quota', 'Monthly AI credits exhausted.', 'error');
+              dedupeToast('ai-risk-quota', t('milestones:aiRisk.quotaExhausted'), 'error');
               break;
             case 'ai_parse_failed':
-              dedupeToast('ai-risk-parse', 'AI returned unexpected format.', 'error');
+              dedupeToast('ai-risk-parse', t('milestones:aiRisk.error.parseToast'), 'error');
               break;
             case 'network':
-              dedupeToast('ai-risk-network', 'Network error while analyzing.', 'error');
+              dedupeToast('ai-risk-network', t('milestones:aiRisk.error.networkToast'), 'error');
               break;
             case 'tier_too_low':
-              dedupeToast('ai-risk-upgrade', 'Upgrade to unlock AI analysis.', 'info');
+              dedupeToast('ai-risk-upgrade', t('milestones:aiRisk.error.upgradeToast'), 'info');
               break;
             default:
-              dedupeToast('ai-risk-internal', err.detail || 'Something went wrong.', 'error');
+              dedupeToast('ai-risk-internal', err.detail || t('common:toast.somethingWentWrong'), 'error');
           }
         },
       },
@@ -186,16 +188,16 @@ export default function RiskInsightContainer({
   // ── Error banner ────────────────────────────────────────────────────────────
   const errorBanner = useMemo<ReactNode | null>(() => {
     if (!errorCode) return null;
-    let msg = 'AI analysis failed.';
+    let msg = t('milestones:aiRisk.error.bannerFallback');
     switch (errorCode) {
-      case 'ai_timeout':           msg = 'AI analysis timed out.'; break;
-      case 'upstream_rate_limit':  msg = `Claude is rate-limited. Try again in ${rateCountdown}s.`; break;
-      case 'monthly_limit_reached': msg = 'Monthly AI credits exhausted.'; break;
-      case 'ai_parse_failed':      msg = 'AI returned unexpected format.'; break;
-      case 'network':              msg = 'Network error. Try again.'; break;
-      case 'tier_too_low':         msg = 'Upgrade to unlock AI analysis.'; break;
-      case 'forbidden':            msg = 'You lack permission to run AI analysis.'; break;
-      default:                     msg = errorDetail || 'AI analysis failed.';
+      case 'ai_timeout':            msg = t('milestones:aiRisk.error.timeoutBanner'); break;
+      case 'upstream_rate_limit':   msg = t('milestones:aiRisk.error.rateLimitBanner', { sec: rateCountdown }); break;
+      case 'monthly_limit_reached': msg = t('milestones:aiRisk.error.quotaBanner'); break;
+      case 'ai_parse_failed':       msg = t('milestones:aiRisk.error.parseBanner'); break;
+      case 'network':               msg = t('milestones:aiRisk.error.networkBanner'); break;
+      case 'tier_too_low':          msg = t('milestones:aiRisk.error.upgradeBanner'); break;
+      case 'forbidden':             msg = t('milestones:aiRisk.error.forbiddenBanner'); break;
+      default:                      msg = errorDetail || t('milestones:aiRisk.error.bannerFallback');
     }
     const retryDisabled = errorCode === 'upstream_rate_limit' && rateCountdown > 0;
     return (
@@ -208,7 +210,7 @@ export default function RiskInsightContainer({
             className="retry-link"
             onClick={() => handleAnalyze(hadCacheBeforeMutation.current)}
           >
-            Retry →
+            {t('milestones:aiRisk.error.retryLink')}
           </button>
         )}
       </div>
@@ -227,7 +229,7 @@ export default function RiskInsightContainer({
       return (
         <div className="mo-risk-viewer-msg">
           <i className="ri-user-line" aria-hidden="true" />
-          <span>Ask your admin to run AI analysis.</span>
+          <span>{t('milestones:aiRisk.viewerMessage')}</span>
         </div>
       );
     }
@@ -240,14 +242,14 @@ export default function RiskInsightContainer({
             type="button"
             className="mo-risk-ai-cta"
             disabled
-            aria-label="Analyze milestone risk with AI"
+            aria-label={t('milestones:aiRisk.a11y.analyzeCta')}
             aria-disabled="true"
-            title="Upgrade to Hobby to unlock AI analysis"
+            title={t('milestones:aiRisk.ctaAnalyzeDisabledFree')}
           >
-            <i className="ri-sparkling-2-line" aria-hidden="true" /> Analyze with AI →
+            <i className="ri-sparkling-2-line" aria-hidden="true" /> {t('milestones:aiRisk.analyzeCta')} →
           </button>
           <Link to="/settings/billing" className="mo-risk-upgrade-chip">
-            Upgrade
+            {t('milestones:aiRisk.upgradeChip')}
           </Link>
         </div>
       );
@@ -255,14 +257,14 @@ export default function RiskInsightContainer({
 
     // Quota exhausted → banner instead of button
     if (!ai.loading && ai.tierOk && !ai.canUse) {
+      const suffix = ai.monthlyLimit > 0 ? ` (${ai.usedCredits}/${ai.monthlyLimit}).` : '.';
       return (
         <div className="mo-ai-quota-banner">
           <i className="ri-alert-line" aria-hidden="true" />
           <span>
-            Monthly AI credits exhausted
-            {ai.monthlyLimit > 0 ? ` (${ai.usedCredits}/${ai.monthlyLimit}).` : '.'}
+            {t('milestones:aiRisk.quotaBannerInline', { suffix })}
           </span>
-          <Link to="/settings/billing" className="upgrade-cta">Upgrade →</Link>
+          <Link to="/settings/billing" className="upgrade-cta">{t('milestones:aiRisk.quotaBannerCta')}</Link>
         </div>
       );
     }
@@ -274,11 +276,11 @@ export default function RiskInsightContainer({
           type="button"
           className="mo-risk-ai-cta"
           disabled
-          aria-label="Analyze milestone risk with AI"
+          aria-label={t('milestones:aiRisk.a11y.analyzeCta')}
           aria-disabled="true"
-          title="Add test cases first to enable AI analysis"
+          title={t('milestones:aiRisk.ctaAnalyzeDisabledTcZero')}
         >
-          <i className="ri-sparkling-2-line" aria-hidden="true" /> Analyze with AI →
+          <i className="ri-sparkling-2-line" aria-hidden="true" /> {t('milestones:aiRisk.analyzeCta')} →
         </button>
       );
     }
@@ -292,7 +294,7 @@ export default function RiskInsightContainer({
           disabled
           aria-disabled="true"
         >
-          <i className="ri-timer-line" aria-hidden="true" /> Try again in {rateCountdown}s
+          <i className="ri-timer-line" aria-hidden="true" /> {t('milestones:aiRisk.rateLimitCountdown', { sec: rateCountdown })}
         </button>
       );
     }
@@ -306,7 +308,7 @@ export default function RiskInsightContainer({
           disabled
           aria-busy="true"
         >
-          <i className="ri-loader-4-line" aria-hidden="true" /> Analyzing with Claude…
+          <i className="ri-loader-4-line" aria-hidden="true" /> {t('milestones:aiRisk.analyzing')}
         </button>
       );
     }
@@ -317,9 +319,9 @@ export default function RiskInsightContainer({
         type="button"
         className="mo-risk-ai-cta"
         onClick={() => handleAnalyze(false)}
-        aria-label="Analyze milestone risk with AI"
+        aria-label={t('milestones:aiRisk.a11y.analyzeCta')}
       >
-        <i className="ri-sparkling-2-line" aria-hidden="true" /> Analyze with AI →
+        <i className="ri-sparkling-2-line" aria-hidden="true" /> {t('milestones:aiRisk.analyzeCta')} →
       </button>
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -357,4 +359,3 @@ export default function RiskInsightContainer({
     />
   );
 }
-

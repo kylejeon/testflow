@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ReferenceLine, Tooltip, ResponsiveContainer } from 'recharts';
+import { formatShortDate } from '../../lib/dateFormat';
 
 interface BurndownChartProps {
   startDate: Date | null;
@@ -13,6 +15,7 @@ type Range = '7d' | '30d' | 'all';
 function iso(d: Date): string { return d.toISOString().slice(0, 10); }
 
 export default function BurndownChart({ startDate, endDate, totalTCs, executedPerDay }: BurndownChartProps) {
+  const { t, i18n } = useTranslation('milestones');
   const [range, setRange] = useState<Range>('30d');
 
   const data = useMemo(() => {
@@ -33,7 +36,7 @@ export default function BurndownChart({ startDate, endDate, totalTCs, executedPe
       const idealRemaining = Math.max(0, totalTCs - (totalTCs * (i / totalDays)));
       perDay.push({
         date: key,
-        dateLabel: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        dateLabel: formatShortDate(d, i18n.language),
         actual: i <= daysElapsed ? remaining : null,
         ideal: idealRemaining,
         projected: null, // filled later if we have velocity
@@ -55,8 +58,8 @@ export default function BurndownChart({ startDate, endDate, totalTCs, executedPe
         const span = projEnd - todayIdx;
         if (span > 0) {
           for (let i = todayIdx; i <= projEnd; i++) {
-            const t = (i - todayIdx) / span;
-            perDay[i].projected = Math.max(0, currentRemaining * (1 - t));
+            const tt = (i - todayIdx) / span;
+            perDay[i].projected = Math.max(0, currentRemaining * (1 - tt));
           }
         }
       }
@@ -68,7 +71,7 @@ export default function BurndownChart({ startDate, endDate, totalTCs, executedPe
     const now = new Date(); now.setHours(0, 0, 0, 0);
     const cutoff = new Date(now.getTime() - days * 86400000);
     return perDay.filter(row => new Date(row.date) >= cutoff);
-  }, [startDate, endDate, totalTCs, executedPerDay, range]);
+  }, [startDate, endDate, totalTCs, executedPerDay, range, i18n.language]);
 
   const todayISO = iso(new Date());
   const endISO = endDate ? iso(endDate) : null;
@@ -78,13 +81,13 @@ export default function BurndownChart({ startDate, endDate, totalTCs, executedPe
       <div className="mo-chart-card">
         <div className="mo-chart-head">
           <div className="mo-chart-title">
-            <i className="ri-line-chart-line" /> Burndown
+            <i className="ri-line-chart-line" /> {t('detail.overview.burndown')}
           </div>
         </div>
         <div className="mo-chart-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ textAlign: 'center', color: 'var(--text-subtle)' }}>
             <i className="ri-bar-chart-line" style={{ fontSize: 32, display: 'block', margin: '0 auto 6px' }} />
-            <div style={{ fontSize: 12 }}>Start running tests to see burndown</div>
+            <div style={{ fontSize: 12 }}>{t('detail.overview.chart.emptyBurndown')}</div>
           </div>
         </div>
       </div>
@@ -95,17 +98,17 @@ export default function BurndownChart({ startDate, endDate, totalTCs, executedPe
     <div className="mo-chart-card">
       <div className="mo-chart-head">
         <div className="mo-chart-title">
-          <i className="ri-line-chart-line" /> Burndown
+          <i className="ri-line-chart-line" /> {t('detail.overview.burndown')}
         </div>
         <div className="mo-legend">
-          <span><span className="sw ideal" />Ideal</span>
-          <span><span className="sw actual" />Actual</span>
-          <span><span className="sw projected" />Projected</span>
+          <span><span className="sw ideal" />{t('detail.overview.chart.legend.ideal')}</span>
+          <span><span className="sw actual" />{t('detail.overview.chart.legend.actual')}</span>
+          <span><span className="sw projected" />{t('detail.overview.chart.legend.projected')}</span>
         </div>
         <div className="mo-range-tabs">
           {(['7d', '30d', 'all'] as Range[]).map(r => (
             <button key={r} type="button" className={`mo-range-tab${range === r ? ' active' : ''}`} onClick={() => setRange(r)}>
-              {r === 'all' ? 'All' : r}
+              {t(`detail.overview.chart.range.${r}`)}
             </button>
           ))}
         </div>

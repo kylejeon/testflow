@@ -1,3 +1,11 @@
+/**
+ * i18n policy (dev-spec-i18n-coverage AC-9):
+ * - Wrapping labels ("Summary", "Observations", "Refresh", pill text) are translated.
+ * - Body strings returned by Claude (data.summary, data.bullets[i], data.recommendations[i])
+ *   are rendered as-is. Multi-locale prompts are tracked in a separate spec.
+ */
+import { useTranslation } from 'react-i18next';
+import { formatRelativeTime } from '../../lib/formatRelativeTime';
 import type { MilestoneAiRiskCache } from './useMilestoneAiRisk';
 
 interface AiRiskAnalysisCardProps {
@@ -7,19 +15,6 @@ interface AiRiskAnalysisCardProps {
   isRefreshing: boolean;
   /** Applied immediately after a successful Analyze click, removed 600ms later. */
   justBecameAi?: boolean;
-}
-
-function relativeTime(iso: string): string {
-  if (!iso) return '';
-  const diffMs = Date.now() - Date.parse(iso);
-  if (Number.isNaN(diffMs)) return '';
-  const mins = Math.floor(diffMs / 60_000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
 }
 
 /**
@@ -33,6 +28,7 @@ export default function AiRiskAnalysisCard({
   isRefreshing,
   justBecameAi = false,
 }: AiRiskAnalysisCardProps) {
+  const { t } = useTranslation('milestones');
   const isStale = data.stale_after
     ? Date.now() > Date.parse(data.stale_after)
     : data.generated_at
@@ -46,23 +42,23 @@ export default function AiRiskAnalysisCard({
     : data.risk_level === 'at_risk' ? 'ri-alert-line'
     : 'ri-check-line';
   const pillLabel =
-    data.risk_level === 'critical' ? 'Critical'
-    : data.risk_level === 'at_risk' ? 'At Risk'
-    : 'On track';
+    data.risk_level === 'critical' ? t('riskSignal.critical')
+    : data.risk_level === 'at_risk' ? t('riskSignal.atRisk')
+    : t('riskSignal.onTrack');
 
   return (
     <article
       className={`mo-risk-card ai${justBecameAi ? ' just-became-ai' : ''}`}
       role="region"
-      aria-label="AI milestone risk analysis"
+      aria-label={t('aiRisk.a11y.region')}
     >
       <div className="mo-risk-head">
         <i className="ri-sparkling-2-line" aria-hidden="true" />
-        <span>AI Risk Analysis</span>
+        <span>{t('aiRisk.title')}</span>
         <div className="mo-risk-meta">
           <span>
-            Last analyzed {relativeTime(data.generated_at)}
-            {isStale ? ' (stale)' : ''}
+            {t('aiRisk.lastAnalyzed', { time: formatRelativeTime(data.generated_at, t) })}
+            {isStale ? t('aiRisk.staleSuffix') : ''}
           </span>
           {canRefresh && (
             <button
@@ -70,10 +66,10 @@ export default function AiRiskAnalysisCard({
               className={`refresh${isRefreshing ? ' loading' : ''}`}
               onClick={onRefresh}
               disabled={isRefreshing}
-              aria-label="Refresh AI analysis"
+              aria-label={t('aiRisk.a11y.refresh')}
             >
               <i className="ri-refresh-line" aria-hidden="true" />
-              {isRefreshing ? 'Refreshing' : 'Refresh'}
+              {isRefreshing ? t('aiRisk.refreshing') : t('aiRisk.refreshCta')}
             </button>
           )}
         </div>
@@ -86,36 +82,39 @@ export default function AiRiskAnalysisCard({
           <span
             className="conf-chip"
             role="status"
-            aria-label={`Analysis confidence ${data.confidence}%`}
+            aria-label={t('aiRisk.a11y.confidence', { value: data.confidence })}
           >
             {data.confidence}%
           </span>
           {lowConf && (
-            <span className="conf-low-warn" role="note" title="Refresh after more runs">
-              Low confidence
+            <span className="conf-low-warn" role="note" title={t('aiRisk.lowConfidenceHint')}>
+              {t('aiRisk.lowConfidenceChip')}
             </span>
           )}
         </div>
 
+        {/* NOTE: data.summary is Claude-generated content. Do not translate (AC-9). */}
         {data.summary && (
           <>
-            <div className="mo-risk-section-head">Summary</div>
+            <div className="mo-risk-section-head">{t('aiRisk.summaryLabel')}</div>
             <div className="mo-risk-summary">{data.summary}</div>
           </>
         )}
 
+        {/* NOTE: data.bullets[i] is Claude-generated content. Do not translate (AC-9). */}
         {data.bullets.length > 0 && (
           <>
-            <div className="mo-risk-section-head">Observations</div>
+            <div className="mo-risk-section-head">{t('aiRisk.observationsLabel')}</div>
             {data.bullets.map((b, i) => (
               <div key={i} className="mo-risk-observation">{b}</div>
             ))}
           </>
         )}
 
+        {/* NOTE: data.recommendations[i] is Claude-generated content. Do not translate (AC-9). */}
         {data.recommendations.length > 0 && (
           <>
-            <div className="mo-risk-section-head">Recommendations</div>
+            <div className="mo-risk-section-head">{t('aiRisk.recommendationsLabel')}</div>
             {data.recommendations.map((r, i) => (
               <div key={i} className="mo-risk-recommendation">
                 <span className="num">{i + 1}</span>

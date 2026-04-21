@@ -3,6 +3,7 @@ import { useToast } from '../../components/Toast';
 import { StatusBadge, type TestStatus } from '../../components/StatusBadge';
 import StatusPill from '../../components/StatusPill';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
@@ -10,6 +11,7 @@ import ProjectHeader from '../../components/ProjectHeader';
 import OverviewTab from './OverviewTab';
 import IssuesList from '../../components/issues/IssuesList';
 import RollupBadge from './RollupBadge';
+import { formatShortDate } from '../../lib/dateFormat';
 
 interface Milestone {
   id: string;
@@ -644,6 +646,7 @@ export default function MilestoneDetail() {
   const { projectId, milestoneId } = useParams();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const { t, i18n } = useTranslation(['milestones', 'common']);
 
   // ── UI state (user-interactive) ─────────────────────────────────────────────
   const [searchParams, setSearchParams] = useSearchParams();
@@ -701,14 +704,14 @@ export default function MilestoneDetail() {
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '';
     const [year, month, day] = dateStr.split('T')[0].split('-');
-    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
-      .toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const d = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    return formatShortDate(d, i18n.language);
   };
 
   const formatDateRange = (startDate: string | null, endDate: string | null) => {
-    if (!startDate) return 'Starts TBD';
+    if (!startDate) return t('milestones:startsTbd');
     const start = formatDate(startDate);
-    if (!endDate) return `Starts ${start}`;
+    if (!endDate) return t('milestones:startsOn', { date: start });
     return `${start} – ${formatDate(endDate)}`;
   };
 
@@ -723,7 +726,8 @@ export default function MilestoneDetail() {
   };
 
   const getDDayBadge = (endDate: string | null) => {
-    if (!endDate) return { text: 'No deadline', bg: '#F1F5F9', color: '#64748B' };
+    // D-day values ("D+1", "D-Day", etc.) are locale-agnostic short labels used on badges.
+    if (!endDate) return { text: t('milestones:noDeadline'), bg: '#F1F5F9', color: '#64748B' };
     const [ey, em, ed] = endDate.split('T')[0].split('-').map(Number);
     const end = new Date(ey, em - 1, ed);
     const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -753,7 +757,7 @@ export default function MilestoneDetail() {
       queryClient.invalidateQueries({ queryKey: ['milestone-detail', milestoneId] });
     } catch (error) {
       console.error('마일스톤 수정 오류:', error);
-      showToast('Failed to update milestone.', 'error');
+      showToast(t('milestones:toast.updateFailed'), 'error');
     }
   };
 
@@ -788,9 +792,10 @@ export default function MilestoneDetail() {
   const generateDateLabels = () => {
     const labels: string[] = [];
     const now = new Date();
+    const locale = i18n.language === 'ko' ? 'ko-KR' : 'en-US';
     for (let i = 13; i >= 0; i -= 2) {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      labels.push(date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' }));
+      labels.push(date.toLocaleDateString(locale, { month: '2-digit', day: '2-digit' }));
     }
     return labels;
   };
@@ -854,7 +859,7 @@ export default function MilestoneDetail() {
             onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
             onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
           >
-            Milestones
+            {t('milestones:title')}
           </Link>
           <span style={{ color: '#CBD5E1', fontSize: '0.625rem' }}>›</span>
           <span style={{ color: '#94A3B8', fontWeight: 500 }}>{milestone.name}</span>
@@ -891,7 +896,7 @@ export default function MilestoneDetail() {
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F8FAFC'; (e.currentTarget as HTMLElement).style.borderColor = '#CBD5E1'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#fff'; (e.currentTarget as HTMLElement).style.borderColor = '#E2E8F0'; }}
             >
-              <i className="ri-pencil-line" /> Edit
+              <i className="ri-pencil-line" /> {t('common:edit')}
             </button>
             {milestone.status !== 'completed' && (
               <button
@@ -900,7 +905,7 @@ export default function MilestoneDetail() {
                 onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#4F46E5'}
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#6366F1'}
               >
-                <i className="ri-checkbox-circle-line" /> Complete
+                <i className="ri-checkbox-circle-line" /> {t('common:completed')}
               </button>
             )}
           </div>
@@ -917,10 +922,10 @@ export default function MilestoneDetail() {
         {/* Info Row 3: TC Summary */}
         <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', fontSize: '0.8125rem' }}>
           {[
-            { dot: '#22C55E', label: 'Passed', value: tcStats.passed },
-            { dot: '#EF4444', label: 'Failed', value: tcStats.failed },
-            { dot: '#F59E0B', label: 'Blocked', value: tcStats.blocked },
-            { dot: '#CBD5E1', label: 'Untested', value: tcStats.untested },
+            { dot: '#22C55E', label: t('common:passed'), value: tcStats.passed },
+            { dot: '#EF4444', label: t('common:failed'), value: tcStats.failed },
+            { dot: '#F59E0B', label: t('common:blocked'), value: tcStats.blocked },
+            { dot: '#CBD5E1', label: t('common:untested'), value: tcStats.untested },
           ].map((s, i) => (
             <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: '#475569', marginLeft: i > 0 ? '0.75rem' : 0 }}>
               <span style={{ width: 8, height: 8, borderRadius: 2, background: s.dot, flexShrink: 0, display: 'inline-block' }} />
@@ -928,18 +933,18 @@ export default function MilestoneDetail() {
             </span>
           ))}
           <span style={{ width: 1, height: '1rem', background: '#E2E8F0', margin: '0 0.75rem', flexShrink: 0, display: 'inline-block' }} />
-          <span style={{ color: '#64748B' }}>Pass Rate</span>&nbsp;<span style={{ fontWeight: 700, color: '#0F172A' }}>{tcStats.passRate}%</span>
+          <span style={{ color: '#64748B' }}>{t('milestones:rollupPassRate')}</span>&nbsp;<span style={{ fontWeight: 700, color: '#0F172A' }}>{tcStats.passRate}%</span>
           <span style={{ width: 1, height: '1rem', background: '#E2E8F0', margin: '0 0.75rem', flexShrink: 0, display: 'inline-block' }} />
-          <span style={{ color: '#64748B' }}>Total TCs</span>&nbsp;<span style={{ fontWeight: 700, color: '#0F172A' }}>{tcStats.total}</span>
+          <span style={{ color: '#64748B' }}>{t('milestones:rollupTotal')}</span>&nbsp;<span style={{ fontWeight: 700, color: '#0F172A' }}>{tcStats.total}</span>
         </div>
       </div>
 
       {/* ── Row 3: Content Tab Row (42px) ── */}
       <div style={{ display: 'flex', alignItems: 'center', padding: '0 1.5rem', background: '#fff', borderBottom: '1px solid #E2E8F0', height: '2.625rem', flexShrink: 0 }}>
         {([
-          { key: 'overview', icon: 'ri-dashboard-line',      iconColor: '#6366F1', label: 'Overview', badge: null as number | null },
-          { key: 'activity', icon: 'ri-history-fill',        iconColor: '#8B5CF6', label: 'Activity', badge: activityLogs.length > 0 ? activityLogs.length : null },
-          { key: 'issues',   icon: 'ri-bug-fill',            iconColor: '#EF4444', label: 'Issues',   badge: issuesCount ?? null },
+          { key: 'overview', icon: 'ri-dashboard-line',      iconColor: '#6366F1', label: t('milestones:detail.tabs.overview'), badge: null as number | null },
+          { key: 'activity', icon: 'ri-history-fill',        iconColor: '#8B5CF6', label: t('milestones:detail.tabs.activity'), badge: activityLogs.length > 0 ? activityLogs.length : null },
+          { key: 'issues',   icon: 'ri-bug-fill',            iconColor: '#EF4444', label: t('milestones:detail.tabs.issues'),   badge: issuesCount ?? null },
         ] as const).map(tab => {
           const isActive = activeTab === tab.key;
           return (
@@ -1003,7 +1008,7 @@ export default function MilestoneDetail() {
             {/* RUN ACTIVITY Chart */}
             <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.625rem', padding: '1rem 1.25rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>RUN ACTIVITY</span>
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t('milestones:detail.overview.activity.runActivityHeader')}</span>
               </div>
               {(() => {
                 const noteCounts = generateChartPoints(activityLogs, 'note');
@@ -1044,15 +1049,15 @@ export default function MilestoneDetail() {
                     </div>
                     <div className="w-48 space-y-4">
                       <div>
-                        <div className="text-lg font-bold text-gray-900">Last 14 days</div>
-                        <div className="text-sm text-gray-500">{activityStats.notes + activityStats.passed + activityStats.failed + activityStats.retest} recent changes</div>
+                        <div className="text-lg font-bold text-gray-900">{t('milestones:detail.overview.activity.last14Days')}</div>
+                        <div className="text-sm text-gray-500">{t('milestones:detail.overview.activity.recentChanges', { count: activityStats.notes + activityStats.passed + activityStats.failed + activityStats.retest })}</div>
                       </div>
                       <div className="space-y-3">
-                        {hasNotes && <div className="flex items-center gap-3"><div className="w-4 h-4 bg-blue-500 rounded-sm flex-shrink-0"></div><div><div className="text-sm font-semibold text-gray-900">Notes</div><div className="text-xs text-gray-500">{activityStats.notes} notes added</div></div></div>}
-                        {hasPassed && <div className="flex items-center gap-3"><div className="w-4 h-4 bg-green-500 rounded-sm flex-shrink-0"></div><div><div className="text-sm font-semibold text-gray-900">Passed</div><div className="text-xs text-gray-500">{activityStats.passed} set to Passed</div></div></div>}
-                        {hasFailed && <div className="flex items-center gap-3"><div className="w-4 h-4 bg-red-500 rounded-sm flex-shrink-0"></div><div><div className="text-sm font-semibold text-gray-900">Failed</div><div className="text-xs text-gray-500">{activityStats.failed} set to Failed</div></div></div>}
-                        {hasRetest && <div className="flex items-center gap-3"><div className="w-4 h-4 bg-orange-500 rounded-sm flex-shrink-0"></div><div><div className="text-sm font-semibold text-gray-900">Retest</div><div className="text-xs text-gray-500">{activityStats.retest} set to Retest</div></div></div>}
-                        {!hasNotes && !hasPassed && !hasFailed && !hasRetest && <div className="text-sm text-gray-400">No activity in last 14 days</div>}
+                        {hasNotes && <div className="flex items-center gap-3"><div className="w-4 h-4 bg-blue-500 rounded-sm flex-shrink-0"></div><div><div className="text-sm font-semibold text-gray-900">{t('milestones:detail.overview.activity.stats.notes')}</div><div className="text-xs text-gray-500">{t('milestones:detail.overview.activity.stats.notesAdded', { count: activityStats.notes })}</div></div></div>}
+                        {hasPassed && <div className="flex items-center gap-3"><div className="w-4 h-4 bg-green-500 rounded-sm flex-shrink-0"></div><div><div className="text-sm font-semibold text-gray-900">{t('milestones:detail.overview.activity.stats.passed')}</div><div className="text-xs text-gray-500">{t('milestones:detail.overview.activity.stats.passedSetTo', { count: activityStats.passed })}</div></div></div>}
+                        {hasFailed && <div className="flex items-center gap-3"><div className="w-4 h-4 bg-red-500 rounded-sm flex-shrink-0"></div><div><div className="text-sm font-semibold text-gray-900">{t('milestones:detail.overview.activity.stats.failed')}</div><div className="text-xs text-gray-500">{t('milestones:detail.overview.activity.stats.failedSetTo', { count: activityStats.failed })}</div></div></div>}
+                        {hasRetest && <div className="flex items-center gap-3"><div className="w-4 h-4 bg-orange-500 rounded-sm flex-shrink-0"></div><div><div className="text-sm font-semibold text-gray-900">{t('milestones:detail.overview.activity.stats.retest')}</div><div className="text-xs text-gray-500">{t('milestones:detail.overview.activity.stats.retestSetTo', { count: activityStats.retest })}</div></div></div>}
+                        {!hasNotes && !hasPassed && !hasFailed && !hasRetest && <div className="text-sm text-gray-400">{t('milestones:detail.overview.activity.noActivity14d')}</div>}
                       </div>
                     </div>
                   </div>
@@ -1063,19 +1068,19 @@ export default function MilestoneDetail() {
             {/* ACTIVITY List */}
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>ACTIVITY</div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t('milestones:detail.overview.activity.listHeader')}</div>
                 <div style={{ position: 'relative' }}>
                   <select
                     value={activityStatusFilter}
                     onChange={(e) => { setActivityStatusFilter(e.target.value); setActivityPage(1); }}
                     style={{ appearance: 'none', paddingLeft: '0.75rem', paddingRight: '2rem', paddingTop: '0.375rem', paddingBottom: '0.375rem', fontSize: '0.875rem', border: '1px solid #E2E8F0', borderRadius: '0.5rem', background: '#fff', cursor: 'pointer', fontFamily: 'inherit', outline: 'none' }}
                   >
-                    <option value="all">Statuses</option>
-                    <option value="passed">Passed</option>
-                    <option value="failed">Failed</option>
-                    <option value="retest">Retest</option>
-                    <option value="blocked">Blocked</option>
-                    <option value="note">Notes</option>
+                    <option value="all">{t('milestones:detail.overview.activity.filter.all')}</option>
+                    <option value="passed">{t('milestones:detail.overview.activity.filter.passed')}</option>
+                    <option value="failed">{t('milestones:detail.overview.activity.filter.failed')}</option>
+                    <option value="retest">{t('milestones:detail.overview.activity.filter.retest')}</option>
+                    <option value="blocked">{t('milestones:detail.overview.activity.filter.blocked')}</option>
+                    <option value="note">{t('milestones:detail.overview.activity.filter.note')}</option>
                   </select>
                   <i className="ri-arrow-down-s-line" style={{ position: 'absolute', right: '0.5rem', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', pointerEvents: 'none' }} />
                 </div>
@@ -1093,9 +1098,9 @@ export default function MilestoneDetail() {
                     const today = new Date().toDateString();
                     const yesterday = new Date(Date.now() - 86400000).toDateString();
                     let displayDate = dateKey;
-                    if (dateKey === today) displayDate = 'Today';
-                    else if (dateKey === yesterday) displayDate = 'Yesterday';
-                    else displayDate = log.timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    if (dateKey === today) displayDate = t('common:today');
+                    else if (dateKey === yesterday) displayDate = t('common:yesterday');
+                    else displayDate = formatShortDate(log.timestamp, i18n.language);
                     if (!acc[displayDate]) acc[displayDate] = [];
                     acc[displayDate].push(log);
                     return acc;
@@ -1107,8 +1112,8 @@ export default function MilestoneDetail() {
                         <div style={{ width: '4rem', height: '4rem', background: '#F1F5F9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
                           <i className="ri-history-line" style={{ fontSize: '1.875rem', color: '#94A3B8' }} />
                         </div>
-                        <div style={{ fontSize: '1.125rem', fontWeight: 600, color: '#0F172A', marginBottom: '0.5rem' }}>No activity yet</div>
-                        <div style={{ color: '#64748B', fontSize: '0.875rem' }}>Activity will appear here when test results are recorded.</div>
+                        <div style={{ fontSize: '1.125rem', fontWeight: 600, color: '#0F172A', marginBottom: '0.5rem' }}>{t('milestones:detail.overview.activity.noActivityYet')}</div>
+                        <div style={{ color: '#64748B', fontSize: '0.875rem' }}>{t('milestones:detail.overview.activity.noActivityHint')}</div>
                       </div>
                     );
                   }
@@ -1126,14 +1131,14 @@ export default function MilestoneDetail() {
                               <div key={log.id} className="flex items-center gap-4 py-2">
                                 {(['passed','failed','blocked','retest','untested'] as TestStatus[]).includes(log.type as TestStatus)
                                   ? <StatusBadge status={log.type as TestStatus} size="sm" />
-                                  : <span className="px-2.5 py-1 rounded text-xs font-semibold whitespace-nowrap bg-blue-100 text-blue-700">Note</span>
+                                  : <span className="px-2.5 py-1 rounded text-xs font-semibold whitespace-nowrap bg-blue-100 text-blue-700">{t('milestones:detail.overview.activity.noteBadge')}</span>
                                 }
                                 <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
                                   <i className="ri-file-text-line text-gray-500 text-sm"></i>
                                 </div>
                                 <span className="text-sm text-indigo-600 hover:text-indigo-700 cursor-pointer truncate max-w-[300px]">{log.testCaseName}</span>
                                 <span className="text-sm text-gray-500 ml-auto whitespace-nowrap">
-                                  {log.timestamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                                  {log.timestamp.toLocaleTimeString(i18n.language === 'ko' ? 'ko-KR' : 'en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                                 </span>
                                 <div className="w-7 h-7 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
                                   {log.author.substring(0, 2).toUpperCase()}
@@ -1180,13 +1185,13 @@ export default function MilestoneDetail() {
       {showEditModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
           <div style={{ background: '#fff', borderRadius: '0.5rem', padding: '1.5rem', width: '100%', maxWidth: '28rem' }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0F172A', marginBottom: '1rem' }}>Edit Milestone</h2>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0F172A', marginBottom: '1rem' }}>{t('milestones:editMilestone')}</h2>
             <form onSubmit={handleUpdateMilestone}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {[
-                  { label: 'Name', key: 'name', type: 'text' },
-                  { label: 'Start Date', key: 'start_date', type: 'date' },
-                  { label: 'End Date', key: 'end_date', type: 'date' },
+                  { label: t('common:name'), key: 'name', type: 'text' },
+                  { label: t('common:startDate'), key: 'start_date', type: 'date' },
+                  { label: t('common:endDate'), key: 'end_date', type: 'date' },
                 ].map(field => (
                   <div key={field.key}>
                     <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#475569', marginBottom: '0.25rem' }}>{field.label}</label>
@@ -1201,8 +1206,8 @@ export default function MilestoneDetail() {
                 ))}
               </div>
               <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
-                <button type="button" onClick={() => setShowEditModal(false)} style={{ flex: 1, padding: '0.5rem 1rem', fontSize: '0.875rem', fontWeight: 500, color: '#475569', background: '#F1F5F9', border: 'none', borderRadius: '0.5rem', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}>Cancel</button>
-                <button type="submit" style={{ flex: 1, padding: '0.5rem 1rem', fontSize: '0.875rem', fontWeight: 600, color: '#fff', background: '#6366F1', border: 'none', borderRadius: '0.5rem', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}>Save</button>
+                <button type="button" onClick={() => setShowEditModal(false)} style={{ flex: 1, padding: '0.5rem 1rem', fontSize: '0.875rem', fontWeight: 500, color: '#475569', background: '#F1F5F9', border: 'none', borderRadius: '0.5rem', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}>{t('common:cancel')}</button>
+                <button type="submit" style={{ flex: 1, padding: '0.5rem 1rem', fontSize: '0.875rem', fontWeight: 600, color: '#fff', background: '#6366F1', border: 'none', borderRadius: '0.5rem', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}>{t('common:save')}</button>
               </div>
             </form>
           </div>

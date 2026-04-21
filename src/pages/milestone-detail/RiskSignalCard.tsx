@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export type RiskLevel = 'on_track' | 'at_risk' | 'critical';
 
@@ -30,24 +31,25 @@ export default function RiskSignalCard({
   extraClass = '',
   ariaBusy = false,
 }: RiskSignalCardProps) {
+  const { t } = useTranslation('milestones');
   const pillIconClass =
     riskLevel === 'critical' ? 'ri-error-warning-fill'
     : riskLevel === 'at_risk' ? 'ri-alert-line'
     : 'ri-check-line';
   const pillLabel =
-    riskLevel === 'critical' ? 'Critical'
-    : riskLevel === 'at_risk' ? 'At Risk'
-    : 'On track';
+    riskLevel === 'critical' ? t('riskSignal.critical')
+    : riskLevel === 'at_risk' ? t('riskSignal.atRisk')
+    : t('riskSignal.onTrack');
 
   return (
     <article
       className={`mo-risk-card signal ${extraClass}`.trim()}
       role="region"
-      aria-label="Milestone risk analysis"
+      aria-label={t('riskSignal.a11y.region')}
     >
       <div className="mo-risk-head">
         <i className={dim ? 'ri-loader-4-line mo-risk-head-spin' : 'ri-pulse-line'} aria-hidden="true" />
-        <span>Risk Signal</span>
+        <span>{t('riskSignal.title')}</span>
       </div>
       <div className="mo-risk-body" aria-live="polite" aria-busy={ariaBusy}>
         <div className={`mo-risk-level-row${dim ? ' dim' : ''}`}>
@@ -57,7 +59,7 @@ export default function RiskSignalCard({
         </div>
         {bullets.length === 0 ? (
           <div className="mo-risk-bullet" style={{ color: 'var(--text-subtle)' }}>
-            Keep running tests to build risk signal.
+            {t('riskSignal.empty')}
           </div>
         ) : (
           bullets.map((b, i) => (

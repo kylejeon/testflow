@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 interface TcItem {
   tcId: string;
   tcName: string;
@@ -15,20 +17,21 @@ interface FailedBlockedCardProps {
  * Design-spec §4-2 (A) — Failed & Blocked top 4.
  */
 export default function FailedBlockedCard({ tcs, onViewAll, totalCount }: FailedBlockedCardProps) {
+  const { t } = useTranslation('milestones');
   return (
-    <article className="mo-panel" aria-label="Failed and blocked test cases">
+    <article className="mo-panel" aria-label={t('detail.overview.failedBlocked.a11y.region')}>
       <div className="mo-panel-head">
         <i className="ri-error-warning-line" style={{ color: 'var(--danger)' }} />
-        Failed &amp; Blocked
+        {t('detail.overview.failedBlocked.title')}
         {totalCount > 3 && (
           <button type="button" className="right link" onClick={onViewAll} style={{ border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
-            View all →
+            {t('detail.overview.failedBlocked.viewAll')}
           </button>
         )}
       </div>
       {tcs.length === 0 ? (
         <div style={{ padding: '8px 0', color: 'var(--text-subtle)', fontSize: '11.5px', textAlign: 'center' }}>
-          No failed or blocked TCs 🎉
+          {t('detail.overview.failedBlocked.empty')}
         </div>
       ) : (
         tcs.slice(0, 3).map((tc, i) => (
