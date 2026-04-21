@@ -9,6 +9,7 @@ import {
   getEffectiveTier,
   getSharedPoolUsage,
 } from '../_shared/ai-usage.ts';
+import { sanitizeShortName, sanitizeTitle, sanitizeTag } from '../_shared/promptSanitize.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -314,7 +315,7 @@ Deno.serve(async (req: Request) => {
           ? tc.tags.split(',').map((t: string) => t.trim()).filter(Boolean)
           : Array.isArray(tc.tags) ? tc.tags.filter(Boolean) : [];
         tags.forEach(t => { tagCount[t] = (tagCount[t] || 0) + 1; });
-        failedTcTitles.set(tc.id, `${tc.custom_id || tc.id.slice(0, 8)}: ${tc.title}`);
+        failedTcTitles.set(tc.id, `${tc.custom_id || tc.id.slice(0, 8)}: ${sanitizeTitle(tc.title)}`);
       });
       topFailTags = Object.entries(tagCount)
         .sort(([, a], [, b]) => b - a)
@@ -338,7 +339,7 @@ Deno.serve(async (req: Request) => {
         .select('id, title, custom_id')
         .in('id', blockedOnlyIds);
       (blockedTcs || []).forEach((tc: any) => {
-        failedTcTitles.set(tc.id, `${tc.custom_id || tc.id.slice(0, 8)}: ${tc.title}`);
+        failedTcTitles.set(tc.id, `${tc.custom_id || tc.id.slice(0, 8)}: ${sanitizeTitle(tc.title)}`);
       });
     }
 
@@ -347,7 +348,8 @@ Deno.serve(async (req: Request) => {
 
     const failedBlockedLines = failedBlockedEntries.map(([tcId, r]) => {
       const label = failedTcTitles.get(tcId) || tcId.slice(0, 8);
-      const runName = runNameById.get(r.run_id) || '—';
+      const rawRunName = runNameById.get(r.run_id);
+      const runName = rawRunName ? sanitizeShortName(rawRunName) : '—';
       return `[${r.status}] ${label} (Run: ${runName})`;
     });
 
@@ -356,7 +358,7 @@ Deno.serve(async (req: Request) => {
       .from('milestones')
       .select('id, name, status, end_date')
       .eq('parent_milestone_id', milestone_id);
-    const subMsLines = (subMilestones || []).map((s: any) => `- ${s.name} (status: ${s.status})`);
+    const subMsLines = (subMilestones || []).map((s: any) => `- ${sanitizeShortName(s.name)} (status: ${s.status})`);
 
     // Recent 7d activity count (from results)
     const cutoff7d = Date.now() - 7 * 86400_000;
@@ -373,7 +375,7 @@ Given a milestone's execution data, analyze risks and recommend actions.
 Respond ONLY with valid JSON matching the specified schema. No markdown, no prose wrapper.
 Be data-driven, cite specific TC IDs and tags. Avoid generic advice.`;
 
-    const userPrompt = `Milestone: "${milestone.name}"
+    const userPrompt = `Milestone: "${sanitizeShortName(milestone.name)}"
 Status: ${milestone.status} | Priority: N/A (milestone-level)
 Start: ${milestone.start_date || 'Not set'} | End: ${milestone.end_date || 'Not set'} | D-day: ${daysLeft ?? '—'}
 
@@ -386,7 +388,7 @@ Execution Summary:
 - Days elapsed since start: ${daysElapsed}
 
 Top-Fail Tags (count of failed TCs):
-${topFailTags.length > 0 ? topFailTags.map(t => `- #${t.name} (${t.count})`).join('\n') : '- (none)'}
+${topFailTags.length > 0 ? topFailTags.map(t => `- #${sanitizeTag(t.name)} (${t.count})`).join('\n') : '- (none)'}
 
 Failed / Blocked TCs (top ${failedBlockedLines.length} by recency):
 ${failedBlockedLines.length > 0 ? failedBlockedLines.join('\n') : '- (none)'}

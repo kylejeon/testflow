@@ -8,6 +8,7 @@ import {
   getEffectiveTier,
   getSharedPoolUsage,
 } from '../_shared/ai-usage.ts';
+import { sanitizeShortName, sanitizeTitle } from '../_shared/promptSanitize.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -207,12 +208,12 @@ Deno.serve(async (req: Request) => {
     const failedTCs = (tcs || []).filter((tc: any) => {
       const r = latestPerTc.get(tc.id);
       return r && r.status === 'failed';
-    }).map((tc: any) => `${tc.custom_id || tc.id.slice(0, 8)}: ${tc.title}`);
+    }).map((tc: any) => `${tc.custom_id || tc.id.slice(0, 8)}: ${sanitizeTitle(tc.title)}`);
 
     const blockedTCs = (tcs || []).filter((tc: any) => {
       const r = latestPerTc.get(tc.id);
       return r && r.status === 'blocked';
-    }).map((tc: any) => `${tc.custom_id || tc.id.slice(0, 8)}: ${tc.title}`);
+    }).map((tc: any) => `${tc.custom_id || tc.id.slice(0, 8)}: ${sanitizeTitle(tc.title)}`);
 
     // ── Claude API call ──────────────────────────────────────────────────────
     const claudeApiKey = Deno.env.get('ANTHROPIC_API_KEY');
@@ -223,7 +224,7 @@ Deno.serve(async (req: Request) => {
     const systemPrompt = `You are an expert QA risk analyst. Given a test plan's execution data, analyze failure risks and predict outcomes.
 Respond ONLY with valid JSON matching the specified schema. Be data-driven and specific.`;
 
-    const userPrompt = `Test Plan: "${plan.name}"
+    const userPrompt = `Test Plan: "${sanitizeShortName(plan.name)}"
 Status: ${plan.status} | Priority: ${plan.priority} | Locked: ${plan.is_locked ? 'Yes' : 'No'}
 Target Date: ${targetDate || 'Not set'}
 Start Date: ${plan.start_date || 'Not set'}

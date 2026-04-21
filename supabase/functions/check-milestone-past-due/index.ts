@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { sanitizeShortName } from '../_shared/promptSanitize.ts';
 
 const APP_URL = 'https://www.testably.app';
 
@@ -221,9 +222,9 @@ serve(async (req) => {
       // Build notification content
       const title = 'Milestone Overdue';
       const milestoneList = group.milestones
-        .map((m) => `• *${m.name}* (due: ${m.endDate})`)
+        .map((m) => `• *${sanitizeShortName(m.name)}* (due: ${m.endDate})`)
         .join('\n');
-      const body = `Project: *${group.projectName}*\n\n${milestoneList}`;
+      const body = `Project: *${sanitizeShortName(group.projectName)}*\n\n${milestoneList}`;
       const link = `${APP_URL}/projects/${projectId}/milestones`;
 
       for (const integration of integrations as { id: string; type: string; webhook_url: string }[]) {

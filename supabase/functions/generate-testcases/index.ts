@@ -10,6 +10,12 @@ import {
   getSharedPoolUsage,
   checkAiAccess,
 } from '../_shared/ai-usage.ts';
+import {
+  sanitizeShortName,
+  sanitizeTitle,
+  sanitizeLong,
+  sanitizeTag,
+} from '../_shared/promptSanitize.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -201,9 +207,9 @@ Output:`;
 /** Step 1: 제목 생성 프롬프트 (Jira 모드) */
 function buildTitlePromptJira(issues: JiraIssueData[]): string {
   const issueText = issues.map(issue => {
-    let text = `Issue: ${issue.key} — ${issue.summary}`;
-    if (issue.description) text += `\nDescription: ${issue.description.slice(0, 600)}`;
-    if (issue.acceptanceCriteria) text += `\nAcceptance Criteria: ${issue.acceptanceCriteria.slice(0, 400)}`;
+    let text = `Issue: ${issue.key} — ${sanitizeTitle(issue.summary)}`;
+    if (issue.description) text += `\nDescription: ${sanitizeLong(issue.description)}`;
+    if (issue.acceptanceCriteria) text += `\nAcceptance Criteria: ${sanitizeLong(issue.acceptanceCriteria)}`;
     if (issue.priority) text += `\nPriority: ${issue.priority}`;
     return text;
   }).join('\n\n---\n\n');
@@ -462,14 +468,14 @@ Deno.serve(async (req) => {
         .slice(0, 30)
         .map((r) => {
           const tc = tcMetaMap.get(r.test_case_id);
-          return `  - [${tc?.priority || 'medium'}] ${tc?.title || '(unknown)'} (${tc?.folder || 'unknown'})`;
+          return `  - [${tc?.priority || 'medium'}] ${sanitizeTitle(tc?.title || '(unknown)')} (${sanitizeTag(tc?.folder || 'unknown')})`;
         });
 
       const blockedDetails = (blockedResults as any[])
         .slice(0, 10)
         .map((r) => {
           const tc = tcMetaMap.get(r.test_case_id);
-          return `  - ${tc?.title || '(unknown)'} (${tc?.folder || 'unknown'})${r.note ? ': ' + r.note : ''}`;
+          return `  - ${sanitizeTitle(tc?.title || '(unknown)')} (${sanitizeTag(tc?.folder || 'unknown')})${r.note ? ': ' + sanitizeLong(r.note) : ''}`;
         });
 
       const systemPrompt = `You are a senior QA analyst. The user already sees pass/fail numbers on screen.
@@ -499,11 +505,11 @@ Respond in valid JSON matching this schema:
   "goNoGoCondition": "string"
 }`;
 
-      const userMessage = `Run: ${runData.name}, ${runData.created_at}, ${totalCount} TCs
+      const userMessage = `Run: ${sanitizeShortName(runData.name)}, ${runData.created_at}, ${totalCount} TCs
 Results: ${passedCount}P / ${failedCount}F / ${blockedCount}B / ${skippedCount}S
 
 Failed tests by folder:
-${failedByFolder.map((f) => `  ${f.folder}: ${f.count} failures`).join('\n') || '  (none)'}
+${failedByFolder.map((f) => `  ${sanitizeTag(f.folder)}: ${f.count} failures`).join('\n') || '  (none)'}
 
 Failed test details:
 ${failedDetails.join('\n') || '  (none)'}
@@ -666,7 +672,7 @@ Quality Gates: Pass Rate ≥90%, Critical Failures = 0, Coverage ≥80%, Blocked
       const folderSummary = Array.from(folderMap.entries())
         .map(([folder, data]) => {
           const criticalCount = data.priorities.filter(p => p === 'critical').length;
-          return `${folder} (${data.titles.length} TCs, ${criticalCount} critical):\n${data.titles.slice(0, 10).map(t => `  - ${t}`).join('\n')}${data.titles.length > 10 ? `\n  ... and ${data.titles.length - 10} more` : ''}`;
+          return `${sanitizeTag(folder)} (${data.titles.length} TCs, ${criticalCount} critical):\n${data.titles.slice(0, 10).map(t => `  - ${sanitizeTitle(t)}`).join('\n')}${data.titles.length > 10 ? `\n  ... and ${data.titles.length - 10} more` : ''}`;
         })
         .join('\n\n');
 
@@ -703,12 +709,12 @@ Quality Gates: Pass Rate ≥90%, Critical Failures = 0, Coverage ≥80%, Blocked
 
         requirementsSummary = `\n\nREQUIREMENTS AND TEST COVERAGE (${requirements.length} total):
 No TC coverage (${noTcReqs.length} requirements — CRITICAL):
-${noTcReqs.slice(0, 10).map((r: any) => `  - ${r.custom_id} [${r.priority}]: ${r.title}`).join('\n') || '  (none)'}
+${noTcReqs.slice(0, 10).map((r: any) => `  - ${r.custom_id} [${r.priority}]: ${sanitizeTitle(r.title)}`).join('\n') || '  (none)'}
 
 Partially covered / failing (${partialReqs.length} requirements):
 ${partialReqs.slice(0, 10).map((r: any) => {
   const c = coverageMap.get(r.custom_id);
-  return `  - ${r.custom_id} [${r.priority}]: ${r.title} (gap: ${c?.gap})`;
+  return `  - ${r.custom_id} [${r.priority}]: ${sanitizeTitle(r.title)} (gap: ${c?.gap})`;
 }).join('\n') || '  (none)'}`;
 
         void reqIds; // suppress unused warning
@@ -750,7 +756,7 @@ Respond in valid JSON:
   "typeAssessment": "string (1-2 sentences)"
 }`;
 
-      const userMessage = `Project: ${projectData.name}\nTotal TCs: ${tcList.length}\n\nTC Distribution by Folder:\n${folderSummary}${requirementsSummary}`;
+      const userMessage = `Project: ${sanitizeShortName(projectData.name)}\nTotal TCs: ${tcList.length}\n\nTC Distribution by Folder:\n${folderSummary}${requirementsSummary}`;
 
       const startTime = Date.now();
       const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
@@ -833,7 +839,7 @@ Respond in valid JSON:
       const { tier, ownerId } = access;
 
       const existingList = (existing_tcs as { custom_id: string; title: string }[])
-        .map(tc => `- ${tc.custom_id}: ${tc.title}`)
+        .map(tc => `- ${tc.custom_id}: ${sanitizeTitle(tc.title)}`)
         .join('\n') || '(none)';
 
       const systemPrompt = `You are a senior QA engineer. Analyze the given requirement and suggest test cases that are NOT already covered.
@@ -853,8 +859,8 @@ For each suggestion return:
 Respond ONLY with a valid JSON array. Max 8 suggestions. No markdown, no explanation.`;
 
       const userMessage = `REQUIREMENT:
-Title: ${requirement_title}
-Description: ${requirement_description || '(no description)'}
+Title: ${sanitizeTitle(requirement_title)}
+Description: ${sanitizeLong(requirement_description || '(no description)')}
 
 ALREADY LINKED TEST CASES:
 ${existingList}
@@ -963,7 +969,7 @@ Suggest test cases not yet covered.`;
       }
 
       const testList = flakyTests.map(t =>
-        `- [${t.test_case_id}] "${t.title}" (${t.folder_path || 'General'}) | Score: ${t.flaky_score}% | Sequence: ${t.recent_statuses.join('→')}`
+        `- [${t.test_case_id}] "${sanitizeTitle(t.title)}" (${sanitizeTag(t.folder_path || 'General')}) | Score: ${t.flaky_score}% | Sequence: ${t.recent_statuses.join('→')}`
       ).join('\n');
 
       const systemPrompt = `You are a test stability expert. Given these flaky tests with their pass/fail sequences:
@@ -1221,7 +1227,7 @@ Respond in valid JSON:
           .map((l: any) => `[${l.type.toUpperCase()}] ${l.content}`)
           .join('\n');
 
-        const sessionSummary = `Session: ${sessionData.name}\nMission: ${sessionData.charter || '(none)'}\n\nLogs:\n${logSummary || '(no logs)'}`;
+        const sessionSummary = `Session: ${sanitizeShortName(sessionData.name)}\nMission: ${sanitizeLong(sessionData.charter || '(none)')}\n\nLogs:\n${logSummary || '(no logs)'}`;
         prompt = buildTitlePromptSession(sessionSummary);
       }
 

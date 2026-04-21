@@ -8,6 +8,13 @@ import {
   getEffectiveTier,
   getSharedPoolUsage,
 } from '../_shared/ai-usage.ts';
+import {
+  sanitizeShortName,
+  sanitizeTitle,
+  sanitizeLong,
+  sanitizeTag,
+  sanitizeArrayForPrompt,
+} from '../_shared/promptSanitize.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -172,7 +179,7 @@ Deno.serve(async (req: Request) => {
         .eq('id', target_milestone_id)
         .maybeSingle();
       if (ms) {
-        milestoneInfo = `Target Milestone: "${ms.name}" (due: ${ms.end_date || 'TBD'}, status: ${ms.status})`;
+        milestoneInfo = `Target Milestone: "${sanitizeShortName(ms.name)}" (due: ${ms.end_date || 'TBD'}, status: ${ms.status})`;
       }
     }
 
@@ -182,7 +189,14 @@ Deno.serve(async (req: Request) => {
 
     const tcList = relevantTcs
       .slice(0, 80)
-      .map((tc: any) => `[${tc.id}] (${tc.priority}) ${tc.title}${tc.folder ? ` [${tc.folder}]` : ''}${tc.tags?.length ? ` #${tc.tags.join(' #')}` : ''}`)
+      .map((tc: any) => {
+        const safeTitle = sanitizeTitle(tc.title);
+        const safeFolder = tc.folder ? ` [${sanitizeTag(tc.folder)}]` : '';
+        const safeTags = tc.tags?.length
+          ? ` #${sanitizeArrayForPrompt(tc.tags as unknown[], { maxLength: 40 }).join(' #')}`
+          : '';
+        return `[${tc.id}] (${tc.priority}) ${safeTitle}${safeFolder}${safeTags}`;
+      })
       .join('\n');
 
     const systemPrompt = `You are an expert QA architect helping teams plan efficient test campaigns.
@@ -193,8 +207,8 @@ Respond ONLY with valid JSON matching the specified schema. Be concise but preci
 ${tcList || '(no test cases found)'}
 
 ${milestoneInfo}
-Affected areas / changed components: ${affected_areas.length > 0 ? affected_areas.join(', ') : 'general regression'}
-${context ? `\nAdditional context: ${context}` : ''}
+Affected areas / changed components: ${affected_areas.length > 0 ? sanitizeArrayForPrompt(affected_areas as unknown[], { maxLength: 40 }).join(', ') : 'general regression'}
+${context ? `\nAdditional context: ${sanitizeLong(context)}` : ''}
 
 Return a JSON object with this exact structure:
 {
