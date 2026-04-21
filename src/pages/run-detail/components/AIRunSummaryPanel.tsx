@@ -1,5 +1,13 @@
+/**
+ * i18n policy (dev-spec-i18n-coverage AC-9):
+ * - Wrapping labels ("AI Run Summary", section headers, action buttons) are translated.
+ * - Body strings returned by Claude (summary.narrative, cluster.rootCause,
+ *   summary.recommendations[i], summary.goNoGoCondition) are rendered as-is.
+ *   Multi-locale prompts are tracked in a separate spec (f013).
+ */
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../../../lib/supabase';
 
 
@@ -72,6 +80,7 @@ export default function AIRunSummaryPanel({
   onToggleIncludeInPdf,
   onSummaryStateChange,
 }: AIRunSummaryPanelProps) {
+  const { t } = useTranslation(['runs', 'common']);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<AISummaryResult | null>(null);
@@ -188,7 +197,7 @@ export default function AIRunSummaryPanel({
 
       // Step 2: No DB cache — call edge function
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) { setError('Please log in again'); return; }
+      if (!session?.access_token) { setError(t('runs:aiSummary.error.unauthorized')); return; }
 
       const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL as string;
       const supabaseAnonKey = import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY as string;
@@ -206,21 +215,21 @@ export default function AIRunSummaryPanel({
       const data = await res.json();
 
       if (!res.ok) {
-        let errMsg = 'Analysis couldn\'t be completed';
+        let errMsg = t('runs:aiSummary.error.default');
         if (res.status === 429) {
           errMsg = data?.error?.includes?.('Monthly') || data?.error?.includes?.('limit')
-            ? `Monthly AI limit reached (${data.usage ?? '?'}/${data.limit ?? '?'})`
-            : 'Too many requests. Please wait a moment.';
-        } else if (res.status === 403) { errMsg = 'AI Summary requires Starter plan';
-        } else if (res.status === 422) { errMsg = 'No test results to analyze';
-        } else if (res.status === 401) { console.error('[AIRunSummary] 401 Unauthorized:', data); errMsg = 'Please log in again';
+            ? t('runs:aiSummary.error.monthlyLimit', { used: data.usage ?? '?', limit: data.limit ?? '?' })
+            : t('runs:aiSummary.error.tooMany');
+        } else if (res.status === 403) { errMsg = t('runs:aiSummary.error.tierTooLow');
+        } else if (res.status === 422) { errMsg = t('runs:aiSummary.error.noResults');
+        } else if (res.status === 401) { console.error('[AIRunSummary] 401 Unauthorized:', data); errMsg = t('runs:aiSummary.error.unauthorized');
         } else if (data?.error) { errMsg = data.error; }
         setError(errMsg);
         return;
       }
 
       const result: AISummaryResult = data?.summary;
-      if (!result) { setError(data?.error || 'Analysis couldn\'t be completed'); return; }
+      if (!result) { setError(data?.error || t('runs:aiSummary.error.default')); return; }
 
       setSummary(result);
       onSummaryReady?.(result);
@@ -229,7 +238,7 @@ export default function AIRunSummaryPanel({
       // Step 3: Persist to DB
       await saveToDb(result);
     } catch {
-      setError('Connection error. Please try again.');
+      setError(t('runs:aiSummary.error.connection'));
     } finally {
       setLoading(false);
     }
@@ -291,6 +300,9 @@ export default function AIRunSummaryPanel({
   // Pre-fill GitHub form when summary is ready
   useEffect(() => {
     if (!summary || !showGithubForm) return;
+    // NOTE: The following template body is intentionally English-only. It is
+    // forwarded verbatim to GitHub so downstream consumers (devs, CI bots,
+    // external integrations) get a consistent format regardless of the UI locale.
     const patternLines = summary.clusters
       .map((c, i) => `${i + 1}. **${c.name}** — ${c.count} failures\n   Root cause: ${c.rootCause}`)
       .join('\n');
@@ -306,6 +318,9 @@ export default function AIRunSummaryPanel({
   const skippedCount = Math.max(0, totalCount - passedCount - failedCount - blockedCount);
 
   // ── Markdown builder ─────────────────────────────────────────────
+  // NOTE: Output is English-only by design — the markdown is forwarded to
+  // external systems (Slack, email, Jira, GitHub) where a locale-specific
+  // format would be harder for downstream consumers to parse.
   const buildMarkdown = (): string => {
     if (!summary) return '';
     const metricRows = [
@@ -356,23 +371,23 @@ export default function AIRunSummaryPanel({
     try {
       await navigator.clipboard.writeText(md);
       setCopied(true);
-      onToast('Summary copied to clipboard as Markdown', 'success');
+      onToast(t('runs:aiSummary.toast.copied'), 'success');
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      onToast('Failed to copy to clipboard', 'error');
+      onToast(t('runs:aiSummary.toast.copyFailed'), 'error');
     }
   };
 
   const handleCreateJira = async () => {
     if (!jiraPreviewCluster || !jiraConfig) return;
     if (!jiraConfig.jira_project_key) {
-      onToast('Jira Project Key is not set for this project. Please edit the project settings.', 'error');
+      onToast(t('runs:aiSummary.toast.jiraKeyMissing'), 'error');
       return;
     }
     setJiraCreating(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { onToast('Please log in again', 'error'); return; }
+      if (!session) { onToast(t('runs:aiSummary.error.unauthorized'), 'error'); return; }
 
       const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL as string;
       const supabaseAnonKey = import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY as string;
@@ -385,6 +400,8 @@ export default function AIRunSummaryPanel({
           'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
+          // NOTE: Jira payload is intentionally English — these fields land in
+          // Jira UI and must remain stable for search/automation rules.
           domain: jiraConfig.domain,
           email: jiraConfig.email,
           apiToken: jiraConfig.api_token,
@@ -399,13 +416,13 @@ export default function AIRunSummaryPanel({
 
       const respData = await resp.json();
       if (resp.ok) {
-        onToast(`Jira issue${respData.issue?.key ? ` ${respData.issue.key}` : ''} created`, 'success');
+        onToast(t('runs:aiSummary.toast.jiraCreated', { keySuffix: respData.issue?.key ? ` ${respData.issue.key}` : '' }), 'success');
         setJiraPreviewCluster(null);
       } else {
-        onToast(respData?.error || 'Failed to create Jira issue', 'error');
+        onToast(respData?.error || t('runs:aiSummary.toast.jiraFailed'), 'error');
       }
     } catch {
-      onToast('Failed to create Jira issue', 'error');
+      onToast(t('runs:aiSummary.toast.jiraFailed'), 'error');
     } finally {
       setJiraCreating(false);
     }
@@ -427,13 +444,13 @@ export default function AIRunSummaryPanel({
       });
       if (error) throw error;
       if (data?.success && data?.issue?.number) {
-        onToast(`GitHub issue #${data.issue.number} created`, 'success');
+        onToast(t('runs:aiSummary.toast.githubCreated', { number: data.issue.number }), 'success');
         setShowGithubForm(false);
       } else {
-        onToast(data?.error || 'Failed to create GitHub issue', 'error');
+        onToast(data?.error || t('runs:aiSummary.toast.githubFailed'), 'error');
       }
     } catch {
-      onToast('Failed to create GitHub issue', 'error');
+      onToast(t('runs:aiSummary.toast.githubFailed'), 'error');
     } finally {
       setGithubCreating(false);
     }
@@ -448,23 +465,23 @@ export default function AIRunSummaryPanel({
         const found = slackIntegrations.find(s => s.id === selectedSlackId);
         webhookUrl = found?.webhook_url ?? '';
       }
-      if (!webhookUrl) { onToast('Please enter a Slack webhook URL', 'error'); return; }
+      if (!webhookUrl) { onToast(t('runs:aiSummary.toast.slackWebhookRequired'), 'error'); return; }
       await fetch(webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: md }),
       });
-      onToast('Summary shared to Slack', 'success');
+      onToast(t('runs:aiSummary.toast.slackShared'), 'success');
       setShareMode(null);
     } catch {
-      onToast('Failed to send to Slack', 'error');
+      onToast(t('runs:aiSummary.toast.slackFailed'), 'error');
     } finally {
       setShareSending(false);
     }
   };
 
   const handleShareEmail = async () => {
-    if (!shareEmailInput.trim()) { onToast('Please enter an email address', 'error'); return; }
+    if (!shareEmailInput.trim()) { onToast(t('runs:aiSummary.toast.emailRequired'), 'error'); return; }
     setShareSending(true);
     try {
       await supabase.functions.invoke('send-loops-event', {
@@ -474,11 +491,11 @@ export default function AIRunSummaryPanel({
           contactProperties: { run_name: runName, summary_markdown: buildMarkdown() },
         },
       });
-      onToast(`Summary shared to ${shareEmailInput.trim()}`, 'success');
+      onToast(t('runs:aiSummary.toast.emailShared', { email: shareEmailInput.trim() }), 'success');
       setShareMode(null);
       setShareEmailInput('');
     } catch {
-      onToast('Failed to send email', 'error');
+      onToast(t('runs:aiSummary.toast.emailFailed'), 'error');
     } finally {
       setShareSending(false);
     }
@@ -497,13 +514,15 @@ export default function AIRunSummaryPanel({
       if (fetchErr) throw fetchErr;
 
       const failedTcIds = [...new Set((failedResults || []).map((r: any) => r.test_case_id as string))];
-      if (failedTcIds.length === 0) { onToast('No failed test cases found to re-run', 'error'); return; }
+      if (failedTcIds.length === 0) { onToast(t('runs:aiSummary.toast.rerunFailedEmpty'), 'error'); return; }
 
       const { data: { user } } = await supabase.auth.getUser();
       const { data: inserted, error: insertErr } = await supabase
         .from('test_runs')
         .insert([{
           project_id: projectId,
+          // NOTE: Run name is stored in DB and displayed consistently across sessions;
+          // keeping it English avoids mixed-locale run histories.
           name: `[Re-run] ${runName} — Failed only`,
           status: 'new',
           progress: 0,
@@ -522,11 +541,11 @@ export default function AIRunSummaryPanel({
         .single();
 
       if (insertErr) throw insertErr;
-      onToast(`New run created with ${failedTcIds.length} failed test case${failedTcIds.length === 1 ? '' : 's'}`, 'success');
+      onToast(t('runs:aiSummary.toast.rerunCreated', { count: failedTcIds.length }), 'success');
       onClose();
       navigate(`/projects/${projectId}/runs/${inserted.id}`);
     } catch (err: any) {
-      onToast(err?.message || 'Failed to create re-run', 'error');
+      onToast(err?.message || t('runs:aiSummary.toast.rerunFailed'), 'error');
     } finally {
       setReRunning(false);
     }
@@ -540,9 +559,9 @@ export default function AIRunSummaryPanel({
   };
 
   const goNoGoConfig = (verdict: string) => {
-    if (verdict === 'GO')    return { bg: '#14532D', border: '#166534', color: '#86EFAC', icon: '✅', label: 'GO' };
-    if (verdict === 'NO-GO') return { bg: '#7F1D1D', border: '#991B1B', color: '#FCA5A5', icon: '❌', label: 'NO-GO' };
-    return { bg: '#78350F', border: '#92400E', color: '#FDE68A', icon: '⚠️', label: 'CONDITIONAL GO' };
+    if (verdict === 'GO')    return { bg: '#14532D', border: '#166534', color: '#86EFAC', icon: '✅', label: t('runs:aiSummary.goNoGo.go') };
+    if (verdict === 'NO-GO') return { bg: '#7F1D1D', border: '#991B1B', color: '#FCA5A5', icon: '❌', label: t('runs:aiSummary.goNoGo.noGo') };
+    return { bg: '#78350F', border: '#92400E', color: '#FDE68A', icon: '⚠️', label: t('runs:aiSummary.goNoGo.conditional') };
   };
 
   const clusterDotColor = (severity: string) => {
@@ -573,6 +592,12 @@ export default function AIRunSummaryPanel({
     transition: 'all 0.15s',
     whiteSpace: 'nowrap' as const,
   });
+
+  const severityPriorityLabel = (severity: string): string => {
+    if (severity === 'critical') return t('common:issues.priority.critical');
+    if (severity === 'major') return t('common:issues.priority.high');
+    return t('common:issues.priority.medium');
+  };
 
   return (
     <div
@@ -612,12 +637,12 @@ export default function AIRunSummaryPanel({
       >
         <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#C7D2FE', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
           <i className="ri-sparkling-2-fill" style={{ color: '#8B5CF6' }} />
-          AI Run Summary
+          {t('runs:aiSummary.title')}
         </h4>
         <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
           {loading && (
             <>
-              <span style={{ fontSize: '11px', color: '#64748B' }}>Analyzing…</span>
+              <span style={{ fontSize: '11px', color: '#64748B' }}>{t('runs:aiSummary.analyzing')}</span>
               <div className="ai-spinner" style={{ width: 14, height: 14 }} />
             </>
           )}
@@ -637,8 +662,8 @@ export default function AIRunSummaryPanel({
         {loading && (
           <div style={{ textAlign: 'center', padding: '28px 18px' }}>
             <div className="ai-spinner" style={{ width: 28, height: 28, margin: '0 auto 12px' }} />
-            <p style={{ fontSize: '13px', color: '#94A3B8', margin: 0 }}>Analyzing {totalCount} results for patterns…</p>
-            <p style={{ fontSize: '11px', color: '#475569', marginTop: '4px', marginBottom: 0 }}>Usually takes 10-15 seconds</p>
+            <p style={{ fontSize: '13px', color: '#94A3B8', margin: 0 }}>{t('runs:aiSummary.analyzingResultsFor', { count: totalCount })}</p>
+            <p style={{ fontSize: '11px', color: '#475569', marginTop: '4px', marginBottom: 0 }}>{t('runs:aiSummary.analyzingHint')}</p>
           </div>
         )}
 
@@ -647,10 +672,10 @@ export default function AIRunSummaryPanel({
           <div style={{ textAlign: 'center', padding: '24px 18px' }}>
             <p style={{ fontSize: '13px', color: '#FCA5A5', marginBottom: '12px' }}>⚠️ {error}</p>
             <button
-              onClick={fetchSummary}
+              onClick={() => fetchSummary()}
               style={{ background: '#1E293B', border: '1px solid #334155', color: '#CBD5E1', borderRadius: '6px', padding: '6px 14px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
             >
-              Try Again
+              {t('runs:aiSummary.tryAgain')}
             </button>
           </div>
         )}
@@ -669,7 +694,7 @@ export default function AIRunSummaryPanel({
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#FDE68A' }}>
                   <span style={{ fontSize: '14px' }}>⚠️</span>
-                  Test results have been updated since this summary was generated.
+                  {t('runs:aiSummary.staleBanner')}
                 </div>
                 <button
                   onClick={handleUpdateSummary}
@@ -683,9 +708,9 @@ export default function AIRunSummaryPanel({
                   }}
                 >
                   {updatingSummary ? (
-                    <><span style={{ width: 10, height: 10, borderRadius: '50%', border: '2px solid #92400E', borderTopColor: '#FDE68A', display: 'inline-block', animation: 'aiPanelSpin 0.8s linear infinite' }} />Updating…</>
+                    <><span style={{ width: 10, height: 10, borderRadius: '50%', border: '2px solid #92400E', borderTopColor: '#FDE68A', display: 'inline-block', animation: 'aiPanelSpin 0.8s linear infinite' }} />{t('runs:aiSummary.updating')}</>
                   ) : (
-                    <><i className="ri-sparkling-2-fill" />Update Summary</>
+                    <><i className="ri-sparkling-2-fill" />{t('runs:aiSummary.updateCta')}</>
                   )}
                 </button>
               </div>
@@ -700,26 +725,26 @@ export default function AIRunSummaryPanel({
                   ...riskStyle(summary.riskLevel),
                 }}
               >
-                <i className="ri-error-warning-fill" /> {summary.riskLevel} RISK
+                <i className="ri-error-warning-fill" /> {t('runs:aiSummary.riskSuffix', { level: summary.riskLevel })}
               </span>
-              <span style={{ fontSize: '11px', color: '#475569' }}>1 AI credit used</span>
+              <span style={{ fontSize: '11px', color: '#475569' }}>{t('runs:aiSummary.creditUsed')}</span>
             </div>
 
-            {/* ── 【수정 1】 Key Metrics — 3×2 card grid ─────────────── */}
+            {/* Key Metrics — 3×2 card grid */}
             {(() => {
               const metrics = [
-                { val: totalCount,     lbl: 'Total',     color: '#CBD5E1' },
-                { val: passedCount,    lbl: 'Passed',    color: '#4ADE80' },
-                { val: failedCount,    lbl: 'Failed',    color: '#F87171' },
-                { val: blockedCount,   lbl: 'Blocked',   color: '#FBBF24' },
-                { val: `${passRate}%`, lbl: 'Pass Rate', color: passRate >= 90 ? '#4ADE80' : passRate >= 70 ? '#FCD34D' : '#F87171' },
-                { val: skippedCount,   lbl: 'Skipped',   color: '#94A3B8' },
+                { val: totalCount,     lbl: t('runs:aiSummary.metric.total'),     color: '#CBD5E1' },
+                { val: passedCount,    lbl: t('runs:aiSummary.metric.passed'),    color: '#4ADE80' },
+                { val: failedCount,    lbl: t('runs:aiSummary.metric.failed'),    color: '#F87171' },
+                { val: blockedCount,   lbl: t('runs:aiSummary.metric.blocked'),   color: '#FBBF24' },
+                { val: `${passRate}%`, lbl: t('runs:aiSummary.metric.passRate'),  color: passRate >= 90 ? '#4ADE80' : passRate >= 70 ? '#FCD34D' : '#F87171' },
+                { val: skippedCount,   lbl: t('runs:aiSummary.metric.skipped'),   color: '#94A3B8' },
               ];
               return (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '14px' }}>
                   {metrics.map((m) => (
                     <div
-                      key={m.lbl}
+                      key={String(m.lbl)}
                       style={{ background: '#1E293B', borderRadius: '8px', padding: '12px 14px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}
                     >
                       <span style={{ fontSize: '22px', fontWeight: 800, color: m.color, lineHeight: 1 }}>{m.val}</span>
@@ -730,7 +755,7 @@ export default function AIRunSummaryPanel({
               );
             })()}
 
-            {/* Executive Summary (narrative) */}
+            {/* Executive Summary (narrative) — AC-9: Claude response, not translated */}
             <div
               style={{
                 fontSize: '13px', color: '#CBD5E1', lineHeight: 1.7,
@@ -742,12 +767,12 @@ export default function AIRunSummaryPanel({
               {summary.narrative}
             </div>
 
-            {/* ── 【수정 2】 Failure Patterns — ranked bar chart ─────── */}
+            {/* Failure Patterns — ranked bar chart */}
             <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748B', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Failure Patterns
+              {t('runs:aiSummary.failurePatterns')}
             </div>
             {summary.clusters.length === 0 && (
-              <div style={{ fontSize: '13px', color: '#475569', padding: '8px 0' }}>No failure patterns detected.</div>
+              <div style={{ fontSize: '13px', color: '#475569', padding: '8px 0' }}>{t('runs:aiSummary.noFailurePatterns')}</div>
             )}
             {(() => {
               const maxCount = Math.max(...summary.clusters.map(c => c.count), 1);
@@ -762,6 +787,7 @@ export default function AIRunSummaryPanel({
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
+                        {/* NOTE: cluster.name / cluster.rootCause are Claude-generated (AC-9). */}
                         <div style={{ fontSize: '13px', fontWeight: 600, color: '#E2E8F0' }}>
                           <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: barColor, marginRight: 6, verticalAlign: 'middle' }} />
                           {cluster.name}
@@ -780,8 +806,9 @@ export default function AIRunSummaryPanel({
 
             {/* Recommendations */}
             <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748B', margin: '14px 0 8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Recommendations
+              {t('runs:aiSummary.recommendations')}
             </div>
+            {/* NOTE: recommendations[i] are Claude-generated (AC-9). */}
             {summary.recommendations.slice(0, 3).map((rec, i) => (
               <div key={i} style={{ display: 'flex', gap: '8px', padding: '8px 0', fontSize: '13px', color: '#CBD5E1', lineHeight: 1.5 }}>
                 <span
@@ -798,7 +825,7 @@ export default function AIRunSummaryPanel({
               </div>
             ))}
 
-            {/* ── 【수정 4】 Go/No-Go banner ────────────────────────── */}
+            {/* Go/No-Go banner */}
             {(() => {
               const cfg = goNoGoConfig(summary.goNoGo);
               return (
@@ -812,6 +839,7 @@ export default function AIRunSummaryPanel({
                   <span style={{ fontSize: '22px', lineHeight: 1, flexShrink: 0 }}>{cfg.icon}</span>
                   <div>
                     <div style={{ fontSize: '14px', fontWeight: 800, color: cfg.color, letterSpacing: '0.02em' }}>{cfg.label}</div>
+                    {/* NOTE: summary.goNoGoCondition is Claude-generated (AC-9). */}
                     {summary.goNoGoCondition && (
                       <div style={{ fontSize: '12px', color: cfg.color, opacity: 0.85, marginTop: '4px', lineHeight: 1.6 }}>
                         {summary.goNoGoCondition}
@@ -822,7 +850,7 @@ export default function AIRunSummaryPanel({
               );
             })()}
 
-            {/* ── 【수정 3】 Consolidated Export Actions Bar ─────────── */}
+            {/* Consolidated Export Actions Bar */}
             <div
               style={{
                 display: 'flex',
@@ -837,26 +865,26 @@ export default function AIRunSummaryPanel({
               {/* Copy as Markdown */}
               <button onClick={handleCopyMarkdown} style={actionBtn(copied)}>
                 <i className={copied ? 'ri-check-line' : 'ri-file-copy-line'} />
-                {copied ? 'Copied!' : 'Copy as Markdown'}
+                {copied ? t('runs:aiSummary.action.copied') : t('runs:aiSummary.action.copyMarkdown')}
               </button>
 
               {/* Include in PDF Export */}
               <button
                 onClick={() => {
                   setIncludedInPdf(!includedInPdf);
-                  onToast(includedInPdf ? 'Removed from PDF export' : 'AI summary will be included in PDF export', 'success');
+                  onToast(includedInPdf ? t('runs:aiSummary.toast.pdfRemoved') : t('runs:aiSummary.toast.pdfIncluded'), 'success');
                 }}
                 style={actionBtn(includedInPdf)}
               >
                 <i className={includedInPdf ? 'ri-file-pdf-2-fill' : 'ri-file-pdf-2-line'} />
-                {includedInPdf ? 'In PDF ✓' : 'Include in PDF'}
+                {includedInPdf ? t('runs:aiSummary.action.inPdf') : t('runs:aiSummary.action.includeInPdf')}
               </button>
 
               {/* Share… */}
               <div ref={shareMenuRef} style={{ position: 'relative' }}>
                 <button onClick={() => setShowShareMenu(prev => !prev)} style={actionBtn(showShareMenu)}>
                   <i className="ri-share-line" />
-                  Share…
+                  {t('runs:aiSummary.action.share')}
                   <i className="ri-arrow-down-s-line" style={{ fontSize: '13px', marginLeft: '-2px' }} />
                 </button>
                 {showShareMenu && (
@@ -869,8 +897,8 @@ export default function AIRunSummaryPanel({
                     }}
                   >
                     {[
-                      { key: 'slack', icon: 'ri-slack-line', label: 'Share via Slack' },
-                      { key: 'email', icon: 'ri-mail-send-line', label: 'Share via Email' },
+                      { key: 'slack', icon: 'ri-slack-line', label: t('runs:aiSummary.action.shareSlack') },
+                      { key: 'email', icon: 'ri-mail-send-line', label: t('runs:aiSummary.action.shareEmail') },
                     ].map(opt => (
                       <button
                         key={opt.key}
@@ -896,7 +924,7 @@ export default function AIRunSummaryPanel({
                   style={actionBtn(!!jiraPreviewCluster)}
                 >
                   <i className="ri-jira-line" />
-                  Create Jira Issue
+                  {t('runs:aiSummary.action.createJira')}
                 </button>
               )}
 
@@ -907,7 +935,7 @@ export default function AIRunSummaryPanel({
                   style={actionBtn(showGithubForm)}
                 >
                   <i className="ri-github-fill" />
-                  Create GitHub Issue
+                  {t('runs:aiSummary.action.createGithub')}
                 </button>
               )}
 
@@ -925,10 +953,10 @@ export default function AIRunSummaryPanel({
                 {reRunning ? (
                   <>
                     <span style={{ width: 10, height: 10, borderRadius: '50%', border: '2px solid #475569', borderTopColor: '#94A3B8', display: 'inline-block', animation: 'aiPanelSpin 0.8s linear infinite' }} />
-                    Creating…
+                    {t('runs:aiSummary.action.creating')}
                   </>
                 ) : (
-                  <><i className="ri-refresh-line" /> Re-run Failed ({failedCount})</>
+                  <><i className="ri-refresh-line" /> {t('runs:aiSummary.action.rerunFailed', { count: failedCount })}</>
                 )}
               </button>
 
@@ -940,7 +968,7 @@ export default function AIRunSummaryPanel({
             {jiraPreviewCluster && (
               <div style={{ background: '#1E293B', border: '1px solid #334155', borderRadius: '10px', padding: '16px', marginTop: '12px' }}>
                 <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748B', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  <i className="ri-jira-line" style={{ marginRight: 6 }} />Creating Jira Issue
+                  <i className="ri-jira-line" style={{ marginRight: 6 }} />{t('runs:aiSummary.jira.sectionTitle')}
                 </div>
                 <div
                   style={{
@@ -949,25 +977,26 @@ export default function AIRunSummaryPanel({
                     marginBottom: '10px',
                   }}
                 >
+                  {/* NOTE: Jira summary title is English (forwarded to Jira UI). */}
                   <div style={{ fontSize: '13px', fontWeight: 600, color: '#E2E8F0', marginBottom: '4px' }}>
                     [Bug] {jiraPreviewCluster.name} Failures — {jiraPreviewCluster.rootCause}
                   </div>
                   <div style={{ fontSize: '12px', color: '#64748B' }}>
-                    Priority: {jiraPreviewCluster.severity === 'critical' ? 'Critical' : jiraPreviewCluster.severity === 'major' ? 'High' : 'Medium'}
-                    {' '}· Labels: ai-detected, regression
+                    {t('runs:aiSummary.jira.priorityLabel', { priority: severityPriorityLabel(jiraPreviewCluster.severity) })}
+                    {' '}· {t('runs:aiSummary.jira.labelsPrefix')}
                   </div>
                   <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
-                    {jiraPreviewCluster.count} related TCs · AI run summary included in description
+                    {t('runs:aiSummary.jira.relatedTcs', { count: jiraPreviewCluster.count })}
                   </div>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                  <button onClick={() => setJiraPreviewCluster(null)} style={actionBtn()}>Cancel</button>
+                  <button onClick={() => setJiraPreviewCluster(null)} style={actionBtn()}>{t('common:cancel')}</button>
                   <button
                     onClick={handleCreateJira}
                     disabled={jiraCreating}
                     style={{ background: '#6366F1', color: '#fff', border: 'none', borderRadius: '6px', padding: '6px 12px', fontSize: '12px', fontWeight: 600, cursor: jiraCreating ? 'not-allowed' : 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', opacity: jiraCreating ? 0.7 : 1 }}
                   >
-                    <i className="ri-jira-line" /> {jiraCreating ? 'Creating…' : 'Create Issue'}
+                    <i className="ri-jira-line" /> {jiraCreating ? t('runs:aiSummary.action.creating') : t('runs:aiSummary.jira.createIssue')}
                   </button>
                 </div>
               </div>
@@ -977,10 +1006,10 @@ export default function AIRunSummaryPanel({
             {showGithubForm && githubConfig && (
               <div style={{ background: '#1E293B', border: '1px solid #334155', borderRadius: '10px', padding: '16px', marginTop: '12px' }}>
                 <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748B', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  <i className="ri-github-fill" style={{ marginRight: 6 }} />Create GitHub Issue
+                  <i className="ri-github-fill" style={{ marginRight: 6 }} />{t('runs:aiSummary.github.sectionTitle')}
                 </div>
                 <div style={{ marginBottom: '10px' }}>
-                  <label style={{ fontSize: '12px', color: '#94A3B8', display: 'block', marginBottom: '4px' }}>Title</label>
+                  <label style={{ fontSize: '12px', color: '#94A3B8', display: 'block', marginBottom: '4px' }}>{t('runs:aiSummary.github.titleLabel')}</label>
                   <input
                     type="text"
                     value={githubTitle}
@@ -989,7 +1018,7 @@ export default function AIRunSummaryPanel({
                   />
                 </div>
                 <div style={{ marginBottom: '10px' }}>
-                  <label style={{ fontSize: '12px', color: '#94A3B8', display: 'block', marginBottom: '4px' }}>Body</label>
+                  <label style={{ fontSize: '12px', color: '#94A3B8', display: 'block', marginBottom: '4px' }}>{t('runs:aiSummary.github.bodyLabel')}</label>
                   <textarea
                     value={githubBody}
                     onChange={e => setGithubBody(e.target.value)}
@@ -999,19 +1028,19 @@ export default function AIRunSummaryPanel({
                 </div>
                 <div style={{ fontSize: '11px', color: '#475569', marginBottom: '12px' }}>
                   <i className="ri-github-fill" style={{ marginRight: 4 }} />
-                  Will be created in <strong style={{ color: '#64748B' }}>{githubConfig.owner}/{githubConfig.repo}</strong>
+                  {t('runs:aiSummary.github.willBeCreatedIn')} <strong style={{ color: '#64748B' }}>{githubConfig.owner}/{githubConfig.repo}</strong>
                   {githubConfig.default_labels.length > 0 && (
-                    <> · Labels: <strong style={{ color: '#64748B' }}>{githubConfig.default_labels.join(', ')}</strong></>
+                    <> · {t('runs:aiSummary.github.labelsSuffix')} <strong style={{ color: '#64748B' }}>{githubConfig.default_labels.join(', ')}</strong></>
                   )}
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                  <button onClick={() => setShowGithubForm(false)} style={actionBtn()}>Cancel</button>
+                  <button onClick={() => setShowGithubForm(false)} style={actionBtn()}>{t('common:cancel')}</button>
                   <button
                     onClick={handleCreateGithubIssue}
                     disabled={githubCreating || !githubTitle.trim()}
                     style={{ background: '#1F2937', color: '#F9FAFB', border: '1px solid #374151', borderRadius: '6px', padding: '6px 12px', fontSize: '12px', fontWeight: 600, cursor: (githubCreating || !githubTitle.trim()) ? 'not-allowed' : 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', opacity: (githubCreating || !githubTitle.trim()) ? 0.6 : 1 }}
                   >
-                    <i className="ri-github-fill" /> {githubCreating ? 'Creating…' : 'Create Issue'}
+                    <i className="ri-github-fill" /> {githubCreating ? t('runs:aiSummary.action.creating') : t('runs:aiSummary.github.createIssue')}
                   </button>
                 </div>
               </div>
@@ -1022,45 +1051,45 @@ export default function AIRunSummaryPanel({
               <div style={{ background: '#1E293B', border: '1px solid #334155', borderRadius: '10px', padding: '16px', marginTop: '12px' }}>
                 <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748B', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   {shareMode === 'slack'
-                    ? <><i className="ri-slack-line" style={{ marginRight: 6 }} />Share via Slack</>
-                    : <><i className="ri-mail-send-line" style={{ marginRight: 6 }} />Share via Email</>}
+                    ? <><i className="ri-slack-line" style={{ marginRight: 6 }} />{t('runs:aiSummary.slack.sectionTitle')}</>
+                    : <><i className="ri-mail-send-line" style={{ marginRight: 6 }} />{t('runs:aiSummary.email.sectionTitle')}</>}
                 </div>
                 {shareMode === 'slack' && (
                   slackIntegrations.length > 0 ? (
                     <div style={{ marginBottom: '10px' }}>
-                      <label style={{ fontSize: '12px', color: '#94A3B8', display: 'block', marginBottom: '4px' }}>Select channel</label>
+                      <label style={{ fontSize: '12px', color: '#94A3B8', display: 'block', marginBottom: '4px' }}>{t('runs:aiSummary.slack.selectChannel')}</label>
                       <select
                         value={selectedSlackId}
                         onChange={e => setSelectedSlackId(e.target.value)}
                         style={{ width: '100%', background: '#0F172A', border: '1px solid #334155', borderRadius: '6px', color: '#CBD5E1', padding: '6px 10px', fontSize: '13px', fontFamily: 'inherit' }}
                       >
                         {slackIntegrations.map(s => (
-                          <option key={s.id} value={s.id}>{s.channel_name || 'Unnamed channel'}</option>
+                          <option key={s.id} value={s.id}>{s.channel_name || t('runs:aiSummary.slack.unnamedChannel')}</option>
                         ))}
                       </select>
                     </div>
                   ) : (
                     <div style={{ marginBottom: '10px' }}>
-                      <label style={{ fontSize: '12px', color: '#94A3B8', display: 'block', marginBottom: '4px' }}>Slack Webhook URL</label>
+                      <label style={{ fontSize: '12px', color: '#94A3B8', display: 'block', marginBottom: '4px' }}>{t('runs:aiSummary.slack.webhookLabel')}</label>
                       <input
                         type="url"
-                        placeholder="https://hooks.slack.com/services/..."
+                        placeholder={t('runs:aiSummary.slack.webhookPlaceholder')}
                         value={shareSlackInput}
                         onChange={e => setShareSlackInput(e.target.value)}
                         style={{ width: '100%', boxSizing: 'border-box', background: '#0F172A', border: '1px solid #334155', borderRadius: '6px', color: '#CBD5E1', padding: '6px 10px', fontSize: '13px', fontFamily: 'inherit', outline: 'none' }}
                       />
                       <p style={{ fontSize: '11px', color: '#475569', marginTop: 4, marginBottom: 0 }}>
-                        No Slack integration found. Connect one in Settings &rsaquo; Integrations, or paste a webhook URL above.
+                        {t('runs:aiSummary.slack.noIntegration')}
                       </p>
                     </div>
                   )
                 )}
                 {shareMode === 'email' && (
                   <div style={{ marginBottom: '10px' }}>
-                    <label style={{ fontSize: '12px', color: '#94A3B8', display: 'block', marginBottom: '4px' }}>Recipient email</label>
+                    <label style={{ fontSize: '12px', color: '#94A3B8', display: 'block', marginBottom: '4px' }}>{t('runs:aiSummary.email.recipientLabel')}</label>
                     <input
                       type="email"
-                      placeholder="teammate@company.com"
+                      placeholder={t('runs:aiSummary.email.recipientPlaceholder')}
                       value={shareEmailInput}
                       onChange={e => setShareEmailInput(e.target.value)}
                       style={{ width: '100%', boxSizing: 'border-box', background: '#0F172A', border: '1px solid #334155', borderRadius: '6px', color: '#CBD5E1', padding: '6px 10px', fontSize: '13px', fontFamily: 'inherit', outline: 'none' }}
@@ -1068,16 +1097,16 @@ export default function AIRunSummaryPanel({
                   </div>
                 )}
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '8px' }}>
-                  <button onClick={() => setShareMode(null)} style={actionBtn()}>Cancel</button>
+                  <button onClick={() => setShareMode(null)} style={actionBtn()}>{t('common:cancel')}</button>
                   <button
                     onClick={shareMode === 'slack' ? handleShareSlack : handleShareEmail}
                     disabled={shareSending}
                     style={{ background: '#6366F1', color: '#fff', border: 'none', borderRadius: '6px', padding: '6px 14px', fontSize: '12px', fontWeight: 600, cursor: shareSending ? 'not-allowed' : 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', opacity: shareSending ? 0.7 : 1 }}
                   >
                     {shareSending ? (
-                      <><span style={{ width: 10, height: 10, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', display: 'inline-block', animation: 'aiPanelSpin 0.8s linear infinite' }} />Sending…</>
+                      <><span style={{ width: 10, height: 10, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', display: 'inline-block', animation: 'aiPanelSpin 0.8s linear infinite' }} />{t('runs:aiSummary.sending')}</>
                     ) : (
-                      <><i className={shareMode === 'slack' ? 'ri-slack-line' : 'ri-send-plane-line'} />Send</>
+                      <><i className={shareMode === 'slack' ? 'ri-slack-line' : 'ri-send-plane-line'} />{t('runs:aiSummary.send')}</>
                     )}
                   </button>
                 </div>
