@@ -1,4 +1,5 @@
-import { formatRelativeTime } from '../../lib/issueMetadata';
+import { useTranslation } from 'react-i18next';
+import { formatRelativeTime } from '../../lib/formatRelativeTime';
 
 interface LastSyncedLabelProps {
   lastSyncedAt: string | null;
@@ -9,16 +10,19 @@ interface LastSyncedLabelProps {
 
 /**
  * "Last synced X ago" text + "Refresh now" button.
- * Design-spec §7-1.
+ * Design-spec §7-1 / §7.16.
  */
 export default function LastSyncedLabel({ lastSyncedAt, onRefresh, canRefresh, isSyncing }: LastSyncedLabelProps) {
-  const text = lastSyncedAt ? `Last synced ${formatRelativeTime(lastSyncedAt)}` : 'Not synced yet';
+  const { t } = useTranslation('common');
+  const text = lastSyncedAt
+    ? t('issues.lastSynced', { time: formatRelativeTime(lastSyncedAt, t) })
+    : t('issues.notSyncedYet');
 
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
       <span className="mo-last-synced">
         <i className="ri-time-line" />
-        {isSyncing ? 'Syncing…' : text}
+        {isSyncing ? t('issues.syncing') : text}
       </span>
       {canRefresh && (
         <button
@@ -26,11 +30,11 @@ export default function LastSyncedLabel({ lastSyncedAt, onRefresh, canRefresh, i
           className={`btn btn-sm mo-refresh-btn${isSyncing ? ' loading' : ''}`}
           onClick={() => { if (!isSyncing) void onRefresh(); }}
           disabled={isSyncing}
-          aria-label="Refresh issue metadata"
+          aria-label={t('issues.a11y.refresh')}
           aria-busy={isSyncing ? 'true' : 'false'}
         >
           <i className="ri-refresh-line" />
-          Refresh now
+          {t('issues.refreshNow')}
         </button>
       )}
     </span>

@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../Toast';
+import { formatShortDate } from '../../lib/dateFormat';
 import {
   mapJiraPriority,
   mapJiraStatus,
@@ -184,6 +186,7 @@ const ghSvg = (
  * Design-spec §7, dev-spec AC-A1~A8.
  */
 export default function IssuesList({ runIds, onCountChange, allowRefresh = true }: IssuesListProps) {
+  const { t, i18n } = useTranslation('common');
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const [sourceFilter, setSourceFilter] = useState<'all' | 'jira' | 'github'>('all');
@@ -214,7 +217,7 @@ export default function IssuesList({ runIds, onCountChange, allowRefresh = true 
   const handleRefresh = async () => {
     const now = Date.now();
     if (now - lastRefreshRef.current < 10_000) {
-      showToast('Please wait before refreshing again', 'info');
+      showToast(t('issues.debounceWait'), 'info');
       return;
     }
     lastRefreshRef.current = now;
@@ -227,16 +230,16 @@ export default function IssuesList({ runIds, onCountChange, allowRefresh = true 
       const jiraOk = jiraRes.status === 'fulfilled' && !(jiraRes.value?.error);
       const ghOk = ghRes.status === 'fulfilled' && !(ghRes.value?.error);
       if (!jiraOk && !ghOk) {
-        showToast('Failed to refresh issues. Retry later.', 'error');
+        showToast(t('issues.refreshFailed'), 'error');
       } else {
-        const jiraCount = jiraOk ? (jiraRes as any).value?.data?.synced_count ?? 0 : 0;
-        const ghCount = ghOk ? (ghRes as any).value?.data?.synced_count ?? 0 : 0;
-        showToast(`Synced ${jiraCount + ghCount} issues`, 'success');
+        const jiraSyncedCount = jiraOk ? (jiraRes as any).value?.data?.synced_count ?? 0 : 0;
+        const ghSyncedCount = ghOk ? (ghRes as any).value?.data?.synced_count ?? 0 : 0;
+        showToast(t('issues.syncedCount', { count: jiraSyncedCount + ghSyncedCount }), 'success');
       }
       await queryClient.invalidateQueries({ queryKey });
     } catch (e) {
       console.error('[IssuesList] refresh error:', e);
-      showToast('Failed to refresh issues. Retry later.', 'error');
+      showToast(t('issues.refreshFailed'), 'error');
     } finally {
       setIsSyncing(false);
     }
@@ -245,7 +248,7 @@ export default function IssuesList({ runIds, onCountChange, allowRefresh = true 
   if (isLoading) {
     return (
       <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', fontSize: 13 }}>
-        Loading issues…
+        {t('issues.loading')}
       </div>
     );
   }
@@ -256,15 +259,15 @@ export default function IssuesList({ runIds, onCountChange, allowRefresh = true 
     <div>
       {/* Source filter strip + Last synced */}
       <div className="int-strip" style={{ margin: '0 0 14px' }}>
-        <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sources</span>
+        <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('issues.sources')}</span>
         <button className={`int-pill ${sourceFilter === 'all' ? 'active' : ''}`} onClick={() => setSourceFilter('all')}>
-          All <span className="count">{issues.length}</span>
+          {t('issues.all')} <span className="count">{issues.length}</span>
         </button>
         <button className={`int-pill jira ${sourceFilter === 'jira' ? 'active' : ''}`} onClick={() => setSourceFilter('jira')}>
-          <span className="logo">J</span>Jira <span className="count">{jiraCount}</span>
+          <span className="logo">J</span>{t('issues.jira')} <span className="count">{jiraCount}</span>
         </button>
         <button className={`int-pill gh ${sourceFilter === 'github' ? 'active' : ''}`} onClick={() => setSourceFilter('github')}>
-          <span className="logo">{ghSvg}</span>GitHub <span className="count">{ghCount}</span>
+          <span className="logo">{ghSvg}</span>{t('issues.github')} <span className="count">{ghCount}</span>
         </button>
         <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
           <LastSyncedLabel
@@ -279,24 +282,24 @@ export default function IssuesList({ runIds, onCountChange, allowRefresh = true 
       {/* KPIs */}
       <div className="iss-kpis" style={{ margin: '0 0 12px' }}>
         <div className="iss-kpi open">
-          <div className="l">Total Issues</div>
+          <div className="l">{t('issues.totalIssues')}</div>
           <div className="v">{issues.length}</div>
-          <div className="sub">from {runIds.length} run{runIds.length !== 1 ? 's' : ''}</div>
+          <div className="sub">{t('issues.fromRuns', { count: runIds.length })}</div>
         </div>
         <div className="iss-kpi">
-          <div className="l">Jira</div>
+          <div className="l">{t('issues.jira')}</div>
           <div className="v" style={{ color: '#0052cc' }}>{jiraCount}</div>
-          <div className="sub">bug reports</div>
+          <div className="sub">{t('issues.bugReports')}</div>
         </div>
         <div className="iss-kpi">
-          <div className="l">GitHub</div>
+          <div className="l">{t('issues.github')}</div>
           <div className="v" style={{ color: '#24292e' }}>{ghCount}</div>
-          <div className="sub">issues</div>
+          <div className="sub">{t('issues.issues')}</div>
         </div>
         <div className="iss-kpi">
-          <div className="l">Linked TCs</div>
+          <div className="l">{t('issues.linkedTcs')}</div>
           <div className="v">{totalLinkedTcs}</div>
-          <div className="sub">with issue</div>
+          <div className="sub">{t('issues.withIssue')}</div>
         </div>
       </div>
 
@@ -308,18 +311,24 @@ export default function IssuesList({ runIds, onCountChange, allowRefresh = true 
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
-          <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: 0 }}>No issues linked yet.</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: 0 }}>{t('issues.empty.title')}</p>
           <p style={{ color: 'var(--text-subtle)', fontSize: 12, margin: '6px 0 0' }}>
-            Issues appear here once you link Jira or GitHub issues from failed test results.
+            {t('issues.empty.hint')}
           </p>
         </div>
       ) : (
         <div className="iss-list" style={{ margin: 0 }}>
           {filteredIssues.map((issue, idx) => {
             const isJira = issue.source === 'jira';
-            const dateStr = issue.createdAt ? new Date(issue.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
-            const title = issue.tcTitle || `Issue from TC ${issue.tcId?.slice(-8) || ''}`;
+            const dateStr = formatShortDate(issue.createdAt, i18n.language);
+            const title = issue.tcTitle || t('issues.rowLabel', { tcId: issue.tcId?.slice(-8) || '' });
             const hasErr = !!issue.error;
+            const priorityLabel = issue.priority
+              ? t(`issues.priority.${issue.priority === 'critical' ? 'critical' : issue.priority === 'high' ? 'high' : issue.priority === 'medium' ? 'medium' : 'low'}`)
+              : t('issues.a11y.unknownPriority');
+            const statusLabelA11y = issue.status
+              ? t(`issues.status.${issue.status === 'in_progress' ? 'inProgress' : issue.status}`)
+              : t('issues.a11y.unknownStatus');
             return (
               <div
                 key={`${issue.source}-${issue.key}-${idx}`}
@@ -327,7 +336,12 @@ export default function IssuesList({ runIds, onCountChange, allowRefresh = true 
                 onClick={() => { if (issue.url) window.open(issue.url, '_blank', 'noopener,noreferrer'); }}
                 style={{ opacity: isSyncing ? 0.6 : 1, cursor: issue.url ? 'pointer' : 'default' }}
                 role={issue.url ? 'link' : undefined}
-                aria-label={`${issue.source} issue ${issue.key}, priority ${issue.priority || 'unknown'}, status ${issue.status || 'unknown'}`}
+                aria-label={t('issues.a11y.issueRow', {
+                  source: issue.source,
+                  key: issue.key,
+                  priority: priorityLabel,
+                  status: statusLabelA11y,
+                })}
               >
                 <div className={`iss-source ${isJira ? 'jira' : 'gh'}`}>
                   {isJira ? <span style={{ fontSize: 11, fontWeight: 700 }}>J</span> : ghSvg}
@@ -335,7 +349,7 @@ export default function IssuesList({ runIds, onCountChange, allowRefresh = true 
                 <div>
                   <div className="iss-id">{issue.key}</div>
                   <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
-                    {isJira ? 'Jira · Bug' : 'GitHub'}
+                    {isJira ? t('issues.sourceLabel.jiraBug') : t('issues.sourceLabel.github')}
                   </div>
                 </div>
                 <div>
@@ -345,7 +359,7 @@ export default function IssuesList({ runIds, onCountChange, allowRefresh = true 
                     {dateStr && <span>{dateStr}</span>}
                     {hasErr && (
                       <span style={{ color: 'var(--text-subtle)', fontSize: 11 }}>
-                        <i className="ri-error-warning-line" /> Metadata unavailable
+                        <i className="ri-error-warning-line" /> {t('issues.metadataUnavailable')}
                       </span>
                     )}
                   </div>
@@ -387,9 +401,9 @@ export default function IssuesList({ runIds, onCountChange, allowRefresh = true 
 
       {issues.length > 0 && (
         <div style={{ margin: '14px 0 0', padding: '10px 14px', background: 'var(--bg-subtle)', borderRadius: 8, fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-          {totalLinkedTcs} TC{totalLinkedTcs !== 1 ? 's' : ''} with linked issues.
-          {jiraCount > 0 && ` ${jiraCount} Jira.`}
-          {ghCount > 0 && ` ${ghCount} GitHub.`}
+          {t('issues.tcsWithLinkedIssues', { count: totalLinkedTcs })}
+          {jiraCount > 0 && ` ${t('issues.sourceSuffix.jira', { count: jiraCount })}`}
+          {ghCount > 0 && ` ${t('issues.sourceSuffix.github', { count: ghCount })}`}
         </div>
       )}
     </div>

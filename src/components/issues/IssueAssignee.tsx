@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getAvatarColor, getInitials } from '../Avatar';
 
 interface IssueAssigneeProps {
@@ -12,6 +13,7 @@ interface IssueAssigneeProps {
  * Fallback priority: avatar_url → initials → "Unassigned".
  */
 export default function IssueAssignee({ avatarUrl, displayName, login }: IssueAssigneeProps) {
+  const { t } = useTranslation('common');
   const [imgError, setImgError] = useState(false);
   const name = displayName || login || '';
   const hasName = !!name.trim();
@@ -22,7 +24,7 @@ export default function IssueAssignee({ avatarUrl, displayName, login }: IssueAs
         <div className="av initials">
           <i className="ri-user-line" style={{ fontSize: 11 }} />
         </div>
-        <span className="name">Unassigned</span>
+        <span className="name">{t('issues.assignee.unassigned')}</span>
       </div>
     );
   }
