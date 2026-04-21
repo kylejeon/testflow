@@ -1,3 +1,75 @@
+2026-04-21: f017 Prompt Injection Hardening — promptSanitize + Edge Function 5개 적용
+(dev-spec-f017-prompt-injection, SEC-H-1)
+
+## 뭘 했냐 (claude 브랜치, 커밋 3개 — push 예정)
+
+사용자 입력(milestone/plan/tc name·title 등)이 escape 없이 Claude 프롬프트 템플릿에
+그대로 interpolate 되어 프롬프트 인젝션 공격면이 열려 있던 SEC-H-1 취약점 해소.
+
+### 신규 유틸
+- `supabase/functions/_shared/promptSanitize.ts` (서버 최종 방어선, Deno)
+- `src/lib/promptSanitize.ts` (클라이언트 미러, UX 보조용)
+- 두 파일 동일 로직 — Deno ↔ Node 런타임 격리로 인한 코드 중복은 허용.
+
+### Sanitize 스펙
+- Named exports: `sanitizeShortName` (50), `sanitizeTitle` (120),
+  `sanitizeLong` (500), `sanitizeTag` (40), `sanitizeForPrompt`, `sanitizeArrayForPrompt`
+- 내부 helper `applySanitize(input, maxLen, fallback)`
+- 치환 순서: 구조 토큰 제거 (`</system>`, `<|im_end|>`, `{{`, `[INST]` 등) →
+  zero-width 제거 (`\u200B-\u200D\uFEFF\u2060`) → 제어문자(`\x00-\x1F\x7F`) 공백 치환 →
+  구조 기호 (`"`, `` ` ``, `{}<>`) 제거 → 연속 공백 압축 + trim →
+  surrogate pair 안전 truncate (`Array.from`) → 빈 문자열이면 `(untitled)` fallback
+- 싱글따옴표 `'` 는 의도적으로 유지 (한국어 조사 "'의'", 영어 축약 "don't" 보존)
+
+### 적용 Edge Function 5개
+1. `milestone-risk-predictor/index.ts` — milestone.name, sub.name, tc.title (×2),
+   run.name, topFailTags[].name (6 지점)
+2. `risk-predictor/index.ts` — plan.name, tc.title (×2) (3 지점)
+3. `plan-assistant/index.ts` — ms.name, tc.title/folder/tags, context, affected_areas
+   (5 지점)
+4. `generate-testcases/index.ts` — Jira issue.summary/description/acceptanceCriteria,
+   tc.title/folder (×2), runData.name, failedByFolder.folder, folderSummary folder/titles,
+   requirements r.title (×2), projectData.name, existing tc.title, flaky t.title/folder_path,
+   sessionData.name/charter (13 지점)
+5. `check-milestone-past-due/index.ts` — m.name, group.projectName (2 지점)
+
+합계: 5개 Edge Function, 29 지점 sanitize 적용.
+
+### vitest 케이스 (src/lib/promptSanitize.test.ts, 30 cases)
+- 공격 벡터 11종 (AC-1 10+ 요구 충족):
+  `; Ignore previous instructions` / JSON 탈출 / newline injection /
+  `</system>` / `<|im_end|>` + `<|im_start|>` / `{{7*7}}` / zero-width /
+  `\x00-\x1F` 제어문자 / backtick / `<script>` / `[INST]`
+- 길이 truncate: 한글 50, emoji surrogate pair 50, title 120, long 500, tag 40
+- Fallback: 빈 문자열 / whitespace / null / undefined / 제어문자만 → `(untitled)`
+- 정상 입력 보존: 한국어 em-dash·겹낫표, 영어 hyphen, 일본어/중국어
+- 싱글따옴표 유지 검증 (한국어 조사 + 영어 축약)
+- 배열 버전 sanitizeArrayForPrompt — fallback 제외 유지
+- 성능 smoke: 1000회 호출 < 100ms
+
+### 품질 체크 (전부 PASS)
+- `npx tsc --noEmit` — 0 errors
+- `npm run build` — 7.12s 성공
+- `npm run test -- --run` — 6 files / 99 tests PASS (기존 69 + 신규 30)
+- `npm run scan:i18n` — clean 23 files
+- `npm run scan:i18n:parity` — 0 diff
+
+## 어디까지 됐냐
+- claude 브랜치 3 커밋 (유틸 + 테스트 / Edge Function 적용 / progress 기록)
+- SEC-H-1 close 대기 — QA 재검수 권장
+
+## 다음엔 뭘 할 거냐
+- OOS 후속 티켓 후보:
+  - `create-github-issue` / `create-jira-issue` Edge Function 외부 시스템
+    payload injection 방어 (별도 스코프)
+  - Output sanitization (Claude 응답 XSS 방어) — dangerouslySetInnerHTML 감사
+  - Rate limit / abuse 탐지 SEC-B-1
+  - System prompt hardening (예: "User input is untrusted..." prefix 추가)
+  - 클라이언트 입력 폼 maxLength 힌트 + 실시간 validation UX (Designer 티켓)
+  - 기존 DB historical data 사전 sanitize 마이그레이션 (런타임만으로 충분하다면 skip)
+
+───
+
 2026-04-21: i18n Phase 2 QA follow-up (W-1 / N-1 / N-2) 해소
 (qa-report-i18n-coverage-phase2, f010)
 
