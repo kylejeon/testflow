@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n';
 import { supabase } from '../../../lib/supabase';
+import { edgeFetch } from '../../../lib/aiFetch';
 import { normalizeLocale } from '../../../lib/claudeLocale';
 import { showAiCreditToast } from '../../../lib/aiCreditToast';
 import { useToast } from '../../../components/Toast';
@@ -435,28 +436,17 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
       const vals = editValues[pattern.name] ?? getDefaultJiraValues(pattern);
       const labels = vals.labels.split(',').map(l => l.trim()).filter(Boolean);
 
-      const { data: { session } } = await supabase.auth.getSession();
-      const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL as string;
-      const supabaseAnonKey = import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY as string;
-
-      const res = await fetch(`${supabaseUrl}/functions/v1/create-jira-issue`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': supabaseAnonKey,
-          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
-        },
-        body: JSON.stringify({
-          domain: jiraSettings.domain,
-          email: jiraSettings.email,
-          apiToken: jiraSettings.api_token,
-          projectKey,
-          summary: vals.summary,
-          description: `**Root Cause:** ${pattern.rootCause}\n\n**Fix Suggestion:** ${pattern.fixSuggestion}\n\n**Affected Tests:**\n${tcList}`,
-          issueType: 'Bug',
-          priority: vals.priority,
-          labels,
-        }),
+      // ES256-safe: edgeFetch 가 anon key + x-user-token 헤더로 호출.
+      const res = await edgeFetch('create-jira-issue', {
+        domain: jiraSettings.domain,
+        email: jiraSettings.email,
+        apiToken: jiraSettings.api_token,
+        projectKey,
+        summary: vals.summary,
+        description: `**Root Cause:** ${pattern.rootCause}\n\n**Fix Suggestion:** ${pattern.fixSuggestion}\n\n**Affected Tests:**\n${tcList}`,
+        issueType: 'Bug',
+        priority: vals.priority,
+        labels,
       });
 
       const resData = await res.json();

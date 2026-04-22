@@ -9,8 +9,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-user-token',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 };
 
 function jsonResponse(body: object, status = 200): Response {
@@ -23,29 +23,38 @@ function jsonResponse(body: object, status = 200): Response {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
-  // Auth
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) return jsonResponse({ error: 'Unauthorized' }, 401);
-
   const supabaseUrl     = Deno.env.get('SUPABASE_URL')!;
-  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
   const serviceKey      = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const paddleApiKey    = Deno.env.get('PADDLE_API_KEY');
 
   if (!paddleApiKey) return jsonResponse({ error: 'Paddle API key not configured' }, 500);
 
-  const token = authHeader.replace('Bearer ', '');
-  const userClient = createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: authHeader } },
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const { data: { user }, error: authError } = await userClient.auth.getUser(token);
-  if (authError || !user) return jsonResponse({ error: 'Unauthorized' }, 401);
-
-  // Get provider_customer_id from profiles
   const adminClient = createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+
+  // ES256-safe auth: x-user-token > Authorization Bearer
+  const userTokenHeader = req.headers.get('x-user-token');
+  const authHeader = req.headers.get('Authorization');
+  const token = userTokenHeader
+    || (authHeader?.startsWith('Bearer ') ? authHeader.replace('Bearer ', '') : '');
+  if (!token) return jsonResponse({ error: 'Unauthorized' }, 401);
+
+  let userId: string;
+  try {
+    const [, payloadB64] = token.split('.');
+    const padded = payloadB64.replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(
+      new TextDecoder().decode(Uint8Array.from(atob(padded), (c) => c.charCodeAt(0))),
+    );
+    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) throw new Error('Token expired');
+    userId = payload.sub;
+    if (!userId) throw new Error('No sub');
+  } catch {
+    return jsonResponse({ error: 'Unauthorized' }, 401);
+  }
+  const { data: { user }, error: authError } = await adminClient.auth.admin.getUserById(userId);
+  if (authError || !user) return jsonResponse({ error: 'Unauthorized' }, 401);
   const { data: profile } = await adminClient
     .from('profiles')
     .select('provider_customer_id, payment_provider')

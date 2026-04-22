@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { invokeEdge } from '../../../lib/aiFetch';
 import { Link } from 'react-router-dom';
 import { ModalShell } from '../../../components/ModalShell';
 
@@ -68,7 +69,7 @@ export default function JiraImportModal({ projectId, projectJiraKey = '', existi
     setPreviewIssues(null);
 
     try {
-      const { data, error: fnError } = await supabase.functions.invoke('fetch-jira-requirements', {
+      const { data, error: fnError } = await invokeEdge('fetch-jira-requirements', {
         body: {
           project_id: projectId,
           jira_project_key: projectJiraKey || undefined,
@@ -99,7 +100,7 @@ export default function JiraImportModal({ projectId, projectJiraKey = '', existi
     setError(null);
 
     try {
-      const { data, error: fnError } = await supabase.functions.invoke('fetch-jira-requirements', {
+      const { data, error: fnError } = await invokeEdge('fetch-jira-requirements', {
         body: {
           project_id: projectId,
           jira_project_key: projectJiraKey || undefined,

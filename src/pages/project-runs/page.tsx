@@ -5,6 +5,7 @@ import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query';
 import { markOnboardingStep } from '../../lib/onboardingMarker';
 import { supabase } from '../../lib/supabase';
+import { invokeEdge } from '../../lib/aiFetch';
 import NotificationBell from '../../components/feature/NotificationBell';
 import { notifyProjectMembers } from '../../hooks/useNotifications';
 import { triggerWebhook } from '../../hooks/useWebhooks';
@@ -1149,7 +1150,7 @@ export default function ProjectRunsPage() {
                 .filter((r) => r.email);
               if (recipients.length > 0) {
                 const total = (prevRunData?.passed ?? 0) + (prevRunData?.failed ?? 0) + (prevRunData?.blocked ?? 0) + (prevRunData?.retest ?? 0) + (prevRunData?.untested ?? 0);
-                await supabase.functions.invoke('send-notification', {
+                await invokeEdge('send-notification', {
                   body: {
                     event_type: 'run_completed',
                     payload: {
@@ -1323,7 +1324,7 @@ export default function ProjectRunsPage() {
               .map((m: any) => ({ user_id: m.user_id as string, email: m.profiles?.email as string }))
               .filter((r) => r.email);
             if (recipients.length > 0) {
-              await supabase.functions.invoke('send-notification', {
+              await invokeEdge('send-notification', {
                 body: {
                   event_type: 'run_created',
                   payload: {
@@ -1371,7 +1372,7 @@ export default function ProjectRunsPage() {
                 .map((m: any) => ({ user_id: m.user_id as string, email: m.profiles?.email as string }))
                 .filter((r) => r.email);
               if (recipients.length > 0) {
-                await supabase.functions.invoke('send-notification', {
+                await invokeEdge('send-notification', {
                   body: {
                     event_type: 'run_completed',
                     payload: {

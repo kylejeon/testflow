@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { queryClient } from '../../lib/queryClient';
 import { markOnboardingStep } from '../../lib/onboardingMarker';
 import { supabase } from '../../lib/supabase';
+import { invokeEdge } from '../../lib/aiFetch';
 import { WEBHOOK_EVENTS, WebhookEventType } from '../../hooks/useWebhooks';
 import SEOHead from '../../components/SEOHead';
 import NotificationSettingsPanel from './components/NotificationSettingsPanel';
@@ -268,7 +269,7 @@ function DangerZoneSection({ email }: { email: string }) {
     if (confirmText !== email) return;
     try {
       setDeleting(true);
-      const { error } = await supabase.functions.invoke('delete-account', { body: {} });
+      const { error } = await invokeEdge('delete-account', { body: {} });
       if (error) throw new Error(error.message);
       try {
         await supabase.auth.signOut();
@@ -554,8 +555,8 @@ export default function SettingsPage() {
       setLoadingInvoices(true);
       setInvoicesError(false);
       try {
-        const { data, error } = await supabase.functions.invoke('fetch-paddle-invoices');
-        if (!error && data?.invoices) setInvoices(data.invoices);
+        const { data, error } = await invokeEdge<{ invoices?: unknown[] }>('fetch-paddle-invoices');
+        if (!error && data?.invoices) setInvoices(data.invoices as typeof invoices);
         else { setInvoices([]); if (error) setInvoicesError(true); }
       } catch {
         setInvoices([]);
@@ -811,7 +812,7 @@ export default function SettingsPage() {
         .replace(/^https?:?\/?\/?\/?/i, '')
         .replace(/\/+$/, '')
         .trim();
-      const { data, error } = await supabase.functions.invoke('test-jira-connection', {
+      const { data, error } = await invokeEdge<{ success?: boolean; message?: string }>('test-jira-connection', {
         body: {
           domain: cleanDomain,
           email: jiraSettings.email,
@@ -821,10 +822,10 @@ export default function SettingsPage() {
 
       if (error) throw error;
 
-      if (data.success) {
+      if (data?.success) {
         setTestResult({ success: true, message: 'Jira connection successful!' });
       } else {
-        setTestResult({ success: false, message: data.message || 'Jira connection failed.' });
+        setTestResult({ success: false, message: data?.message || 'Jira connection failed.' });
       }
     } catch (error: any) {
       console.error('Jira connection test error:', error);
@@ -837,7 +838,7 @@ export default function SettingsPage() {
   const handleFetchJiraFields = async () => {
     try {
       setFetchingFields(true);
-      const { data, error } = await supabase.functions.invoke('fetch-jira-fields', {
+      const { data, error } = await invokeEdge<{ fields?: JiraField[] }>('fetch-jira-fields', {
         body: {
           domain: jiraSettings.domain,
           email: jiraSettings.email,
@@ -1768,7 +1769,7 @@ def pytest_sessionfinish(session, exitstatus):
     setStarterTrialError(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke('start-trial', { body: {} });
+      const { data, error } = await invokeEdge<{ error?: string; trial_ends_at?: string; success?: boolean }>('start-trial', { body: {} });
       if (error) throw new Error(error.message);
       if (data?.error === 'already_used') {
         setStarterTrialError("You've already used your free trial.");

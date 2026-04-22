@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
+import { invokeEdge } from '../lib/aiFetch';
 import { type AnyStep, isSharedStepRef } from '../types/shared-steps';
 import { expandFlatSteps, type SharedStepCache } from '../lib/expandSharedSteps';
 import { formatRelativeTime } from '../lib/formatRelativeTime';
@@ -236,7 +237,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
     setCreatingGithubIssue(true);
     try {
       const title = titleOverride || `[Test Failed] ${tc.customId ? `${tc.customId} - ` : ''}${tc.title}`;
-      const { data, error } = await supabase.functions.invoke('create-github-issue', {
+      const { data, error } = await invokeEdge<{ success?: boolean; issue?: { number: number; html_url: string }; error?: string }>('create-github-issue', {
         body: {
           token: githubSettings.token,
           owner: githubSettings.owner,

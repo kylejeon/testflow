@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
+import { invokeEdge } from '../../lib/aiFetch';
 import { useToast } from '../Toast';
 import { formatShortDate } from '../../lib/dateFormat';
 import {
@@ -224,8 +225,8 @@ export default function IssuesList({ runIds, onCountChange, allowRefresh = true 
     setIsSyncing(true);
     try {
       const [jiraRes, ghRes] = await Promise.allSettled([
-        supabase.functions.invoke('sync-jira-metadata', { body: { scope: 'run_ids', run_ids: runIds, only_stale: false } }),
-        supabase.functions.invoke('sync-github-metadata', { body: { scope: 'run_ids', run_ids: runIds, only_stale: false } }),
+        invokeEdge<{ synced_count?: number }>('sync-jira-metadata', { body: { scope: 'run_ids', run_ids: runIds, only_stale: false } }),
+        invokeEdge<{ synced_count?: number }>('sync-github-metadata', { body: { scope: 'run_ids', run_ids: runIds, only_stale: false } }),
       ]);
       const jiraOk = jiraRes.status === 'fulfilled' && !(jiraRes.value?.error);
       const ghOk = ghRes.status === 'fulfilled' && !(ghRes.value?.error);

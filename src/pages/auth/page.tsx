@@ -2,6 +2,7 @@ import Logo from '../../components/Logo';
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { edgeFetch } from '../../lib/aiFetch';
 import { sendLoopsEvent } from '../../lib/loops';
 import { logSignupConsent } from '../../lib/consentLog';
 import SEOHead from '../../components/SEOHead';
@@ -281,14 +282,8 @@ export default function AuthPage() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      const response = await fetch(
-        `${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/accept-invitation`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-          body: JSON.stringify({ token }),
-        }
-      );
+      // ES256-safe: edgeFetch 가 anon key 를 Authorization 에, 유저 JWT 를 x-user-token 에 넣음.
+      const response = await edgeFetch('accept-invitation', { token });
       const result = await response.json();
       if (response.ok && result.projectId) {
         setSuccess(result.message);

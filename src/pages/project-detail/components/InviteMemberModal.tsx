@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { edgeFetch, invokeEdge } from '../../../lib/aiFetch';
 import { ModalShell } from '../../../components/ModalShell';
 import { notifyProjectMembers } from '../../../hooks/useNotifications';
 import { triggerWebhook } from '../../../hooks/useWebhooks';
@@ -170,7 +171,7 @@ export default function InviteMemberModal({
         });
 
         // Email notification: project_invited → the invited user (transactional)
-        void supabase.functions.invoke('send-notification', {
+        void invokeEdge('send-notification', {
           body: {
             event_type: 'project_invited',
             payload: {
@@ -196,26 +197,14 @@ export default function InviteMemberModal({
           onClose();
         }, 2000);
       } else {
-        // New user - create invitation
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        const response = await fetch(
-          `${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/send-invitation`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${session?.access_token}`,
-            },
-            body: JSON.stringify({
-              email,
-              fullName: fullName.trim() || undefined,
-              projectId,
-              role,
-              baseUrl: window.location.origin,
-            }),
-          }
-        );
+        // New user - create invitation. ES256-safe: edgeFetch 로 anon key + x-user-token.
+        const response = await edgeFetch('send-invitation', {
+          email,
+          fullName: fullName.trim() || undefined,
+          projectId,
+          role,
+          baseUrl: window.location.origin,
+        });
 
         const result = await response.json();
 
@@ -224,7 +213,7 @@ export default function InviteMemberModal({
         }
 
         // Email notification: project_invited → new user (no account yet, user_id null)
-        void supabase.functions.invoke('send-notification', {
+        void invokeEdge('send-notification', {
           body: {
             event_type: 'project_invited',
             payload: {

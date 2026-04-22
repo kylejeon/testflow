@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { invokeEdge } from '../../../lib/aiFetch';
 import { Link } from 'react-router-dom';
 import { ModalShell } from '../../../components/ModalShell';
 
@@ -57,7 +58,7 @@ export default function GitHubImportModal({ projectId, existingExternalIds, onCl
     setPreviewIssues(null);
 
     try {
-      const { data, error: fnError } = await supabase.functions.invoke('fetch-github-issues', {
+      const { data, error: fnError } = await invokeEdge('fetch-github-issues', {
         body: {
           project_id: projectId,
           label_filter: labelFilter.trim() || undefined,
@@ -95,7 +96,7 @@ export default function GitHubImportModal({ projectId, existingExternalIds, onCl
     setError(null);
 
     try {
-      const { data, error: fnError } = await supabase.functions.invoke('fetch-github-issues', {
+      const { data, error: fnError } = await invokeEdge('fetch-github-issues', {
         body: {
           project_id: projectId,
           label_filter: labelFilter.trim() || undefined,

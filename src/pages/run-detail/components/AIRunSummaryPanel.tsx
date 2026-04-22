@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../../lib/supabase';
 import { normalizeLocale } from '../../../lib/claudeLocale';
-import { aiFetch } from '../../../lib/aiFetch';
+import { aiFetch, edgeFetch, invokeEdge } from '../../../lib/aiFetch';
 import { showAiCreditToast } from '../../../lib/aiCreditToast';
 import { useToast } from '../../../components/Toast';
 
@@ -382,32 +382,19 @@ export default function AIRunSummaryPanel({
     }
     setJiraCreating(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { onToast(t('runs:aiSummary.error.unauthorized'), 'error'); return; }
-
-      const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL as string;
-      const supabaseAnonKey = import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY as string;
-
-      const resp = await fetch(`${supabaseUrl}/functions/v1/create-jira-issue`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': supabaseAnonKey,
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          // NOTE: Jira payload is intentionally English — these fields land in
-          // Jira UI and must remain stable for search/automation rules.
-          domain: jiraConfig.domain,
-          email: jiraConfig.email,
-          apiToken: jiraConfig.api_token,
-          projectKey: jiraConfig.jira_project_key,
-          summary: `[Bug] ${jiraPreviewCluster.name} Failures — ${jiraPreviewCluster.rootCause}`,
-          description: `AI-detected failure cluster from run "${runName}".\n\nRoot cause: ${jiraPreviewCluster.rootCause}\nAffected tests: ${jiraPreviewCluster.count}\n\nDetected by Testably AI Run Summary.\n\n${buildMarkdown()}`,
-          issueType: jiraConfig.issue_type || 'Bug',
-          priority: { critical: 'Highest', major: 'High', minor: 'Medium' }[jiraPreviewCluster.severity] ?? 'Medium',
-          labels: ['ai-detected', 'regression'],
-        }),
+      // ES256-safe edge function call.
+      const resp = await edgeFetch('create-jira-issue', {
+        // NOTE: Jira payload is intentionally English — these fields land in
+        // Jira UI and must remain stable for search/automation rules.
+        domain: jiraConfig.domain,
+        email: jiraConfig.email,
+        apiToken: jiraConfig.api_token,
+        projectKey: jiraConfig.jira_project_key,
+        summary: `[Bug] ${jiraPreviewCluster.name} Failures — ${jiraPreviewCluster.rootCause}`,
+        description: `AI-detected failure cluster from run "${runName}".\n\nRoot cause: ${jiraPreviewCluster.rootCause}\nAffected tests: ${jiraPreviewCluster.count}\n\nDetected by Testably AI Run Summary.\n\n${buildMarkdown()}`,
+        issueType: jiraConfig.issue_type || 'Bug',
+        priority: { critical: 'Highest', major: 'High', minor: 'Medium' }[jiraPreviewCluster.severity] ?? 'Medium',
+        labels: ['ai-detected', 'regression'],
       });
 
       const respData = await resp.json();
@@ -428,7 +415,7 @@ export default function AIRunSummaryPanel({
     if (!githubConfig || !githubTitle.trim()) return;
     setGithubCreating(true);
     try {
-      const { data, error } = await supabase.functions.invoke('create-github-issue', {
+      const { data, error } = await invokeEdge('create-github-issue', {
         body: {
           token: githubConfig.token,
           owner: githubConfig.owner,
@@ -480,7 +467,7 @@ export default function AIRunSummaryPanel({
     if (!shareEmailInput.trim()) { onToast(t('runs:aiSummary.toast.emailRequired'), 'error'); return; }
     setShareSending(true);
     try {
-      await supabase.functions.invoke('send-loops-event', {
+      await invokeEdge('send-loops-event', {
         body: {
           email: shareEmailInput.trim(),
           eventName: 'shareRunSummary',

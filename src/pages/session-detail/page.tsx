@@ -4,6 +4,7 @@ import { useToast } from '../../components/Toast';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
+import { invokeEdge } from '../../lib/aiFetch';
 import QuillEditor from './components/QuillEditor';
 import EditSessionModal from './components/EditSessionModal';
 import CropOverlay from './components/CropOverlay';
@@ -610,7 +611,7 @@ export default function SessionDetail() {
         .map(c => c.trim())
         .filter(c => c);
 
-      const { data, error } = await supabase.functions.invoke('create-jira-issue', {
+      const { data, error } = await invokeEdge('create-jira-issue', {
         body: {
           domain: jiraSettings.domain,
           email: jiraSettings.email,

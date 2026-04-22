@@ -23,7 +23,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-user-token',
 };
 
 function json(body: unknown, status = 200): Response {
@@ -39,24 +39,40 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const serviceKey  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const anonKey     = Deno.env.get('SUPABASE_ANON_KEY')!;
 
-  // Identify caller via JWT
-  const authHeader = req.headers.get('Authorization') ?? '';
-  const userClient = createClient(supabaseUrl, anonKey, {
-    global: { headers: { Authorization: authHeader } },
-    auth:   { persistSession: false, autoRefreshToken: false },
+  // Service-role client (admin + privileged tables)
+  const admin = createClient(supabaseUrl, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
   });
-  const { data: { user }, error: authErr } = await userClient.auth.getUser();
+
+  // ES256-safe caller identification (x-user-token > Authorization Bearer)
+  const userTokenHeader = req.headers.get('x-user-token');
+  const authHeader = req.headers.get('Authorization') ?? '';
+  const jwt = userTokenHeader
+    || (authHeader.startsWith('Bearer ') ? authHeader.replace(/^Bearer\s+/i, '') : '');
+  if (!jwt) return json({ error: 'Unauthorized' }, 401);
+
+  let userId: string;
+  try {
+    const [, payloadB64] = jwt.split('.');
+    const padded = payloadB64.replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(
+      new TextDecoder().decode(Uint8Array.from(atob(padded), (c) => c.charCodeAt(0))),
+    );
+    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+      throw new Error('Token expired');
+    }
+    userId = payload.sub;
+    if (!userId) throw new Error('No sub');
+  } catch {
+    return json({ error: 'Unauthorized' }, 401);
+  }
+
+  const { data: { user }, error: authErr } = await admin.auth.admin.getUserById(userId);
   if (authErr || !user) return json({ error: 'Unauthorized' }, 401);
 
   const email = user.email?.toLowerCase();
   if (!email) return json({ error: 'User has no email address' }, 400);
-
-  // Service-role client for privileged tables
-  const admin = createClient(supabaseUrl, serviceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
 
   // ── 1. Check trial_history by email ───────────────────────────────────────
   const { data: existing, error: histErr } = await admin

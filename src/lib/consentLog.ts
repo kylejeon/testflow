@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { invokeEdge } from './aiFetch';
 import { POLICY_VERSIONS } from './policyVersion';
 
 interface SignupConsentParams {
@@ -18,20 +18,20 @@ interface SignupConsentParams {
 }
 
 export async function logSignupConsent({ email, userId, consents }: SignupConsentParams): Promise<void> {
-  try {
-    await supabase.functions.invoke('log-consent', {
-      body: {
-        email,
-        user_id: userId,
-        consent_type: 'signup',
-        policy_version: POLICY_VERSIONS.tos,
-        consents,
-        source: 'web',
-      },
-    });
-  } catch (err) {
-    // 동의 로그 실패가 회원가입 흐름을 막으면 안 됨
-    console.error('[consentLog] logSignupConsent failed:', err);
+  // 회원가입 직후엔 세션이 있을 수도/없을 수도 있음 — allowAnonymous.
+  const { error } = await invokeEdge('log-consent', {
+    allowAnonymous: true,
+    body: {
+      email,
+      user_id: userId,
+      consent_type: 'signup',
+      policy_version: POLICY_VERSIONS.tos,
+      consents,
+      source: 'web',
+    },
+  });
+  if (error) {
+    console.error('[consentLog] logSignupConsent failed:', error);
   }
 }
 
@@ -46,18 +46,19 @@ interface CookieConsentParams {
 }
 
 export async function logCookieConsent({ userId, consents }: CookieConsentParams): Promise<void> {
-  try {
-    await supabase.functions.invoke('log-consent', {
-      body: {
-        email: '',
-        user_id: userId ?? null,
-        consent_type: 'cookie',
-        policy_version: POLICY_VERSIONS.cookie,
-        consents,
-        source: 'web',
-      },
-    });
-  } catch (err) {
-    console.error('[consentLog] logCookieConsent failed:', err);
+  // 쿠키 동의는 비로그인 상태에서도 호출됨.
+  const { error } = await invokeEdge('log-consent', {
+    allowAnonymous: true,
+    body: {
+      email: '',
+      user_id: userId ?? null,
+      consent_type: 'cookie',
+      policy_version: POLICY_VERSIONS.cookie,
+      consents,
+      source: 'web',
+    },
+  });
+  if (error) {
+    console.error('[consentLog] logCookieConsent failed:', error);
   }
 }

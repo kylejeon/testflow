@@ -2626,3 +2626,47 @@ refetch 플로우는 정상. 문제는 DB INSERT 자체.
 (b) Milestone AI Risk Analysis 도 동일
 (c) Modal 좌측 Analyzed TCs box 가 overflow 없이 panel 내부에 수용
 (d) Plan 생성 실패 시 Modal inline error 표시 — 실패 시 내용 공유 요청
+
+=== 2026-04-22 (Path C) — 비-AI Edge Function ES256 마이그레이션 완결 ===
+
+## 범위
+17개 비-AI Edge Function + 13개 클라이언트 호출 사이트를 ES256-safe 패턴으로 전환.
+Supabase 가 4개월 전 JWT signing key 를 ES256 으로 자동 전환하면서 게이트웨이가
+ES256 유저 JWT 파싱을 거부 (UNAUTHORIZED_UNSUPPORTED_TOKEN_ALGORITHM) →
+사용자가 invitation/notification/Jira/GitHub 등 쓸 때마다 landmine.
+
+## 수정
+### 서버 (supabase/functions/)
+- _shared/auth.ts: verifyUserToken() 헬퍼 추가 (재사용 가능)
+  + 기존 verifySyncCaller 를 새 헬퍼로 위임
+- User auth 로직 재작성 (x-user-token > Authorization Bearer, manual JWT decode
+  + admin.getUserById):
+  accept-invitation, send-invitation, delete-account, start-trial,
+  fetch-paddle-invoices, create-jira-issue, create-github-issue,
+  fetch-jira-requirements, fetch-github-issues
+- CORS Allow-Headers 에 x-user-token 만 추가 (auth 변경 없음):
+  send-notification, test-jira-connection, fetch-jira-fields, sync-jira-metadata,
+  sync-github-metadata, import-testrail, log-consent, send-loops-event
+
+### 클라이언트 (src/)
+- lib/aiFetch.ts: edgeFetch + invokeEdge (supabase.functions.invoke 드롭인 대체) 추가,
+  allowAnonymous 옵션 (비로그인 호출 지원)
+- 13개 호출 사이트 전환:
+  FocusMode, IssuesList, consentLog, loops, settings/page.tsx,
+  InviteMemberModal, FlakyDetector, GitHub/Jira/TestRail Import Modals,
+  project-runs, run-detail (여러 부분), AIRunSummaryPanel, session-detail,
+  pricing, auth, accept-invitation
+
+## 배포 (17/17 성공)
+supabase functions deploy ×17 — 전부 Deployed
+
+## 검증
+- npx tsc --noEmit: 통과
+- npm run test: 170/170 통과
+- npm run build: 성공 (6.84s)
+
+## 다음엔 뭘 해야 해
+- **브라우저 실사용 검증**: invitation 전송/수락, notification 이메일,
+  Jira/GitHub issue 생성, TestRail import, cookie consent, trial 시작 등
+  로그인 상태에서 기능 동작 여부 확인
+- 향후 "버그 신고할 때마다" 가 아니라 근본적으로 해소됐는지 모니터링

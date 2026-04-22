@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-user-token",
 };
 
 serve(async (req) => {
@@ -14,9 +14,8 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
 
-    if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
+    if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error("서버 설정 오류");
     }
 
@@ -72,18 +71,33 @@ serve(async (req) => {
       );
     }
 
-    // For accept action, we need authentication
+    // For accept action, we need authentication (ES256-safe).
+    // ES256 전환 이후 `x-user-token` 커스텀 헤더 우선, Authorization Bearer fallback.
+    const userTokenHeader = req.headers.get("x-user-token");
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    const userToken = userTokenHeader
+      || (authHeader?.startsWith("Bearer ") ? authHeader.replace("Bearer ", "") : "");
+    if (!userToken) {
       throw new Error("인증 정보가 없습니다");
     }
 
-    // Get current user
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } }
-    });
-    
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    let userId: string;
+    try {
+      const [, payloadB64] = userToken.split(".");
+      const padded = payloadB64.replace(/-/g, "+").replace(/_/g, "/");
+      const payload = JSON.parse(
+        new TextDecoder().decode(Uint8Array.from(atob(padded), (c) => c.charCodeAt(0))),
+      );
+      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+        throw new Error("Token expired");
+      }
+      userId = payload.sub;
+      if (!userId) throw new Error("No sub in token");
+    } catch {
+      throw new Error("인증에 실패했습니다");
+    }
+
+    const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(userId);
     if (userError || !user) {
       throw new Error("인증에 실패했습니다");
     }

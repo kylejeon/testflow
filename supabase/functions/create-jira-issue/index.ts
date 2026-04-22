@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-user-token',
 };
 
 serve(async (req) => {
@@ -13,31 +13,48 @@ serve(async (req) => {
 
   try {
     // ── Tier 체크: Hobby(tier=2)+ 만 Jira Issue 생성 가능 ────────
+    // ES256-safe auth: x-user-token > Authorization Bearer
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    const userTokenHeader = req.headers.get('x-user-token');
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
+    const token = userTokenHeader
+      || (authHeader?.startsWith('Bearer ') ? authHeader.replace('Bearer ', '') : '');
+    if (!token) {
       return new Response(
-        JSON.stringify({ error: 'Missing Authorization header' }),
+        JSON.stringify({ error: 'Missing user token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
-    const token = authHeader.replace('Bearer ', '');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-    const { data: { user }, error: authError } = await userClient.auth.getUser(token);
+
+    let userId: string;
+    try {
+      const [, payloadB64] = token.split('.');
+      const padded = payloadB64.replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(
+        new TextDecoder().decode(Uint8Array.from(atob(padded), (c) => c.charCodeAt(0))),
+      );
+      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) throw new Error('Token expired');
+      userId = payload.sub;
+      if (!userId) throw new Error('No sub');
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Invalid or expired token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    const { data: { user }, error: authError } = await adminClient.auth.admin.getUserById(userId);
     if (authError || !user) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
-    const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
     const { data: profile } = await adminClient
       .from('profiles')
       .select('subscription_tier, is_trial, trial_ends_at')

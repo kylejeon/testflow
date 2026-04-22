@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { edgeFetch } from '../../lib/aiFetch';
 import { notifyProjectMembers } from '../../hooks/useNotifications';
 import { getApiErrorMessage } from '../../components/Toast';
 
@@ -33,17 +34,8 @@ export default function AcceptInvitationPage() {
         return;
       }
 
-      // 먼저 초대 정보 확인 (인증 없이)
-      const verifyResponse = await fetch(
-        `${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/accept-invitation`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ token, action: 'verify' }),
-        }
-      );
+      // 먼저 초대 정보 확인 (인증 없이) — allowAnonymous
+      const verifyResponse = await edgeFetch('accept-invitation', { token, action: 'verify' }, { allowAnonymous: true });
 
       const verifyResult = await verifyResponse.json();
 
@@ -88,19 +80,8 @@ export default function AcceptInvitationPage() {
       setMessage('Joining the project...');
 
       const token = searchParams.get('token');
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const response = await fetch(
-        `${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/accept-invitation`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`,
-          },
-          body: JSON.stringify({ token, action: 'accept' }),
-        }
-      );
+      // ES256-safe: edgeFetch 가 유저 JWT 를 x-user-token 으로 전송.
+      const response = await edgeFetch('accept-invitation', { token, action: 'accept' });
 
       const result = await response.json();
 

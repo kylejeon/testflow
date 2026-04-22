@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import MarketingLayout from '../../components/marketing/MarketingLayout';
 import { supabase } from '../../lib/supabase';
+import { invokeEdge } from '../../lib/aiFetch';
 import { getPaymentProvider, openCheckout } from '../../lib/payment';
 import { sendLoopsEvent } from '../../lib/loops';
 
@@ -275,7 +276,7 @@ export default function PricingPage() {
     setTrialLoading(true);
     setTrialError(null);
     try {
-      const { data, error } = await supabase.functions.invoke('start-trial', { body: {} });
+      const { data, error } = await invokeEdge('start-trial', { body: {} });
       if (error) throw new Error(error.message);
       if (data?.error === 'already_used') {
         setTrialError("You've already used your free trial.");

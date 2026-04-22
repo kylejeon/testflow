@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ErrorBoundary } from '../../components/ErrorBoundary';
 import { LogoMark } from '../../components/Logo';
 import { supabase } from '../../lib/supabase';
+import { invokeEdge } from '../../lib/aiFetch';
 import ProjectHeader from '../../components/ProjectHeader';
 import { useTranslation, Trans } from 'react-i18next';
 import { FocusMode, type FocusTestCase, type TestStatus } from '../../components/FocusMode';
@@ -1443,7 +1444,7 @@ export default function RunDetail() {
 
           if (shouldCreate) {
             try {
-              const { data: jiraData } = await supabase.functions.invoke('create-jira-issue', {
+              const { data: jiraData } = await invokeEdge('create-jira-issue', {
                 body: {
                   domain: jiraSettings.domain,
                   email: jiraSettings.email,
@@ -1482,7 +1483,7 @@ export default function RunDetail() {
         if (tc) {
           try {
             const tcId = (tc as any).custom_id || tc.id;
-            const { data: ghData } = await supabase.functions.invoke('create-github-issue', {
+            const { data: ghData } = await invokeEdge('create-github-issue', {
               body: {
                 token: githubSettings.token,
                 owner: githubSettings.owner,
@@ -1817,7 +1818,7 @@ export default function RunDetail() {
 
           if (shouldCreate) {
             try {
-              const { data: jiraData } = await supabase.functions.invoke('create-jira-issue', {
+              const { data: jiraData } = await invokeEdge('create-jira-issue', {
                 body: {
                   domain: jiraSettings.domain,
                   email: jiraSettings.email,
@@ -1856,7 +1857,7 @@ export default function RunDetail() {
         if (tc) {
           try {
             const tcId = (tc as any).custom_id || tc.id;
-            const { data: ghData } = await supabase.functions.invoke('create-github-issue', {
+            const { data: ghData } = await invokeEdge('create-github-issue', {
               body: {
                 token: githubSettings.token,
                 owner: githubSettings.owner,
@@ -1937,7 +1938,7 @@ export default function RunDetail() {
 
             const recipients = Array.from(recipientMap.values());
             if (recipients.length > 0) {
-              await supabase.functions.invoke('send-notification', {
+              await invokeEdge('send-notification', {
                 body: {
                   event_type: 'test_failed',
                   payload: {
@@ -1971,7 +1972,7 @@ export default function RunDetail() {
               const passedCount = updatedTestCases.filter((tc) => tc.runStatus === 'passed').length;
               const failedCount = updatedTestCases.filter((tc) => tc.runStatus === 'failed').length;
               const total = updatedTestCases.length;
-              await supabase.functions.invoke('send-notification', {
+              await invokeEdge('send-notification', {
                 body: {
                   event_type: 'run_completed',
                   payload: {
@@ -2510,7 +2511,7 @@ export default function RunDetail() {
       // and the issue key goes to pendingJiraIssues so it joins the new result on save.
       const attachedResultId = !showAddResultModal && testResults.length > 0 ? testResults[0].id : undefined;
 
-      const { data, error } = await supabase.functions.invoke('create-jira-issue', {
+      const { data, error } = await invokeEdge('create-jira-issue', {
         body: {
           domain: jiraSettings.domain,
           email: jiraSettings.email,
@@ -2612,7 +2613,7 @@ export default function RunDetail() {
       // When Add Result modal is open, no result exists yet → goes to pendingGithubIssues.
       const attachedResultId = !showAddResultModal && testResults.length > 0 ? testResults[0].id : undefined;
 
-      const { data, error } = await supabase.functions.invoke('create-github-issue', {
+      const { data, error } = await invokeEdge('create-github-issue', {
         body: {
           token: githubSettings.token,
           owner: githubSettings.owner,
@@ -2709,7 +2710,7 @@ export default function RunDetail() {
               (m) => m.full_name === assigneeName || m.email === assigneeName,
             );
             if (assigneeMember?.email && tc) {
-              await supabase.functions.invoke('send-notification', {
+              await invokeEdge('send-notification', {
                 body: {
                   event_type: 'tc_assigned',
                   payload: {

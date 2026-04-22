@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { parseCSV } from '../../../utils/testRailExport';
 import { supabase } from '../../../lib/supabase';
+import { invokeEdge } from '../../../lib/aiFetch';
 import { useNavigate } from 'react-router-dom';
 import { ModalShell } from '../../../components/ModalShell';
 
@@ -101,7 +102,7 @@ export default function TestRailImportModal({ onClose, onOpenCSV }: TestRailImpo
 
     setConnecting(true);
     try {
-      const { data, error } = await supabase.functions.invoke('import-testrail', {
+      const { data, error } = await invokeEdge('import-testrail', {
         body: { action: 'connect', credentials: { url: creds.url, email: creds.email, apiKey: creds.apiKey } },
       });
       if (error) throw new Error(error.message);
@@ -218,7 +219,7 @@ export default function TestRailImportModal({ onClose, onOpenCSV }: TestRailImpo
           }], { onConflict: 'project_id,user_id' });
 
           // Fetch sections (folders)
-          const { data: sectData, error: sectErr } = await supabase.functions.invoke('import-testrail', {
+          const { data: sectData, error: sectErr } = await invokeEdge('import-testrail', {
             body: { action: 'get_sections', credentials: { url: creds.url, email: creds.email, apiKey: creds.apiKey }, project_id: trp.id },
           });
           if (sectErr) throw new Error(sectErr.message);
@@ -227,7 +228,7 @@ export default function TestRailImportModal({ onClose, onOpenCSV }: TestRailImpo
           totalFolders += sections.length;
 
           // Fetch test cases
-          const { data: casesData, error: casesErr } = await supabase.functions.invoke('import-testrail', {
+          const { data: casesData, error: casesErr } = await invokeEdge('import-testrail', {
             body: { action: 'get_cases', credentials: { url: creds.url, email: creds.email, apiKey: creds.apiKey }, project_id: trp.id },
           });
           if (casesErr) throw new Error(casesErr.message);
