@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { type AnyStep, isSharedStepRef } from '../types/shared-steps';
 import { expandFlatSteps, type SharedStepCache } from '../lib/expandSharedSteps';
+import { formatRelativeTime } from '../lib/formatRelativeTime';
 
 export type TestStatus = 'passed' | 'failed' | 'blocked' | 'retest' | 'untested';
 
@@ -35,20 +37,9 @@ interface FocusModeProps {
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 
-const STATUS_BUTTONS: {
-  status: TestStatus;
-  label: string;
-  key: string;
-  icon: string;
-  bg: string;
-  hoverBg: string;
-}[] = [
-  { status: 'passed',   label: 'Passed',  key: 'P', icon: 'ri-check-line',         bg: '#22C55E', hoverBg: '#16A34A' },
-  { status: 'failed',   label: 'Failed',  key: 'F', icon: 'ri-close-line',          bg: '#EF4444', hoverBg: '#DC2626' },
-  { status: 'blocked',  label: 'Blocked', key: 'B', icon: 'ri-forbid-line',         bg: '#F59E0B', hoverBg: '#D97706' },
-  { status: 'retest',   label: 'Retest',  key: 'R', icon: 'ri-refresh-line',        bg: '#8B5CF6', hoverBg: '#7C3AED' },
-  { status: 'untested', label: 'Skip',    key: 'S', icon: 'ri-skip-forward-line',   bg: '#94A3B8', hoverBg: '#64748B' },
-];
+// STATUS_BUTTONS moved inside the component as `useMemo` (Phase 3 AC-10) so
+// `label` can read `common.passed|failed|blocked|retest` + focusMode.skip.
+// Keyboard `key` (P / F / B / R / S) remain English (AC-12).
 
 // Status icon config for sidebar TC list (22px circles)
 const STATUS_ICON: Record<string, { icon: string; bg: string; color: string }> = {
@@ -115,6 +106,36 @@ function formatFileSize(bytes: number) {
  *           J/K = next/prev, [ = sidebar, / = search, Esc = exit
  */
 export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex = 0, ssLatestVersions = {}, runCompleted = false, onUpdateSharedStep }: FocusModeProps) {
+  const { t } = useTranslation(['common', 'runs']);
+
+  // Phase 3 AC-10: STATUS_BUTTONS with translated labels (common.* reused,
+  // untested row uses focusMode.skip — carries 'Skip' copy, not 'Untested').
+  const STATUS_BUTTONS = useMemo<{
+    status: TestStatus;
+    label: string;
+    key: string;
+    icon: string;
+    bg: string;
+    hoverBg: string;
+  }[]>(() => [
+    { status: 'passed',   label: t('common:passed'),                        key: 'P', icon: 'ri-check-line',         bg: '#22C55E', hoverBg: '#16A34A' },
+    { status: 'failed',   label: t('common:failed'),                        key: 'F', icon: 'ri-close-line',          bg: '#EF4444', hoverBg: '#DC2626' },
+    { status: 'blocked',  label: t('common:blocked'),                       key: 'B', icon: 'ri-forbid-line',         bg: '#F59E0B', hoverBg: '#D97706' },
+    { status: 'retest',   label: t('common:retest'),                        key: 'R', icon: 'ri-refresh-line',        bg: '#8B5CF6', hoverBg: '#7C3AED' },
+    { status: 'untested', label: t('runs:detail.focusMode.statusButton.skip'), key: 'S', icon: 'ri-skip-forward-line',   bg: '#94A3B8', hoverBg: '#64748B' },
+  ], [t]);
+
+  // Phase 3 AC-10: Keyboard hint groups — characters stay English (AC-12).
+  const KBD_HINTS_PANEL = useMemo(() => [
+    { key: 'C', label: t('runs:detail.focusMode.kbdHint.comments') },
+    { key: 'H', label: t('runs:detail.focusMode.kbdHint.history') },
+    { key: 'N', label: t('runs:detail.focusMode.kbdHint.note') },
+  ], [t]);
+  const KBD_HINTS_NAV = useMemo(() => [
+    { key: '[', label: t('runs:detail.focusMode.kbdHint.sidebar') },
+    { key: '/', label: t('common:search') },
+  ], [t]);
+
   const [index, setIndex] = useState(initialIndex);
   const [note, setNote] = useState('');
   const [pending, setPending] = useState<TestStatus | null>(null);
@@ -174,13 +195,13 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
   const imageAttachments = (test?.attachments || []).filter((f) => isImageFile(f.name));
 
   // Sidebar computed values
-  const completedCount = tests.filter(t => t.runStatus && t.runStatus !== 'untested').length;
-  const filteredSidebarTests = tests.filter(t => {
-    const status = t.runStatus || 'untested';
+  const completedCount = tests.filter(tc => tc.runStatus && tc.runStatus !== 'untested').length;
+  const filteredSidebarTests = tests.filter(tc => {
+    const status = tc.runStatus || 'untested';
     if (sidebarFilter !== 'all' && status !== sidebarFilter) return false;
     if (sidebarSearch.trim()) {
       const q = sidebarSearch.toLowerCase();
-      return t.title.toLowerCase().includes(q) || (t.customId || '').toLowerCase().includes(q);
+      return tc.title.toLowerCase().includes(q) || (tc.customId || '').toLowerCase().includes(q);
     }
     return true;
   });
@@ -229,16 +250,16 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
       if (error) throw error;
       if (data?.success && data?.issue?.number) {
         setCreatedGithubIssues(prev => ({ ...prev, [tc.id]: { number: data.issue.number, html_url: data.issue.html_url } }));
-        showFocusToast('success', `GitHub issue #${data.issue.number} created`);
+        showFocusToast('success', t('runs:toast.githubCreated', { number: data.issue.number }));
       } else {
-        throw new Error(data?.error || 'Failed to create GitHub issue');
+        throw new Error(data?.error || t('runs:toast.githubCreateFailed', { reason: t('common:unknownError') }));
       }
     } catch (err: any) {
-      showFocusToast('error', `GitHub issue creation failed: ${err.message}`);
+      showFocusToast('error', t('runs:toast.githubCreateFailed', { reason: err?.message || t('common:unknownError') }));
     } finally {
       setCreatingGithubIssue(false);
     }
-  }, [githubSettings, showFocusToast]);
+  }, [githubSettings, showFocusToast, t]);
 
   // ── Shared step content fetcher ───────────────────────────────────────────
   useEffect(() => {
@@ -345,7 +366,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
         [tcId]: (data || []).map((item: any) => ({
           id: item.id,
           status: item.status,
-          runName: item.run?.name || 'Unknown Run',
+          runName: item.run?.name || t('common:detailPanel.results.unknownRun'),
           author: item.author || '',
           timestamp: new Date(item.created_at),
           note: item.note || '',
@@ -384,7 +405,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
         await onStatusChange(test.id, status, note.trim() || undefined);
       } catch (err) {
         console.error('[FocusMode] Status change failed:', err);
-        showFocusToast('error', err instanceof Error ? err.message : 'Failed to save result. Please try again.');
+        showFocusToast('error', err instanceof Error ? err.message : t('runs:detail.focusMode.toast.saveFailed'));
         setPending(null);
         return; // 실패 시 다음 TC로 이동하지 않음
       }
@@ -400,7 +421,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
         setIndex((i) => Math.min(i + 1, tests.length - 1));
       }, 300);
     },
-    [test, note, onStatusChange, tests.length, resetForNavigation, showFocusToast, githubSettings, createdGithubIssues, createGithubIssue]
+    [test, note, onStatusChange, tests.length, resetForNavigation, showFocusToast, githubSettings, createdGithubIssues, createGithubIssue, t]
   );
 
   const goNext = useCallback(() => {
@@ -561,17 +582,17 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
 
   if (!test) return null;
 
-  const tagList = test.tags ? test.tags.split(',').map((t) => t.trim()).filter(Boolean) : [];
+  const tagList = test.tags ? test.tags.split(',').map((x) => x.trim()).filter(Boolean) : [];
   const priority = test.priority?.toLowerCase() || '';
 
-  // ── Sidebar filter chip config ──────────────────────────────────────────
+  // ── Sidebar filter chip config (Phase 3 AC-10: labels reused from common.*).
   const FILTER_CHIPS: { key: string; label: string; dot: string | null }[] = [
-    { key: 'all',      label: 'All',      dot: null      },
-    { key: 'passed',   label: 'Passed',   dot: '#22C55E' },
-    { key: 'failed',   label: 'Failed',   dot: '#EF4444' },
-    { key: 'blocked',  label: 'Blocked',  dot: '#F59E0B' },
-    { key: 'retest',   label: 'Retest',   dot: '#8B5CF6' },
-    { key: 'untested', label: 'Untested', dot: '#94A3B8' },
+    { key: 'all',      label: t('common:issues.all'), dot: null      },
+    { key: 'passed',   label: t('common:passed'),     dot: '#22C55E' },
+    { key: 'failed',   label: t('common:failed'),     dot: '#EF4444' },
+    { key: 'blocked',  label: t('common:blocked'),    dot: '#F59E0B' },
+    { key: 'retest',   label: t('common:retest'),     dot: '#8B5CF6' },
+    { key: 'untested', label: t('common:untested'),   dot: '#94A3B8' },
   ];
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -624,14 +645,14 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
             </span>
           ))}
           <span style={{ width: 1, height: 16, background: '#E2E8F0', margin: '0 0.375rem', display: 'inline-block' }} />
-          {[{ key: 'C', label: 'Comments' }, { key: 'H', label: 'History' }, { key: 'N', label: 'Note' }].map((h) => (
+          {KBD_HINTS_PANEL.map((h) => (
             <span key={h.key} className="flex items-center gap-0.5">
               <kbd style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '1.25rem', height: '1.25rem', padding: '0 0.25rem', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: '0.25rem', fontSize: '0.625rem', fontWeight: 700, fontFamily: 'monospace' }}>{h.key}</kbd>
               <span className="text-slate-400 mr-1">{h.label}</span>
             </span>
           ))}
           <span style={{ width: 1, height: 16, background: '#E2E8F0', margin: '0 0.375rem', display: 'inline-block' }} />
-          {[{ key: '[', label: 'Sidebar' }, { key: '/', label: 'Search' }].map((h) => (
+          {KBD_HINTS_NAV.map((h) => (
             <span key={h.key} className="flex items-center gap-0.5">
               <kbd style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '1.25rem', height: '1.25rem', padding: '0 0.25rem', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: '0.25rem', fontSize: '0.625rem', fontWeight: 700, fontFamily: 'monospace' }}>{h.key}</kbd>
               <span className="text-slate-400 mr-1">{h.label}</span>
@@ -645,7 +666,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
           className="flex items-center gap-1.5 cursor-pointer"
           style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#64748B', padding: '0.375rem 0.75rem', borderRadius: '0.5rem', border: '1px solid #E2E8F0', background: '#fff' }}
         >
-          <i className="ri-close-line" /> Exit
+          <i className="ri-close-line" /> {t('runs:detail.focusMode.header.exit')}
           <kbd style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '1.25rem', height: '1.25rem', padding: '0 0.25rem', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: '0.25rem', fontSize: '0.625rem', fontWeight: 700, fontFamily: 'monospace', marginLeft: '0.25rem' }}>Esc</kbd>
         </button>
       </div>
@@ -673,7 +694,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
           <>
             <span className="flex items-center gap-1 shrink-0" style={{ fontSize: '0.8125rem', fontWeight: 600, color: PRIORITY_TEXT_COLOR[priority] || '#64748B' }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: PRIORITY_DOT[priority] || '#94A3B8', flexShrink: 0, display: 'inline-block' }} />
-              {priority.charAt(0).toUpperCase() + priority.slice(1)}
+              {t(`common:issues.priority.${priority}` as const, { defaultValue: priority })}
             </span>
             {(tagList.length > 0 || test.assignee) && <span style={{ color: '#CBD5E1', fontSize: '0.75rem' }}>·</span>}
           </>
@@ -725,10 +746,20 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
             {/* Progress */}
             <div style={{ padding: '0.875rem 1rem 0.625rem', borderBottom: '1px solid #E2E8F0', flexShrink: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                <span style={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#94A3B8' }}>Progress</span>
-                <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>
-                  <span className="text-indigo-500">{completedCount}</span>
-                  <span className="text-slate-400 font-medium"> / {tests.length} completed</span>
+                <span style={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#94A3B8' }}>{t('runs:detail.focusMode.sidebar.progress')}</span>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700 }} className="text-slate-400 font-medium">
+                  {/*
+                    Phase 3 AC-10 / design-spec §12-4 case 3: single-key
+                    completed counter. `count` (completed) color-highlighted
+                    via Trans component to preserve indigo emphasis across
+                    EN ("5 / 20 completed") and KO ("20개 중 5개 완료").
+                  */}
+                  <Trans
+                    i18nKey="detail.focusMode.sidebar.completed"
+                    ns="runs"
+                    values={{ count: completedCount, total: tests.length }}
+                    components={{ hl: <span className="text-indigo-500 font-bold" /> }}
+                  />
                 </span>
               </div>
               {/* 5-color segment bar */}
@@ -740,7 +771,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                   { status: 'retest',   color: '#8B5CF6' },
                   { status: 'untested', color: '#E2E8F0' },
                 ].map(seg => {
-                  const count = tests.filter(t => (t.runStatus || 'untested') === seg.status).length;
+                  const count = tests.filter(tc => (tc.runStatus || 'untested') === seg.status).length;
                   const pct = tests.length ? (count / tests.length) * 100 : 0;
                   return pct > 0 ? (
                     <div key={seg.status} style={{ width: `${pct}%`, background: seg.color, height: '100%', transition: 'width 0.4s ease', flexShrink: 0 }} />
@@ -755,7 +786,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                 const isActive = sidebarFilter === chip.key;
                 const count = chip.key === 'all'
                   ? tests.length
-                  : tests.filter(t => (t.runStatus || 'untested') === chip.key).length;
+                  : tests.filter(tc => (tc.runStatus || 'untested') === chip.key).length;
                 return (
                   <button
                     key={chip.key}
@@ -786,7 +817,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                 <input
                   ref={sidebarSearchRef}
                   type="text"
-                  placeholder="Search TC..."
+                  placeholder={t('runs:detail.focusMode.sidebar.searchPlaceholder')}
                   value={sidebarSearch}
                   onChange={e => setSidebarSearch(e.target.value)}
                   onFocus={() => setNoteInputFocused(true)}
@@ -799,14 +830,14 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
 
             {/* TC list */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '0.25rem 0' }}>
-              {filteredSidebarTests.map((t) => {
-                const tcIndex = tests.indexOf(t);
+              {filteredSidebarTests.map((tc) => {
+                const tcIndex = tests.indexOf(tc);
                 const isActive = tcIndex === index;
-                const status = t.runStatus || 'untested';
+                const status = tc.runStatus || 'untested';
                 const icon = STATUS_ICON[status];
                 return (
                   <div
-                    key={t.id}
+                    key={tc.id}
                     ref={el => { tcRefs.current[tcIndex] = el; }}
                     onClick={() => { resetForNavigation(); setIndex(tcIndex); }}
                     style={{
@@ -826,10 +857,10 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: '0.625rem', fontFamily: 'monospace', color: isActive ? '#818CF8' : '#94A3B8', fontWeight: 500, lineHeight: 1.2 }}>
-                        {t.customId || `TC-${String(tcIndex + 1).padStart(3, '0')}`}
+                        {tc.customId || `TC-${String(tcIndex + 1).padStart(3, '0')}`}
                       </div>
                       <div style={{ fontSize: '0.8125rem', color: isActive ? '#4338CA' : '#334155', fontWeight: isActive ? 600 : 400, lineHeight: 1.3, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                        {t.title}
+                        {tc.title}
                       </div>
                     </div>
                   </div>
@@ -837,7 +868,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
               })}
               {filteredSidebarTests.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '2rem 1rem', fontSize: '0.8125rem', color: '#94A3B8' }}>
-                  No test cases match
+                  {t('runs:detail.focusMode.sidebar.empty')}
                 </div>
               )}
             </div>
@@ -878,7 +909,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
             }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#EEF2FF'; (e.currentTarget as HTMLElement).style.width = '20px'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#fff'; (e.currentTarget as HTMLElement).style.width = '16px'; }}
-            title="Open sidebar ([)"
+            title={t('runs:detail.focusMode.sidebar.openTooltip', { shortcut: '[' })}
           >
             <i className="ri-arrow-right-s-line text-sm text-indigo-500" />
           </button>
@@ -906,7 +937,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                   }}
                 >
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: test.runStatus === 'passed' ? '#22C55E' : test.runStatus === 'failed' ? '#EF4444' : '#F59E0B', flexShrink: 0, display: 'inline-block' }} />
-                  Previously {test.runStatus}
+                  {t('runs:detail.focusMode.body.previously', { status: t(`common:${test.runStatus}` as const) })}
                 </div>
               )}
 
@@ -925,30 +956,30 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                       <i className="ri-refresh-line text-amber-500 text-base flex-shrink-0 mt-0.5" />
                       <div className="flex-1 min-w-0">
                         <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#92400E' }}>
-                          🔄 New version available for {ref.shared_step_custom_id} '{ref.shared_step_name}' (v{latest.version})
+                          {t('runs:detail.focusMode.ssBanner.newVersionPrefix', { customId: ref.shared_step_custom_id, name: ref.shared_step_name, version: latest.version })}
                         </div>
                         {!canUp && (
                           <div className="flex items-center gap-1 mt-1" style={{ fontSize: '0.75rem', color: '#64748B' }}>
                             <i className="ri-lock-line text-slate-400" />
-                            Locked to preserve test results
+                            {t('runs:detail.addResult.steps.lockedBanner')}
                           </div>
                         )}
                         {showSsDiff && ssDiffData && ssDiffData.ssId === ref.shared_step_id && (
                           <div className="mt-3 rounded-lg overflow-hidden border border-amber-200">
                             <div className="grid grid-cols-2 divide-x divide-amber-200">
                               <div className="p-2.5 bg-red-50">
-                                <div className="text-[0.5625rem] font-bold text-red-500 uppercase tracking-wider mb-1.5">Current (v{ssDiffData.currentVersion})</div>
+                                <div className="text-[0.5625rem] font-bold text-red-500 uppercase tracking-wider mb-1.5">{t('runs:detail.addResult.steps.diffCurrent', { version: ssDiffData.currentVersion })}</div>
                                 {ssDiffData.currentSteps.length > 0
                                   ? ssDiffData.currentSteps.map((s, i) => (
                                     <div key={i} className="text-[0.6875rem] text-red-700 mb-1 leading-relaxed">
                                       <span className="font-semibold text-red-400 mr-1">{i+1}.</span>{s.step}
                                     </div>
                                   ))
-                                  : <div className="text-[0.6875rem] text-red-400">No history</div>
+                                  : <div className="text-[0.6875rem] text-red-400">{t('runs:detail.focusMode.ssBanner.noHistory')}</div>
                                 }
                               </div>
                               <div className="p-2.5 bg-emerald-50">
-                                <div className="text-[0.5625rem] font-bold text-emerald-500 uppercase tracking-wider mb-1.5">Latest (v{ssDiffData.latestVersion})</div>
+                                <div className="text-[0.5625rem] font-bold text-emerald-500 uppercase tracking-wider mb-1.5">{t('runs:detail.addResult.steps.diffLatest', { version: ssDiffData.latestVersion })}</div>
                                 {ssDiffData.latestSteps.map((s, i) => (
                                   <div key={i} className="text-[0.6875rem] text-emerald-700 mb-1 leading-relaxed">
                                     <span className="font-semibold text-emerald-400 mr-1">{i+1}.</span>{s.step}
@@ -970,7 +1001,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                           }}
                           style={{ fontSize: '0.75rem', color: '#B45309', fontWeight: 600, cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}
                         >
-                          {showSsDiff && ssDiffData?.ssId === ref.shared_step_id ? 'Hide changes' : 'View changes'}
+                          {showSsDiff && ssDiffData?.ssId === ref.shared_step_id ? t('runs:detail.focusMode.ssBanner.hideChanges') : t('runs:detail.focusMode.ssBanner.viewChanges')}
                         </button>
                         {canUp && (
                           <button
@@ -983,14 +1014,14 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#4F46E5'; }}
                             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#6366F1'; }}
                           >
-                            Update
+                            {t('runs:detail.addResult.steps.updateButton')}
                           </button>
                         )}
                         <button
                           onClick={() => setSsBannerDismissedForTc(prev => new Set([...prev, test.id]))}
                           style={{ fontSize: '0.75rem', color: '#B45309', cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}
                         >
-                          Dismiss
+                          {t('runs:detail.ssBanner.dismiss')}
                         </button>
                       </div>
                     </div>
@@ -1013,7 +1044,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                 <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '0.5rem', padding: '0.875rem 1rem', marginBottom: '1.25rem' }}>
                   <div className="flex items-center gap-1.5" style={{ fontSize: '0.6875rem', fontWeight: 700, color: '#92400E', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.375rem' }}>
                     <i className="ri-alert-line" style={{ fontSize: '0.875rem' }} />
-                    Precondition
+                    {t('runs:detail.focusMode.body.precondition')}
                   </div>
                   <p style={{ fontSize: '0.8125rem', color: '#92400E', lineHeight: 1.6 }}>{test.precondition}</p>
                 </div>
@@ -1024,7 +1055,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                 <div style={{ marginBottom: '1.5rem' }}>
                   <div className="flex items-center gap-1.5" style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
                     <i className="ri-attachment-2" style={{ fontSize: '0.875rem', color: '#94A3B8' }} />
-                    Attachments ({test.attachments.length})
+                    {t('runs:detail.focusMode.body.attachmentsHeader', { count: test.attachments.length })}
                   </div>
                   <div className="flex flex-wrap" style={{ gap: '0.625rem' }}>
                     {test.attachments.map((file, i) => {
@@ -1066,7 +1097,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                           <div style={{ fontSize: '0.6875rem', color: '#94A3B8', marginTop: '0.125rem' }}>{formatFileSize(file.size)}</div>
                           <div className="flex items-center gap-0.5" style={{ fontSize: '0.6875rem', color: '#6366F1', fontWeight: 600, marginTop: '0.25rem' }}>
                             <i className="ri-download-2-line" style={{ fontSize: '0.75rem' }} />
-                            Download
+                            {t('common:download')}
                           </div>
                         </a>
                       );
@@ -1080,11 +1111,11 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                 <div style={{ marginBottom: '1.25rem' }}>
                   <div className="flex items-center justify-between" style={{ marginBottom: '0.625rem' }}>
                     <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Test Steps
+                      {t('runs:detail.focusMode.body.testStepsHeader')}
                     </span>
                     {passedStepCount > 0 && (
                       <span style={{ fontSize: '0.6875rem', color: '#94A3B8' }}>
-                        <span style={{ color: '#16A34A', fontWeight: 600 }}>{passedStepCount}</span>/{steps.length} passed
+                        {t('runs:detail.focusMode.body.passedSuffix', { count: passedStepCount, total: steps.length })}
                       </span>
                     )}
                   </div>
@@ -1143,7 +1174,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                             <div className="flex gap-1 shrink-0" style={{ marginTop: '0.125rem' }}>
                               <button
                                 onClick={() => handleStepResult(i, isPassed ? null : 'passed')}
-                                title="Pass this step"
+                                title={t('runs:detail.focusMode.body.stepPassTitle')}
                                 className="flex items-center justify-center cursor-pointer transition-all"
                                 style={{
                                   width: '1.75rem', height: '1.75rem', borderRadius: '0.375rem',
@@ -1156,7 +1187,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                               ><i className="ri-check-line" /></button>
                               <button
                                 onClick={() => handleStepResult(i, isFailed ? null : 'failed')}
-                                title="Fail this step"
+                                title={t('runs:detail.focusMode.body.stepFailTitle')}
                                 className="flex items-center justify-center cursor-pointer transition-all"
                                 style={{
                                   width: '1.75rem', height: '1.75rem', borderRadius: '0.375rem',
@@ -1186,7 +1217,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                               </div>
                               <span style={{ fontSize: '0.65rem', fontFamily: 'monospace', fontWeight: 700, color: '#4F46E5', background: '#E0E7FF', border: '1px solid #C7D2FE', padding: '0.125rem 0.375rem', borderRadius: '0.25rem' }}>{ssCustomId}</span>
                               <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>{ssName}</span>
-                              <span style={{ fontSize: '0.6rem', fontWeight: 700, color: '#6366F1', background: '#E0E7FF', border: '1px solid #C7D2FE', padding: '0.125rem 0.5rem', borderRadius: '999px', textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0 }}>Shared</span>
+                              <span style={{ fontSize: '0.6rem', fontWeight: 700, color: '#6366F1', background: '#E0E7FF', border: '1px solid #C7D2FE', padding: '0.125rem 0.5rem', borderRadius: '999px', textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0 }}>{t('runs:detail.addResult.steps.sharedBadge')}</span>
                             </div>
                             {group.steps.map(({ s, i }: { s: any; i: number }, si: number) =>
                               renderStepRow(s, i, { borderTop: si > 0 ? '1px solid #E0E7FF' : 'none' })
@@ -1215,7 +1246,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                     >
                       <div className="flex items-center gap-1.5" style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#475569' }}>
                         <i className="ri-chat-3-line" style={{ fontSize: '1rem', color: '#94A3B8' }} />
-                        Comments
+                        {t('runs:detail.focusMode.comments.header')}
                         {tcComments[test.id] !== undefined && (
                           <span style={{ fontSize: '0.6875rem', fontWeight: 700, background: '#F1F5F9', color: '#64748B', padding: '0.0625rem 0.375rem', borderRadius: '9999px' }}>{commentCount}</span>
                         )}
@@ -1227,16 +1258,16 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                       <div style={{ border: '1px solid #E2E8F0', borderTop: 'none', borderRadius: '0 0 0.5rem 0.5rem', padding: '0.75rem 1rem', background: '#fff' }}>
                         {loadingComments ? (
                           <div className="flex items-center justify-center gap-2" style={{ padding: '0.5rem 0', fontSize: '0.8125rem', color: '#94A3B8' }}>
-                            <i className="ri-loader-4-line animate-spin" />Loading...
+                            <i className="ri-loader-4-line animate-spin" />{t('common:loading')}
                           </div>
                         ) : comments.length === 0 ? (
-                          <p style={{ fontSize: '0.8125rem', color: '#94A3B8', textAlign: 'center', padding: '0.5rem 0' }}>No comments yet</p>
+                          <p style={{ fontSize: '0.8125rem', color: '#94A3B8', textAlign: 'center', padding: '0.5rem 0' }}>{t('runs:detail.focusMode.comments.empty')}</p>
                         ) : (
                           comments.map((c) => {
                             const initials = c.author.substring(0, 2).toUpperCase();
-                            const diff = Date.now() - c.timestamp.getTime();
-                            const d = Math.floor(diff / 86400000);
-                            const relTime = d === 0 ? 'today' : d === 1 ? '1d ago' : `${d}d ago`;
+                            // Phase 3 AC-14 연장: inline relTime 계산 제거 후
+                            // formatRelativeTime (Phase 1 헬퍼) 재사용.
+                            const relTime = formatRelativeTime(c.timestamp.toISOString(), t);
                             return (
                               <div key={c.id} style={{ background: '#F8FAFC', borderRadius: '0.375rem', padding: '0.625rem 0.75rem', marginBottom: '0.5rem' }}>
                                 <div className="flex items-center gap-1.5" style={{ marginBottom: '0.25rem' }}>
@@ -1279,7 +1310,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                     >
                       <div className="flex items-center gap-1.5" style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#475569' }}>
                         <i className="ri-history-line" style={{ fontSize: '1rem', color: '#94A3B8' }} />
-                        Execution History
+                        {t('runs:detail.focusMode.history.header')}
                         {tcHistory[test.id] !== undefined && (
                           <span style={{ fontSize: '0.6875rem', fontWeight: 700, background: '#F1F5F9', color: '#64748B', padding: '0.0625rem 0.375rem', borderRadius: '9999px' }}>{historyCount}</span>
                         )}
@@ -1291,20 +1322,19 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                       <div style={{ border: '1px solid #E2E8F0', borderTop: 'none', borderRadius: '0 0 0.5rem 0.5rem', padding: '0.75rem 1rem', background: '#fff' }}>
                         {loadingHistory ? (
                           <div className="flex items-center justify-center gap-2" style={{ padding: '0.5rem 0', fontSize: '0.8125rem', color: '#94A3B8' }}>
-                            <i className="ri-loader-4-line animate-spin" />Loading...
+                            <i className="ri-loader-4-line animate-spin" />{t('common:loading')}
                           </div>
                         ) : history.length === 0 ? (
-                          <p style={{ fontSize: '0.8125rem', color: '#94A3B8', textAlign: 'center', padding: '0.5rem 0' }}>No execution history</p>
+                          <p style={{ fontSize: '0.8125rem', color: '#94A3B8', textAlign: 'center', padding: '0.5rem 0' }}>{t('runs:detail.focusMode.history.empty')}</p>
                         ) : (
                           history.map((h) => {
-                            const diff = Date.now() - h.timestamp.getTime();
-                            const d = Math.floor(diff / 86400000);
-                            const relTime = d === 0 ? 'today' : d === 1 ? '1d ago' : `${d}d ago`;
+                            // Phase 3 AC-14 연장: formatRelativeTime 재사용.
+                            const relTime = formatRelativeTime(h.timestamp.toISOString(), t);
                             return (
                               <div key={h.id} className="flex items-start gap-2.5" style={{ padding: '0.5rem 0', borderBottom: '1px solid #F1F5F9' }}>
                                 <div className="inline-flex items-center gap-1 whitespace-nowrap" style={{ ...statusStyle(h.status), fontSize: '0.75rem', fontWeight: 600, padding: '0.125rem 0.5rem', borderRadius: '9999px', flexShrink: 0 }}>
                                   <span style={{ width: 5, height: 5, borderRadius: '50%', background: statusDot(h.status), display: 'inline-block' }} />
-                                  {h.status.charAt(0).toUpperCase() + h.status.slice(1)}
+                                  {t(`common:${h.status}` as const, { defaultValue: h.status })}
                                 </div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                   <div style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#475569' }}>{h.runName}</div>
@@ -1324,7 +1354,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
               {/* Note input */}
               <div style={{ marginBottom: '1rem' }}>
                 <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748B', marginBottom: '0.375rem' }}>
-                  Note <span style={{ fontWeight: 400, color: '#94A3B8' }}>(optional)</span>
+                  {t('runs:detail.addResult.note.label')} <span style={{ fontWeight: 400, color: '#94A3B8' }}>{t('runs:detail.focusMode.note.optionalSuffix')}</span>
                 </div>
                 <textarea
                   ref={noteRef}
@@ -1332,7 +1362,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                   onChange={(e) => setNote(e.target.value)}
                   onFocus={() => setNoteInputFocused(true)}
                   onBlur={() => setNoteInputFocused(false)}
-                  placeholder="Describe what you observed..."
+                  placeholder={t('runs:detail.focusMode.note.placeholder')}
                   style={{
                     width: '100%', minHeight: '5rem', padding: '0.75rem 1rem',
                     border: '1px solid #E2E8F0', borderRadius: '0.5rem',
@@ -1350,7 +1380,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                   }}
                 />
                 <div style={{ fontSize: '0.6875rem', color: '#94A3B8', marginTop: '0.25rem', textAlign: 'right' }}>
-                  ⌘ + Enter to save with status
+                  {t('runs:detail.focusMode.note.saveHint')}
                 </div>
               </div>
 
@@ -1358,7 +1388,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
               {test?.runStatus === 'failed' && (githubSettings?.token || jiraSettings?.domain) && (
                 <div style={{ marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748B', marginBottom: '0.125rem' }}>
-                    Linked Issues
+                    {t('runs:detail.addResult.issues.label')}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
                     {/* GitHub issue badge or create button */}
@@ -1399,8 +1429,8 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                           }}
                         >
                           {creatingGithubIssue
-                            ? <><i className="ri-loader-4-line animate-spin" /> Creating...</>
-                            : <><i className="ri-github-fill" /> Create GitHub Issue</>
+                            ? <><i className="ri-loader-4-line animate-spin" /> {t('runs:detail.githubIssue.footer.creating')}</>
+                            : <><i className="ri-github-fill" /> {t('runs:detail.addResult.issues.createGithub')}</>
                           }
                         </button>
                       )
@@ -1424,14 +1454,14 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                   <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <i className="ri-github-fill" /> Create GitHub Issue
+                    <i className="ri-github-fill" /> {t('runs:detail.githubIssue.title')}
                   </h3>
                   <button onClick={() => setShowGithubIssueModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', fontSize: '1.25rem' }}>
                     <i className="ri-close-line" />
                   </button>
                 </div>
                 <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#334155', marginBottom: '0.375rem' }}>Title</label>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#334155', marginBottom: '0.375rem' }}>{t('runs:detail.githubIssue.titleField.label')}</label>
                   <input
                     type="text"
                     value={githubIssueTitle}
@@ -1443,7 +1473,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                 {githubSettings && (
                   <div style={{ fontSize: '0.75rem', color: '#64748B', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
                     <i className="ri-github-fill" />
-                    Will be created in <strong>{githubSettings.owner}/{githubSettings.repo}</strong>
+                    {t('runs:detail.githubIssue.willBeCreatedInPrefix')}<strong>{githubSettings.owner}/{githubSettings.repo}</strong>
                   </div>
                 )}
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
@@ -1451,7 +1481,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                     onClick={() => setShowGithubIssueModal(false)}
                     style={{ padding: '0.4375rem 0.875rem', borderRadius: '0.5rem', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', background: '#fff', border: '1px solid #E2E8F0', cursor: 'pointer' }}
                   >
-                    Cancel
+                    {t('common:cancel')}
                   </button>
                   <button
                     disabled={creatingGithubIssue || !githubIssueTitle.trim()}
@@ -1466,7 +1496,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                       display: 'flex', alignItems: 'center', gap: '0.375rem',
                     }}
                   >
-                    <i className="ri-github-fill" /> Create Issue
+                    <i className="ri-github-fill" /> {t('runs:detail.githubIssue.footer.submit')}
                   </button>
                 </div>
               </div>
@@ -1484,7 +1514,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
               className="flex items-center gap-1 cursor-pointer transition-all"
               style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#64748B', padding: '0.5rem 0.875rem', borderRadius: '0.5rem', border: '1px solid #E2E8F0', background: '#fff', opacity: index === 0 ? 0.4 : 1 }}
             >
-              <i className="ri-arrow-left-s-line" style={{ fontSize: '1rem' }} />Previous
+              <i className="ri-arrow-left-s-line" style={{ fontSize: '1rem' }} />{t('runs:detail.focusMode.footer.previous')}
             </button>
 
             <div className="flex items-center" style={{ gap: '0.375rem', margin: '0 0.75rem' }}>
@@ -1523,13 +1553,13 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
               className="flex items-center gap-1 cursor-pointer transition-all"
               style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#64748B', padding: '0.5rem 0.875rem', borderRadius: '0.5rem', border: '1px solid #E2E8F0', background: '#fff', opacity: index === tests.length - 1 ? 0.4 : 1 }}
             >
-              Next<i className="ri-arrow-right-s-line" style={{ fontSize: '1rem' }} />
+              {t('runs:detail.focusMode.footer.next')}<i className="ri-arrow-right-s-line" style={{ fontSize: '1rem' }} />
             </button>
           </div>
 
           {index === tests.length - 1 && (
             <p className="text-center pb-2" style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: '-0.5rem' }}>
-              Last test — press any status key to complete the run
+              {t('runs:detail.focusMode.footer.lastTestHint')}
             </p>
           )}
 
@@ -1572,7 +1602,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
           )}
           <img
             src={lightboxUrl}
-            alt="Preview"
+            alt={t('runs:detail.focusMode.lightbox.alt')}
             onClick={(e) => e.stopPropagation()}
             style={{ maxWidth: '90vw', maxHeight: '85vh', objectFit: 'contain', borderRadius: '0.5rem', cursor: 'default' }}
           />
