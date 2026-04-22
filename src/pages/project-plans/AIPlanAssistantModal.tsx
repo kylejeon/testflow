@@ -43,7 +43,8 @@ interface Props {
   projectId: string;
   milestones: Milestone[];
   onClose: () => void;
-  onApply: (suggestedTcIds: string[], planName: string) => void;
+  /** milestoneId: dropdown 에서 선택한 milestone. 빈 문자열이면 standalone. */
+  onApply: (suggestedTcIds: string[], planName: string, milestoneId: string) => void;
 }
 
 // Risk score helper (0–100 scale from priority)
@@ -149,7 +150,7 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
     const planName = mName
       ? `${mName} — AI Plan`
       : affectedAreas ? `${affectedAreas.split(',')[0].trim()} — AI Plan` : 'AI Generated Plan';
-    onApply([...selectedTcIds], planName);
+    onApply([...selectedTcIds], planName, selectedMilestone);
   };
 
   const selectedMilestoneName = milestones.find(m => m.id === selectedMilestone)?.name;
@@ -203,7 +204,7 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
         </div>
 
         {/* Body: 2-column (300px left | 1fr right) */}
-        <div style={{ display:'grid', gridTemplateColumns:'300px 1fr', minHeight:520 }}>
+        <div style={{ display:'grid', gridTemplateColumns:'300px 1fr', minHeight:520, alignItems:'start' }}>
 
           {/* ── LEFT: Context / Prompt panel ── */}
           <div style={{ padding:18, borderRight:'1px solid #E2E8F0', background:'#F8FAFC', display:'flex', flexDirection:'column', gap:14 }}>
@@ -368,7 +369,7 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
               )}
             </div>
 
-            <div style={{ padding:'14px 18px', overflowY:'auto', flex:1, maxHeight:520 }}>
+            <div style={{ padding:'14px 18px', overflowY:'auto', maxHeight:'min(520px, calc(100vh - 280px))' }}>
 
               {/* Loading state */}
               {step === 'loading' && (

@@ -3311,7 +3311,7 @@ export default function PlanDetailPage() {
           projectId={projectId!}
           milestones={milestones.map(m => ({ id: m.id, name: m.name, status: 'active', end_date: null }))}
           onClose={() => setShowAIModal(false)}
-          onApply={async (tcIds, _planName) => {
+          onApply={async (tcIds, _planName, _milestoneId) => {
             // Add recommended TCs to the current plan (skip already-added ones)
             const existingIds = new Set(planTcs.map(p => p.test_case_id));
             const newIds = tcIds.filter(id => !existingIds.has(id));

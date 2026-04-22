@@ -788,12 +788,14 @@ export default function ProjectMilestones() {
             ...milestones.flatMap(m => (m.subMilestones ?? []).map((s: any) => ({ id: s.id, name: s.name, status: s.status, end_date: s.end_date }))),
           ]}
           onClose={() => { setShowAIModal(false); setAiMilestoneId(null); }}
-          onApply={async (tcIds, planName) => {
+          onApply={async (tcIds, planName, milestoneId) => {
             try {
               const { data: { user } } = await supabase.auth.getUser();
+              // 우선순위: dropdown 에서 고른 milestoneId → AI 버튼 클릭 당시 컨텍스트 → standalone (null)
+              const attachMilestoneId = milestoneId || aiMilestoneId || null;
               const { data: planData, error: planErr } = await supabase
                 .from('test_plans')
-                .insert([{ project_id: projectId, milestone_id: aiMilestoneId || null, name: planName, priority: 'medium', status: 'planning', owner_id: user?.id || null }])
+                .insert([{ project_id: projectId, milestone_id: attachMilestoneId, name: planName, priority: 'medium', status: 'planning', owner_id: user?.id || null }])
                 .select().single();
               if (planErr) throw planErr;
               if (tcIds.length > 0) {
@@ -801,14 +803,13 @@ export default function ProjectMilestones() {
                   tcIds.map(tcId => ({ test_plan_id: planData.id, test_case_id: tcId }))
                 );
               }
-              const milestoneSnap = aiMilestoneId;
               const planId = planData.id;
               setShowAIModal(false);
               setAiMilestoneId(null);
               showToast(`Plan "${planName}" created with ${tcIds.length} TCs`, 'success');
               fetchData();
-              if (milestoneSnap && planId) {
-                navigate(`/projects/${projectId}/milestones/${milestoneSnap}/plans/${planId}`);
+              if (attachMilestoneId && planId) {
+                navigate(`/projects/${projectId}/milestones/${attachMilestoneId}/plans/${planId}`);
               } else if (planId) {
                 navigate(`/projects/${projectId}/plans/${planId}`);
               }
