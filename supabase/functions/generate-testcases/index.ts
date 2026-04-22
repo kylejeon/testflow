@@ -16,6 +16,12 @@ import {
   sanitizeLong,
   sanitizeTag,
 } from '../_shared/promptSanitize.ts';
+import {
+  resolveLocale,
+  maybeAppendLocaleInstruction,
+  localeInstructionFor,
+  type SupportedLocale,
+} from '../_shared/localePrompt.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -48,6 +54,8 @@ interface GenerateRequest {
   existing_tcs?: { custom_id: string; title: string }[];
   milestone_id?: string;
   force_reanalyze?: boolean;
+  /** f021 — 'ko' | 'en' (그 외 값은 'en' 으로 fallback) */
+  locale?: unknown;
 }
 
 interface JiraIssueData {
@@ -352,6 +360,8 @@ Deno.serve(async (req) => {
 
     const body: GenerateRequest = await req.json();
     const { project_id, mode, step, action, input_text, session_id, jira_issue_keys, selected_titles, run_id } = body;
+    // f021: allowlist 로 정규화 — 'ko' | 'en' 만 허용, 그 외 전부 'en' fallback.
+    const locale: SupportedLocale = resolveLocale(body.locale);
 
     // ── AI RUN SUMMARY (action: 'summarize-run') ──────────────
     if (action === 'summarize-run') {
@@ -478,7 +488,7 @@ Deno.serve(async (req) => {
           return `  - ${sanitizeTitle(tc?.title || '(unknown)')} (${sanitizeTag(tc?.folder || 'unknown')})${r.note ? ': ' + sanitizeLong(r.note) : ''}`;
         });
 
-      const systemPrompt = `You are a senior QA analyst. The user already sees pass/fail numbers on screen.
+      const systemPromptBase = `You are a senior QA analyst. The user already sees pass/fail numbers on screen.
 DO NOT repeat metrics. Instead provide:
 1. WHY: Root cause hypothesis for each failure cluster (group by folder/pattern)
 2. RISK: Overall risk level (HIGH/MEDIUM/LOW) with 1-sentence reasoning
@@ -504,6 +514,8 @@ Respond in valid JSON matching this schema:
   "goNoGo": "GO" | "NO-GO" | "CONDITIONAL",
   "goNoGoCondition": "string"
 }`;
+      // f021: KO 일 때만 suffix append. EN 은 원본 그대로 (BR-4).
+      const systemPrompt = maybeAppendLocaleInstruction(systemPromptBase, locale);
 
       const userMessage = `Run: ${sanitizeShortName(runData.name)}, ${runData.created_at}, ${totalCount} TCs
 Results: ${passedCount}P / ${failedCount}F / ${blockedCount}B / ${skippedCount}S
@@ -570,7 +582,7 @@ Quality Gates: Pass Rate ≥90%, Critical Failures = 0, Coverage ≥80%, Blocked
         project_id: runData.project_id,
         mode: 'run-summary',
         step: 1,
-        input_data: { run_id: run_id, total_tcs: totalCount },
+        input_data: { run_id: run_id, total_tcs: totalCount, locale }, // f021 BR-6
         output_data: aiSummary,
         tokens_used: tokensUsed,
         latency_ms: latencyMs,
@@ -720,7 +732,7 @@ ${partialReqs.slice(0, 10).map((r: any) => {
         void reqIds; // suppress unused warning
       }
 
-      const systemPrompt = `You are a test coverage analyst. Given this project's TC distribution by folder${requirements && requirements.length > 0 ? ' AND requirements coverage' : ''}, identify coverage gaps.
+      const systemPromptBase = `You are a test coverage analyst. Given this project's TC distribution by folder${requirements && requirements.length > 0 ? ' AND requirements coverage' : ''}, identify coverage gaps.
 DO NOT generate a heatmap or coverage % (user already sees this).
 Instead:
 1. GAPS: Identify folders and requirements with insufficient coverage. Rate: CRITICAL/HIGH/MEDIUM
@@ -755,6 +767,8 @@ Respond in valid JSON:
   },
   "typeAssessment": "string (1-2 sentences)"
 }`;
+      // f021: KO 일 때만 suffix append. EN 은 원본 그대로 (BR-4).
+      const systemPrompt = maybeAppendLocaleInstruction(systemPromptBase, locale);
 
       const userMessage = `Project: ${sanitizeShortName(projectData.name)}\nTotal TCs: ${tcList.length}\n\nTC Distribution by Folder:\n${folderSummary}${requirementsSummary}`;
 
@@ -809,7 +823,7 @@ Respond in valid JSON:
         project_id,
         mode: 'run-summary',
         step: 1,
-        input_data: { action: 'coverage-gap', total_tcs: tcList.length, content_hash: contentHash },
+        input_data: { action: 'coverage-gap', total_tcs: tcList.length, content_hash: contentHash, locale }, // f021 BR-6
         output_data: gapResult,
         tokens_used: tokensUsed,
         latency_ms: latencyMs,
@@ -842,7 +856,7 @@ Respond in valid JSON:
         .map(tc => `- ${tc.custom_id}: ${sanitizeTitle(tc.title)}`)
         .join('\n') || '(none)';
 
-      const systemPrompt = `You are a senior QA engineer. Analyze the given requirement and suggest test cases that are NOT already covered.
+      const systemPromptBase = `You are a senior QA engineer. Analyze the given requirement and suggest test cases that are NOT already covered.
 Generate test cases covering:
 1. Happy path (positive) tests
 2. Negative / error scenarios
@@ -857,6 +871,8 @@ For each suggestion return:
 - precondition: string (may be empty)
 
 Respond ONLY with a valid JSON array. Max 8 suggestions. No markdown, no explanation.`;
+      // f021: KO 일 때만 suffix append. EN 은 원본 그대로 (BR-4).
+      const systemPrompt = maybeAppendLocaleInstruction(systemPromptBase, locale);
 
       const userMessage = `REQUIREMENT:
 Title: ${sanitizeTitle(requirement_title)}
@@ -915,7 +931,7 @@ Suggest test cases not yet covered.`;
         project_id: project_id || null,
         mode: 'requirement-suggest',
         step: 1,
-        input_data: { action: 'suggest-from-requirement', requirement_id, existing_tc_count: existing_tcs.length },
+        input_data: { action: 'suggest-from-requirement', requirement_id, existing_tc_count: existing_tcs.length, locale }, // f021 BR-6
         output_data: { suggestions },
         tokens_used: tokensUsed,
         latency_ms: latencyMs,
@@ -972,7 +988,7 @@ Suggest test cases not yet covered.`;
         `- [${t.test_case_id}] "${sanitizeTitle(t.title)}" (${sanitizeTag(t.folder_path || 'General')}) | Score: ${t.flaky_score}% | Sequence: ${t.recent_statuses.join('→')}`
       ).join('\n');
 
-      const systemPrompt = `You are a test stability expert. Given these flaky tests with their pass/fail sequences:
+      const systemPromptBase = `You are a test stability expert. Given these flaky tests with their pass/fail sequences:
 DO NOT recalculate flaky scores (user already sees them).
 Instead:
 1. CLUSTER: Group tests that are likely flaky for the same reason
@@ -992,6 +1008,8 @@ Respond in valid JSON:
     }
   ]
 }`;
+      // f021: KO 일 때만 suffix append. EN 은 원본 그대로 (BR-4).
+      const systemPrompt = maybeAppendLocaleInstruction(systemPromptBase, locale);
 
       const userMessage = `Flaky Tests:\n${testList}`;
 
@@ -1045,7 +1063,7 @@ Respond in valid JSON:
         project_id,
         mode: 'run-summary',
         step: 1,
-        input_data: { action: 'analyze-flaky', flaky_count: flakyTests.length, content_hash: flakyHash },
+        input_data: { action: 'analyze-flaky', flaky_count: flakyTests.length, content_hash: flakyHash, locale }, // f021 BR-6
         output_data: analysisResult,
         tokens_used: tokensUsed,
         latency_ms: latencyMs,
@@ -1231,7 +1249,9 @@ Respond in valid JSON:
         prompt = buildTitlePromptSession(sessionSummary);
       }
 
-      const { content, tokens } = await callClaude(prompt);
+      // f021: step1 은 user-message-only (system 없음) 구조 — prompt 끝에 KO suffix append.
+      // EN 일 때는 localeInstructionFor('en') 이 빈 문자열 이라 원본 무변경 (BR-4).
+      const { content, tokens } = await callClaude(prompt + localeInstructionFor(locale));
       const latency = Date.now() - startTime;
 
       let titles: string[] = [];
@@ -1254,6 +1274,7 @@ Respond in valid JSON:
         tokens_used: tokens,
         latency_ms: latency,
         credits_used: AI_FEATURES.tc_generation_text.creditCost,
+        input_data: { locale }, // f021 BR-6
       });
 
       responseData = { titles, tokens_used: tokens, latency_ms: latency };
@@ -1265,7 +1286,8 @@ Respond in valid JSON:
       }
 
       prompt = buildDetailPrompt(selected_titles);
-      const { content, tokens } = await callClaude(prompt);
+      // f021: step2 도 user-message-only — prompt 끝에 KO suffix append (EN 은 빈 문자열).
+      const { content, tokens } = await callClaude(prompt + localeInstructionFor(locale));
       const latency = Date.now() - startTime;
 
       let cases: any[] = [];

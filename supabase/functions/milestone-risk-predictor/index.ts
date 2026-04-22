@@ -10,6 +10,11 @@ import {
   getSharedPoolUsage,
 } from '../_shared/ai-usage.ts';
 import { sanitizeShortName, sanitizeTitle, sanitizeTag } from '../_shared/promptSanitize.ts';
+import {
+  resolveLocale,
+  maybeAppendLocaleInstruction,
+  type SupportedLocale,
+} from '../_shared/localePrompt.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,6 +34,8 @@ function jsonResponse(body: object, status = 200): Response {
 interface MilestoneRiskRequest {
   milestone_id: string;
   force_refresh?: boolean;
+  /** f021 — 'ko' | 'en' (그 외 값은 'en' 으로 fallback) */
+  locale?: unknown;
 }
 
 interface MilestoneRiskResult {
@@ -107,6 +114,7 @@ Deno.serve(async (req: Request) => {
     // ── Request parsing ──────────────────────────────────────────────────────
     const body: MilestoneRiskRequest = await req.json().catch(() => ({} as MilestoneRiskRequest));
     const { milestone_id, force_refresh } = body;
+    const locale: SupportedLocale = resolveLocale(body.locale);
 
     if (!milestone_id) {
       return jsonResponse({ error: 'bad_request', detail: 'milestone_id is required' }, 400);
@@ -160,8 +168,13 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── Cache hit check ──────────────────────────────────────────────────────
+    // f021 BR-5: 캐시 payload 의 meta.locale 이 현재 요청 locale 과 다르면 stale 로
+    // 처리하여 재생성한다. 기존 row (meta.locale 누락) 도 mismatch 로 취급되어 1회성
+    // 재생성이 발생하지만, 월 단위 호출 빈도가 낮아 허용 가능 (§13 리스크).
     const cache = (milestone.ai_risk_cache as Record<string, any> | null) || null;
-    if (!force_refresh && cache && !isStale(cache.generated_at)) {
+    const cachedLocale: SupportedLocale | undefined = cache?.meta?.locale === 'ko' ? 'ko' : cache?.meta?.locale === 'en' ? 'en' : undefined;
+    const localeMismatch = cache !== null && cachedLocale !== locale;
+    if (!force_refresh && cache && !isStale(cache.generated_at) && !localeMismatch) {
       return jsonResponse({
         risk_level: cache.risk_level,
         confidence: cache.confidence,
@@ -370,10 +383,12 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: 'internal', detail: 'ANTHROPIC_API_KEY not configured' }, 500);
     }
 
-    const systemPrompt = `You are an expert QA risk analyst embedded in a test management platform.
+    const systemPromptBase = `You are an expert QA risk analyst embedded in a test management platform.
 Given a milestone's execution data, analyze risks and recommend actions.
 Respond ONLY with valid JSON matching the specified schema. No markdown, no prose wrapper.
 Be data-driven, cite specific TC IDs and tags. Avoid generic advice.`;
+    // f021: KO 일 때만 suffix append. EN 은 원본 그대로 (BR-4).
+    const systemPrompt = maybeAppendLocaleInstruction(systemPromptBase, locale);
 
     const userPrompt = `Milestone: "${sanitizeShortName(milestone.name)}"
 Status: ${milestone.status} | Priority: N/A (milestone-level)
@@ -523,6 +538,7 @@ Rules:
         model: 'claude-haiku-4-5-20251001',
         tokens_used: tokensUsed,
         latency_ms: latencyMs,
+        locale, // f021 BR-5: 캐시 locale mismatch 판정용
         input_snapshot: {
           total_tcs: totalTcs,
           pass_rate: passRate,
@@ -553,6 +569,7 @@ Rules:
         untested,
         pass_rate: passRate,
         days_left: daysLeft,
+        locale, // f021 BR-6: resolved locale 을 모니터링용으로 기록
       },
       output_data: result,
       tokens_used: tokensUsed,

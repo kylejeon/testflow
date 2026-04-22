@@ -9,6 +9,11 @@ import {
   getSharedPoolUsage,
 } from '../_shared/ai-usage.ts';
 import { sanitizeShortName, sanitizeTitle } from '../_shared/promptSanitize.ts';
+import {
+  resolveLocale,
+  maybeAppendLocaleInstruction,
+  type SupportedLocale,
+} from '../_shared/localePrompt.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,6 +33,8 @@ function jsonResponse(body: object, status = 200): Response {
 interface RiskPredictorRequest {
   project_id: string;
   plan_id: string;
+  /** f021 — 'ko' | 'en' (그 외 값은 'en' 으로 fallback) */
+  locale?: unknown;
 }
 
 interface RiskSignal {
@@ -97,6 +104,7 @@ Deno.serve(async (req: Request) => {
     // ── Request parsing ──────────────────────────────────────────────────────
     const body: RiskPredictorRequest = await req.json();
     const { project_id, plan_id } = body;
+    const locale: SupportedLocale = resolveLocale(body.locale);
 
     if (!project_id || !plan_id) {
       return jsonResponse({ error: 'project_id and plan_id are required' }, 400);
@@ -221,8 +229,10 @@ Deno.serve(async (req: Request) => {
 
     const targetDate = plan.target_date || plan.end_date || null;
 
-    const systemPrompt = `You are an expert QA risk analyst. Given a test plan's execution data, analyze failure risks and predict outcomes.
+    const systemPromptBase = `You are an expert QA risk analyst. Given a test plan's execution data, analyze failure risks and predict outcomes.
 Respond ONLY with valid JSON matching the specified schema. Be data-driven and specific.`;
+    // f021: KO 일 때만 suffix append. EN 은 원본 그대로 (BR-4).
+    const systemPrompt = maybeAppendLocaleInstruction(systemPromptBase, locale);
 
     const userPrompt = `Test Plan: "${sanitizeShortName(plan.name)}"
 Status: ${plan.status} | Priority: ${plan.priority} | Locked: ${plan.is_locked ? 'Yes' : 'No'}
@@ -320,6 +330,7 @@ Rules:
         untested,
         pass_rate: passRate,
         run_count: (runs || []).length,
+        locale, // f021 BR-6
       },
       output_data: result,
       tokens_used: tokensUsed,

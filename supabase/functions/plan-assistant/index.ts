@@ -15,6 +15,11 @@ import {
   sanitizeTag,
   sanitizeArrayForPrompt,
 } from '../_shared/promptSanitize.ts';
+import {
+  resolveLocale,
+  maybeAppendLocaleInstruction,
+  type SupportedLocale,
+} from '../_shared/localePrompt.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,6 +33,8 @@ interface PlanAssistantRequest {
   target_milestone_id?: string;     // 연결할 Milestone (optional)
   test_plan_id?: string;            // 기존 Plan 업데이트용 (optional)
   context?: string;                 // 추가 컨텍스트 (자유 텍스트)
+  /** f021 — 'ko' | 'en' (그 외 값은 'en' 으로 fallback) */
+  locale?: unknown;
 }
 
 interface SuggestedTC {
@@ -105,6 +112,7 @@ Deno.serve(async (req: Request) => {
     // ── 요청 파싱 ─────────────────────────────────────────────────────────────
     const body: PlanAssistantRequest = await req.json();
     const { project_id, affected_areas = [], target_milestone_id, context = '' } = body;
+    const locale: SupportedLocale = resolveLocale(body.locale);
 
     if (!project_id) {
       return new Response(JSON.stringify({ error: 'project_id is required' }), {
@@ -199,9 +207,11 @@ Deno.serve(async (req: Request) => {
       })
       .join('\n');
 
-    const systemPrompt = `You are an expert QA architect helping teams plan efficient test campaigns.
+    const systemPromptBase = `You are an expert QA architect helping teams plan efficient test campaigns.
 Given a list of test cases, affected areas, and optional milestone context, recommend which test cases to include in a test plan and estimate the effort.
 Respond ONLY with valid JSON matching the specified schema. Be concise but precise.`;
+    // f021: KO 일 때만 suffix append. EN 은 원본 그대로 (BR-4).
+    const systemPrompt = maybeAppendLocaleInstruction(systemPromptBase, locale);
 
     const userPrompt = `Project test cases (up to 80 shown):
 ${tcList || '(no test cases found)'}
@@ -280,6 +290,7 @@ Rules:
         target_milestone_id: target_milestone_id || null,
         tc_count: relevantTcs.length,
         suggested_count: result.suggested_test_cases?.length || 0,
+        locale, // f021 BR-6
       },
     });
 
