@@ -197,13 +197,22 @@ Deno.serve(async (req: Request) => {
     const claudeApiKey = Deno.env.get('ANTHROPIC_API_KEY');
     if (!claudeApiKey) throw new Error('ANTHROPIC_API_KEY not configured');
 
+    // test_cases.tags 는 DB 에 쉼표 구분 text 로 저장됨 (20260404_folders_tags.sql).
+    // array 아니므로 split 후 sanitize.
+    const parseTags = (raw: unknown): string[] => {
+      if (Array.isArray(raw)) return raw.map(String);
+      if (typeof raw === 'string') return raw.split(',').map((s) => s.trim()).filter(Boolean);
+      return [];
+    };
+
     const tcList = relevantTcs
       .slice(0, 80)
       .map((tc: any) => {
         const safeTitle = sanitizeTitle(tc.title);
         const safeFolder = tc.folder ? ` [${sanitizeTag(tc.folder)}]` : '';
-        const safeTags = tc.tags?.length
-          ? ` #${sanitizeArrayForPrompt(tc.tags as unknown[], { maxLength: 40 }).join(' #')}`
+        const tagsArr = parseTags(tc.tags);
+        const safeTags = tagsArr.length
+          ? ` #${sanitizeArrayForPrompt(tagsArr, { maxLength: 40 }).join(' #')}`
           : '';
         return `[${tc.id}] (${tc.priority}) ${safeTitle}${safeFolder}${safeTags}`;
       })
