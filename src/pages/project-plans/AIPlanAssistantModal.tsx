@@ -131,6 +131,7 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
       setResult(data);
       setStep('result');
       showAiCreditToast(showToast, t, data);
+      aiFeature.refetch?.(); // credit 카운터 새로고침
     } catch (err: any) {
       setError(err.message || 'Something went wrong');
       setStep('input');
@@ -204,7 +205,7 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
         </div>
 
         {/* Body: 2-column (300px left | 1fr right). 높이는 좌측 패널 full 표시 기준. */}
-        <div style={{ display:'grid', gridTemplateColumns:'300px 1fr', height:680 }}>
+        <div style={{ display:'grid', gridTemplateColumns:'300px 1fr', height:720 }}>
 
           {/* ── LEFT: Context / Prompt panel ── */}
           <div style={{ padding:18, borderRight:'1px solid #E2E8F0', background:'#F8FAFC', display:'flex', flexDirection:'column', gap:14, minHeight:0 }}>

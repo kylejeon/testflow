@@ -7,7 +7,7 @@
  * Usage 집계는 owner 단위 shared pool로 수행된다 (src/lib/aiUsage.ts 참조).
  * Dev Spec: pm/specs/dev-spec-ai-usage-shared-pool.md
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { getEffectiveOwnerId, getSharedPoolUsage } from '../lib/aiUsage';
 
@@ -85,6 +85,8 @@ export interface AiFeatureState {
   /** 현재 사용자 tier */
   currentTier: number;
   loading: boolean;
+  /** AI 호출 성공 후 usedCredits 재조회. 호출처에서 호출 완료 시 invoke. */
+  refetch?: () => void;
 }
 
 const DEFAULT_STATE: AiFeatureState = {
@@ -114,6 +116,8 @@ const DEFAULT_STATE: AiFeatureState = {
  */
 export function useAiFeature(featureKey: AiFeatureKey): AiFeatureState {
   const [state, setState] = useState<AiFeatureState>(DEFAULT_STATE);
+  const [refetchTick, setRefetchTick] = useState(0);
+  const refetch = useCallback(() => setRefetchTick(t => t + 1), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -122,7 +126,7 @@ export function useAiFeature(featureKey: AiFeatureKey): AiFeatureState {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
-          if (!cancelled) setState({ ...DEFAULT_STATE, loading: false });
+          if (!cancelled) setState({ ...DEFAULT_STATE, loading: false, refetch });
           return;
         }
 
@@ -152,16 +156,17 @@ export function useAiFeature(featureKey: AiFeatureKey): AiFeatureState {
             monthlyLimit,
             currentTier: tier,
             loading: false,
+            refetch,
           });
         }
       } catch {
-        if (!cancelled) setState({ ...DEFAULT_STATE, loading: false });
+        if (!cancelled) setState({ ...DEFAULT_STATE, loading: false, refetch });
       }
     }
 
     load();
     return () => { cancelled = true; };
-  }, [featureKey]);
+  }, [featureKey, refetchTick, refetch]);
 
   return state;
 }
