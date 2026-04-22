@@ -836,20 +836,32 @@ export default function ProjectMilestones() {
               }
 
               const planId = planData.id;
+
+              // ── 실제 DB 반영 검증 (왜 "성공 toast 뜨는데 plan 안 보임" 이 발생했는지 확인) ──
+              const { data: verifyRow, error: verifyErr } = await supabase
+                .from('test_plans')
+                .select('id, name, milestone_id, project_id, status, owner_id')
+                .eq('id', planId)
+                .maybeSingle();
+              console.log('[AIPlanAssistant] verify re-fetch', { verifyRow, verifyErr });
+              if (verifyErr) throw new Error('Verify re-fetch failed: ' + verifyErr.message);
+              if (!verifyRow) {
+                throw new Error('Plan was inserted but disappeared on re-fetch — SELECT RLS denies reading back the row. Check project_members membership.');
+              }
+
+              // fetchData 완료 후 모달 닫기 + milestone selection 유지 (plan 리스트에 즉시 반영).
+              await fetchData();
               setShowAIModal(false);
               setAiMilestoneId(null);
+              if (attachMilestoneId) {
+                setSearchParams({ selected: attachMilestoneId });
+              }
               const droppedCount = tcIds.length - validTcIds.length;
               const successMsg = droppedCount > 0
-                ? `Plan "${planName}" created with ${validTcIds.length} TCs (${droppedCount} invalid TCs skipped)`
+                ? `Plan "${planName}" created (${validTcIds.length} TCs, ${droppedCount} invalid skipped)`
                 : `Plan "${planName}" created with ${validTcIds.length} TCs`;
               showToast(successMsg, 'success');
-              fetchData();
-              console.log('[AIPlanAssistant] SUCCESS — navigating to plan', { planId, attachMilestoneId });
-              if (attachMilestoneId && planId) {
-                navigate(`/projects/${projectId}/milestones/${attachMilestoneId}/plans/${planId}`);
-              } else if (planId) {
-                navigate(`/projects/${projectId}/plans/${planId}`);
-              }
+              console.log('[AIPlanAssistant] SUCCESS', { planId, attachMilestoneId, name: verifyRow.name });
             } catch (err: any) {
               console.error('[AIPlanAssistant onApply] failed:', err);
               const msg = err?.message || err?.error_description || getApiErrorMessage(err);

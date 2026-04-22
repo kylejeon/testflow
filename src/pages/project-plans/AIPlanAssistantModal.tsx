@@ -77,6 +77,7 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
   const { showToast } = useToast();
 
   const [step, setStep] = useState<'input' | 'loading' | 'result'>('input');
+  const [planName, setPlanName] = useState('');
   const [affectedAreas, setAffectedAreas] = useState('');
   const [selectedMilestone, setSelectedMilestone] = useState('');
   const [context, setContext] = useState('');
@@ -151,13 +152,21 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
   const handleApply = async () => {
     if (submitting) return;
     const mName = milestones.find(m => m.id === selectedMilestone)?.name;
-    const planName = mName
-      ? `${mName} — AI Plan`
-      : affectedAreas ? `${affectedAreas.split(',')[0].trim()} — AI Plan` : 'AI Generated Plan';
+    const trimmedName = planName.trim();
+    // 우선순위: 사용자 입력 > 선택한 milestone 이름 기반 > affected areas > default.
+    const finalPlanName = trimmedName
+      ? trimmedName
+      : mName ? `${mName} — AI Plan`
+      : affectedAreas ? `${affectedAreas.split(',')[0].trim()} — AI Plan`
+      : 'AI Generated Plan';
+    if (!finalPlanName) {
+      setError('Plan name is required.');
+      return;
+    }
     setSubmitting(true);
     setError('');
     try {
-      await Promise.resolve(onApply([...selectedTcIds], planName, selectedMilestone));
+      await Promise.resolve(onApply([...selectedTcIds], finalPlanName, selectedMilestone));
     } catch (err: any) {
       setError(err?.message || 'Failed to create plan');
     } finally {
@@ -222,16 +231,25 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
           {/* overflowY:'auto' — signals 가 4행 wrap 될 때 좌측 패널 overflow 방어. */}
           <div style={{ padding:18, borderRight:'1px solid #E2E8F0', background:'#F8FAFC', display:'flex', flexDirection:'column', gap:14, minHeight:0, overflowY:'auto' }}>
 
-            {/* Target Plan field */}
+            {/* Plan Name field */}
             <div>
               <div style={{ fontSize:11, color:'#9CA3AF', textTransform:'uppercase', letterSpacing:'0.05em', fontWeight:600, marginBottom:8 }}>
-                Target Plan
+                Plan Name
               </div>
-              <div style={{ background:'#fff', border:'1px solid #E2E8F0', borderRadius:10, padding:'10px 12px', fontSize:13 }}>
-                <div style={{ fontWeight:600 }}>AI-generated Plan</div>
-                <div style={{ fontSize:12, color:'#9CA3AF', marginTop:2 }}>
-                  {affectedAreas || 'Enter affected areas below'}
-                </div>
+              <input
+                type="text"
+                value={planName}
+                onChange={e => setPlanName(e.target.value)}
+                placeholder={
+                  milestones.find(m => m.id === selectedMilestone)?.name
+                    ? `${milestones.find(m => m.id === selectedMilestone)?.name} — AI Plan`
+                    : 'AI Generated Plan'
+                }
+                style={{ width:'100%', padding:'8px 12px', border:'1px solid #E2E8F0', borderRadius:8,
+                  fontSize:13, outline:'none', background:'#fff', boxSizing:'border-box' }}
+              />
+              <div style={{ fontSize:11, color:'#9CA3AF', marginTop:4 }}>
+                Leave empty to auto-generate from milestone / affected areas
               </div>
             </div>
 
