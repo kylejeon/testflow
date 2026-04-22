@@ -21,6 +21,9 @@ on:
   # Allow manual trigger for debugging / incident recovery
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   smoke:
     name: Run smoke tests

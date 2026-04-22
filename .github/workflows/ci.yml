@@ -9,6 +9,11 @@ on:
     branches:
       - claude
 
+env:
+  # GitHub Actions 가 2026-06-02 부터 Node 24 를 기본 runtime 으로 강제. 미리 opt-in
+  # 하여 actions/checkout@v4 · setup-node@v4 deprecation warning 제거.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   check:
     name: Type check + test + i18n scan
