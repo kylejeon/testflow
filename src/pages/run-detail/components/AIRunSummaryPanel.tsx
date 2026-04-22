@@ -11,6 +11,8 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '../../../lib/supabase';
 import { normalizeLocale } from '../../../lib/claudeLocale';
 import { aiFetch } from '../../../lib/aiFetch';
+import { showAiCreditToast } from '../../../lib/aiCreditToast';
+import { useToast } from '../../../components/Toast';
 
 
 export interface AISummaryCluster {
@@ -83,6 +85,7 @@ export default function AIRunSummaryPanel({
   onSummaryStateChange,
 }: AIRunSummaryPanelProps) {
   const { t, i18n } = useTranslation(['runs', 'common']);
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<AISummaryResult | null>(null);
@@ -226,6 +229,7 @@ export default function AIRunSummaryPanel({
       setSummary(result);
       onSummaryReady?.(result);
       onSummaryStateChange?.('fresh');
+      showAiCreditToast(showToast, t, data);
 
       // Step 3: Persist to DB
       await saveToDb(result);

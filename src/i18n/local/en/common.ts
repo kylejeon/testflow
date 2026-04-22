@@ -338,6 +338,13 @@ export const common = {
       illustrationAlt: 'An empty open box with sparkles floating above it',
     },
   },
+
+  ai: {
+    creditToast: {
+      used_one: '1 AI credit used',
+      used_other: '{{count}} AI credits used',
+    },
+  },
 };
 
 export default common;

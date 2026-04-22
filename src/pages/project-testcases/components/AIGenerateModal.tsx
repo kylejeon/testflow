@@ -6,6 +6,8 @@ import { getMySharedPoolUsage } from '../../../lib/aiUsage';
 import { markOnboardingStep } from '../../../lib/onboardingMarker';
 import { normalizeLocale } from '../../../lib/claudeLocale';
 import { aiFetch } from '../../../lib/aiFetch';
+import { showAiCreditToast } from '../../../lib/aiCreditToast';
+import { useToast } from '../../../components/Toast';
 import { ModalShell } from '../../../components/ModalShell';
 
 interface SessionLog {
@@ -84,7 +86,8 @@ export default function AIGenerateModal({
   onClose,
   initialTitles,
 }: AIGenerateModalProps) {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation('common');
+  const { showToast } = useToast();
   const [currentStep, setCurrentStep] = useState<Step>('mode');
   const [mode, setMode] = useState<Mode>('text');
 
@@ -240,6 +243,7 @@ export default function AIGenerateModal({
       setSelectedTitles(new Set(data.titles || []));
       setCurrentStep('titles');
       setMonthlyUsage(prev => prev + 1);
+      showAiCreditToast(showToast, t, data);
     } catch (err: any) {
       if (err.message?.includes('limit')) {
         setError(`You have reached the monthly AI generation limit (${planInfo.monthlyLimit}). Please upgrade your plan.`);
@@ -266,6 +270,7 @@ export default function AIGenerateModal({
       setGeneratedCases(cases);
       setSelectedCaseIndices(new Set(cases.map((_, i) => i)));
       setCurrentStep('details');
+      showAiCreditToast(showToast, t, data);
     } catch (err: any) {
       setError(err.message || 'An error occurred while generating detailed cases.');
     } finally {

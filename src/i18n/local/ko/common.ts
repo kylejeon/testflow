@@ -337,6 +337,12 @@ export const common = {
       illustrationAlt: '반짝이가 떠오르는 빈 상자',
     },
   },
+
+  ai: {
+    creditToast: {
+      used: 'AI 크레딧 {{count}}개 사용됨',
+    },
+  },
 };
 
 export default common;

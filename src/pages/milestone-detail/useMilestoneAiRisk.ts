@@ -2,6 +2,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import i18n from '../../i18n';
 import { normalizeLocale } from '../../lib/claudeLocale';
 import { aiFetch } from '../../lib/aiFetch';
+import { showAiCreditToast } from '../../lib/aiCreditToast';
+import { useToast } from '../../components/Toast';
+import { useTranslation } from 'react-i18next';
 
 export type MilestoneRiskLevel = 'on_track' | 'at_risk' | 'critical';
 
@@ -67,6 +70,8 @@ export interface MilestoneAiRiskError {
  */
 export function useMilestoneAiRisk(milestoneId: string) {
   const queryClient = useQueryClient();
+  const { t } = useTranslation('common');
+  const { showToast } = useToast();
 
   const mutation = useMutation<
     MilestoneAiRiskResult,
@@ -109,6 +114,7 @@ export function useMilestoneAiRisk(milestoneId: string) {
       }
     },
     onSuccess: (data) => {
+      showAiCreditToast(showToast, t, data);
       // Partial update: only patch milestone.ai_risk_cache to avoid Overview refetch flicker.
       const cache: MilestoneAiRiskCache = {
         generated_at: data.generated_at,

@@ -5,6 +5,9 @@ import { useNavigate } from 'react-router-dom';
 import { ModalShell } from '../../../components/ModalShell';
 import { normalizeLocale } from '../../../lib/claudeLocale';
 import { aiFetch } from '../../../lib/aiFetch';
+import { showAiCreditToast } from '../../../lib/aiCreditToast';
+import { useToast } from '../../../components/Toast';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   isOpen: boolean;
@@ -59,6 +62,8 @@ interface GeneratedTC {
 
 export default function AIAssistModal({ isOpen, onClose, projectId, onOpenGenerate }: Props) {
   const navigate = useNavigate();
+  const { t } = useTranslation('common');
+  const { showToast } = useToast();
   const searchRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -162,6 +167,7 @@ export default function AIAssistModal({ isOpen, onClose, projectId, onOpenGenera
         isEdgeCase: true,
       }));
       setGeneratedTCs(tcs);
+      showAiCreditToast(showToast, t, data);
     } catch {
       setError('Failed to generate edge cases. Please try again.');
     } finally {

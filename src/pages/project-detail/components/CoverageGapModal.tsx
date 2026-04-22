@@ -4,6 +4,9 @@ import { supabase } from '../../../lib/supabase';
 import { ModalShell } from '../../../components/ModalShell';
 import { normalizeLocale } from '../../../lib/claudeLocale';
 import { aiFetch } from '../../../lib/aiFetch';
+import { showAiCreditToast } from '../../../lib/aiCreditToast';
+import { useToast } from '../../../components/Toast';
+import { useTranslation } from 'react-i18next';
 
 interface GapSuggestion {
   title: string;
@@ -56,6 +59,8 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export default function CoverageGapModal({ projectId, onClose, onGenerateTCs }: CoverageGapModalProps) {
+  const { t } = useTranslation('common');
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<GapResult | null>(null);
@@ -93,6 +98,7 @@ export default function CoverageGapModal({ projectId, onClose, onGenerateTCs }: 
       const gapResult: GapResult = data.result;
       setResult(gapResult);
       setIsCached(!!data.cached);
+      showAiCreditToast(showToast, t, data);
 
       // Auto-select all P1 suggestions
       const autoSelected = new Set<string>();

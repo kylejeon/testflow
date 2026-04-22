@@ -21,6 +21,7 @@ import { formatShortDate, formatShortDateTime, formatShortTime, formatDayHeader 
 import { formatRelativeTime } from '../../lib/formatRelativeTime';
 import { normalizeLocale } from '../../lib/claudeLocale';
 import { aiFetch } from '../../lib/aiFetch';
+import { showAiCreditToast } from '../../lib/aiCreditToast';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -259,9 +260,7 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
       }
 
       setRiskData({ ...data, _scanned_at: new Date().toISOString() });
-      if (data.meta) {
-        showToast(t('milestones:planDetail.toast.aiRisk.scanComplete', { credits: data.meta.credits_used }), 'success');
-      }
+      showAiCreditToast(showToast, t, data);
     } catch (err: any) {
       console.error('Risk scan error:', err);
       setRiskError(err.message);

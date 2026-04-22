@@ -15,6 +15,9 @@ import i18n from '../i18n';
 import { supabase } from '../lib/supabase';
 import { normalizeLocale } from '../lib/claudeLocale';
 import { aiFetch } from '../lib/aiFetch';
+import { showAiCreditToast } from '../lib/aiCreditToast';
+import { useToast } from '../components/Toast';
+import { useTranslation } from 'react-i18next';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -481,6 +484,8 @@ export function exportRTMCsv(matrix: RTMMatrix): string {
 // ─── useAISuggestTCs — 요구사항 분석 → TC 자동 추천 ──────────────────────────
 
 export function useAISuggestTCs() {
+  const { t } = useTranslation('common');
+  const { showToast } = useToast();
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<any[]>([]);
@@ -514,6 +519,7 @@ export function useAISuggestTCs() {
       }
 
       setSuggestions(data.suggestions || []);
+      showAiCreditToast(showToast, t, data);
       return data.suggestions || [];
     } catch (err: any) {
       setError(err.message || 'AI suggestion failed');
@@ -521,7 +527,7 @@ export function useAISuggestTCs() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t, showToast]);
 
   return { suggest, suggestions, loading, error };
 }

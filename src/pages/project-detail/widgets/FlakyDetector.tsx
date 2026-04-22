@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n';
 import { supabase } from '../../../lib/supabase';
 import { normalizeLocale } from '../../../lib/claudeLocale';
+import { showAiCreditToast } from '../../../lib/aiCreditToast';
+import { useToast } from '../../../components/Toast';
 
 const CACHE_KEY_PREFIX = 'flaky_ai_cache_';
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -106,6 +109,8 @@ function Toast({ message, type, onClose }: { message: string; type: 'error' | 's
 }
 
 export default function FlakyDetector({ projectId, subscriptionTier }: { projectId: string; subscriptionTier: number }) {
+  const { t } = useTranslation('common');
+  const { showToast } = useToast();
   const [flaky, setFlaky] = useState<FlakyTC[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -328,6 +333,7 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
       setIsCachedResult(false);
       writeCache(data.result.patterns);
       loadJiraCreatedState();
+      showAiCreditToast(showToast, t, data);
     } catch {
       setAiError('Connection error. Please try again.');
     } finally {

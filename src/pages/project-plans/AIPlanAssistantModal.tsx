@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import { useAiFeature } from '../../hooks/useAiFeature';
 import { normalizeLocale } from '../../lib/claudeLocale';
 import { aiFetch } from '../../lib/aiFetch';
+import { showAiCreditToast } from '../../lib/aiCreditToast';
+import { useToast } from '../../components/Toast';
 
 interface Milestone {
   id: string;
@@ -65,6 +68,8 @@ const SIGNAL_OPTIONS = [
 
 export default function AIPlanAssistantModal({ projectId, milestones, onClose, onApply }: Props) {
   const aiFeature = useAiFeature('plan_assistant');
+  const { t } = useTranslation('common');
+  const { showToast } = useToast();
 
   const [step, setStep] = useState<'input' | 'loading' | 'result'>('input');
   const [affectedAreas, setAffectedAreas] = useState('');
@@ -103,6 +108,7 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
       if (!res.ok) throw new Error(data.error || 'AI request failed');
       setResult(data);
       setStep('result');
+      showAiCreditToast(showToast, t, data);
     } catch (err: any) {
       setError(err.message || 'Something went wrong');
       setStep('input');
