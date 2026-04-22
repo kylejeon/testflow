@@ -190,13 +190,13 @@ automatically sync CI test results to a Testably run. The SDK lives in
 
 | Package | Location | Publish status |
 |---------|----------|----------------|
-| [`@testably/playwright-reporter`](./packages/playwright/README.md) | `packages/playwright/` | MIT — pending publish to npm (alpha) |
-| `@testably/reporter-core` | `packages/core/` | Internal HTTP client used by the reporter |
+| [`@testably.kr/playwright-reporter`](./packages/playwright/README.md) | `packages/playwright/` | MIT — pending publish to npm (alpha) |
+| `@testably.kr/reporter-core` | `packages/core/` | Internal HTTP client used by the reporter |
 
 ### Quick start (Playwright)
 
 ```bash
-npm install --save-dev @testably/playwright-reporter
+npm install --save-dev @testably.kr/playwright-reporter
 ```
 
 ```ts
@@ -206,7 +206,7 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   reporter: [
     ['list'],
-    ['@testably/playwright-reporter', { testCaseIdSource: 'title' }],
+    ['@testably.kr/playwright-reporter', { testCaseIdSource: 'title' }],
   ],
 });
 ```

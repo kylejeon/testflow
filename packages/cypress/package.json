@@ -1,5 +1,5 @@
 {
-  "name": "@testably/cypress-reporter",
+  "name": "@testably.kr/cypress-reporter",
   "version": "0.0.0-dev",
   "private": true,
   "description": "Cypress plugin for Testably — automatically uploads test results to your Testably runs via after:run event (not yet published)",
@@ -33,7 +33,7 @@
     "cypress": ">=10.0.0"
   },
   "dependencies": {
-    "@testably/reporter-core": "0.1.0-alpha.0"
+    "@testably.kr/reporter-core": "0.1.0-alpha.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

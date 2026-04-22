@@ -11,9 +11,9 @@ import {
   TestResult,
   TestablyConfig,
   NonRetryableUploadError,
-} from '@testably/reporter-core';
+} from '@testably.kr/reporter-core';
 
-const SDK_AGENT = '@testably/playwright-reporter/0.1.0-alpha.0';
+const SDK_AGENT = '@testably.kr/playwright-reporter/0.1.0-alpha.0';
 
 export interface PlaywrightReporterOptions extends Partial<TestablyConfig> {
   /**

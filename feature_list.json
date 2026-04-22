@@ -291,7 +291,7 @@
     },
     {
       "id": "f028",
-      "title": "Test Automation SDK — @testably/playwright-reporter",
+      "title": "Test Automation SDK — @testably.kr/playwright-reporter",
       "category": "integration",
       "description": "Playwright 테스트 결과를 CI에서 Testably로 자동 동기화하는 npm 패키지. 기존 CI/CD Results Upload API(Pro+) 래핑. 이어서 Cypress/JUnit Parser 확장.",
       "priority": "P1",

@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to `@testably/reporter-core` are documented in this file.
+All notable changes to `@testably.kr/reporter-core` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - First public preview. Core HTTP client used by
-  `@testably/playwright-reporter` (and future Cypress / Jest reporters).
+  `@testably.kr/playwright-reporter` (and future Cypress / Jest reporters).
 - Handles batching (100 results / request), exponential-backoff retry for
   transient errors, 429 rate-limit (`Retry-After`) handling, and the
   non-retryable 4xx error type (`NonRetryableUploadError`) used by reporters

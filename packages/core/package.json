@@ -1,5 +1,5 @@
 {
-  "name": "@testably/reporter-core",
+  "name": "@testably.kr/reporter-core",
   "version": "0.1.0-alpha.0",
   "description": "Core API client for Testably reporters — handles upload, retry, rate limiting, and TC ID mapping",
   "main": "dist/index.js",

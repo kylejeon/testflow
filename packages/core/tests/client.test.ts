@@ -45,7 +45,7 @@ describe('TestablyClient', () => {
   });
 
   it('no-op when results is empty', async () => {
-    const client = new TestablyClient({}, '@testably/playwright-reporter/test');
+    const client = new TestablyClient({}, '@testably.kr/playwright-reporter/test');
     const resp = await client.uploadResults([]);
     expect(resp.uploaded_count).toBe(0);
     expect(fetchSpy).not.toHaveBeenCalled();
@@ -63,7 +63,7 @@ describe('TestablyClient', () => {
       }),
     );
 
-    const client = new TestablyClient({}, '@testably/playwright-reporter/0.1.0-alpha.0');
+    const client = new TestablyClient({}, '@testably.kr/playwright-reporter/0.1.0-alpha.0');
     await client.uploadResults([makeResult('TC-1')]);
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
@@ -72,9 +72,9 @@ describe('TestablyClient', () => {
     expect((init as RequestInit).method).toBe('POST');
     const headers = (init as RequestInit).headers as Record<string, string>;
     expect(headers['Authorization']).toBe(`Bearer ${baseEnv.TESTABLY_TOKEN}`);
-    expect(headers['User-Agent']).toBe('@testably/playwright-reporter/0.1.0-alpha.0');
+    expect(headers['User-Agent']).toBe('@testably.kr/playwright-reporter/0.1.0-alpha.0');
     expect(headers['X-Testably-SDK-Version']).toBe(
-      '@testably/playwright-reporter/0.1.0-alpha.0',
+      '@testably.kr/playwright-reporter/0.1.0-alpha.0',
     );
 
     const body = JSON.parse((init as RequestInit).body as string);

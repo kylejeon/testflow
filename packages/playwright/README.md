@@ -1,4 +1,4 @@
-# @testably/playwright-reporter
+# @testably.kr/playwright-reporter
 
 Official [Playwright](https://playwright.dev/) reporter for
 [Testably](https://testably.app) — upload your Playwright test results to a
@@ -16,7 +16,7 @@ Testably test run automatically from any CI provider.
 ## Install
 
 ```bash
-npm install --save-dev @testably/playwright-reporter
+npm install --save-dev @testably.kr/playwright-reporter
 ```
 
 Peer dependency: `@playwright/test >= 1.40.0`.
@@ -44,7 +44,7 @@ Peer dependency: `@playwright/test >= 1.40.0`.
    export default defineConfig({
      reporter: [
        ['list'],
-       ['@testably/playwright-reporter', {
+       ['@testably.kr/playwright-reporter', {
          testCaseIdSource: 'title',
        }],
      ],
@@ -121,7 +121,7 @@ test('[TC-42] user can log in', async ({ page }) => { /* ... */ });
 Supply your own mapper — handy when you keep a JSON map of file-to-TC:
 
 ```ts
-reporter: [['@testably/playwright-reporter', {
+reporter: [['@testably.kr/playwright-reporter', {
   testCaseIdSource: 'custom',
   mapTestCaseId: (title, filePath) => mapping[filePath]?.[title],
 }]]

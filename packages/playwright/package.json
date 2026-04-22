@@ -1,5 +1,5 @@
 {
-  "name": "@testably/playwright-reporter",
+  "name": "@testably.kr/playwright-reporter",
   "version": "0.1.0-alpha.0",
   "description": "Playwright custom reporter for Testably — automatically uploads test results to your Testably runs",
   "main": "dist/index.js",
@@ -54,7 +54,7 @@
     "@playwright/test": ">=1.40.0"
   },
   "dependencies": {
-    "@testably/reporter-core": "0.1.0-alpha.0"
+    "@testably.kr/reporter-core": "0.1.0-alpha.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.44.0",
