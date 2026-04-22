@@ -139,6 +139,7 @@ function isImageFile(name: string) {
 // ── MiniBtn (Step Pass/Fail) ──────────────────────────────────────────────────
 
 function MiniBtn({ type, active, onClick }: { type: 'pass' | 'fail'; active: boolean; onClick: () => void }) {
+  const { t } = useTranslation(['common']);
   const isPass = type === 'pass';
   const activeClass = isPass
     ? 'bg-green-500 border-green-500 text-white'
@@ -151,7 +152,7 @@ function MiniBtn({ type, active, onClick }: { type: 'pass' | 'fail'; active: boo
   return (
     <button
       onClick={(e) => { e.stopPropagation(); onClick(); }}
-      title={isPass ? 'Pass' : 'Fail'}
+      title={isPass ? t('common:passed') : t('common:failed')}
       className={`w-[22px] h-[22px] flex items-center justify-center border rounded text-[10px] transition-all flex-shrink-0 ${
         active ? activeClass : `${defaultClass} ${hoverClass}`
       }`}

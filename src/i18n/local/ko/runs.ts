@@ -469,6 +469,8 @@ export const runs = {
       history: {
         header: '실행 이력',
         empty: '실행 이력 없음',
+        byAuthor: '{{author}}님 기록',
+        unknownAuthor: '알 수 없음',
       },
       note: {
         optionalSuffix: '(선택 사항)',

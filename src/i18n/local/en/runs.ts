@@ -476,6 +476,8 @@ export const runs = {
       history: {
         header: 'Execution History',
         empty: 'No execution history',
+        byAuthor: 'by {{author}}',
+        unknownAuthor: 'Unknown',
       },
       note: {
         optionalSuffix: '(optional)',

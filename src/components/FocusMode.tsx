@@ -340,7 +340,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
         [tcId]: (data || []).map((item: any) => ({
           id: item.id,
           text: item.comment,
-          author: item.profiles?.full_name || item.profiles?.email || 'Unknown',
+          author: item.profiles?.full_name || item.profiles?.email || t('runs:detail.focusMode.history.unknownAuthor'),
           timestamp: new Date(item.created_at),
         })),
       }));
@@ -1338,7 +1338,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                                 </div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                   <div style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#475569' }}>{h.runName}</div>
-                                  <div style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{relTime}{h.author ? ` · by ${h.author}` : ''}</div>
+                                  <div style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{relTime}{h.author ? ` · ${t('runs:detail.focusMode.history.byAuthor', { author: h.author })}` : ''}</div>
                                   {h.note && <div style={{ fontSize: '0.75rem', color: '#94A3B8', fontStyle: 'italic', marginTop: '0.125rem', paddingLeft: '0.25rem' }}>"{h.note}"</div>}
                                 </div>
                               </div>
