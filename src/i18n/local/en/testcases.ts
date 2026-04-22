@@ -74,6 +74,12 @@ export const testcases = {
     attachmentDeleteFailed: 'Failed to delete attachment.',
     generateSaveFailed: 'Failed to save generated test cases.',
   },
+
+  // f033 — Import (legacy .xls blocked after xlsx → exceljs migration)
+  import: {
+    xlsOldFormatBlocked: 'Legacy .xls files are no longer supported.',
+    xlsUseXlsxInstead: 'Please re-save as .xlsx in Excel and try again.',
+  },
 };
 
 export default testcases;

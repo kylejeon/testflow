@@ -74,6 +74,12 @@ export const testcases = {
     attachmentDeleteFailed: '첨부파일 삭제에 실패했어요.',
     generateSaveFailed: '생성된 테스트 케이스 저장에 실패했어요.',
   },
+
+  // f033 — Import (xlsx → exceljs 마이그레이션 후 구 .xls 차단)
+  import: {
+    xlsOldFormatBlocked: '구 버전 .xls 파일은 더 이상 지원되지 않습니다.',
+    xlsUseXlsxInstead: 'Excel에서 .xlsx로 저장한 뒤 다시 시도해주세요.',
+  },
 };
 
 export default testcases;

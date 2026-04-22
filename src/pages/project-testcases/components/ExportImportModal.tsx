@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ModalShell } from '../../../components/ModalShell';
 import { exportToTestRail, exportToXLSX } from '../../../utils/testRailExport';
 import { parseCSVImport, parseExcelImport, type ImportedTestCase } from '../../../utils/excelImport';
@@ -124,6 +125,7 @@ export default function ExportImportModal({
   onRefresh,
   onClose,
 }: ExportImportModalProps) {
+  const { t } = useTranslation(['testcases']);
   const [activeTab, setActiveTab]       = useState<ModalTab>('export');
   const [exportScope, setExportScope]   = useState<ExportScope>('all');
   const [exportFormat, setExportFormat] = useState<'csv' | 'xlsx'>('csv');
@@ -351,7 +353,17 @@ export default function ExportImportModal({
     setImportFile(file); setImportPreview(null); setImportErrors([]); setImportWarnings([]);
     setImportDone(false); setProgress(0);
     const ext = file.name.split('.').pop()?.toLowerCase();
-    const isExcel = ext === 'xlsx' || ext === 'xls';
+    // f033 — .xls (legacy BIFF) is not supported by exceljs. Block it here
+    // with a translated error before invoking parseExcelImport.
+    if (ext === 'xls') {
+      setImportFile(null);
+      setImportErrors([
+        t('testcases:import.xlsOldFormatBlocked'),
+        t('testcases:import.xlsUseXlsxInstead'),
+      ]);
+      return;
+    }
+    const isExcel = ext === 'xlsx';
     const reader = new FileReader();
     if (isExcel) {
       reader.onload = async e => {
@@ -368,15 +380,23 @@ export default function ExportImportModal({
       };
       reader.readAsText(file, 'UTF-8');
     }
-  }, []);
+  }, [t]);
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault(); setDragOver(false);
     const file = e.dataTransfer.files?.[0];
     if (!file) return;
     const ext = file.name.split('.').pop()?.toLowerCase();
-    if (ext === 'csv' || ext === 'xlsx' || ext === 'xls') handleFileSelect(file);
-    else setImportErrors(['Only CSV or Excel (.xlsx, .xls) files are supported.']);
+    // f033 — block legacy .xls before routing to parseExcelImport.
+    if (ext === 'xls') {
+      setImportErrors([
+        t('testcases:import.xlsOldFormatBlocked'),
+        t('testcases:import.xlsUseXlsxInstead'),
+      ]);
+      return;
+    }
+    if (ext === 'csv' || ext === 'xlsx') handleFileSelect(file);
+    else setImportErrors(['Only CSV or Excel (.xlsx) files are supported.']);
   };
 
   const handleImportConfirm = async () => {
@@ -748,7 +768,7 @@ export default function ExportImportModal({
                   <div style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', marginBottom: 4 }}>CSV / Excel File Import</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#94A3B8', marginBottom: 14 }}>
                     Supported formats:
-                    {['.csv', '.xlsx', '.xls'].map(f => (
+                    {['.csv', '.xlsx'].map(f => (
                       <span key={f} style={{ padding: '2px 8px', background: '#F1F5F9', borderRadius: 4, fontWeight: 600, fontSize: 10, color: '#64748B' }}>{f}</span>
                     ))}
                   </div>
@@ -774,7 +794,7 @@ export default function ExportImportModal({
                     <p style={{ fontSize: 13, color: '#64748B' }}>
                       Drag &amp; drop or <span style={{ color: '#6366F1', fontWeight: 600 }}>click to select</span> a file
                     </p>
-                    <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" onChange={e => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); }} style={{ display: 'none' }} />
+                    <input ref={fileInputRef} type="file" accept=".csv,.xlsx" onChange={e => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); }} style={{ display: 'none' }} />
                   </div>
                 ) : (
                   <div style={{ border: '1px solid #E2E8F0', borderRadius: 8, padding: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
