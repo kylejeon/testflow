@@ -3308,11 +3308,15 @@ export default function PlanDetailPage() {
       {/* AI Optimize Modal */}
       {showAIModal && (
         <AIPlanAssistantModal
+          mode="add-to-plan"
           projectId={projectId!}
           milestones={milestones.map(m => ({ id: m.id, name: m.name, status: 'active', end_date: null }))}
           onClose={() => setShowAIModal(false)}
           onApply={async (tcIds, _planName, _milestoneId) => {
-            // Add recommended TCs to the current plan (skip already-added ones)
+            // NOTE: plan-detail context 에서는 새 plan 을 만들지 않고 현재 열린 plan 에
+            // TC 를 추가하기만 한다 (AI Optimize 기능). 새 plan 이 필요하면 milestones
+            // 페이지에서 AI Assistant 를 여는 것이 맞다.
+            console.log('[AIOptimize@plan-detail] onApply start — adding TCs to CURRENT plan, not creating new', { tcIds: tcIds.length, planId });
             const existingIds = new Set(planTcs.map(p => p.test_case_id));
             const newIds = tcIds.filter(id => !existingIds.has(id));
             if (newIds.length === 0) {
@@ -3322,7 +3326,8 @@ export default function PlanDetailPage() {
             }
             const inserts = newIds.map(tcId => ({ test_plan_id: planId, test_case_id: tcId }));
             const { error } = await supabase.from('test_plan_test_cases').insert(inserts);
-            if (error) { showToast(t('milestones:planDetail.toast.aiOptimize.addFailed', { message: error.message }), 'error'); return; }
+            console.log('[AIOptimize@plan-detail] insert result', { count: newIds.length, error });
+            if (error) { showToast(t('milestones:planDetail.toast.aiOptimize.addFailed', { message: error.message }), 'error'); throw error; }
             const addedTcs = allTcs.filter(tc0 => newIds.includes(tc0.id));
             setPlanTcs(prev => [...prev, ...addedTcs.map(tc => ({
               test_plan_id: planId!, test_case_id: tc.id,

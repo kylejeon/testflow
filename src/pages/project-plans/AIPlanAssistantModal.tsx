@@ -46,6 +46,10 @@ interface Props {
   /** milestoneId: dropdown 에서 선택한 milestone. 빈 문자열이면 standalone.
    *  onApply 가 Promise 를 반환하면 모달이 submitting 상태로 전환된다. */
   onApply: (suggestedTcIds: string[], planName: string, milestoneId: string) => void | Promise<void>;
+  /** 'create-plan' = milestones 페이지에서 새 plan 생성 (기본).
+   *  'add-to-plan' = plan-detail 페이지에서 현재 열린 plan 에 TC 추가.
+   *  mode=add-to-plan 일 땐 Plan Name/Attach 필드 숨김 + 버튼 라벨 변경. */
+  mode?: 'create-plan' | 'add-to-plan';
 }
 
 // Risk score helper (0–100 scale from priority)
@@ -71,7 +75,8 @@ const SIGNAL_OPTIONS = [
   { id: 'stale', label: 'Untested ≥30d' },
 ];
 
-export default function AIPlanAssistantModal({ projectId, milestones, onClose, onApply }: Props) {
+export default function AIPlanAssistantModal({ projectId, milestones, onClose, onApply, mode = 'create-plan' }: Props) {
+  const isAddToPlan = mode === 'add-to-plan';
   const aiFeature = useAiFeature('plan_assistant');
   const { t } = useTranslation('common');
   const { showToast } = useToast();
@@ -150,6 +155,7 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
   };
 
   const handleApply = async () => {
+    console.log('[AIPlanAssistantModal] handleApply clicked', { submitting, selectedCount: selectedTcIds.size });
     if (submitting) return;
     const mName = milestones.find(m => m.id === selectedMilestone)?.name;
     const trimmedName = planName.trim();
@@ -166,8 +172,11 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
     setSubmitting(true);
     setError('');
     try {
+      console.log('[AIPlanAssistantModal] calling onApply', { finalPlanName, selectedMilestone, tcCount: selectedTcIds.size });
       await Promise.resolve(onApply([...selectedTcIds], finalPlanName, selectedMilestone));
+      console.log('[AIPlanAssistantModal] onApply completed without error');
     } catch (err: any) {
+      console.error('[AIPlanAssistantModal] onApply threw:', err);
       setError(err?.message || 'Failed to create plan');
     } finally {
       setSubmitting(false);
@@ -200,9 +209,13 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
             </svg>
           </div>
           <div>
-            <div style={{ fontSize:16, fontWeight:600, margin:0 }}>AI Plan Assistant</div>
+            <div style={{ fontSize:16, fontWeight:600, margin:0 }}>
+              {isAddToPlan ? 'AI Optimize — Add TCs to Plan' : 'AI Plan Assistant'}
+            </div>
             <div style={{ fontSize:12, color:'#9CA3AF', marginTop:2 }}>
-              Analyzes milestones &amp; recent changes to recommend test cases for your plan
+              {isAddToPlan
+                ? 'Recommends additional test cases to add to this plan'
+                : 'Analyzes milestones & recent changes to recommend test cases for your plan'}
             </div>
           </div>
           {!aiFeature.loading && (
@@ -231,27 +244,29 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
           {/* overflowY:'auto' — signals 가 4행 wrap 될 때 좌측 패널 overflow 방어. */}
           <div style={{ padding:18, borderRight:'1px solid #E2E8F0', background:'#F8FAFC', display:'flex', flexDirection:'column', gap:14, minHeight:0, overflowY:'auto' }}>
 
-            {/* Plan Name field */}
-            <div>
-              <div style={{ fontSize:11, color:'#9CA3AF', textTransform:'uppercase', letterSpacing:'0.05em', fontWeight:600, marginBottom:8 }}>
-                Plan Name
+            {/* Plan Name field — create-plan mode only */}
+            {!isAddToPlan && (
+              <div>
+                <div style={{ fontSize:11, color:'#9CA3AF', textTransform:'uppercase', letterSpacing:'0.05em', fontWeight:600, marginBottom:8 }}>
+                  Plan Name
+                </div>
+                <input
+                  type="text"
+                  value={planName}
+                  onChange={e => setPlanName(e.target.value)}
+                  placeholder={
+                    milestones.find(m => m.id === selectedMilestone)?.name
+                      ? `${milestones.find(m => m.id === selectedMilestone)?.name} — AI Plan`
+                      : 'AI Generated Plan'
+                  }
+                  style={{ width:'100%', padding:'8px 12px', border:'1px solid #E2E8F0', borderRadius:8,
+                    fontSize:13, outline:'none', background:'#fff', boxSizing:'border-box' }}
+                />
+                <div style={{ fontSize:11, color:'#9CA3AF', marginTop:4 }}>
+                  Leave empty to auto-generate from milestone / affected areas
+                </div>
               </div>
-              <input
-                type="text"
-                value={planName}
-                onChange={e => setPlanName(e.target.value)}
-                placeholder={
-                  milestones.find(m => m.id === selectedMilestone)?.name
-                    ? `${milestones.find(m => m.id === selectedMilestone)?.name} — AI Plan`
-                    : 'AI Generated Plan'
-                }
-                style={{ width:'100%', padding:'8px 12px', border:'1px solid #E2E8F0', borderRadius:8,
-                  fontSize:13, outline:'none', background:'#fff', boxSizing:'border-box' }}
-              />
-              <div style={{ fontSize:11, color:'#9CA3AF', marginTop:4 }}>
-                Leave empty to auto-generate from milestone / affected areas
-              </div>
-            </div>
+            )}
 
             {/* Affected areas */}
             <div>
@@ -269,7 +284,8 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
               <div style={{ fontSize:11, color:'#9CA3AF', marginTop:4 }}>Separate multiple areas with commas</div>
             </div>
 
-            {/* Attach to Milestone */}
+            {/* Attach to Milestone — create-plan mode only */}
+            {!isAddToPlan && (
             <div>
               <div style={{ fontSize:11, color:'#9CA3AF', textTransform:'uppercase', letterSpacing:'0.05em', fontWeight:600, marginBottom:8 }}>
                 Attach Plan to
@@ -299,6 +315,7 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
                 </div>
               </div>
             </div>
+            )}
 
             {/* Include signals */}
             <div>
@@ -528,8 +545,10 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
                   color:(selectedCount>0 && !submitting)?'#fff':'#94A3B8', fontSize:13, fontWeight:600,
                   cursor:submitting?'wait':(selectedCount>0?'pointer':'not-allowed') }}>
                 {submitting
-                  ? 'Creating plan…'
-                  : `Add ${selectedCount > 0 ? selectedCount : ''} TCs to Plan`}
+                  ? (isAddToPlan ? 'Adding…' : 'Creating plan…')
+                  : isAddToPlan
+                    ? `Add ${selectedCount > 0 ? selectedCount : ''} TCs to This Plan`
+                    : `Create Plan with ${selectedCount > 0 ? selectedCount : ''} TCs`}
               </button>
             </div>
           </div>
