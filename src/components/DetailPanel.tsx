@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Avatar } from './Avatar';
 import { supabase } from '../lib/supabase';
 import { type AnyStep, isSharedStepRef } from '../types/shared-steps';
 import { expandFlatSteps, type SharedStepCache } from '../lib/expandSharedSteps';
+import { formatRelativeTime } from '../lib/formatRelativeTime';
+import { formatShortDate, formatShortTime, formatShortDateTime } from '../lib/dateFormat';
 
 export type TestStatus = 'passed' | 'failed' | 'blocked' | 'retest' | 'untested';
 
@@ -128,23 +131,6 @@ const PRIORITY_DOT_COLORS: Record<string, string> = {
   medium:   '#6366F1',
   low:      '#94A3B8',
 };
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-}
-
-function getTimeAgo(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  if (diffMins < 1) return 'just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
-  const diffDays = Math.floor(diffHours / 24);
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
 
 function isImageFile(name: string) {
   return /\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(name);
@@ -294,6 +280,8 @@ export function DetailPanel({
   runCompleted = false,
   onUpdateSharedStep,
 }: DetailPanelProps) {
+  const { t, i18n } = useTranslation(['common', 'runs']);
+  const lang = i18n.language;
   const [activeTab, setActiveTab] = useState<'comments' | 'results' | 'issues' | 'history'>('comments');
   const [stepsCollapsed, setStepsCollapsed] = useState(false);
   const [stepsHeightPx, setStepsHeightPx] = useState<number | null>(null);
@@ -516,11 +504,11 @@ export function DetailPanel({
             onChange={(e) => onStatusChange?.(e.target.value)}
             className={`px-2.5 py-[0.3125rem] rounded-full text-xs font-semibold cursor-pointer border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${STATUS_COLORS[runStatus] || STATUS_COLORS.untested}`}
           >
-            <option value="untested">— Untested</option>
-            <option value="passed">✓ Passed</option>
-            <option value="failed">✕ Failed</option>
-            <option value="blocked">⊘ Blocked</option>
-            <option value="retest">↻ Retest</option>
+            <option value="untested">{t('common:detailPanel.quickActions.statusOption.untested')}</option>
+            <option value="passed">{t('common:detailPanel.quickActions.statusOption.passed')}</option>
+            <option value="failed">{t('common:detailPanel.quickActions.statusOption.failed')}</option>
+            <option value="blocked">{t('common:detailPanel.quickActions.statusOption.blocked')}</option>
+            <option value="retest">{t('common:detailPanel.quickActions.statusOption.retest')}</option>
           </select>
 
           {/* Add Result */}
@@ -529,7 +517,7 @@ export function DetailPanel({
             className="flex items-center gap-1 px-2.5 py-[0.3125rem] rounded text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors cursor-pointer border-0"
           >
             <i className="ri-add-line text-sm" />
-            Add Result
+            {t('common:detailPanel.quickActions.addResult')}
           </button>
 
           <div className="flex-1" />
@@ -540,7 +528,7 @@ export function DetailPanel({
             className="flex items-center gap-1 px-2.5 py-[0.3125rem] rounded text-xs font-semibold bg-green-500 text-white hover:bg-green-600 transition-colors cursor-pointer border-0"
           >
             <i className="ri-check-line text-sm" />
-            Pass &amp; Next
+            {t('common:detailPanel.quickActions.passAndNext')}
           </button>
 
           {/* Nav ↑↓ */}
@@ -548,7 +536,7 @@ export function DetailPanel({
             onClick={onPrev}
             disabled={!canGoPrev}
             className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 bg-white text-slate-500 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-            title="Previous"
+            title={t('common:detailPanel.quickActions.previousTooltip')}
           >
             <i className="ri-arrow-up-s-line text-sm" />
           </button>
@@ -556,7 +544,7 @@ export function DetailPanel({
             onClick={onNext}
             disabled={!canGoNext}
             className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 bg-white text-slate-500 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-            title="Next"
+            title={t('common:detailPanel.quickActions.nextTooltip')}
           >
             <i className="ri-arrow-down-s-line text-sm" />
           </button>
@@ -568,7 +556,7 @@ export function DetailPanel({
         <div className="grid grid-cols-2 gap-2.5">
           {/* Priority */}
           <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">Priority</div>
+            <div className="text-xs font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">{t('common:priority')}</div>
             <span className="inline-flex items-center gap-1.5">
               <span
                 className="inline-block w-2 h-2 rounded-full flex-shrink-0"
@@ -580,7 +568,7 @@ export function DetailPanel({
 
           {/* Folder */}
           <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">Folder</div>
+            <div className="text-xs font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">{t('common:detailPanel.meta.folder')}</div>
             <div className="text-sm font-medium text-gray-800 flex items-center gap-1.5">
               {testCase.folder ? (() => {
                 const f = folders.find(fd => fd.name === testCase.folder);
@@ -602,7 +590,7 @@ export function DetailPanel({
 
           {/* Tags */}
           <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">Tags</div>
+            <div className="text-xs font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">{t('common:detailPanel.meta.tags')}</div>
             {tagList.length > 0 ? (
               <div className="flex flex-wrap gap-1">
                 {tagList.map((tag) => (
@@ -618,7 +606,7 @@ export function DetailPanel({
 
           {/* Assignee */}
           <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">Assignee</div>
+            <div className="text-xs font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">{t('common:assignee')}</div>
             {isRun ? (
               /* Run context: read-only */
               <div className="flex items-center gap-1.5 text-sm font-medium text-gray-800">
@@ -658,7 +646,7 @@ export function DetailPanel({
                       <span className="font-medium text-gray-800 flex-1 truncate">{assigneeName}</span>
                     </>
                   ) : (
-                    <span className="text-gray-400 flex-1">— Unassigned —</span>
+                    <span className="text-gray-400 flex-1">{t('common:detailPanel.meta.unassignedOption')}</span>
                   )}
                   <i className="ri-arrow-down-s-line text-gray-400 text-xs flex-shrink-0" />
                   <select
@@ -666,7 +654,7 @@ export function DetailPanel({
                     onChange={(e) => onAssigneeChange?.(e.target.value)}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   >
-                    <option value="">— Unassigned —</option>
+                    <option value="">{t('common:detailPanel.meta.unassignedOption')}</option>
                     {projectMembers.map((m) => (
                       <option key={m.id} value={m.full_name || m.email}>
                         {m.avatar_emoji ? `${m.avatar_emoji} ` : ''}{m.full_name || m.email}
@@ -684,20 +672,29 @@ export function DetailPanel({
 
           {/* Created */}
           <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">Created</div>
-            <div className="text-sm font-medium text-gray-800">{formatDate(testCase.createdAt)}</div>
+            <div className="text-xs font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">{t('common:detailPanel.meta.created')}</div>
+            <div className="text-sm font-medium text-gray-800">{formatShortDate(testCase.createdAt, lang, { withYear: true })}</div>
           </div>
 
           {/* Last Run */}
           <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">Last Run</div>
+            <div className="text-xs font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">{t('common:detailPanel.meta.lastRun')}</div>
             {testResults.length > 0 ? (() => {
               const lastResult = testResults[0];
-              const timeAgo = lastResult.timestamp instanceof Date ? getTimeAgo(lastResult.timestamp) : '';
+              // AC-14: Reuse `formatRelativeTime` (Phase 1) + `formatShortDate`
+              // fallback for >= 7 days (design-spec §4-5-2).
+              let timeAgo = '';
+              if (lastResult.timestamp instanceof Date) {
+                const diffDays = Math.floor((Date.now() - lastResult.timestamp.getTime()) / 86400000);
+                timeAgo = diffDays >= 7
+                  ? formatShortDate(lastResult.timestamp, lang)
+                  : formatRelativeTime(lastResult.timestamp.toISOString(), t);
+              }
               const statusColor: Record<string, string> = {
                 passed: '#16A34A', failed: '#DC2626', blocked: '#D97706', retest: '#7C3AED', untested: '#64748B',
               };
-              const label = lastResult.status.charAt(0).toUpperCase() + lastResult.status.slice(1);
+              // AC-14: Reuse `common.passed|failed|blocked|retest|untested` — no capitalize.
+              const label = t(`common:${lastResult.status}` as const);
               return (
                 <div className="text-sm font-medium" style={{ color: statusColor[lastResult.status] || '#64748B' }}>
                   {label}
@@ -721,19 +718,17 @@ export function DetailPanel({
             className={`ri-arrow-down-s-line text-indigo-500 text-sm transition-transform duration-200 ${stepsCollapsed ? '-rotate-90' : ''}`}
           />
           <span className="text-xs font-bold text-slate-600 uppercase tracking-[0.04em]">
-            {steps.length} step{steps.length !== 1 ? 's' : ''}
-            {testCase.attachments && testCase.attachments.length > 0 ? ` · ${testCase.attachments.length} attachment${testCase.attachments.length !== 1 ? 's' : ''}` : ''}
+            {t('common:detailPanel.steps.stepsCount', { count: steps.length })}
+            {testCase.attachments && testCase.attachments.length > 0 ? ` · ${t('common:detailPanel.steps.attachmentsCount', { count: testCase.attachments.length })}` : ''}
           </span>
         </div>
         {isRun && steps.length > 0 ? (
-          <span className="text-xs font-semibold flex items-center gap-[0.25rem]">
-            <span className={passedCount > 0 ? 'text-green-600' : 'text-slate-500'}>{passedCount}</span>
-            <span className="text-slate-300">/</span>
-            <span className="text-slate-500">{steps.length} steps passed</span>
+          <span className="text-xs font-semibold flex items-center gap-[0.25rem] text-slate-500">
+            {t('common:detailPanel.steps.stepsPassed', { passed: passedCount, total: steps.length })}
           </span>
         ) : (
           <span className="text-xs text-slate-400 font-medium">
-            {testCase.attachments && testCase.attachments.length > 0 ? `${testCase.attachments.length} attachment${testCase.attachments.length !== 1 ? 's' : ''}` : ''}
+            {testCase.attachments && testCase.attachments.length > 0 ? t('common:detailPanel.steps.attachmentsCount', { count: testCase.attachments.length }) : ''}
           </span>
         )}
       </button>
@@ -756,7 +751,7 @@ export function DetailPanel({
             <div className="rounded-md px-3 py-2.5 bg-amber-50 border border-yellow-200">
               <div className="flex items-center gap-1.5 mb-1">
                 <i className="ri-alert-line text-amber-500 text-xs" />
-                <span className="text-[0.5625rem] font-bold uppercase tracking-wider text-amber-800">⚠ Precondition</span>
+                <span className="text-[0.5625rem] font-bold uppercase tracking-wider text-amber-800">{t('common:detailPanel.steps.precondition')}</span>
               </div>
               <p className="text-xs leading-relaxed text-amber-800">{testCase.precondition}</p>
             </div>
@@ -815,7 +810,7 @@ export function DetailPanel({
                               else { setExpandedSsDiffId(ref.shared_step_id); fetchOldVersionStepsDP(ref.shared_step_id, ref.shared_step_version); }
                             }}
                             className={`inline-flex items-center gap-0.5 px-1 py-0.5 rounded-full text-[0.5rem] font-bold ml-1 cursor-pointer transition-all duration-200 ${canUp ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-slate-100 text-slate-500'}`}
-                            title={canUp ? `New version: v${latestInfo!.version}` : 'Locked: test result recorded'}
+                            title={canUp ? t('runs:detail.addResult.steps.sharedUpdateBadgeTitle', { version: latestInfo!.version }) : t('runs:detail.tcList.versionBadge.locked')}
                           >
                             {canUp ? <><i className="ri-arrow-up-line" /> v{latestInfo!.version}</> : <><i className="ri-lock-line" /> v{latestInfo!.version}</>}
                           </span>
@@ -827,23 +822,23 @@ export function DetailPanel({
                             <span className="text-[0.5625rem] font-semibold text-amber-700">v{ref.shared_step_version} → v{latestInfo!.version}</span>
                             <div className="flex items-center gap-1.5">
                               {canUp && onUpdateSharedStep && (
-                                <button onClick={() => { onUpdateSharedStep(ref.shared_step_id); setExpandedSsDiffId(null); }} className="px-2 py-0.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[0.5625rem] font-bold rounded cursor-pointer transition-colors">Update</button>
+                                <button onClick={() => { onUpdateSharedStep(ref.shared_step_id); setExpandedSsDiffId(null); }} className="px-2 py-0.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[0.5625rem] font-bold rounded cursor-pointer transition-colors">{t('runs:detail.addResult.steps.updateButton')}</button>
                               )}
-                              {!canUp && <span className="flex items-center gap-0.5 text-[0.5625rem] text-slate-500"><i className="ri-lock-line" /> Locked to preserve test results</span>}
+                              {!canUp && <span className="flex items-center gap-0.5 text-[0.5625rem] text-slate-500"><i className="ri-lock-line" /> {t('runs:detail.addResult.steps.lockedBanner')}</span>}
                             </div>
                           </div>
                           <div className="grid grid-cols-2 divide-x divide-gray-200">
                             <div className="p-1.5 bg-red-50">
-                              <div className="text-[0.5rem] font-bold text-red-400 uppercase tracking-wider mb-1">Current v{ref.shared_step_version}</div>
+                              <div className="text-[0.5rem] font-bold text-red-400 uppercase tracking-wider mb-1">{t('runs:detail.addResult.steps.diffCurrent', { version: ref.shared_step_version })}</div>
                               {oldKey && oldVersionSteps[oldKey] !== undefined
                                 ? oldVersionSteps[oldKey].length > 0
                                   ? oldVersionSteps[oldKey].map((st, si) => <div key={si} className="text-[0.5625rem] text-red-700 mb-0.5 leading-relaxed"><span className="font-semibold text-red-400 mr-0.5">{si+1}.</span>{st.step}</div>)
-                                  : <div className="text-[0.5625rem] text-gray-400 italic">Version history unavailable</div>
-                                : <div className="text-[0.5625rem] text-gray-400">Loading...</div>
+                                  : <div className="text-[0.5625rem] text-gray-400 italic">{t('runs:detail.addResult.steps.diffUnavailable')}</div>
+                                : <div className="text-[0.5625rem] text-gray-400">{t('runs:detail.addResult.steps.diffLoading')}</div>
                               }
                             </div>
                             <div className="p-1.5 bg-emerald-50">
-                              <div className="text-[0.5rem] font-bold text-emerald-400 uppercase tracking-wider mb-1">Latest v{latestInfo!.version}</div>
+                              <div className="text-[0.5rem] font-bold text-emerald-400 uppercase tracking-wider mb-1">{t('runs:detail.addResult.steps.diffLatest', { version: latestInfo!.version })}</div>
                               {latestInfo!.steps.map((st, si) => <div key={si} className="text-[0.5625rem] text-emerald-700 mb-0.5 leading-relaxed"><span className="font-semibold text-emerald-400 mr-0.5">{si+1}.</span>{st.step}</div>)}
                             </div>
                           </div>
@@ -873,12 +868,12 @@ export function DetailPanel({
             <div className="bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2.5">
               <div className="flex items-center gap-1.5 mb-1">
                 <i className="ri-checkbox-circle-line text-indigo-500 text-xs" />
-                <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider">Expected Result</span>
+                <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider">{t('common:detailPanel.steps.expectedResult')}</span>
               </div>
               <p className="text-xs text-indigo-800 leading-relaxed">{testCase.expected_result}</p>
             </div>
           ) : (
-            <p className="text-xs text-gray-400 text-center py-2">No steps defined</p>
+            <p className="text-xs text-gray-400 text-center py-2">{t('common:detailPanel.steps.noStepsDefined')}</p>
           )}
 
           {/* Attachments */}
@@ -887,7 +882,7 @@ export function DetailPanel({
               <div className="flex items-center gap-1 mb-2">
                 <i className="ri-attachment-2 text-gray-400 text-xs" />
                 <span className="text-[0.5625rem] font-bold text-gray-400 uppercase tracking-wider">
-                  Attachments ({testCase.attachments.length})
+                  {t('common:detailPanel.steps.attachmentsHeader', { count: testCase.attachments.length })}
                 </span>
               </div>
               <div className="grid grid-cols-3 gap-1.5">
@@ -953,7 +948,12 @@ export function DetailPanel({
       {/* ⑥ Tab Bar */}
       <div className="flex border-b border-gray-200 flex-shrink-0">
         {(['comments', 'results', 'issues', 'history'] as const).map((tab) => {
-          const labels: Record<string, string> = { comments: 'Comments', results: 'Results', issues: 'Issues', history: 'History' };
+          const labels: Record<string, string> = {
+            comments: t('common:detailPanel.tabs.comments'),
+            results: t('common:detailPanel.tabs.results'),
+            issues: t('common:detailPanel.tabs.issues'),
+            history: t('common:detailPanel.tabs.history'),
+          };
           const counts: Record<string, number | undefined> = {
             comments: comments.length || undefined,
             results: testResults.length || undefined,
@@ -998,7 +998,7 @@ export function DetailPanel({
             ) : comments.length === 0 ? (
               <div className="text-center py-4">
                 <i className="ri-chat-3-line text-2xl text-gray-300 block mb-1" />
-                <p className="text-xs text-gray-400">No comments yet</p>
+                <p className="text-xs text-gray-400">{t('common:detailPanel.comments.empty')}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -1012,7 +1012,7 @@ export function DetailPanel({
                       />
                       <span className="text-xs font-semibold text-gray-800">{c.author}</span>
                       <span className="text-xs text-gray-400">
-                        {c.timestamp.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
+                        {formatShortDateTime(c.timestamp, lang)}
                       </span>
                       {c.user_id === currentUserId && (
                         <button
@@ -1039,7 +1039,7 @@ export function DetailPanel({
               <textarea
                 value={commentText}
                 onChange={(e) => onCommentChange?.(e.target.value)}
-                placeholder="Add a comment..."
+                placeholder={t('common:detailPanel.comments.placeholder')}
                 rows={2}
                 className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs resize-none"
               />
@@ -1048,7 +1048,7 @@ export function DetailPanel({
                 disabled={!commentText?.trim()}
                 className="px-3 py-1.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer self-end whitespace-nowrap"
               >
-                Post
+                {t('common:detailPanel.comments.post')}
               </button>
             </div>
           </div>
@@ -1060,7 +1060,7 @@ export function DetailPanel({
             {testResults.length === 0 ? (
               <div className="text-center py-6">
                 <i className="ri-file-list-line text-2xl text-gray-300 block mb-1" />
-                <p className="text-xs text-gray-400">No test results yet</p>
+                <p className="text-xs text-gray-400">{t('common:detailPanel.results.empty')}</p>
               </div>
             ) : (
               testResults.map((result) => {
@@ -1088,12 +1088,12 @@ export function DetailPanel({
                 const dot = statusDot[result.status] || '#94A3B8';
                 const bg  = statusBg[result.status]  || '#F8FAFC';
                 const fg  = statusFg[result.status]  || '#64748B';
-                const runName = result.run?.name || 'Unknown Run';
+                const runName = result.run?.name || t('common:detailPanel.results.unknownRun');
                 const dateStr = result.timestamp instanceof Date
-                  ? result.timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                  ? formatShortDate(result.timestamp, lang, { withYear: true })
                   : '';
                 const timeStr = result.timestamp instanceof Date
-                  ? result.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+                  ? formatShortTime(result.timestamp, lang)
                   : '';
 
                 return (
@@ -1108,14 +1108,14 @@ export function DetailPanel({
                       style={{ background: bg, color: fg }}
                     >
                       <span className="w-[5px] h-[5px] rounded-full flex-shrink-0" style={{ background: dot }} />
-                      {result.status.charAt(0).toUpperCase() + result.status.slice(1)}
+                      {t(`common:${result.status}` as const)}
                     </span>
 
                     {/* Run info */}
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-semibold text-gray-900 truncate">{runName}</div>
                       <div className="text-xs text-gray-400">
-                        {dateStr}{timeStr ? ` · ${timeStr}` : ''}{result.author ? ` · by ${result.author}` : ''}
+                        {dateStr}{timeStr ? ` · ${timeStr}` : ''}{result.author ? ` · ${t('common:detailPanel.results.byAuthor', { author: result.author })}` : ''}
                         {result.elapsed && result.elapsed !== '00:00' ? ` · ${result.elapsed}` : ''}
                       </div>
                       {result.note && (
@@ -1137,8 +1137,8 @@ export function DetailPanel({
                 <div className="flex items-start gap-2.5">
                   <i className="ri-lock-line text-indigo-600 text-lg mt-0.5" />
                   <div>
-                    <p className="text-xs font-semibold text-gray-800 mb-1">Jira integration requires Hobby+</p>
-                    <p className="text-xs text-gray-500">Upgrade to create and manage Jira issues from test results.</p>
+                    <p className="text-xs font-semibold text-gray-800 mb-1">{t('common:detailPanel.issues.upsellTitle', { brand: 'Jira', plan: 'Hobby' })}</p>
+                    <p className="text-xs text-gray-500">{t('common:detailPanel.issues.upsellBody')}</p>
                   </div>
                 </div>
               </div>
@@ -1147,21 +1147,21 @@ export function DetailPanel({
             {uniqueIssues.length === 0 && uniqueGithubIssues.length === 0 ? (
               <div className="text-center py-6">
                 <i className="ri-bug-line text-2xl text-gray-300 block mb-2" />
-                <p className="text-xs text-gray-400 mb-3">No linked issues</p>
+                <p className="text-xs text-gray-400 mb-3">{t('common:detailPanel.issues.empty')}</p>
                 <div className="flex items-center justify-center gap-2 flex-wrap">
                   <button
                     onClick={() => { setShowLinkInput(true); setLinkIssueKey(''); }}
                     className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
                   >
                     <i className="ri-link" />
-                    Link Existing Issue
+                    {t('common:detailPanel.issues.linkExisting')}
                   </button>
                   <button
                     onClick={onAddIssue}
                     className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors cursor-pointer"
                   >
                     <i className="ri-add-line" />
-                    Create Jira Issue
+                    {t('runs:detail.addResult.issues.createJira')}
                   </button>
                 </div>
               </div>
@@ -1170,10 +1170,10 @@ export function DetailPanel({
                 {uniqueIssues.map((issue, idx) => {
                   const issueUrl = jiraDomain ? `https://${jiraDomain}/browse/${issue.issueKey}` : '';
                   const dateStr = issue.createdAt instanceof Date
-                    ? issue.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                    ? formatShortDate(issue.createdAt, lang)
                     : '';
                   const statusLabel = issue.status
-                    ? issue.status.charAt(0).toUpperCase() + issue.status.slice(1)
+                    ? t(`common:${issue.status}` as const)
                     : '';
                   const card = (
                     <div className="flex items-center gap-2.5">
@@ -1207,10 +1207,10 @@ export function DetailPanel({
 
                 {uniqueGithubIssues.map((gi, idx) => {
                   const dateStr = gi.createdAt instanceof Date
-                    ? gi.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                    ? formatShortDate(gi.createdAt, lang)
                     : '';
                   const statusLabel = gi.status
-                    ? gi.status.charAt(0).toUpperCase() + gi.status.slice(1)
+                    ? t(`common:${gi.status}` as const)
                     : '';
                   return (
                     <a
@@ -1241,14 +1241,14 @@ export function DetailPanel({
                     className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
                   >
                     <i className="ri-link" />
-                    Link Existing Issue
+                    {t('common:detailPanel.issues.linkExisting')}
                   </button>
                   <button
                     onClick={onAddIssue}
                     className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors cursor-pointer"
                   >
                     <i className="ri-add-circle-line" />
-                    Create Jira Issue
+                    {t('runs:detail.addResult.issues.createJira')}
                   </button>
                 </div>
               </>
@@ -1257,7 +1257,7 @@ export function DetailPanel({
             {/* Link Existing Issue inline input */}
             {showLinkInput && (
               <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                <p className="text-xs font-semibold text-gray-700 mb-2">Link Existing Issue</p>
+                <p className="text-xs font-semibold text-gray-700 mb-2">{t('common:detailPanel.issues.linkInputLabel')}</p>
                 <input
                   type="text"
                   value={linkIssueKey}
@@ -1271,7 +1271,7 @@ export function DetailPanel({
                       setLinkIssueKey('');
                     }
                   }}
-                  placeholder="Enter issue key, e.g. PROJ-123"
+                  placeholder={t('common:detailPanel.issues.linkInputPlaceholder')}
                   className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2"
                   autoFocus
                 />
@@ -1282,13 +1282,13 @@ export function DetailPanel({
                     className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
                   >
                     {linkingIssue ? <i className="ri-loader-4-line animate-spin" /> : <i className="ri-link" />}
-                    Link
+                    {t('common:detailPanel.issues.linkButton')}
                   </button>
                   <button
                     onClick={() => { setShowLinkInput(false); setLinkIssueKey(''); }}
                     className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold bg-white border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer"
                   >
-                    Cancel
+                    {t('common:cancel')}
                   </button>
                 </div>
               </div>
@@ -1302,32 +1302,38 @@ export function DetailPanel({
             {testResults.length === 0 ? (
               <div className="text-center py-8">
                 <i className="ri-time-line text-2xl text-gray-300 block mb-1" />
-                <p className="text-xs text-gray-400">No history yet</p>
+                <p className="text-xs text-gray-400">{t('common:detailPanel.history.empty')}</p>
               </div>
             ) : (
               <div>
                 {testResults.map((result) => {
-                  const statusLabel = result.status.charAt(0).toUpperCase() + result.status.slice(1);
+                  const statusLabel = t(`common:${result.status}` as const);
                   const statusColors: Record<string, string> = {
                     passed: '#16A34A', failed: '#DC2626', blocked: '#D97706', retest: '#7C3AED', untested: '#64748B',
                   };
                   const color = statusColors[result.status] || '#64748B';
                   const dateStr = result.timestamp instanceof Date
-                    ? result.timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                    ? formatShortDate(result.timestamp, lang, { withYear: true })
                     : '';
                   const timeStr = result.timestamp instanceof Date
-                    ? result.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+                    ? formatShortTime(result.timestamp, lang)
                     : '';
+                  const authorName = result.author || t('common:detailPanel.history.unknownAuthor');
 
                   return (
                     <div key={result.id} className="flex gap-2.5 py-2.5 border-b border-slate-100">
                       <div className="w-1.5 h-1.5 rounded-full bg-indigo-200 flex-shrink-0 mt-[0.4rem]" />
                       <div className="flex-1 min-w-0">
+                        {/*
+                          AC-14 history entry. Design-spec §12-4 case 2 keeps
+                          a 2-key split (markedAs + inRun). KO copy bakes in
+                          the particles (님이 / 로 기록 / 에서).
+                        */}
                         <div className="text-xs text-gray-700 leading-relaxed">
-                          <span className="font-semibold text-gray-900">{result.author || 'Unknown'}</span>
-                          {' marked as '}
-                          <span className="font-semibold" style={{ color }}>{statusLabel}</span>
-                          {result.run?.name ? ` in ${result.run.name}` : ''}
+                          <span className="font-semibold" style={{ color }}>
+                            {t('common:detailPanel.history.markedAs', { author: authorName, status: statusLabel })}
+                          </span>
+                          {result.run?.name ? ` ${t('common:detailPanel.history.inRun', { runName: result.run.name })}` : ''}
                         </div>
                         <div className="text-xs text-gray-400 mt-0.5">
                           {dateStr}{timeStr ? ` · ${timeStr}` : ''}
@@ -1354,14 +1360,14 @@ export function DetailPanel({
             className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-500 text-white rounded-lg text-xs font-semibold hover:bg-indigo-600 transition-colors cursor-pointer"
           >
             <i className="ri-edit-line" />
-            Edit
+            {t('common:edit')}
           </button>
           <button
             onClick={onDelete}
             className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-white text-red-500 border border-red-300 rounded-lg text-xs font-semibold hover:bg-red-50 transition-colors cursor-pointer"
           >
             <i className="ri-delete-bin-6-line" />
-            Delete
+            {t('common:delete')}
           </button>
         </div>
       )}
