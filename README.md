@@ -182,6 +182,41 @@ SMOKE_BASE_URL=https://staging.testably.app npm run test:smoke
 | `SMOKE_TEST_PASSWORD` | Smoke test account password |
 | `SMOKE_PROJECT_ID` | UUID of the dedicated smoke test project |
 
+## Test Automation SDK
+
+Testably ships an official Playwright reporter so Pro+ customers can
+automatically sync CI test results to a Testably run. The SDK lives in
+`packages/` and is developed as a standalone open-source package.
+
+| Package | Location | Publish status |
+|---------|----------|----------------|
+| [`@testably/playwright-reporter`](./packages/playwright/README.md) | `packages/playwright/` | MIT — pending publish to npm (alpha) |
+| `@testably/reporter-core` | `packages/core/` | Internal HTTP client used by the reporter |
+
+### Quick start (Playwright)
+
+```bash
+npm install --save-dev @testably/playwright-reporter
+```
+
+```ts
+// playwright.config.ts
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  reporter: [
+    ['list'],
+    ['@testably/playwright-reporter', { testCaseIdSource: 'title' }],
+  ],
+});
+```
+
+Set `TESTABLY_URL`, `TESTABLY_TOKEN`, and `TESTABLY_RUN_ID` in your CI
+environment. See [`packages/playwright/README.md`](./packages/playwright/README.md)
+for configuration, TC-matching strategies, and troubleshooting.
+
+Requires a Testably **Professional** plan or higher on the server side.
+
 ## License
 
 MIT License
