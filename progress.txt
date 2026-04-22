@@ -1,3 +1,125 @@
+2026-04-22: f010 i18n 커버리지 Phase 3 — 공유 컴포넌트 Epic 완료
+(dev-spec-i18n-coverage-phase3-shared-components + design-spec 동명)
+
+## 뭘 했냐 (claude 브랜치, 커밋 7개 — push 예정)
+
+Phase 1 (Milestone + Issues + AIRunSummary) · Phase 2a (plan-detail) ·
+Phase 2b (run-detail) 에 이어 6 개 공유 컴포넌트 i18n 전환.
+ko 로케일 체감 번역률 회복 (ProjectHeader 전 페이지 노출, DetailPanel /
+FocusMode 실행 플로우).
+
+### 대상 파일 6개
+1. src/components/StatusBadge.tsx — 신규 0 (AC-8, common.* 전량 재사용)
+2. src/components/Avatar.tsx — 신규 1 (altFallback, AC-9)
+3. src/components/ProjectHeader.tsx — 신규 8 (nav.*), 재사용 6 (flat keys)
+4. src/components/ExportModal.tsx — 신규 9 (exportModal.*), 재사용 7
+5. src/components/DetailPanel.tsx — 신규 ~42 (detailPanel.*), 재사용 ~15
+6. src/components/FocusMode.tsx — 신규 ~32 (runs.detail.focusMode.*), 재사용 ~20
+
+### 신규 서브트리 (en + ko 동일 트리)
+- common.nav.* — 8 leaf (dashboard / stepsLibrary / requirements /
+  traceability / documents / switchProject / keyboardShortcutsTooltip /
+  userFallback)
+- common.avatar.* — 1 leaf (altFallback)
+- common.detailPanel.* — ~42 leaf (quickActions / meta / steps / tabs /
+  comments / results / issues / history)
+- common.exportModal.* — 9 leaf (title / format / filters / AI option /
+  count preview / export button)
+- runs.detail.focusMode.* — ~32 leaf (header / kbdHint / sidebar / body /
+  ssBanner / comments / history / note / statusButton.skip / footer /
+  lightbox / toast)
+
+### 실제 추가 키 수
+- en 신규 leaf: 92
+- ko 신규 leaf: 92 (en 미러)
+- 재사용 leaf: ~45 (common.passed|failed|blocked|retest|untested + common.*
+  action keys + Phase 2b runs.detail.addResult.steps.* + runs.detail.
+  githubIssue.* + runs.toast.* 등)
+- AC-6 범위 80~160 내 — 92 신규가 중간값
+
+### 구현 패턴 (Phase 2 승계)
+- 상수 리팩토링: STATUS_CONFIG(Badge) / STATUS_BUTTONS(Focus) / FILTER_CHIPS /
+  KBD_HINTS_PANEL / KBD_HINTS_NAV / navItems 전부 useMemo + t() 로 이동
+- date helper 재사용: formatShortDate / formatShortTime / formatShortDateTime /
+  formatLongDateTime / formatRelativeTime — 신규 헬퍼 도입 0
+- Trans 컴포넌트 2 곳: ExportModal.countPreview + FocusMode.sidebar.completed
+  (색상 span 하이라이트 유지 필요)
+- Interpolation 변수: {{author}} / {{status}} / {{runName}} / {{brand}} /
+  {{plan}} / {{count}} / {{total}} / {{passed}} / {{current}} / {{format}} /
+  {{version}} / {{customId}} / {{name}} / {{shortcut}} / {{reason}} / {{number}}
+
+### 단축키 영문 고정 (AC-12 / AC-15)
+- kbd 태그 내 문자: P / F / B / R / S / C / H / N / [ / / / Esc / ⌘ + Enter
+- .i18nignore 에 >Esc< 규칙 추가 (AC-15 예외 케이스 — 단일 단어 kbd cap)
+- 단축키 interp 1건: runs.detail.focusMode.sidebar.openTooltip
+  ({{shortcut}} = '[')
+
+### AC-9 외부 송출 유지
+- ExportModal formats[].label (PDF / CSV / Excel) — 영문 고정, 파일 내
+  주석으로 명시 + design-spec §15 상속
+- FocusMode createGithubIssue 의 GitHub REST payload body — 영문 고정
+- TIER_INFO.name (Free/Hobby/Starter/Professional/Enterprise S·M·L) — 영문
+  고정 (AC-13, ProjectHeader 에서 {tierInfo.name} 그대로 렌더)
+
+### 스캐너 확장 (AC-7)
+- scripts/scan-i18n.mjs 에 SCOPE_FILES 배열 추가 — 6 파일 whitelist
+  (src/components 전체는 Phase 4+ 까지 보류)
+- 현재 스캔 범위: Phase 1 (issues + milestone-detail) + Phase 2a (plan-detail) +
+  Phase 2b (run-detail) + Phase 3 (6 공유 컴포넌트) = 29 파일
+
+### 금지 수정 파일 0 건 변경 (AC-5)
+- src/pages/milestone-detail/** — 무수정
+- src/components/issues/** — 무수정
+- src/pages/plan-detail/page.tsx — 무수정
+- src/pages/run-detail/page.tsx — 무수정
+- src/pages/run-detail/components/AIRunSummaryPanel.tsx — 무수정
+- src/lib/dateFormat.ts / formatRelativeTime.ts — 재사용만
+
+## 품질 체크 (전부 PASS)
+- `npx tsc --noEmit` → 0 에러
+- `npm run build` → 성공 (6.83s)
+- `npm run test -- --run` → 127 tests passed (기존 테스트 회귀 0)
+- `npm run scan:i18n:check` → 0 매치 across 29 files (6 Phase 3 파일 포함)
+- `npm run scan:i18n:parity` → en ↔ ko 0 diff
+
+## 커밋 7건 (순서대로)
+1. feat(i18n): Phase 3 shared components 번들 키 추가 (common + runs.detail.focusMode)
+2. feat(i18n): StatusBadge + Avatar + ProjectHeader 교체
+3. feat(i18n): ExportModal 교체 (AC-9 외부 송출 비번역 유지)
+4. feat(i18n): DetailPanel 교체 (Phase 3)
+5. feat(i18n): FocusMode 교체 (AC-12 단축키 영문 유지)
+6. chore(i18n): .i18nignore Phase 3 정리 + scanner 재실행
+7. docs(spec): i18n Phase 3 shared components dev + design spec
+8. chore(progress): log i18n Phase 3 완료 ← 이 커밋
+
+## 다음에 할 것
+- `git push origin claude` — CEO 머지 대기
+- follow-up 후보 (Phase 4 — 별도 Dev Spec):
+  - src/components/ 나머지 ~25 미번역 공유 컴포넌트 (CommandPalette /
+    InlineEdit / KeyboardShortcutsHelp / LanguageSwitcher / EmptyState /
+    ModalShell / StepEditor / SavedViewsDropdown / UpgradeBanner / TagChip /
+    EnvironmentAIInsights / EnvironmentDropdown / EnvironmentFormModal /
+    ProgressBar / SegmentedBar / StatusPill / LifecycleBadge / BulkActionBar /
+    AITriggerButton / NotificationBell / SaveIndicator / PageLoader /
+    Skeleton / CookieBanner / SEOHead / VirtualList)
+  - src/pages/ 미번역 페이지 (projects list / settings / testcases list /
+    sessions list / onboarding / admin / blog / pricing / legal) — Phase 5
+  - Phase 3 RTL 유닛 테스트 (f010-phase3-tests) — StatusBadge · Avatar ·
+    ExportModal · DetailPanel · FocusMode · ProjectHeader 언어 전환 검증
+  - common.sessions KO 값 '디스커버리 로그' → 네비 맥락에서 너무 길다는
+    디자인 피드백 (Phase 5 에서 '탐색' 으로 통일 또는 common.nav.exploratory
+    분기) — AC-5 파괴 금지로 본 스펙 유지
+
+## 건너뛴 항목
+- Dev Spec §9 OOS 13 항목 — 전부 보류 (Phase 4+)
+- MiniBtn / StepRow 내부 title={isPass ? 'Pass' : 'Fail'} — 스캐너 미매치
+  (attribute 는 직접 큰따옴표 문자열만 매치). 향후 Phase 4 에서 함께 번역
+- Avatar title prop 호출처 전달 — prop drilling 회피 원칙 (AC-9)
+- fetchComments / fetchHistory 의 author 'Unknown' fallback — 데이터 경로,
+  스캐너 미매치. 별도 티켓에서 처리 가능
+
+---
+
 2026-04-21: f017 Prompt Injection Hardening — promptSanitize + Edge Function 5개 적용
 (dev-spec-f017-prompt-injection, SEC-H-1)
 
