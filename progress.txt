@@ -1,3 +1,61 @@
+2026-04-22: f033 완료 + f025 완료 + f028 코드 완료(npm org 블로커)
+(dev-spec-f033-xlsx-to-exceljs, design-spec-f025-empty-state, dev-spec-f028-playwright-reporter)
+
+## 뭘 했냐 (claude 브랜치)
+
+### f033 — xlsx → exceljs 마이그레이션 (P1 security CVE) ✅
+- `src/utils/excelImport.ts` xlsx → exceljs 교체 (`workbook.xlsx.load(buffer)` + eachRow + serializeCellValue helper)
+- `.xls` (BIFF) 업로드 차단 + i18n 에러 메시지 2쌍 (testcases:import.xlsOldFormatBlocked/xlsUseXlsxInstead)
+- package.json xlsx dependency 제거, lockfile 재생성
+- npm audit: GHSA-4r6h-8v6p-xvw6 (Prototype Pollution) + GHSA-5pgg-2g8v-p4x9 (ReDoS) 해소 → **0 vulnerabilities**
+- bundle: dist/assets/ 에서 xlsx-*.js 청크 완전 제거 (429 KB 감소)
+- vitest: 143 PASS (16 신규 excelImport 테스트 포함)
+- QA PASS (Blocker 0 / Major 0 / Minor 2 / Nit 0). M-2 (handleDrop setImportFile(null) 누락) 수정 완료.
+
+### f025 — EmptyState v2 + 5 페이지 적용 ✅
+- `src/components/EmptyState.tsx` v1 → v2 API 업그레이드 (illustration / title / description / cta / secondaryCta / size / tone)
+- 6 일러스트: 3 기존 재사용 (TestCases/TestRuns/Requirements) + 3 신규 스캐폴드 (Milestones/Sessions/Nothing)
+- `IllustrationPlaceholder` (Remix Icon 기반, 6 kind: testcases/runs/milestones/sessions/requirements/nothing)
+- 5 페이지 적용: project-testcases/runs/milestones/sessions/requirements
+- `projects/components/EmptyState.tsx` → `OnboardingEmptyState.tsx` git mv rename
+- 신규 i18n 키 43 leaf (en+ko 합 86)
+- QA PASS (Blocker 0 / Major 0 / Minor 2 / Nit 1). M-1 (Math.random → useId) 수정 완료.
+- follow-up: Desi SVG 3종 납품 후 Milestones/Sessions/Nothing 일러스트 내부 SVG markup 교체 (파일 API 유지)
+
+### f028 — @testably/playwright-reporter SDK 🟡 (code complete, publish BLOCKED)
+- 기존 packages/playwright 초안 (90% 완성) 을 `@testably.kr` → `@testably` scope 로 rebrand
+- npm workspaces 설정 (루트 package.json)
+- LICENSE (MIT) + README + CHANGELOG 추가
+- 단위 테스트 35 cases: packages/core 21 + packages/playwright 14 (reporter / retry / fallback / 403 플랜 게이팅)
+- **BLOCKER**: npm organization `@testably` 존재 안 함. `npm publish` 시 404. `npm org create` 는 sandbox 차단 (올바른 판단).
+- CEO 액션 필요: https://www.npmjs.com/org/create 에서 `testably` org 생성 (Free tier, public packages 무료) → `npm publish --access public --tag alpha` 재개
+- feature_list 에서 제거하지 않고 status `code_ready_blocked_on_npm_org` 로 표시
+- 보안: NPM_TOKEN 유출 0건 검증 (git log/grep 0 match)
+
+### 인프라 개선
+- `.gitignore` 에 `.npmrc` 추가 (토큰 유출 방지)
+- 루트 README 에 "Test Automation SDK" 섹션 추가
+
+## 어디까지 됐냐
+- P1 남은: f028 publish (외부 블로커)
+- feature_list: 28 → 27 (f033 + f025 제거)
+- 총 vitest 143 PASS + 신규 SDK 테스트 35 = 178 통합 green
+- scan:i18n:check clean 29 files + parity 0 diff
+
+## 다음엔 뭘 할 거냐 (CEO 액션)
+- **긴급**: npmjs.com 에서 `@testably` org 생성 → f028 publish 재개
+- Desi SVG 일러스트 3종 의뢰 (Milestones / Sessions / Nothing)
+- KO 원어민 용어 리뷰 (Danger Zone / "되돌릴 수 없음")
+- ErrorBoundary 다크모드 대응
+
+## 다음엔 뭘 할 거냐 (자동화 가능)
+- f028 follow-up: CEO 가 @testably org 만들면 publish 진행 + main 머지
+- Phase 4 i18n Epic (`src/components/` 나머지 ~25개)
+- Phase 5 i18n Epic (`src/pages/` ~150 파일)
+- EmptyState kbd 힌트 CTA 3건 (f025 Minor W-2)
+
+───
+
 2026-04-21: f025 EmptyState v2 + 5 페이지 적용 + 6 일러스트 (3 신규)
 (design-spec-f025-empty-state)
 

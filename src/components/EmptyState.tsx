@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 
 // ── Public types (f025 EmptyState v2) ──────────────────────────────────────
 
@@ -94,7 +94,8 @@ export default function EmptyState({
       ? { label: secondaryAction.label, onClick: secondaryAction.onClick }
       : undefined);
 
-  const descId = description ? `empty-state-desc-${Math.random().toString(36).slice(2, 8)}` : undefined;
+  const autoId = useId();
+  const descId = description ? `empty-state-desc-${autoId}` : undefined;
 
   return (
     <section
