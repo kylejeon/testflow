@@ -1,7 +1,7 @@
 {
   "generated_at": "2026-04-20",
   "updated_at": "2026-04-21",
-  "total_count": 29,
+  "total_count": 28,
   "features": [
     {
       "id": "f001",
@@ -366,19 +366,6 @@
       "dependencies": ["f031"],
       "status": "backlog",
       "notes": "TC Versioning 완료 후 착수 권장"
-    },
-    {
-      "id": "f033",
-      "title": "xlsx (SheetJS) → exceljs 마이그레이션",
-      "category": "security",
-      "description": "xlsx 패키지가 Prototype Pollution(GHSA-4r6h-8v6p-xvw6) + ReDoS(GHSA-5pgg-2g8v-p4x9) CVE 보유. SheetJS가 npm 공식 배포를 중단해 `npm audit fix`로 수정 불가. 이미 의존성에 포함된 exceljs(4.4.0)로 `src/utils/excelImport.ts`, `src/utils/testRailExport.ts` 등의 사용처를 교체하고 xlsx 의존성 제거.",
-      "priority": "P2",
-      "impact": "medium",
-      "effort": "medium",
-      "source": "npm-audit 2026-04-21",
-      "dependencies": [],
-      "status": "backlog",
-      "notes": "영향 범위: TC Import/Export (xlsx), TestRail 내보내기. 양방향 스모크 테스트 필요. exceljs는 이미 executive report에서 사용 중이라 번들 증가 없음."
     }
   ]
 }

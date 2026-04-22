@@ -389,6 +389,8 @@ export default function ExportImportModal({
     const ext = file.name.split('.').pop()?.toLowerCase();
     // f033 — block legacy .xls before routing to parseExcelImport.
     if (ext === 'xls') {
+      setImportFile(null);
+      setImportPreview(null);
       setImportErrors([
         t('testcases:import.xlsOldFormatBlocked'),
         t('testcases:import.xlsUseXlsxInstead'),
@@ -396,7 +398,11 @@ export default function ExportImportModal({
       return;
     }
     if (ext === 'csv' || ext === 'xlsx') handleFileSelect(file);
-    else setImportErrors(['Only CSV or Excel (.xlsx) files are supported.']);
+    else {
+      setImportFile(null);
+      setImportPreview(null);
+      setImportErrors(['Only CSV or Excel (.xlsx) files are supported.']);
+    }
   };
 
   const handleImportConfirm = async () => {
