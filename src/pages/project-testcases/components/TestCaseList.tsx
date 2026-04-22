@@ -302,7 +302,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
   const detailPanelRef = useRef<HTMLDivElement>(null);
 
   const { showToast } = useToast();
-  const { t } = useTranslation(['testcases']);
+  const { t } = useTranslation(['testcases', 'common']);
 
   // 폴더 삭제 확인 모달 상태 추가
   const [showDeleteFolderModal, setShowDeleteFolderModal] = useState(false);
@@ -2841,37 +2841,77 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
         </div>
 
         <div className="flex-1 min-h-0 overflow-hidden">
-          {filteredTestCases.length === 0 ? (
-            <EmptyState
-              icon={<TestCasesIllustration />}
-              title="No test cases yet"
-              description="Capture what your product should do. Test cases keep your team aligned on expected behavior."
-              action={{
-                label: 'Create test case',
-                onClick: () => {
-                  setEditingTestCase(null);
-                  const currentFolder = selectedFolder !== 'all'
-                    ? folders.find(f => f.id === selectedFolder)?.name || ''
-                    : '';
-                  setNewTestCase({
-                    title: '',
-                    description: '',
-                    precondition: '',
-                    folder: currentFolder,
-                    priority: 'medium',
-                    assignee: '',
-                    is_automated: false,
-                    steps: '',
-                    expected_result: '',
-                    tags: '',
-                    attachments: [],
-                  });
-                  setTestSteps([{ id: '1', step: '', expectedResult: '' }]);
-                  setShowNewCaseModal(true);
-                },
-              }}
-            />
-          ) : (
+          {filteredTestCases.length === 0 ? (() => {
+            const hasTcFilters =
+              tcSearchQuery !== '' ||
+              selectedFolder !== 'all' ||
+              tcPriorityFilters.length > 0 ||
+              tcTagFilters.length > 0;
+            const canCreate = can('create_testcase');
+
+            if (hasTcFilters) {
+              return (
+                <EmptyState
+                  variant="filtered"
+                  illustration={<TestCasesIllustration />}
+                  title={t('testcases:emptyFiltered.title')}
+                  description={t('testcases:emptyFiltered.description')}
+                  cta={{
+                    label: t('testcases:emptyFiltered.clearCta'),
+                    onClick: () => {
+                      setTcSearchQuery('');
+                      setTcPriorityFilters([]);
+                      setTcTagFilters([]);
+                      setSelectedFolder('all');
+                    },
+                    icon: <i className="ri-filter-off-line" aria-hidden="true" />,
+                  }}
+                />
+              );
+            }
+
+            return (
+              <EmptyState
+                illustration={<TestCasesIllustration />}
+                illustrationAlt={t('testcases:empty.illustrationAlt')}
+                title={t('testcases:empty.title')}
+                description={
+                  canCreate
+                    ? t('testcases:empty.description')
+                    : t('testcases:empty.readonlyDescription')
+                }
+                cta={
+                  canCreate
+                    ? {
+                        label: t('testcases:empty.cta'),
+                        icon: <i className="ri-add-line" aria-hidden="true" />,
+                        onClick: () => {
+                          setEditingTestCase(null);
+                          const currentFolder = selectedFolder !== 'all'
+                            ? folders.find(f => f.id === selectedFolder)?.name || ''
+                            : '';
+                          setNewTestCase({
+                            title: '',
+                            description: '',
+                            precondition: '',
+                            folder: currentFolder,
+                            priority: 'medium',
+                            assignee: '',
+                            is_automated: false,
+                            steps: '',
+                            expected_result: '',
+                            tags: '',
+                            attachments: [],
+                          });
+                          setTestSteps([{ id: '1', step: '', expectedResult: '' }]);
+                          setShowNewCaseModal(true);
+                        },
+                      }
+                    : undefined
+                }
+              />
+            );
+          })() : (
             <div
               ref={tableContainerRef}
               className="overflow-x-auto overflow-y-auto h-full"

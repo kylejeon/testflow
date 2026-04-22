@@ -1,5 +1,6 @@
 import { LogoMark } from '../../components/Logo';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { markOnboardingStep } from '../../lib/onboardingMarker';
@@ -99,6 +100,7 @@ export default function ProjectRunsPage() {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const { can } = usePermission();
+  const { t } = useTranslation(['runs', 'common']);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'completed' | 'failed'>('all');
   const [resultFilter, setResultFilter] = useState<'all' | 'has_failures' | 'all_passed' | 'has_blocked'>('all');
@@ -2318,12 +2320,48 @@ export default function ProjectRunsPage() {
             ) : (() => {
               const filteredRuns = getSortedRuns(getFilteredRuns());
               if (filteredRuns.length === 0) {
+                const hasRunFilters =
+                  activeTab !== 'all' ||
+                  resultFilter !== 'all' ||
+                  searchQuery.trim() !== '' ||
+                  milestoneFilter !== '';
+
+                if (hasRunFilters) {
+                  return (
+                    <EmptyState
+                      variant="filtered"
+                      illustration={<TestRunsIllustration />}
+                      title={t('runs:emptyFiltered.title')}
+                      description={t('runs:emptyFiltered.description')}
+                      cta={{
+                        label: t('runs:emptyFiltered.clearCta'),
+                        icon: <i className="ri-filter-off-line" aria-hidden="true" />,
+                        onClick: () => {
+                          setActiveTab('all');
+                          setResultFilter('all');
+                          setSearchQuery('');
+                          setMilestoneFilter('');
+                        },
+                      }}
+                    />
+                  );
+                }
+
                 return (
                   <EmptyState
-                    icon={<TestRunsIllustration />}
-                    title="No runs yet"
-                    description="Kick off your first run to track which test cases pass, fail, or need attention."
-                    action={{ label: 'Start a run', onClick: () => { setRunAssignees([]); setEditingRunId(null); setShowAddRunModal(true); } }}
+                    illustration={<TestRunsIllustration />}
+                    illustrationAlt={t('runs:empty.illustrationAlt')}
+                    title={t('runs:empty.title')}
+                    description={t('runs:empty.description')}
+                    cta={{
+                      label: t('runs:empty.cta'),
+                      icon: <i className="ri-play-circle-line" aria-hidden="true" />,
+                      onClick: () => {
+                        setRunAssignees([]);
+                        setEditingRunId(null);
+                        setShowAddRunModal(true);
+                      },
+                    }}
                   />
                 );
               }

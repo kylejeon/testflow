@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import PageLoader from '../../components/PageLoader';
@@ -7,6 +8,8 @@ import { useToast } from '../../components/Toast';
 import { notifyProjectMembers } from '../../hooks/useNotifications';
 import { triggerWebhook } from '../../hooks/useWebhooks';
 import AIPlanAssistantModal from '../project-plans/AIPlanAssistantModal';
+import EmptyState from '../../components/EmptyState';
+import IllustrationPlaceholder from '../../components/illustrations/IllustrationPlaceholder';
 
 import MilestoneSidebar from './MilestoneSidebar';
 import { MilestoneCardData } from './MilestoneCard';
@@ -122,6 +125,7 @@ export default function ProjectMilestones() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { showToast } = useToast();
+  const { t } = useTranslation(['milestones', 'common']);
 
   // URL state
   const selectedId = searchParams.get('selected');
@@ -709,22 +713,37 @@ export default function ProjectMilestones() {
               runs={adhocRuns}
               onPromote={(runId) => setPromoteRunId(runId)}
             />
+          ) : milestones.length === 0 ? (
+            <div
+              className="flex-1 flex items-center justify-center"
+              style={{ background: 'var(--bg-muted)' }}
+            >
+              <EmptyState
+                size="lg"
+                tone="vivid"
+                illustration={<IllustrationPlaceholder kind="milestones" />}
+                illustrationAlt={t('milestones:empty.illustrationAlt')}
+                title={t('milestones:empty.title')}
+                description={t('milestones:empty.description')}
+                cta={{
+                  label: t('milestones:empty.cta'),
+                  icon: <i className="ri-flag-line" aria-hidden="true" />,
+                  onClick: () => setShowNewMilestoneModal(true),
+                }}
+                secondaryCta={{
+                  label: t('milestones:empty.secondaryCta'),
+                  icon: <i className="ri-book-open-line" aria-hidden="true" />,
+                  onClick: () => window.open('https://docs.testably.app/milestones', '_blank'),
+                }}
+              />
+            </div>
           ) : (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-muted)' }}>
               <div style={{ textAlign: 'center', color: 'var(--text-subtle)' }}>
                 <div style={{ fontSize: 48, marginBottom: 12 }}>🚩</div>
                 <p style={{ fontWeight: 600, color: 'var(--text-muted)' }}>
-                  {milestones.length === 0 ? 'No milestones yet' : 'Select a milestone'}
+                  Select a milestone
                 </p>
-                {milestones.length === 0 && (
-                  <button
-                    className="btn btn-primary"
-                    style={{ marginTop: 16 }}
-                    onClick={() => setShowNewMilestoneModal(true)}
-                  >
-                    Create your first milestone
-                  </button>
-                )}
               </div>
             </div>
           )}

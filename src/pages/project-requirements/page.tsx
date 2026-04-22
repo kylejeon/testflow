@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
@@ -96,6 +97,7 @@ function UpgradePrompt({ tier }: { tier: number }) {
 export default function ProjectRequirements() {
   const { id: projectId } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
+  const { t } = useTranslation(['requirements', 'common']);
 
   const [search, setSearch] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('all');
@@ -368,12 +370,40 @@ export default function ProjectRequirements() {
           {isLoading ? (
             <RequirementsListSkeleton rows={6} />
           ) : filtered.length === 0 ? (
-            <EmptyState
-              icon={requirements.length === 0 ? <RequirementsIllustration /> : undefined}
-              title={requirements.length === 0 ? 'No requirements linked' : 'No requirements match the current filters'}
-              description={requirements.length === 0 ? 'Connect requirements to test cases so nothing ships untested.' : undefined}
-              action={requirements.length === 0 ? { label: 'Add requirement', onClick: () => setShowCreateModal(true) } : undefined}
-            />
+            requirements.length === 0 ? (
+              <EmptyState
+                illustration={<RequirementsIllustration />}
+                illustrationAlt={t('requirements:empty.illustrationAlt')}
+                title={t('requirements:empty.title')}
+                description={t('requirements:empty.description')}
+                cta={{
+                  label: t('requirements:empty.cta'),
+                  icon: <i className="ri-add-line" aria-hidden="true" />,
+                  onClick: () => setShowCreateModal(true),
+                }}
+                secondaryCta={{
+                  label: t('requirements:empty.secondaryCta'),
+                  icon: <i className="ri-download-cloud-line" aria-hidden="true" />,
+                  onClick: () => setShowJiraImport(true),
+                }}
+              />
+            ) : (
+              <EmptyState
+                variant="filtered"
+                illustration={<RequirementsIllustration />}
+                title={t('requirements:emptyFiltered.title')}
+                description={t('requirements:emptyFiltered.description')}
+                cta={{
+                  label: t('requirements:emptyFiltered.clearCta'),
+                  icon: <i className="ri-filter-off-line" aria-hidden="true" />,
+                  onClick: () => {
+                    setSearch('');
+                    setPriorityFilter('all');
+                    setStatusFilter('active');
+                  },
+                }}
+              />
+            )
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>

@@ -6,6 +6,8 @@ import { supabase } from '../../lib/supabase';
 import ProjectHeader from '../../components/ProjectHeader';
 import { Avatar } from '../../components/Avatar';
 import { useToast } from '../../components/Toast';
+import EmptyState from '../../components/EmptyState';
+import IllustrationPlaceholder from '../../components/illustrations/IllustrationPlaceholder';
 
 interface Session {
   id: string;
@@ -40,7 +42,7 @@ export default function ProjectSessions() {
   const { id: projectId } = useParams();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const { t } = useTranslation(['sessions']);
+  const { t } = useTranslation(['sessions', 'common']);
   const [project, setProject] = useState<any>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
@@ -784,19 +786,54 @@ export default function ProjectSessions() {
             {/* Table */}
             {loading ? (
               <PageLoader />
-            ) : filteredSessions.length === 0 ? (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center">
-                  <i className="ri-search-line text-5xl text-slate-300 mb-3" />
-                  <p className="text-slate-500 font-medium">No discovery logs found</p>
-                  <p className="text-[0.8125rem] text-slate-400 mt-1">
-                    {searchQuery || activeFilterCount > 0 || sidebarMilestoneFilter || sidebarTagFilter
-                      ? 'Try adjusting your search or filters'
-                      : 'Create your first discovery log to get started'}
-                  </p>
+            ) : filteredSessions.length === 0 ? (() => {
+              const hasSessionFilters =
+                searchQuery !== '' ||
+                activeFilterCount > 0 ||
+                !!sidebarMilestoneFilter ||
+                !!sidebarTagFilter;
+
+              return (
+                <div className="flex-1 flex items-center justify-center">
+                  {hasSessionFilters ? (
+                    <EmptyState
+                      variant="filtered"
+                      illustration={<IllustrationPlaceholder kind="sessions" />}
+                      title={t('sessions:emptyFiltered.title')}
+                      description={t('sessions:emptyFiltered.description')}
+                      cta={{
+                        label: t('sessions:emptyFiltered.clearCta'),
+                        icon: <i className="ri-filter-off-line" aria-hidden="true" />,
+                        onClick: () => {
+                          setSearchQuery('');
+                          setStatusFilters([]);
+                          setSelectedTags([]);
+                          setSidebarMilestoneFilter(null);
+                          setSidebarTagFilter(null);
+                        },
+                      }}
+                    />
+                  ) : (
+                    <EmptyState
+                      illustration={<IllustrationPlaceholder kind="sessions" />}
+                      illustrationAlt={t('sessions:empty.illustrationAlt')}
+                      title={t('sessions:empty.title')}
+                      description={t('sessions:empty.description')}
+                      cta={{
+                        label: t('sessions:empty.cta'),
+                        icon: <i className="ri-compass-discover-line" aria-hidden="true" />,
+                        onClick: () => setShowAddSessionModal(true),
+                      }}
+                      secondaryCta={{
+                        label: t('sessions:empty.secondaryCta'),
+                        icon: <i className="ri-book-open-line" aria-hidden="true" />,
+                        onClick: () => window.open('https://docs.testably.app/exploratory', '_blank'),
+                      }}
+                    />
+                  )}
                 </div>
-              </div>
-            ) : (
+              );
+            })() : (
               <div className="flex-1 overflow-y-auto bg-white">
                 <table className="w-full border-collapse">
                   <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 z-10">
