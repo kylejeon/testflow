@@ -426,6 +426,77 @@ export const runs = {
       userMissing: 'Failed to load user. Please refresh the page.',
       runIdMissing: 'Run ID not found. Please check the URL.',
     },
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Phase 3 — FocusMode fullscreen execution UI
+    // (design-spec-i18n-coverage-phase3-shared-components §5-2, §11)
+    //
+    // `common.passed|failed|blocked|retest|untested` are reused for status
+    // labels (AC-10). Keyboard shortcut characters (P/F/B/R/S/C/H/N/[/] etc.)
+    // stay in English by design (AC-12/AC-15) — only the wrapping sentences
+    // are translated via `{{shortcut}}` interpolation where needed.
+    // ─────────────────────────────────────────────────────────────────────
+    focusMode: {
+      header: {
+        exit: 'Exit',
+      },
+      kbdHint: {
+        comments: 'Comments',
+        history: 'History',
+        note: 'Note',
+        sidebar: 'Sidebar',
+        search: 'Search',
+      },
+      sidebar: {
+        progress: 'Progress',
+        completed: '<hl>{{count}}</hl> / {{total}} completed',
+        searchPlaceholder: 'Search TC...',
+        empty: 'No test cases match',
+        openTooltip: 'Open sidebar ({{shortcut}})',
+      },
+      body: {
+        previously: 'Previously {{status}}',
+        precondition: 'Precondition',
+        attachmentsHeader: 'Attachments ({{count}})',
+        testStepsHeader: 'Test Steps',
+        passedSuffix: '{{count}}/{{total}} passed',
+        stepPassTitle: 'Pass this step',
+        stepFailTitle: 'Fail this step',
+      },
+      ssBanner: {
+        newVersionPrefix: "🔄 New version available for {{customId}} '{{name}}' (v{{version}})",
+        viewChanges: 'View changes',
+        hideChanges: 'Hide changes',
+        noHistory: 'No history',
+      },
+      comments: {
+        header: 'Comments',
+        empty: 'No comments yet',
+      },
+      history: {
+        header: 'Execution History',
+        empty: 'No execution history',
+      },
+      note: {
+        optionalSuffix: '(optional)',
+        placeholder: 'Describe what you observed...',
+        saveHint: '⌘ + Enter to save with status',
+      },
+      statusButton: {
+        skip: 'Skip',
+      },
+      footer: {
+        previous: 'Previous',
+        next: 'Next',
+        lastTestHint: 'Last test — press any status key to complete the run',
+      },
+      lightbox: {
+        alt: 'Preview',
+      },
+      toast: {
+        saveFailed: 'Failed to save result. Please try again.',
+      },
+    },
   },
 
   // ─────────────────────────────────────────────────────────────────────

@@ -161,6 +161,110 @@ export const common = {
     },
   },
 
+  // ───────────────────────────────────────────────────────────────────────
+  // Phase 3 — 공유 컴포넌트 (design-spec-i18n-coverage-phase3-shared-components §5-1)
+  // 신규 서브트리: nav / avatar / detailPanel / exportModal
+  // ───────────────────────────────────────────────────────────────────────
+
+  // ProjectHeader 내비게이션 (Phase 3 AC-12). 기존 flat 키
+  // (testCases / runsAndResults / milestones / sessions / settings / logout) 는
+  // 재사용.
+  nav: {
+    dashboard: '대시보드',
+    stepsLibrary: '스텝 라이브러리',
+    requirements: '요구사항',
+    traceability: '추적성',
+    documents: '문서',
+    switchProject: '프로젝트 전환',
+    keyboardShortcutsTooltip: '단축키 (?)',
+    userFallback: '사용자',
+  },
+
+  // Avatar alt fallback (Phase 3 AC-9).
+  avatar: {
+    altFallback: '프로필 이미지',
+  },
+
+  // DetailPanel 서브트리 (Phase 3 AC-14).
+  detailPanel: {
+    quickActions: {
+      statusOption: {
+        untested: '— 미테스트',
+        passed: '✓ 통과',
+        failed: '✕ 실패',
+        blocked: '⊘ 차단됨',
+        retest: '↻ 재테스트',
+      },
+      addResult: '결과 추가',
+      passAndNext: '통과 후 다음',
+      previousTooltip: '이전',
+      nextTooltip: '다음',
+    },
+    meta: {
+      folder: '폴더',
+      tags: '태그',
+      created: '생성',
+      lastRun: '마지막 실행',
+      unassignedOption: '— 미지정 —',
+    },
+    steps: {
+      stepsCount_one: '스텝 {{count}}개',
+      stepsCount_other: '스텝 {{count}}개',
+      attachmentsCount_one: '첨부 {{count}}개',
+      attachmentsCount_other: '첨부 {{count}}개',
+      stepsPassed: '{{passed}}/{{total}} 스텝 통과',
+      precondition: '⚠ 사전 조건',
+      expectedResult: '예상 결과',
+      noStepsDefined: '정의된 스텝 없음',
+      attachmentsHeader: '첨부 ({{count}})',
+    },
+    tabs: {
+      comments: '댓글',
+      results: '결과',
+      issues: '이슈',
+      history: '이력',
+    },
+    comments: {
+      empty: '아직 댓글이 없습니다',
+      placeholder: '댓글 추가…',
+      post: '게시',
+    },
+    results: {
+      empty: '아직 테스트 결과가 없습니다',
+      unknownRun: '알 수 없는 실행',
+      byAuthor: '{{author}}님이 기록',
+    },
+    issues: {
+      empty: '연결된 이슈 없음',
+      linkExisting: '기존 이슈 연결',
+      linkInputLabel: '기존 이슈 연결',
+      linkInputPlaceholder: '이슈 키 입력 (예: PROJ-123)',
+      linkButton: '연결',
+      upsellTitle: '{{brand}} 연동은 {{plan}} 플랜부터 가능합니다',
+      upsellBody: '업그레이드하여 테스트 결과에서 Jira 이슈를 생성·관리하세요.',
+    },
+    history: {
+      empty: '아직 이력이 없습니다',
+      markedAs: '{{author}}님이 {{status}}로 기록',
+      inRun: '({{runName}}에서)',
+      unknownAuthor: '알 수 없음',
+    },
+  },
+
+  // ExportModal 래퍼 UI (Phase 3 AC-11). PDF / CSV / Excel 출력 본문은 번역
+  // 대상이 아님 (외부 송출, design-spec §15).
+  exportModal: {
+    title: '내보내기',
+    format: '포맷',
+    statusFilter: '상태 필터',
+    tagFilter: '태그 필터',
+    tagFilterHint: '(비우면 전체 태그)',
+    includeAiSummary: 'AI 요약 포함',
+    includeAiSummaryDesc: '리스크 수준, 지표, 실패 패턴, 권장 조치를 문서 앞쪽에 추가합니다',
+    countPreview: '테스트 케이스 {{total}}건 중 <hl>{{current}}</hl>건이 내보내집니다',
+    exportButton: '{{format}} 내보내기',
+  },
+
   issues: {
     priority: {
       critical: '심각',

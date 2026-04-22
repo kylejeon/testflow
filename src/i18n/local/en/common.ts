@@ -162,6 +162,110 @@ export const common = {
   },
 
   // Issues (shared across Plan Detail / Milestone Detail Issues tabs)
+  // ───────────────────────────────────────────────────────────────────────
+  // Phase 3 — Shared components (design-spec-i18n-coverage-phase3-shared-components §5-1)
+  // Namespaces added: nav / avatar / detailPanel / exportModal
+  // ───────────────────────────────────────────────────────────────────────
+
+  // ProjectHeader navigation (Phase 3 AC-12). Only new labels live here; flat
+  // keys (`testCases`, `runsAndResults`, `milestones`, `sessions`, `settings`,
+  // `logout`) are reused directly from above.
+  nav: {
+    dashboard: 'Dashboard',
+    stepsLibrary: 'Steps Library',
+    requirements: 'Requirements',
+    traceability: 'Traceability',
+    documents: 'Documents',
+    switchProject: 'Switch project',
+    keyboardShortcutsTooltip: 'Keyboard Shortcuts (?)',
+    userFallback: 'User',
+  },
+
+  // Avatar alt fallback (Phase 3 AC-9). User name / email take precedence.
+  avatar: {
+    altFallback: 'Profile image',
+  },
+
+  // DetailPanel subtree (Phase 3 AC-14).
+  detailPanel: {
+    quickActions: {
+      statusOption: {
+        untested: '— Untested',
+        passed: '✓ Passed',
+        failed: '✕ Failed',
+        blocked: '⊘ Blocked',
+        retest: '↻ Retest',
+      },
+      addResult: 'Add Result',
+      passAndNext: 'Pass & Next',
+      previousTooltip: 'Previous',
+      nextTooltip: 'Next',
+    },
+    meta: {
+      folder: 'Folder',
+      tags: 'Tags',
+      created: 'Created',
+      lastRun: 'Last Run',
+      unassignedOption: '— Unassigned —',
+    },
+    steps: {
+      stepsCount_one: '{{count}} step',
+      stepsCount_other: '{{count}} steps',
+      attachmentsCount_one: '{{count}} attachment',
+      attachmentsCount_other: '{{count}} attachments',
+      stepsPassed: '{{passed}}/{{total}} steps passed',
+      precondition: '⚠ Precondition',
+      expectedResult: 'Expected Result',
+      noStepsDefined: 'No steps defined',
+      attachmentsHeader: 'Attachments ({{count}})',
+    },
+    tabs: {
+      comments: 'Comments',
+      results: 'Results',
+      issues: 'Issues',
+      history: 'History',
+    },
+    comments: {
+      empty: 'No comments yet',
+      placeholder: 'Add a comment...',
+      post: 'Post',
+    },
+    results: {
+      empty: 'No test results yet',
+      unknownRun: 'Unknown Run',
+      byAuthor: 'by {{author}}',
+    },
+    issues: {
+      empty: 'No linked issues',
+      linkExisting: 'Link Existing Issue',
+      linkInputLabel: 'Link Existing Issue',
+      linkInputPlaceholder: 'Enter issue key, e.g. PROJ-123',
+      linkButton: 'Link',
+      upsellTitle: '{{brand}} integration requires {{plan}}+',
+      upsellBody: 'Upgrade to create and manage Jira issues from test results.',
+    },
+    history: {
+      empty: 'No history yet',
+      markedAs: '{{author}} marked as {{status}}',
+      inRun: 'in {{runName}}',
+      unknownAuthor: 'Unknown',
+    },
+  },
+
+  // ExportModal wrapper UI (Phase 3 AC-11). PDF / CSV / Excel output body is
+  // NOT translated (external-facing per design-spec §15).
+  exportModal: {
+    title: 'Export',
+    format: 'Format',
+    statusFilter: 'Status Filter',
+    tagFilter: 'Tag Filter',
+    tagFilterHint: '(empty = all tags)',
+    includeAiSummary: 'Include AI Summary',
+    includeAiSummaryDesc: 'Prepends risk level, metrics, failure patterns & recommendations',
+    countPreview: '<hl>{{current}}</hl> of {{total}} test cases will be exported',
+    exportButton: 'Export {{format}}',
+  },
+
   issues: {
     priority: {
       critical: 'Critical',

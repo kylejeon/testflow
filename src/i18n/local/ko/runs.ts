@@ -420,6 +420,76 @@ export const runs = {
       userMissing: '사용자 정보를 불러올 수 없습니다. 페이지를 새로고침해 주세요.',
       runIdMissing: 'Run ID가 없습니다. URL을 확인해 주세요.',
     },
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Phase 3 — FocusMode 풀스크린 실행 UI
+    // (design-spec-i18n-coverage-phase3-shared-components §5-2, §11)
+    //
+    // 상태 라벨 (통과/실패/차단됨/재테스트/미테스트) 은 common.* 재사용 (AC-10).
+    // 단축키 문자(P/F/B/R/S/C/H/N/[/]) 는 영문 고정, 설명 문장만 번역
+    // (AC-12 / AC-15). `{{shortcut}}` interpolation 은 openTooltip 에만.
+    // ─────────────────────────────────────────────────────────────────────
+    focusMode: {
+      header: {
+        exit: '나가기',
+      },
+      kbdHint: {
+        comments: '댓글',
+        history: '이력',
+        note: '메모',
+        sidebar: '사이드바',
+        search: '검색',
+      },
+      sidebar: {
+        progress: '진행률',
+        completed: '{{total}}개 중 <hl>{{count}}</hl>개 완료',
+        searchPlaceholder: 'TC 검색…',
+        empty: '일치하는 테스트 케이스 없음',
+        openTooltip: '사이드바 열기 ({{shortcut}})',
+      },
+      body: {
+        previously: '이전 결과: {{status}}',
+        precondition: '사전 조건',
+        attachmentsHeader: '첨부 ({{count}})',
+        testStepsHeader: '테스트 스텝',
+        passedSuffix: '{{count}}/{{total}} 통과',
+        stepPassTitle: '이 스텝 통과',
+        stepFailTitle: '이 스텝 실패',
+      },
+      ssBanner: {
+        newVersionPrefix: "🔄 {{customId}} '{{name}}'의 새 버전 사용 가능 (v{{version}})",
+        viewChanges: '변경 보기',
+        hideChanges: '변경 숨기기',
+        noHistory: '이력 없음',
+      },
+      comments: {
+        header: '댓글',
+        empty: '아직 댓글이 없습니다',
+      },
+      history: {
+        header: '실행 이력',
+        empty: '실행 이력 없음',
+      },
+      note: {
+        optionalSuffix: '(선택 사항)',
+        placeholder: '관찰한 내용을 기록하세요…',
+        saveHint: '⌘ + Enter 로 상태와 함께 저장',
+      },
+      statusButton: {
+        skip: '건너뛰기',
+      },
+      footer: {
+        previous: '이전',
+        next: '다음',
+        lastTestHint: '마지막 테스트 — 상태 키를 눌러 실행을 완료하세요',
+      },
+      lightbox: {
+        alt: '미리보기',
+      },
+      toast: {
+        saveFailed: '결과 저장에 실패했습니다. 다시 시도해 주세요.',
+      },
+    },
   },
 
   // ─────────────────────────────────────────────────────────────────────
