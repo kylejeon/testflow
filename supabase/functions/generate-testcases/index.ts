@@ -312,9 +312,16 @@ Deno.serve(async (req) => {
 
   try {
     // ── Auth ──────────────────────────────────────────────────
+    // ES256 전환 이슈 우회:
+    //   - Supabase Edge Functions 게이트웨이가 Authorization 헤더의 ES256 JWT 파싱 실패
+    //   - 새 패턴: x-user-token 커스텀 헤더 (Authorization 에는 anon key)
+    //   - 기존 호출 호환: Authorization: Bearer <user_jwt> 도 fallback 허용
+    const userTokenHeader = req.headers.get('x-user-token');
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return jsonResponse({ error: 'Missing Authorization header' }, 401);
+    const token = userTokenHeader
+      || (authHeader?.startsWith('Bearer ') ? authHeader.replace('Bearer ', '') : '');
+    if (!token) {
+      return jsonResponse({ error: 'Missing user token' }, 401);
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -324,7 +331,6 @@ Deno.serve(async (req) => {
     // JWT payload 직접 디코딩 (ES256 알고리즘 지원 문제 우회)
     // supabase.auth.getUser(token) / GoTrue /user endpoint 모두 ES256 거부하므로
     // payload에서 sub 추출 후 admin API로 사용자 존재 여부 확인
-    const token = authHeader.replace('Bearer ', '');
 
     // Admin client (bypasses RLS, used for user lookup and all DB operations)
     const adminClient = createClient(supabaseUrl, supabaseServiceKey, {

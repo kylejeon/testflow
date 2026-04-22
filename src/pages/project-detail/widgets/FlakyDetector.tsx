@@ -285,12 +285,16 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
       }
 
       const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
+      // ES256 사용자 토큰은 Supabase Edge Functions 게이트웨이가 파싱 실패 (UNAUTHORIZED_UNSUPPORTED_TOKEN_ALGORITHM).
+      // Authorization 엔 HS256 anon key 를 넣어 게이트웨이 통과시키고, 사용자 JWT 는 x-user-token 커스텀 헤더로 전달.
       const response = await fetch(`${supabaseUrl}/functions/v1/generate-testcases`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-          apikey: import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${anonKey}`,
+          apikey: anonKey,
+          'x-user-token': session.access_token,
         },
         body: JSON.stringify({
           action: 'analyze-flaky',
