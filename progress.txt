@@ -1,3 +1,79 @@
+2026-04-22: Phase 3 QA follow-up + Section-level ErrorBoundary 위젯 확장
+(qa-report-i18n-coverage-phase3, f024 Section-level)
+
+## 뭘 했냐 (claude 브랜치, 커밋 2개 — push 예정)
+
+### Phase 3 QA 리포트 Minor 2건 + Nit 1건 해소 (`82b41cd`)
+- **W-1 Minor** (FocusMode history 탭): `· by ${h.author}` 전치사 하드코딩 →
+  `runs.detail.focusMode.history.byAuthor` 키 신규 ("by {{author}}" /
+  "{{author}}님 기록")
+- **W-2 Minor** (FocusMode fetchComments): `'Unknown'` 저자 fallback →
+  `runs.detail.focusMode.history.unknownAuthor` ("Unknown" / "알 수 없음")
+- **N-1 Nit** (DetailPanel MiniBtn): `title={isPass ? 'Pass' : 'Fail'}` 삼항식
+  → `common:passed/failed` 기존 키 재사용 (useTranslation 훅 추가)
+
+### Section-level ErrorBoundary 위젯 확장 (`4ee118e`)
+f024 Dev Spec §9 OOS 였던 후속. 단일 위젯 크래시 → 전체 탭 붕괴 방지.
+총 18 위젯 각각 `<ErrorBoundary section sectionName="...">` 으로 감쌈.
+
+- **project-detail/AnalyticsTab** (9): PassRateTrend, MilestoneTracker,
+  ExecutionSummary, TeamPerformance, CoverageHeatmap, TCQualityAnalysis,
+  TagAnalytics, FlakyDetector, AIInsightsPanel
+- **milestone-detail/OverviewTab** (9): BurndownChart, KpiStrip, RiskInsight,
+  FailedBlocked, Velocity, TopFailTags, Contributors, Activity24h,
+  ExecutionSections
+
+sectionName 이 Sentry tag `error_boundary` 로 캡처되어 어느 위젯이
+실패했는지 구분 가능. 실패 시 재시도 버튼 포함된 SectionFallback 표시.
+
+### 검증
+- `npx tsc --noEmit` — 0 errors
+- `npm run test -- --run` — 5 files → 8 files / 127 tests PASS
+- `npm run scan:i18n:check` — 0 매치 across 29 files
+- `npm run scan:i18n:parity` — en ↔ ko 0 diff
+- `npm run build` — 6.67s 성공
+
+## 어디까지 됐냐
+
+### i18n 커버리지 전체 스냅샷
+- **Phase 1** (milestone-detail 14 + issues 5 + AIRunSummaryPanel 1): 완료
+- **Phase 2a** (plan-detail/page.tsx 3,438줄): 완료
+- **Phase 2b** (run-detail/page.tsx 5,245줄 + ResultDetailModal): 완료
+- **Phase 3** (DetailPanel / ExportModal / FocusMode / StatusBadge / Avatar /
+  ProjectHeader): 완료
+- scanner scope 29 파일 모두 clean, en ↔ ko parity 0 diff
+
+### 인프라
+- i18n 스캐너 + `.i18nignore` + CI gate (.github/workflows/ci.yml)
+- 공통 날짜 헬퍼 6종 (formatShortDate/formatShortDateTime/formatShortTime/
+  formatDayHeader/formatLongDateTime/formatRelativeTime)
+- 전역 ErrorBoundary (Full-Page + Section) + Report ID 복사 버튼
+- apiErrors 매핑 17종 + getApiErrorMessage 싱글톤
+
+## 다음엔 뭘 할 거냐
+
+### 자동화 가능 항목
+- **Phase 4 Epic**: `src/components/` 나머지 ~25개 미번역 공유 컴포넌트
+  (CommandPalette, EmptyState, LanguageSwitcher, ModalShell, StepEditor,
+  SavedViewsDropdown, UpgradeBanner, TagChip, EnvironmentAIInsights,
+  EnvironmentDropdown, EnvironmentFormModal, ProgressBar, SegmentedBar,
+  StatusPill, LifecycleBadge, BulkActionBar, AITriggerButton,
+  NotificationBell, SaveIndicator, PageLoader, Skeleton, CookieBanner,
+  SEOHead, VirtualList)
+- **Phase 5 Epic**: `src/pages/` 미번역 페이지 (projects list / settings /
+  testcases list / sessions list / onboarding / admin / blog / pricing /
+  legal) ~150 파일
+- **Phase 3 RTL 유닛 테스트** (6 컴포넌트 EN/KO 런타임 검증)
+- **Playwright E2E i18n 회귀** (핵심 journey KO 로케일)
+
+### 외부 의존 (CEO/디자이너/npm 작업 필요)
+- f025 EmptyState 일반화 + 일러스트 6종 (Desi 의뢰)
+- f028 Playwright Reporter SDK (@testably/playwright-reporter npm 배포)
+- ErrorBoundary 다크모드 대응 (Design Spec §2-4)
+- KO 원어민 용어 리뷰 (Danger Zone / "되돌릴 수 없음" 톤)
+
+───
+
 2026-04-22: f010 i18n 커버리지 Phase 3 — 공유 컴포넌트 Epic 완료
 (dev-spec-i18n-coverage-phase3-shared-components + design-spec 동명)
 
