@@ -1,3 +1,84 @@
+2026-04-21: f025 EmptyState v2 + 5 페이지 적용 + 6 일러스트 (3 신규)
+(design-spec-f025-empty-state)
+
+## 뭘 했냐 (claude 브랜치)
+
+### 1. EmptyState v2 API 업그레이드 — `src/components/EmptyState.tsx`
+기존 v1 (icon/title/description/action/secondaryAction) 을 업그레이드.
+- 신규 props: `illustration`, `cta`, `secondaryCta`, `size` (sm|md|lg),
+  `tone` (default|subtle|vivid), `variant` (empty|filtered|search),
+  `illustrationAlt`, `testId`.
+- v1 props (`icon`/`action`/`secondaryAction`) backward-compat 유지 →
+  project-traceability / project-shared-steps 등 미마이그레이션 사용처가
+  깨지지 않음.
+- `kbd` 힌트, loading spinner, focus-visible ring, motion-safe fadeIn,
+  `aria-live="polite"` 지원.
+- size별 padding/text/CTA 크기, variant='filtered' illustration
+  opacity+saturate 다운, tone='vivid' radial bg + gradient title.
+
+### 2. IllustrationPlaceholder — `src/components/illustrations/IllustrationPlaceholder.tsx`
+Desi 일러스트 납품 전 임시 fallback. 6 kind (testcases/runs/milestones/
+sessions/requirements/nothing) 별로 Remix Icon 조합 + tile 배경.
+24×24 rounded-2xl 타일에 primary icon + secondary sparkle.
+
+### 3. 신규 SVG 일러스트 3종 (스캐폴드)
+- `MilestonesIllustration.tsx` — 언덕 + 깃발 + sparkles + dashed path
+- `SessionsIllustration.tsx` — 나침반 + 돋보기 + breadcrumb dots
+- `NothingIllustration.tsx` — 빈 상자 + 3 sparkles (fallback)
+모두 viewBox 0 0 240 150, flat + 2.5px stroke, indigo/violet/slate 팔레트.
+기존 3종 (TestCases/TestRuns/Requirements) 는 변경 없음.
+Desi 납품 시 `<title>` prop 주입만으로 a11y label 가능.
+
+### 4. i18n 키 43 leaf (EN+KO 합 86)
+- testcases.{empty.6, emptyFiltered.3} = 9
+- runs.{empty.4, emptyFiltered.3} = 7 (secondaryCta 포함)
+- milestones.{empty.5, emptyFiltered.3} = 8
+- sessions.{empty.5, emptyFiltered.3} = 8
+- requirements.{empty.5, emptyFiltered.3} = 8 (신규 파일)
+- common.{clearFilters, emptyState.nothing.2} = 3
+requirements.ts 네임스페이스 신규 추가, i18n/local/index.ts 등록.
+
+### 5. 5 페이지 EmptyState v2 적용
+- project-testcases/components/TestCaseList.tsx — filter 상태 분기
+  (검색/폴더/priority/tag 활성 시 variant='filtered' + Clear filters)
+- project-runs/page.tsx — activeTab/resultFilter/searchQuery/milestoneFilter
+  분기, 진짜 빈 상태일 때만 Start a run CTA
+- project-milestones/page.tsx — 기존 🚩 emoji + `btn btn-primary` 레거시
+  제거, size='lg' tone='vivid' EmptyState 로 교체.
+  "Select a milestone" 상태는 기존대로 유지 (out of scope §3-3)
+- project-sessions/page.tsx — 기존 ri-search-line 인라인 제거, filter 분기
+- project-requirements/page.tsx — 기존 v1 호출 → v2 전환 + Jira Import
+  secondary CTA 추가
+
+### 6. Rename — projects/components/EmptyState → OnboardingEmptyState
+온보딩 전용 (3-step 설명 포함) 컴포넌트와 범용 EmptyState 이름 충돌 해소.
+`git mv` 로 히스토리 보존. ProjectsContent.tsx import 경로 업데이트.
+
+## 어디까지 됐냐 — 품질 체크 (전부 PASS)
+- `npx tsc --noEmit` → 0 에러
+- `npm run test -- --run` → 9 files / 143 tests PASS (기존 동일)
+- `npm run scan:i18n:check` → 0 매치 across 29 files
+- `npm run scan:i18n:parity` → en ↔ ko 0 diff
+- `npm run build` → 6.48s 성공
+
+## 건너뛴 / out-of-scope
+- Desi SVG 실제 디자인 구현 — placeholder 스캐폴드만 (지침 명시)
+- `UpgradePrompt` 컴포넌트 (plan limit 도달) — 별도 티켓
+- project-traceability / project-shared-steps 페이지의 기존 v1 EmptyState —
+  backward-compat 로 여전히 동작. Desi 납품 후 일괄 마이그레이션 권장.
+
+## Follow-up (Desi 납품 후)
+- 5 페이지 `<IllustrationPlaceholder kind="..." />` 를 실제 컴포넌트로
+  1줄 교체:
+  - project-milestones → `<MilestonesIllustration />`
+  - project-sessions → `<SessionsIllustration />`
+  (testcases/runs/requirements 는 이미 real SVG 사용 중)
+- Milestones / Sessions / Nothing 3종 SVG 가 납품되면 현재 스캐폴드
+  컴포넌트 내부 SVG 교체 (props API 유지).
+- traceability / shared-steps 페이지도 v2 EmptyState API 로 이관.
+
+───
+
 2026-04-22: Phase 3 QA follow-up + Section-level ErrorBoundary 위젯 확장
 (qa-report-i18n-coverage-phase3, f024 Section-level)
 
