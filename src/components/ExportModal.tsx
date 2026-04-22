@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 
 export type ExportFormat = 'pdf' | 'csv' | 'xlsx';
 
@@ -44,6 +45,7 @@ export function ExportModal({
   hasSummary = false,
   defaultIncludeAiSummary = false,
 }: ExportModalProps) {
+  const { t } = useTranslation('common');
   const [format, setFormat] = useState<ExportFormat>('pdf');
   const [statusFilter, setStatusFilter] = useState<Set<string>>(new Set(ALL_STATUSES));
   const [tagFilter, setTagFilter] = useState<Set<string>>(new Set());
@@ -59,6 +61,8 @@ export function ExportModal({
     ? getFilteredCount(statusFilter, tagFilter)
     : totalCount;
 
+  // AC-11: formats[].label (PDF / CSV / Excel) stays in English — file-format
+  // abbreviations, external-facing (design-spec §15). DO NOT translate.
   const formats: { id: ExportFormat; icon: string; iconColor: string; label: string }[] = [
     { id: 'pdf',  icon: 'ri-file-pdf-line',     iconColor: 'text-red-500',     label: 'PDF'  },
     { id: 'csv',  icon: 'ri-file-text-line',     iconColor: 'text-green-600',   label: 'CSV'  },
@@ -72,13 +76,13 @@ export function ExportModal({
         {/* ── Header ── */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div>
-            <h3 className="text-[0.9375rem] font-semibold text-slate-900">Export</h3>
+            <h3 className="text-[0.9375rem] font-semibold text-slate-900">{t('exportModal.title')}</h3>
             <p className="text-[0.75rem] text-slate-400 mt-0.5 truncate max-w-[220px]">{runName}</p>
           </div>
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600 cursor-pointer p-1"
-            aria-label="Close"
+            aria-label={t('close')}
           >
             <i className="ri-close-line text-lg" />
           </button>
@@ -89,7 +93,7 @@ export function ExportModal({
           {/* ── Format ── */}
           <div>
             <p className="text-[0.6875rem] font-semibold text-slate-500 uppercase tracking-wide mb-2">
-              Format
+              {t('exportModal.format')}
             </p>
             <div className="grid grid-cols-3 gap-2">
               {formats.map(f => (
@@ -114,7 +118,7 @@ export function ExportModal({
           {/* ── Status filter ── */}
           <div>
             <p className="text-[0.6875rem] font-semibold text-slate-500 uppercase tracking-wide mb-2">
-              Status Filter
+              {t('exportModal.statusFilter')}
             </p>
             <div className="flex flex-wrap gap-1.5">
               {ALL_STATUSES.map(s => {
@@ -126,7 +130,7 @@ export function ExportModal({
                     className={`flex items-center gap-1 px-2.5 py-1 rounded-full border text-[0.75rem] font-medium cursor-pointer transition-opacity ${STATUS_STYLE[s]} ${active ? 'opacity-100' : 'opacity-35'}`}
                   >
                     {active && <i className="ri-check-line text-[0.625rem]" />}
-                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                    {t(s)}
                   </button>
                 );
               })}
@@ -137,8 +141,8 @@ export function ExportModal({
           {availableTags.length > 0 && (
             <div>
               <p className="text-[0.6875rem] font-semibold text-slate-500 uppercase tracking-wide mb-1">
-                Tag Filter{' '}
-                <span className="normal-case font-normal text-slate-400">(empty = all tags)</span>
+                {t('exportModal.tagFilter')}{' '}
+                <span className="normal-case font-normal text-slate-400">{t('exportModal.tagFilterHint')}</span>
               </p>
               <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
                 {availableTags.map(tag => {
@@ -183,11 +187,11 @@ export function ExportModal({
                   <div className="flex items-center gap-1.5">
                     <i className="ri-sparkling-2-fill text-violet-500 text-sm" />
                     <span className={`text-[0.8125rem] font-semibold ${includeAiSummary ? 'text-indigo-700' : 'text-slate-700'}`}>
-                      Include AI Summary
+                      {t('exportModal.includeAiSummary')}
                     </span>
                   </div>
                   <p className="text-[0.6875rem] text-slate-400 mt-0.5">
-                    Prepends risk level, metrics, failure patterns &amp; recommendations
+                    {t('exportModal.includeAiSummaryDesc')}
                   </p>
                 </div>
               </button>
@@ -196,8 +200,12 @@ export function ExportModal({
 
           {/* ── Count preview ── */}
           <p className="text-[0.75rem] text-slate-400">
-            <span className="font-semibold text-slate-600">{displayCount}</span>
-            {' '}of {totalCount} test cases will be exported
+            <Trans
+              i18nKey="exportModal.countPreview"
+              ns="common"
+              values={{ current: displayCount, total: totalCount }}
+              components={{ hl: <span className="font-semibold text-slate-600" /> }}
+            />
           </p>
         </div>
 
@@ -207,7 +215,7 @@ export function ExportModal({
             onClick={onClose}
             className="px-4 py-2 text-[0.8125rem] font-medium text-slate-600 hover:bg-slate-50 rounded-lg cursor-pointer border border-slate-200 transition-colors"
           >
-            Cancel
+            {t('cancel')}
           </button>
           <button
             onClick={() => onExport(format, statusFilter, tagFilter, includeAiSummary && format === 'pdf')}
@@ -215,7 +223,7 @@ export function ExportModal({
             className="flex items-center gap-1.5 px-4 py-2 text-[0.8125rem] font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg cursor-pointer disabled:opacity-50 transition-colors"
           >
             {exporting && <i className="ri-loader-4-line animate-spin text-sm" />}
-            Export {format.toUpperCase()}
+            {t('exportModal.exportButton', { format: format.toUpperCase() })}
           </button>
         </div>
       </div>
