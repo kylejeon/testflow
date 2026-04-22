@@ -2128,3 +2128,178 @@ Dev Spec `docs/specs/dev-spec-f033-xlsx-to-exceljs.md` 기반 구현 완료.
   `src/utils/testRailExport.ts` — 이미 `await import('exceljs')` 사용.
 - `npm run lint` — eslint 설정 파일 부재 (프로젝트가 lint 스크립트를
   package.json 에 노출하지 않음).
+
+────────────────────────────────────────────────────────────────────
+# 2026-04-22 세션 — f028 @testably/playwright-reporter rebrand (부분 완료 — publish BLOCKER)
+────────────────────────────────────────────────────────────────────
+
+## 뭘 했냐
+Dev Spec `docs/specs/dev-spec-f028-playwright-reporter.md` 및
+planner 입력(@testably scope rebrand + npm workspaces + tests/docs + publish)
+기반 Phase 1~4, 6 완료. **Phase 5(publish) 는 org 권한 부재로 BLOCKER**.
+
+1. **npm workspaces 설정**
+   - 루트 `package.json` 에 `"workspaces": ["packages/*"]` 추가.
+   - `node_modules/@testably/{reporter-core,playwright-reporter,cypress-reporter,jest-reporter}`
+     → `packages/*` 로 symlink 자동 생성.
+   - 루트 앱 회귀 없음 (143 tests / build / tsc 전부 그대로).
+   - `.gitignore` 에 `.npmrc`, `packages/**/.npmrc` 추가 (토큰 유출 차단).
+
+2. **Scope rebrand: `@testably.kr/*` → `@testably/*`**
+   - `packages/core/package.json`
+     `@testably.kr/reporter-core@1.0.0` → `@testably/reporter-core@0.1.0-alpha.0`.
+     `publishConfig.access=public`, `repository`, `bugs`, `homepage`, `engines`
+     필드 추가.
+   - `packages/playwright/package.json`
+     `@testably.kr/playwright-reporter@1.0.0` → `@testably/playwright-reporter@0.1.0-alpha.0`.
+     `peerDependencies: "@playwright/test": ">=1.40.0"` 유지, 동일 metadata 보강.
+     `dependencies: "@testably/reporter-core": "0.1.0-alpha.0"` (workspace 심링크).
+   - `packages/cypress/package.json` / `packages/jest/package.json`
+     `private: true` + 이름만 업데이트 (publish 안 함, Dev Spec §7-1 준수).
+   - `packages/{core,playwright,cypress,jest}/src/*.ts`
+     import 경로 `@testably.kr/reporter-core` → `@testably/reporter-core`.
+     SDK_AGENT 상수 `@testably/<pkg>/<version>`.
+   - `packages/{core,playwright}/package.json.exports` — `types` 조건을
+     `import`/`require` 앞으로 이동 (tsup/esbuild 권장 순서).
+
+3. **런타임: NonRetryableUploadError 신설**
+   - `packages/core/src/retry.ts` — `UploadError` 외에
+     `NonRetryableUploadError(status, body)` 추가. 400/401/403/404 전용.
+     `withRetry` 가 해당 타입은 즉시 throw, 재시도 없음.
+     기존 `UploadError` 는 `status` 필드만 추가 (backward compatible).
+   - `packages/core/src/client.ts` — 서버 응답 status 별 분기:
+       - 429 → `RateLimitError` (retry with Retry-After)
+       - 400/401/403/404 → `NonRetryableUploadError` (no retry)
+       - 207 → 성공 경로 (partial_failure 그대로 반환)
+       - 기타 5xx → `UploadError` (exponential backoff retry)
+     `testConnection()` 도 동일 분기 적용.
+   - `packages/core/src/index.ts` — `NonRetryableUploadError` export.
+
+4. **Reporter: 플랜 게이팅 & dry-run 분기 추가**
+   - `packages/playwright/src/reporter.ts`
+     - `SDK_AGENT = '@testably/playwright-reporter/0.1.0-alpha.0'`
+     - `PlaywrightReporterOptions.dryRun` 옵션 + `TESTABLY_DRY_RUN=true` env var.
+     - `handleUploadError(err)` 신규 메서드 — `NonRetryableUploadError.status`
+       별 맞춤 메시지:
+       - 403 → "Upload skipped: this feature requires a Professional plan
+         or higher. ... test run itself has NOT failed." (2줄)
+       - 401 → "Invalid API token. Check TESTABLY_TOKEN."
+       - 404 → "Run not found. Check TESTABLY_RUN_ID."
+       - 400 → payload 에러 body 포함
+     - 기본 `failOnUploadError=false` 이면 전부 warn 로그만, CI exit 0.
+       `true` 면 모든 error 를 throw 해서 CI 실패.
+     - `dryRun: true` → `client.testConnection()` 호출, 성공 시
+       "Dry run passed. (Run: <name>, tier: <n>)" 로그.
+
+5. **단위 테스트 신규 (vitest, 35 cases 추가)**
+   - `packages/core/tests/retry.test.ts` (5 케이스) — withRetry: 성공/
+     UploadError 3회 재시도/1s·2s·4s backoff/RateLimitError Retry-After/
+     NonRetryableUploadError 즉시 throw.
+   - `packages/core/tests/config.test.ts` (5 케이스) — resolveConfig
+     URL/token/runId 누락 throw, env fallback, 옵션 우선, default 값.
+   - `packages/core/tests/client.test.ts` (10 케이스) — 빈 배열 no-op,
+     정확한 POST payload + Bearer/User-Agent/X-Testably-SDK-Version 헤더,
+     250 results → 100/100/50 3 배치, 403/401 즉시 실패 no retry,
+     207 partial_failure 성공 경로, testConnection dry_run=true payload,
+     500 재시도 3회 후 throw, 429 Retry-After 7s 존중, RateLimitError 필드.
+   - `packages/playwright/tests/reporter.test.ts` (6 케이스) — TC ID 추출
+     annotation/tag/title/custom 4 모드, 5 status 매핑
+     (passed/failed/timedOut/skipped/interrupted), 결과 없으면 네트워크 호출
+     없음, POST URL/headers/body 검증.
+   - `packages/playwright/tests/fallback.test.ts` (5 케이스) — 403/401/404
+     warn + NO throw (exit 0 경로), failOnUploadError=true 에서 throw,
+     dry_run env var 경로.
+   - `packages/playwright/tests/retry.test.ts` (2 케이스) — 500 4회 호출
+     (1 + 3 retry), 2차 attempt 에서 복구.
+   - vitest config: `clearMocks/restoreMocks: true` — spy 누수 방지.
+
+6. **문서**
+   - `packages/playwright/README.md` — Install / 5-minute quick start /
+     Configuration table / TC matching 4 strategies / Status mapping /
+     Dry-run / Troubleshooting (403/401/404/매핑 실패/retry loop/peerDep) /
+     Security.
+   - `packages/core/README.md` — 내부 클라이언트 설명.
+   - `packages/playwright/CHANGELOG.md` — Keep a Changelog, 0.1.0-alpha.0
+     릴리스 노트.
+   - `packages/core/CHANGELOG.md` — Keep a Changelog.
+   - `packages/playwright/LICENSE` + `packages/core/LICENSE` — MIT (본체
+     private 이므로 SDK 만 오픈소스화, Dev Spec AC-F4).
+   - 루트 `README.md` — "Test Automation SDK" 섹션 추가, Playwright
+     quick-start + `packages/playwright/README.md` 링크.
+
+7. **npm pack dry-run (AC-G1)**
+   - `@testably/reporter-core@0.1.0-alpha.0` — 5.8 kB (unpacked 27.5 kB,
+     7 files: LICENSE + README + dist 4개 + package.json). src/tests 제외.
+   - `@testably/playwright-reporter@0.1.0-alpha.0` — 7.2 kB (unpacked
+     24.3 kB, 7 files). 둘 다 50 kB 제한 여유.
+
+## BLOCKER — npm publish 중단됨
+- `@testably/reporter-core` 최초 publish 시도 → **HTTP 404 PUT**:
+  `PUT https://registry.npmjs.org/@testably%2freporter-core`.
+- 원인: 제공된 NPM token 의 사용자는 `kylejeon` 이며 (npm whoami 확인),
+  `@testably` npm organization 이 **존재하지 않음**.
+  `npm org ls testably` → 403 (권한 없음/존재 안 함).
+- `npm publish` 는 user scope (`@kylejeon`) 만 자동 생성하고,
+  organization scope 는 사전에 org 를 생성해야 publish 가능.
+- `npm org create testably` 는 실제 부작용(과금 가능성) 이 있어 sandbox
+  에서 차단됨 — 올바른 판단. Planner 지시의 "publish 실패 시 Blocker 로
+  보고하고 중단" 분기를 따름.
+- `@testably/playwright-reporter` 와 `@testably/reporter-core` 둘 다
+  npm 에 404 (미점유) — Kyle 이 npm 계정에서 `@testably` org 를 생성한
+  직후 이 브랜치의 `npm publish` 를 그대로 돌리면 바로 publish 가능.
+
+## 해제 방법 (CEO 액션)
+1. https://www.npmjs.com/org/create 에서 org **testably** 생성
+   (Free organization — public packages 무료).
+2. `kylejeon` 계정을 해당 org 의 owner 로 등록.
+3. 로컬 또는 CI 에서:
+   ```
+   NPM_TOKEN=<new token>
+   cd packages/core
+   npm publish --access public --tag alpha
+   cd ../playwright
+   npm publish --access public --tag alpha
+   ```
+   (또는 기존 토큰 rotate 후 재시도 — 자연스러운 운영 절차)
+4. `npm view @testably/playwright-reporter` 으로 확인.
+
+## 어디까지 됐냐 — 품질 체크
+- `npx tsc --noEmit` → **0 에러**
+- 루트 `npm run test -- --run` → **143 tests passed** (SDK 추가 전과 동일,
+  회귀 0)
+- `packages/core` `vitest run` → **21 tests passed** (신규)
+- `packages/playwright` `vitest run` → **14 tests passed** (신규)
+- 총 SDK 신규 테스트 **35 cases**.
+- `npm run scan:i18n:check` → 0 매치
+- `npm run scan:i18n:parity` → 0 diff
+- `npm run build` (앱 루트) → 성공 6.57s, 번들 회귀 없음.
+- `cd packages/core && npm run build` → dist/index.{js,mjs,d.ts,d.mts}
+  생성.
+- `cd packages/playwright && npm run build` → 동일.
+- `npm pack --dry-run` → src/tests/node_modules 제외, files: LICENSE,
+  README.md, dist/ 만 포함.
+- **토큰 유출 검사**: 작업 내내 NPM token 문자열은 파일/커밋/로그 어디에도
+  기록하지 않음. `.npmrc` 는 `/tmp/testably-publish.npmrc` 에만 있었고
+  publish 시도 후 즉시 rm. `git grep` 으로 전수 확인 후 0 match.
+
+## 커밋 (5건 예정 — 아직 push 전)
+1. `chore(workspace): npm workspaces 설정 + .gitignore .npmrc 차단`
+2. `feat(sdk): @testably scope rebrand + NonRetryableUploadError + dry-run 분기`
+3. `test(sdk): reporter-core + playwright-reporter 단위 테스트 35 cases`
+4. `docs(sdk): README + CHANGELOG + LICENSE (playwright + core)`
+5. `docs(readme): Test Automation SDK 섹션 추가`
+
+## 다음에 할 것
+- CEO: npm `@testably` organization 생성 + kylejeon owner 등록
+  (OR scope 를 `@kylejeon/*` 으로 바꾸는 결정).
+- 그 후 Developer: `npm publish --access public --tag alpha` 두 패키지 순서
+  (core → playwright) 대로 실행, `npm view` 결과 확인.
+- `git push origin claude` — CEO 머지 대기.
+
+## 포함 안 된 것 (금기 준수 / OOS)
+- Cypress / Jest reporter publish — Dev Spec f028b/f028c 로 분리.
+- `supabase/functions/upload-ci-results` 서버 수정 — 이미 필요 기능 전부
+  제공 (플랜 gating, 100 배치, 207 partial, dry_run) — 건드리지 않음.
+- 자동 TC 생성 / 첨부파일 업로드 / JUnit XML parsing — 전부 OOS.
+- 앱 본체 `src/` 변경 — 건드리지 않음.
+- NPM_TOKEN 로그/파일/커밋 어디에도 기록하지 않음.
