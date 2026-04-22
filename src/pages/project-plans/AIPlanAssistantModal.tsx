@@ -203,11 +203,11 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
           </button>
         </div>
 
-        {/* Body: 2-column (300px left | 1fr right) */}
-        <div style={{ display:'grid', gridTemplateColumns:'300px 1fr', minHeight:520, maxHeight:'calc(100vh - 180px)' }}>
+        {/* Body: 2-column (300px left | 1fr right). 고정 높이 520 로 모달 크기 유지. */}
+        <div style={{ display:'grid', gridTemplateColumns:'300px 1fr', height:520 }}>
 
           {/* ── LEFT: Context / Prompt panel ── */}
-          <div style={{ padding:18, borderRight:'1px solid #E2E8F0', background:'#F8FAFC', display:'flex', flexDirection:'column', gap:14 }}>
+          <div style={{ padding:18, borderRight:'1px solid #E2E8F0', background:'#F8FAFC', display:'flex', flexDirection:'column', gap:14, overflowY:'auto', minHeight:0 }}>
 
             {/* Target Plan field */}
             <div>
