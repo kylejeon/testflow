@@ -340,7 +340,10 @@ export const common = {
 
   ai: {
     creditToast: {
-      used: 'AI 크레딧 {{count}}개 사용됨',
+      // 한국어는 단복수 구분 없음 — i18next 한국어 plural rule 은 _other 만 사용.
+      // en 과 키 parity 를 위해 _one/_other 둘 다 등록하되 값은 동일.
+      used_one: 'AI 크레딧 {{count}}개 사용됨',
+      used_other: 'AI 크레딧 {{count}}개 사용됨',
     },
   },
 };
