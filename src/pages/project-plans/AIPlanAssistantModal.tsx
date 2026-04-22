@@ -204,7 +204,7 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
         </div>
 
         {/* Body: 2-column (300px left | 1fr right) */}
-        <div style={{ display:'grid', gridTemplateColumns:'300px 1fr', minHeight:520, alignItems:'start' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'300px 1fr', minHeight:520, maxHeight:'calc(100vh - 180px)' }}>
 
           {/* ── LEFT: Context / Prompt panel ── */}
           <div style={{ padding:18, borderRight:'1px solid #E2E8F0', background:'#F8FAFC', display:'flex', flexDirection:'column', gap:14 }}>
@@ -345,7 +345,7 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
           </div>
 
           {/* ── RIGHT: Recommendations ── */}
-          <div style={{ display:'flex', flexDirection:'column' }}>
+          <div style={{ display:'flex', flexDirection:'column', minHeight:0 }}>
             <div style={{ padding:'14px 18px 0', display:'flex', alignItems:'center', gap:10 }}>
               <div style={{ fontWeight:600, fontSize:14 }}>
                 Recommended TCs
@@ -369,7 +369,7 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
               )}
             </div>
 
-            <div style={{ padding:'14px 18px', overflowY:'auto', maxHeight:'min(520px, calc(100vh - 280px))' }}>
+            <div style={{ padding:'14px 18px', overflowY:'auto', flex:1, minHeight:0 }}>
 
               {/* Loading state */}
               {step === 'loading' && (
