@@ -43,8 +43,9 @@ interface Props {
   projectId: string;
   milestones: Milestone[];
   onClose: () => void;
-  /** milestoneId: dropdown 에서 선택한 milestone. 빈 문자열이면 standalone. */
-  onApply: (suggestedTcIds: string[], planName: string, milestoneId: string) => void;
+  /** milestoneId: dropdown 에서 선택한 milestone. 빈 문자열이면 standalone.
+   *  onApply 가 Promise 를 반환하면 모달이 submitting 상태로 전환된다. */
+  onApply: (suggestedTcIds: string[], planName: string, milestoneId: string) => void | Promise<void>;
 }
 
 // Risk score helper (0–100 scale from priority)
@@ -83,6 +84,7 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
   const [error, setError] = useState('');
   const [selectedTcIds, setSelectedTcIds] = useState<Set<string>>(new Set());
   const [signals, setSignals] = useState<Set<string>>(new Set(['code','failures','flaky','req']));
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (result) {
@@ -146,12 +148,21 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
     });
   };
 
-  const handleApply = () => {
+  const handleApply = async () => {
+    if (submitting) return;
     const mName = milestones.find(m => m.id === selectedMilestone)?.name;
     const planName = mName
       ? `${mName} — AI Plan`
       : affectedAreas ? `${affectedAreas.split(',')[0].trim()} — AI Plan` : 'AI Generated Plan';
-    onApply([...selectedTcIds], planName, selectedMilestone);
+    setSubmitting(true);
+    setError('');
+    try {
+      await Promise.resolve(onApply([...selectedTcIds], planName, selectedMilestone));
+    } catch (err: any) {
+      setError(err?.message || 'Failed to create plan');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const selectedMilestoneName = milestones.find(m => m.id === selectedMilestone)?.name;
@@ -208,7 +219,8 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
         <div style={{ display:'grid', gridTemplateColumns:'300px 1fr', height:720 }}>
 
           {/* ── LEFT: Context / Prompt panel ── */}
-          <div style={{ padding:18, borderRight:'1px solid #E2E8F0', background:'#F8FAFC', display:'flex', flexDirection:'column', gap:14, minHeight:0 }}>
+          {/* overflowY:'auto' — signals 가 4행 wrap 될 때 좌측 패널 overflow 방어. */}
+          <div style={{ padding:18, borderRight:'1px solid #E2E8F0', background:'#F8FAFC', display:'flex', flexDirection:'column', gap:14, minHeight:0, overflowY:'auto' }}>
 
             {/* Target Plan field */}
             <div>
@@ -492,12 +504,14 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
                   fontSize:13, cursor:'pointer', color:'#374151' }}>
                 Regenerate
               </button>
-              <button onClick={handleApply} disabled={selectedCount === 0}
+              <button onClick={handleApply} disabled={selectedCount === 0 || submitting}
                 style={{ padding:'8px 16px', border:'none', borderRadius:8,
-                  background:selectedCount>0?'#6366F1':'#E2E8F0',
-                  color:selectedCount>0?'#fff':'#94A3B8', fontSize:13, fontWeight:600,
-                  cursor:selectedCount>0?'pointer':'not-allowed' }}>
-                Add {selectedCount > 0 ? selectedCount : ''} TCs to Plan
+                  background:(selectedCount>0 && !submitting)?'#6366F1':'#E2E8F0',
+                  color:(selectedCount>0 && !submitting)?'#fff':'#94A3B8', fontSize:13, fontWeight:600,
+                  cursor:submitting?'wait':(selectedCount>0?'pointer':'not-allowed') }}>
+                {submitting
+                  ? 'Creating plan…'
+                  : `Add ${selectedCount > 0 ? selectedCount : ''} TCs to Plan`}
               </button>
             </div>
           </div>

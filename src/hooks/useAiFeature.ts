@@ -117,7 +117,10 @@ const DEFAULT_STATE: AiFeatureState = {
 export function useAiFeature(featureKey: AiFeatureKey): AiFeatureState {
   const [state, setState] = useState<AiFeatureState>(DEFAULT_STATE);
   const [refetchTick, setRefetchTick] = useState(0);
-  const refetch = useCallback(() => setRefetchTick(t => t + 1), []);
+  const refetch = useCallback(() => {
+    console.log('[useAiFeature] refetch triggered for', featureKey);
+    setRefetchTick(t => t + 1);
+  }, [featureKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -126,6 +129,7 @@ export function useAiFeature(featureKey: AiFeatureKey): AiFeatureState {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
+          console.warn('[useAiFeature] no user session — using DEFAULT_STATE');
           if (!cancelled) setState({ ...DEFAULT_STATE, loading: false, refetch });
           return;
         }
@@ -138,6 +142,7 @@ export function useAiFeature(featureKey: AiFeatureKey): AiFeatureState {
 
         // Owner 단위 shared pool 사용량 조회 (RPC)
         const usedCredits = await getSharedPoolUsage(ownerId);
+        console.log('[useAiFeature]', featureKey, 'tick=', refetchTick, '→ usedCredits=', usedCredits, 'ownerId=', ownerId, 'limit=', monthlyLimit);
 
         const tierOk = tier >= config.minTier;
         const remainingCredits = monthlyLimit === -1 ? -1 : Math.max(0, monthlyLimit - usedCredits);
@@ -159,7 +164,8 @@ export function useAiFeature(featureKey: AiFeatureKey): AiFeatureState {
             refetch,
           });
         }
-      } catch {
+      } catch (err) {
+        console.error('[useAiFeature] load failed:', err);
         if (!cancelled) setState({ ...DEFAULT_STATE, loading: false, refetch });
       }
     }

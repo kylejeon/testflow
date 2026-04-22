@@ -107,10 +107,11 @@ export async function getSharedPoolUsage(
     p_month_start: start.toISOString(),
   });
   if (error) {
-    console.error('[aiUsage] get_ai_shared_pool_usage error:', error);
+    console.error('[aiUsage] get_ai_shared_pool_usage error:', error, 'ownerId=', ownerId);
     return 0;
   }
   const n = Number(data ?? 0);
+  console.log('[aiUsage] getSharedPoolUsage returned', n, 'for ownerId=', ownerId);
   return Number.isFinite(n) ? n : 0;
 }
 

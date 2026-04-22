@@ -790,8 +790,8 @@ export default function ProjectMilestones() {
           onClose={() => { setShowAIModal(false); setAiMilestoneId(null); }}
           onApply={async (tcIds, planName, milestoneId) => {
             console.log('[AIPlanAssistant] onApply start', { tcIds: tcIds.length, planName, milestoneId, aiMilestoneId });
+            // 에러 re-throw — Modal 의 handleApply 가 catch 해서 inline error 로 표시해야 함.
             try {
-              // Step 1: 세션 검증. ES256 전환 이후 세션 만료 시 auth.uid() NULL → RLS 위반 가능.
               const { data: { user }, error: authErr } = await supabase.auth.getUser();
               console.log('[AIPlanAssistant] auth.getUser result', { user: user?.id, authErr });
               if (authErr) throw new Error('Auth failed: ' + authErr.message);
@@ -799,7 +799,6 @@ export default function ProjectMilestones() {
 
               const attachMilestoneId = milestoneId || aiMilestoneId || null;
 
-              // Step 2: Claude hallucinated UUID 방어. RLS 가 auth.uid() NULL 이면 모든 TC 가 filter 되어 throw.
               let validTcIds = tcIds;
               if (tcIds.length > 0) {
                 const { data: existingRows, error: existErr } = await supabase
@@ -807,15 +806,14 @@ export default function ProjectMilestones() {
                   .select('id')
                   .in('id', tcIds);
                 console.log('[AIPlanAssistant] test_cases validation', { requested: tcIds.length, existing: existingRows?.length, existErr });
-                if (existErr) throw existErr;
+                if (existErr) throw new Error('TC validation failed: ' + existErr.message);
                 const existingSet = new Set((existingRows ?? []).map((r: { id: string }) => r.id));
                 validTcIds = tcIds.filter(id => existingSet.has(id));
                 if (validTcIds.length === 0 && tcIds.length > 0) {
-                  throw new Error(`None of the ${tcIds.length} TCs were found in DB. This usually means your session is expired (RLS filtered them out). Please refresh the page.`);
+                  throw new Error(`None of the ${tcIds.length} TCs were found. Session may have expired — please refresh.`);
                 }
               }
 
-              // Step 3: test_plans INSERT. RLS 정책: project_id IN (project_members where user_id = auth.uid()).
               console.log('[AIPlanAssistant] inserting test_plans', { project_id: projectId, milestone_id: attachMilestoneId, owner_id: user.id });
               const { data: planData, error: planErr } = await supabase
                 .from('test_plans')
@@ -823,10 +821,9 @@ export default function ProjectMilestones() {
                 .select()
                 .single();
               console.log('[AIPlanAssistant] test_plans insert result', { planData, planErr });
-              if (planErr) throw planErr;
-              if (!planData) throw new Error('test_plans INSERT returned no row — likely RLS policy denied (not a project member?).');
+              if (planErr) throw new Error('Plan insert failed: ' + planErr.message);
+              if (!planData) throw new Error('Plan INSERT returned no row (RLS likely denied — not a project member?).');
 
-              // Step 4: test_plan_test_cases INSERT.
               if (validTcIds.length > 0) {
                 const { error: linkErr } = await supabase.from('test_plan_test_cases').insert(
                   validTcIds.map(tcId => ({ test_plan_id: planData.id, test_case_id: tcId }))
@@ -834,7 +831,7 @@ export default function ProjectMilestones() {
                 console.log('[AIPlanAssistant] test_plan_test_cases insert result', { count: validTcIds.length, linkErr });
                 if (linkErr) {
                   await supabase.from('test_plans').delete().eq('id', planData.id);
-                  throw linkErr;
+                  throw new Error('TC link insert failed: ' + linkErr.message);
                 }
               }
 
@@ -857,6 +854,7 @@ export default function ProjectMilestones() {
               console.error('[AIPlanAssistant onApply] failed:', err);
               const msg = err?.message || err?.error_description || getApiErrorMessage(err);
               showToast('Failed to create AI plan: ' + msg, 'error');
+              throw err; // Modal 이 inline error box 로 표시
             }
           }}
         />
