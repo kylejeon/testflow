@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
+import i18n from '../../i18n';
 import { supabase } from '../../lib/supabase';
 import { useAiFeature } from '../../hooks/useAiFeature';
+import { normalizeLocale } from '../../lib/claudeLocale';
 
 interface Milestone {
   id: string;
@@ -101,6 +103,7 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
           affected_areas: affectedAreas.split(',').map(s => s.trim()).filter(Boolean),
           target_milestone_id: selectedMilestone || undefined,
           context: context.trim() || undefined,
+          locale: normalizeLocale(i18n.language), // f021
         }),
       });
       const data = await res.json();

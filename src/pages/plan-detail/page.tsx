@@ -19,6 +19,7 @@ import EnvironmentAIInsights from '../../components/EnvironmentAIInsights';
 import type { Environment } from '../../types/environment';
 import { formatShortDate, formatShortDateTime, formatShortTime, formatDayHeader } from '../../lib/dateFormat';
 import { formatRelativeTime } from '../../lib/formatRelativeTime';
+import { normalizeLocale } from '../../lib/claudeLocale';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -247,7 +248,11 @@ function PlanSidebar({ plan, milestone, parentMilestone, profiles, driftCount, o
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ project_id: projectId, plan_id: plan.id }),
+        body: JSON.stringify({
+          project_id: projectId,
+          plan_id: plan.id,
+          locale: normalizeLocale(i18n.language), // f021
+        }),
       });
 
       const data = await res.json();

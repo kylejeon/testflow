@@ -1,5 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import i18n from '../../i18n';
 import { supabase } from '../../lib/supabase';
+import { normalizeLocale } from '../../lib/claudeLocale';
 
 export type MilestoneRiskLevel = 'on_track' | 'at_risk' | 'critical';
 
@@ -75,7 +77,11 @@ export function useMilestoneAiRisk(milestoneId: string) {
     mutationFn: async ({ force }) => {
       try {
         const { data, error } = await supabase.functions.invoke('milestone-risk-predictor', {
-          body: { milestone_id: milestoneId, force_refresh: force },
+          body: {
+            milestone_id: milestoneId,
+            force_refresh: force,
+            locale: normalizeLocale(i18n.language), // f021
+          },
         });
 
         // Supabase functions.invoke treats non-2xx as error.

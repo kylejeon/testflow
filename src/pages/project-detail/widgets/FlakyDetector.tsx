@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import i18n from '../../../i18n';
 import { supabase } from '../../../lib/supabase';
+import { normalizeLocale } from '../../../lib/claudeLocale';
 
 const CACHE_KEY_PREFIX = 'flaky_ai_cache_';
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -290,7 +292,13 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
           Authorization: `Bearer ${session.access_token}`,
           apikey: import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
         },
-        body: JSON.stringify({ action: 'analyze-flaky', project_id: projectId, flaky_tests: flakyTests, force_reanalyze: forceReanalyze }),
+        body: JSON.stringify({
+          action: 'analyze-flaky',
+          project_id: projectId,
+          flaky_tests: flakyTests,
+          force_reanalyze: forceReanalyze,
+          locale: normalizeLocale(i18n.language), // f021
+        }),
       });
 
       const data = await response.json();

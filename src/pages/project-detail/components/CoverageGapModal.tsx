@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
+import i18n from '../../../i18n';
 import { supabase } from '../../../lib/supabase';
 import { ModalShell } from '../../../components/ModalShell';
+import { normalizeLocale } from '../../../lib/claudeLocale';
 
 interface GapSuggestion {
   title: string;
@@ -79,7 +81,12 @@ export default function CoverageGapModal({ projectId, onClose, onGenerateTCs }: 
           Authorization: `Bearer ${session.access_token}`,
           apikey: import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
         },
-        body: JSON.stringify({ action: 'coverage-gap', project_id: projectId, force_reanalyze: forceReanalyze }),
+        body: JSON.stringify({
+          action: 'coverage-gap',
+          project_id: projectId,
+          force_reanalyze: forceReanalyze,
+          locale: normalizeLocale(i18n.language), // f021
+        }),
       });
 
       const data = await response.json();

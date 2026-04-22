@@ -9,6 +9,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../../lib/supabase';
+import { normalizeLocale } from '../../../lib/claudeLocale';
 
 
 export interface AISummaryCluster {
@@ -80,7 +81,7 @@ export default function AIRunSummaryPanel({
   onToggleIncludeInPdf,
   onSummaryStateChange,
 }: AIRunSummaryPanelProps) {
-  const { t } = useTranslation(['runs', 'common']);
+  const { t, i18n } = useTranslation(['runs', 'common']);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<AISummaryResult | null>(null);
@@ -209,7 +210,11 @@ export default function AIRunSummaryPanel({
           'apikey': supabaseAnonKey,
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ action: 'summarize-run', run_id: runId }),
+        body: JSON.stringify({
+          action: 'summarize-run',
+          run_id: runId,
+          locale: normalizeLocale(i18n.language), // f021
+        }),
       });
 
       const data = await res.json();

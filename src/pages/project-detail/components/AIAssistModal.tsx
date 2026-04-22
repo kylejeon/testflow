@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
+import i18n from '../../../i18n';
 import { supabase } from '../../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { ModalShell } from '../../../components/ModalShell';
+import { normalizeLocale } from '../../../lib/claudeLocale';
 
 interface Props {
   isOpen: boolean;
@@ -146,6 +148,7 @@ export default function AIAssistModal({ isOpen, onClose, projectId, onOpenGenera
           input: inputText.trim(),
           folder_id: targetFolderId || null,
           include_edge_cases: true,
+          locale: normalizeLocale(i18n.language), // f021
         },
       });
 

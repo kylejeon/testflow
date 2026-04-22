@@ -11,7 +11,9 @@
  *  - AI TC 추천 (suggest-from-requirement)
  */
 import { useState, useEffect, useCallback } from 'react';
+import i18n from '../i18n';
 import { supabase } from '../lib/supabase';
+import { normalizeLocale } from '../lib/claudeLocale';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -513,6 +515,7 @@ export function useAISuggestTCs() {
             requirement_title:         params.requirementTitle,
             requirement_description:   params.requirementDescription,
             existing_tcs:              params.existingTCs || [],
+            locale:                    normalizeLocale(i18n.language), // f021
           }),
         },
       );
