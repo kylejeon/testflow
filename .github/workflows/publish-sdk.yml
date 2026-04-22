@@ -1,0 +1,120 @@
+name: Publish SDK
+
+# Publishes @testably.kr/* packages to npm when a version tag is pushed.
+#
+# Tag conventions:
+#   sdk-core-v0.1.0-alpha.1   → publishes packages/core       with tag `alpha`
+#   sdk-playwright-v0.1.0     → publishes packages/playwright with tag `latest`
+#
+# Tag the release after bumping the version in package.json:
+#   git tag sdk-playwright-v0.2.0 -m 'release: playwright-reporter 0.2.0'
+#   git push origin sdk-playwright-v0.2.0
+
+on:
+  push:
+    tags:
+      - 'sdk-core-v*'
+      - 'sdk-playwright-v*'
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Package to publish'
+        required: true
+        type: choice
+        options:
+          - core
+          - playwright
+      dist_tag:
+        description: 'npm dist-tag (e.g. alpha, beta, latest)'
+        required: true
+        default: 'alpha'
+        type: string
+
+jobs:
+  publish:
+    name: Build + publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org/'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Determine package & dist-tag
+        id: target
+        run: |
+          if [ -n "${{ inputs.package }}" ]; then
+            echo "package=${{ inputs.package }}" >> "$GITHUB_OUTPUT"
+            echo "dist_tag=${{ inputs.dist_tag }}" >> "$GITHUB_OUTPUT"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+            case "$TAG" in
+              sdk-core-v*)
+                echo "package=core" >> "$GITHUB_OUTPUT"
+                ;;
+              sdk-playwright-v*)
+                echo "package=playwright" >> "$GITHUB_OUTPUT"
+                ;;
+              *)
+                echo "Unknown tag format: $TAG" >&2
+                exit 1
+                ;;
+            esac
+            # Pre-release tags (alpha.N, beta.N, rc.N) → alpha/beta/rc dist-tag.
+            # Plain x.y.z → latest.
+            if [[ "$TAG" =~ -(alpha|beta|rc)\.[0-9]+$ ]]; then
+              echo "dist_tag=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+            else
+              echo "dist_tag=latest" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
+      - name: Verify tag version matches package.json
+        if: github.event_name == 'push'
+        run: |
+          PKG_DIR="packages/${{ steps.target.outputs.package }}"
+          TAG="${GITHUB_REF#refs/tags/}"
+          # Strip "sdk-<pkg>-v" prefix from tag
+          EXPECTED="${TAG#sdk-${{ steps.target.outputs.package }}-v}"
+          ACTUAL=$(node -p "require('./$PKG_DIR/package.json').version")
+          if [ "$EXPECTED" != "$ACTUAL" ]; then
+            echo "Tag version ($EXPECTED) does not match package.json version ($ACTUAL) in $PKG_DIR" >&2
+            exit 1
+          fi
+          echo "Version verified: $ACTUAL"
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Unit tests (root)
+        run: npm run test -- --run
+
+      - name: Build SDK package
+        working-directory: packages/${{ steps.target.outputs.package }}
+        run: npm run build
+
+      - name: SDK package tests
+        working-directory: packages/${{ steps.target.outputs.package }}
+        run: npx vitest run
+
+      - name: Publish to npm
+        working-directory: packages/${{ steps.target.outputs.package }}
+        run: npm publish --access public --tag ${{ steps.target.outputs.dist_tag }} --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "Published packages/${{ steps.target.outputs.package }} with dist-tag \`${{ steps.target.outputs.dist_tag }}\`" >> "$GITHUB_STEP_SUMMARY"
