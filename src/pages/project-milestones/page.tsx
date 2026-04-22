@@ -793,20 +793,47 @@ export default function ProjectMilestones() {
               const { data: { user } } = await supabase.auth.getUser();
               // 우선순위: dropdown 에서 고른 milestoneId → AI 버튼 클릭 당시 컨텍스트 → standalone (null)
               const attachMilestoneId = milestoneId || aiMilestoneId || null;
+
+              // Claude 가 hallucinated 된 UUID 를 돌려줄 수 있으므로 실제 존재하는 TC 만 필터링.
+              let validTcIds = tcIds;
+              if (tcIds.length > 0) {
+                const { data: existingRows, error: existErr } = await supabase
+                  .from('test_cases')
+                  .select('id')
+                  .in('id', tcIds);
+                if (existErr) throw existErr;
+                const existingSet = new Set((existingRows ?? []).map((r: { id: string }) => r.id));
+                validTcIds = tcIds.filter(id => existingSet.has(id));
+                if (validTcIds.length === 0 && tcIds.length > 0) {
+                  throw new Error(`None of the ${tcIds.length} recommended TCs exist in DB (possible AI hallucination).`);
+                }
+              }
+
               const { data: planData, error: planErr } = await supabase
                 .from('test_plans')
                 .insert([{ project_id: projectId, milestone_id: attachMilestoneId, name: planName, priority: 'medium', status: 'planning', owner_id: user?.id || null }])
                 .select().single();
               if (planErr) throw planErr;
-              if (tcIds.length > 0) {
-                await supabase.from('test_plan_test_cases').insert(
-                  tcIds.map(tcId => ({ test_plan_id: planData.id, test_case_id: tcId }))
+
+              if (validTcIds.length > 0) {
+                const { error: linkErr } = await supabase.from('test_plan_test_cases').insert(
+                  validTcIds.map(tcId => ({ test_plan_id: planData.id, test_case_id: tcId }))
                 );
+                if (linkErr) {
+                  // 롤백: 방금 만든 plan 삭제 (TC 링크 실패한 orphan plan 방지)
+                  await supabase.from('test_plans').delete().eq('id', planData.id);
+                  throw linkErr;
+                }
               }
+
               const planId = planData.id;
               setShowAIModal(false);
               setAiMilestoneId(null);
-              showToast(`Plan "${planName}" created with ${tcIds.length} TCs`, 'success');
+              const droppedCount = tcIds.length - validTcIds.length;
+              const successMsg = droppedCount > 0
+                ? `Plan "${planName}" created with ${validTcIds.length} TCs (${droppedCount} invalid TCs skipped)`
+                : `Plan "${planName}" created with ${validTcIds.length} TCs`;
+              showToast(successMsg, 'success');
               fetchData();
               if (attachMilestoneId && planId) {
                 navigate(`/projects/${projectId}/milestones/${attachMilestoneId}/plans/${planId}`);
@@ -814,7 +841,8 @@ export default function ProjectMilestones() {
                 navigate(`/projects/${projectId}/plans/${planId}`);
               }
             } catch (err: any) {
-              showToast('Failed to create AI plan: ' + err.message, 'error');
+              console.error('[AIPlanAssistant onApply] failed:', err);
+              showToast('Failed to create AI plan: ' + (err?.message || String(err)), 'error');
             }
           }}
         />
