@@ -17,7 +17,7 @@ import {
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-user-token',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
@@ -73,12 +73,15 @@ Deno.serve(async (req: Request) => {
     );
 
     // ── Auth ─────────────────────────────────────────────────────────────────
+    // ES256 전환 이후 Authorization 에는 HS256 anon key 만, 유저 JWT 는 x-user-token 커스텀 헤더로 옴.
+    const userTokenHeader = req.headers.get('x-user-token');
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return jsonResponse({ error: 'Missing authorization header' }, 401);
+    const token = userTokenHeader
+      || (authHeader?.startsWith('Bearer ') ? authHeader.replace('Bearer ', '') : '');
+    if (!token) {
+      return jsonResponse({ error: 'Missing user token' }, 401);
     }
 
-    const token = authHeader.replace('Bearer ', '');
     let userId: string;
     try {
       const [, payloadB64] = token.split('.');

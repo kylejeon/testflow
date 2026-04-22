@@ -5,6 +5,7 @@ import { supabase } from '../../../lib/supabase';
 import { getMySharedPoolUsage } from '../../../lib/aiUsage';
 import { markOnboardingStep } from '../../../lib/onboardingMarker';
 import { normalizeLocale } from '../../../lib/claudeLocale';
+import { aiFetch } from '../../../lib/aiFetch';
 import { ModalShell } from '../../../components/ModalShell';
 
 interface SessionLog {
@@ -179,17 +180,9 @@ export default function AIGenerateModal({
   };
 
   const callEdgeFunction = async (body: object) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) throw new Error('Not authenticated');
-    const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL;
-    const response = await fetch(`${supabaseUrl}/functions/v1/generate-testcases`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`,
-        apikey: import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
-      },
-      body: JSON.stringify({ ...body, locale: normalizeLocale(i18n.language) }),
+    const response = await aiFetch('generate-testcases', {
+      ...body,
+      locale: normalizeLocale(i18n.language),
     });
     const data = await response.json();
     if (!response.ok) {

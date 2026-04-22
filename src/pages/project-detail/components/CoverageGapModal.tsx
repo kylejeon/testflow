@@ -3,6 +3,7 @@ import i18n from '../../../i18n';
 import { supabase } from '../../../lib/supabase';
 import { ModalShell } from '../../../components/ModalShell';
 import { normalizeLocale } from '../../../lib/claudeLocale';
+import { aiFetch } from '../../../lib/aiFetch';
 
 interface GapSuggestion {
   title: string;
@@ -67,26 +68,11 @@ export default function CoverageGapModal({ projectId, onClose, onGenerateTCs }: 
     setLoading(true);
     setError(null);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        setError('Login required. Please sign in again.');
-        return;
-      }
-
-      const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL;
-      const response = await fetch(`${supabaseUrl}/functions/v1/generate-testcases`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-          apikey: import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
-        },
-        body: JSON.stringify({
-          action: 'coverage-gap',
-          project_id: projectId,
-          force_reanalyze: forceReanalyze,
-          locale: normalizeLocale(i18n.language), // f021
-        }),
+      const response = await aiFetch('generate-testcases', {
+        action: 'coverage-gap',
+        project_id: projectId,
+        force_reanalyze: forceReanalyze,
+        locale: normalizeLocale(i18n.language), // f021
       });
 
       const data = await response.json();

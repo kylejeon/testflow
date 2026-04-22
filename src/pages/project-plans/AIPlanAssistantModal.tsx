@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import i18n from '../../i18n';
-import { supabase } from '../../lib/supabase';
 import { useAiFeature } from '../../hooks/useAiFeature';
 import { normalizeLocale } from '../../lib/claudeLocale';
+import { aiFetch } from '../../lib/aiFetch';
 
 interface Milestone {
   id: string;
@@ -92,19 +92,12 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
     setStep('loading');
     setError('');
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL;
-      const res = await fetch(`${supabaseUrl}/functions/v1/plan-assistant`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-          project_id: projectId,
-          affected_areas: affectedAreas.split(',').map(s => s.trim()).filter(Boolean),
-          target_milestone_id: selectedMilestone || undefined,
-          context: context.trim() || undefined,
-          locale: normalizeLocale(i18n.language), // f021
-        }),
+      const res = await aiFetch('plan-assistant', {
+        project_id: projectId,
+        affected_areas: affectedAreas.split(',').map(s => s.trim()).filter(Boolean),
+        target_milestone_id: selectedMilestone || undefined,
+        context: context.trim() || undefined,
+        locale: normalizeLocale(i18n.language), // f021
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'AI request failed');

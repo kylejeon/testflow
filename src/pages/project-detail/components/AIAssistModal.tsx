@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { ModalShell } from '../../../components/ModalShell';
 import { normalizeLocale } from '../../../lib/claudeLocale';
+import { aiFetch } from '../../../lib/aiFetch';
 
 interface Props {
   isOpen: boolean;
@@ -141,18 +142,16 @@ export default function AIAssistModal({ isOpen, onClose, projectId, onOpenGenera
     setGeneratedTCs([]);
 
     try {
-      const { data, error: fnError } = await supabase.functions.invoke('generate-testcases', {
-        body: {
-          project_id: projectId,
-          source: 'text',
-          input: inputText.trim(),
-          folder_id: targetFolderId || null,
-          include_edge_cases: true,
-          locale: normalizeLocale(i18n.language), // f021
-        },
+      const resp = await aiFetch('generate-testcases', {
+        project_id: projectId,
+        source: 'text',
+        input: inputText.trim(),
+        folder_id: targetFolderId || null,
+        include_edge_cases: true,
+        locale: normalizeLocale(i18n.language), // f021
       });
-
-      if (fnError) throw fnError;
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data?.error || `HTTP ${resp.status}`);
 
       const tcs: GeneratedTC[] = (data?.test_cases || []).map((tc: any, i: number) => ({
         id: `tc-${i}`,

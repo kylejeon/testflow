@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../../lib/supabase';
 import { normalizeLocale } from '../../../lib/claudeLocale';
+import { aiFetch } from '../../../lib/aiFetch';
 
 
 export interface AISummaryCluster {
@@ -197,24 +198,10 @@ export default function AIRunSummaryPanel({
       }
 
       // Step 2: No DB cache — call edge function
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) { setError(t('runs:aiSummary.error.unauthorized')); return; }
-
-      const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL as string;
-      const supabaseAnonKey = import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY as string;
-
-      const res = await fetch(`${supabaseUrl}/functions/v1/generate-testcases`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': supabaseAnonKey,
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          action: 'summarize-run',
-          run_id: runId,
-          locale: normalizeLocale(i18n.language), // f021
-        }),
+      const res = await aiFetch('generate-testcases', {
+        action: 'summarize-run',
+        run_id: runId,
+        locale: normalizeLocale(i18n.language), // f021
       });
 
       const data = await res.json();

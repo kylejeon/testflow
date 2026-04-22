@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import i18n from '../../i18n';
-import { supabase } from '../../lib/supabase';
 import { normalizeLocale } from '../../lib/claudeLocale';
+import { aiFetch } from '../../lib/aiFetch';
 
 export type MilestoneRiskLevel = 'on_track' | 'at_risk' | 'critical';
 
@@ -76,32 +76,22 @@ export function useMilestoneAiRisk(milestoneId: string) {
     mutationKey: ['milestone-ai-risk', milestoneId],
     mutationFn: async ({ force }) => {
       try {
-        const { data, error } = await supabase.functions.invoke('milestone-risk-predictor', {
-          body: {
-            milestone_id: milestoneId,
-            force_refresh: force,
-            locale: normalizeLocale(i18n.language), // f021
-          },
+        const resp = await aiFetch('milestone-risk-predictor', {
+          milestone_id: milestoneId,
+          force_refresh: force,
+          locale: normalizeLocale(i18n.language), // f021
         });
 
-        // Supabase functions.invoke treats non-2xx as error.
-        if (error) {
-          // Try to parse the error context for an application-level error code
-          const ctx = (error as any).context;
-          if (ctx?.response?.json) {
-            try {
-              const body = await ctx.response.json();
-              if (body?.error) throw body as MilestoneAiRiskError;
-            } catch (inner) {
-              if ((inner as MilestoneAiRiskError).error) throw inner;
-            }
-          }
-          // Network / unknown
-          const msg = (error as Error).message || 'Network error';
-          if (/network|fetch|connection|abort/i.test(msg)) {
-            throw { error: 'network', detail: msg } as MilestoneAiRiskError;
-          }
-          throw { error: 'internal', detail: msg } as MilestoneAiRiskError;
+        let data: any;
+        try {
+          data = await resp.json();
+        } catch {
+          throw { error: 'internal', detail: `HTTP ${resp.status}` } as MilestoneAiRiskError;
+        }
+
+        if (!resp.ok) {
+          if (data?.error) throw data as MilestoneAiRiskError;
+          throw { error: 'internal', detail: `HTTP ${resp.status}` } as MilestoneAiRiskError;
         }
 
         if (data?.error) {

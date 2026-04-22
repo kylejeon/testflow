@@ -23,7 +23,7 @@ import {
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-user-token',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
@@ -67,16 +67,18 @@ Deno.serve(async (req: Request) => {
     );
 
     // ── 인증: JWT payload 직접 디코딩 후 admin API로 사용자 확인
-    // (supabase.auth.getUser(token)은 ES256 알고리즘을 지원하지 않아 401 반환)
+    // ES256 전환 이후 Authorization 에는 HS256 anon key 만, 유저 JWT 는 x-user-token 커스텀 헤더로 옴.
+    // 구 패턴 (Authorization Bearer 에 유저 JWT) 도 fallback 으로 수용.
+    const userTokenHeader = req.headers.get('x-user-token');
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Missing authorization header' }), {
+    const token = userTokenHeader
+      || (authHeader?.startsWith('Bearer ') ? authHeader.replace('Bearer ', '') : '');
+    if (!token) {
+      return new Response(JSON.stringify({ error: 'Missing user token' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    const token = authHeader.replace('Bearer ', '');
 
     // JWT payload 디코딩 (서명 검증 없이 sub 추출)
     let userId: string;

@@ -14,6 +14,7 @@ import { useState, useEffect, useCallback } from 'react';
 import i18n from '../i18n';
 import { supabase } from '../lib/supabase';
 import { normalizeLocale } from '../lib/claudeLocale';
+import { aiFetch } from '../lib/aiFetch';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -496,29 +497,15 @@ export function useAISuggestTCs() {
     setSuggestions([]);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Not authenticated');
-
-      const supabaseUrl = (supabase as any).supabaseUrl || import.meta.env.VITE_SUPABASE_URL;
-      const resp = await fetch(
-        `${supabaseUrl}/functions/v1/generate-testcases`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            action:                    'suggest-from-requirement',
-            project_id:                params.projectId,
-            requirement_id:            params.requirementId,
-            requirement_title:         params.requirementTitle,
-            requirement_description:   params.requirementDescription,
-            existing_tcs:              params.existingTCs || [],
-            locale:                    normalizeLocale(i18n.language), // f021
-          }),
-        },
-      );
+      const resp = await aiFetch('generate-testcases', {
+        action:                    'suggest-from-requirement',
+        project_id:                params.projectId,
+        requirement_id:            params.requirementId,
+        requirement_title:         params.requirementTitle,
+        requirement_description:   params.requirementDescription,
+        existing_tcs:              params.existingTCs || [],
+        locale:                    normalizeLocale(i18n.language), // f021
+      });
 
       const data = await resp.json();
 
