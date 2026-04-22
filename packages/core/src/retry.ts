@@ -7,8 +7,30 @@ export class RateLimitError extends Error {
   }
 }
 
+/**
+ * Non-retryable upload error — terminal HTTP 4xx (401/403/404/400).
+ * Bubbles out immediately; reporter turns this into a 1-line warn + exit 0.
+ */
+export class NonRetryableUploadError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+    public body?: string,
+  ) {
+    super(message);
+    this.name = 'NonRetryableUploadError';
+  }
+}
+
+/**
+ * Retryable upload error — transient 5xx or network. Retried with backoff.
+ */
 export class UploadError extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    public status?: number,
+    public body?: string,
+  ) {
     super(message);
     this.name = 'UploadError';
   }
@@ -26,6 +48,11 @@ export async function withRetry<T>(
       return await fn();
     } catch (err) {
       lastError = err as Error;
+
+      // Non-retryable: bubble out immediately
+      if (err instanceof NonRetryableUploadError) {
+        throw err;
+      }
 
       if (attempt === maxRetries) break;
 

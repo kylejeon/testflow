@@ -1,7 +1,7 @@
 import type { Config, AggregatedResult } from '@jest/reporters';
-import { TestablyClient, TestResult, TestablyConfig } from '@testably.kr/reporter-core';
+import { TestablyClient, TestResult, TestablyConfig } from '@testably/reporter-core';
 
-const SDK_AGENT = '@testably.kr/jest-reporter/1.0.0';
+const SDK_AGENT = '@testably/jest-reporter/0.0.0-dev';
 
 export interface JestReporterOptions extends Partial<TestablyConfig> {
   /**

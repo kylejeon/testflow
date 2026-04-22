@@ -1,7 +1,8 @@
 {
-  "name": "@testably.kr/jest-reporter",
-  "version": "1.0.0",
-  "description": "Jest custom reporter for Testably — automatically uploads test results to your Testably runs",
+  "name": "@testably/jest-reporter",
+  "version": "0.0.0-dev",
+  "private": true,
+  "description": "Jest custom reporter for Testably — automatically uploads test results to your Testably runs (not yet published)",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -17,8 +18,7 @@
   ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts",
-    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
-    "test": "jest"
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch"
   },
   "keywords": [
     "testably",
@@ -32,9 +32,7 @@
     "jest": ">=27.0.0"
   },
   "dependencies": {
-    "@testably.kr/jest-reporter": "^1.0.0",
-    "@testably.kr/playwright-reporter": "^1.0.0",
-    "@testably.kr/reporter-core": "file:../core"
+    "@testably/reporter-core": "0.1.0-alpha.0"
   },
   "devDependencies": {
     "@jest/reporters": "^29.0.0",

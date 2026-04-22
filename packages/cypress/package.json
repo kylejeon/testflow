@@ -1,7 +1,8 @@
 {
-  "name": "@testably.kr/cypress-reporter",
-  "version": "1.0.0",
-  "description": "Cypress plugin for Testably — automatically uploads test results to your Testably runs via after:run event",
+  "name": "@testably/cypress-reporter",
+  "version": "0.0.0-dev",
+  "private": true,
+  "description": "Cypress plugin for Testably — automatically uploads test results to your Testably runs via after:run event (not yet published)",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -17,8 +18,7 @@
   ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts",
-    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
-    "test": "jest"
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch"
   },
   "keywords": [
     "testably",
@@ -33,7 +33,7 @@
     "cypress": ">=10.0.0"
   },
   "dependencies": {
-    "@testably.kr/reporter-core": "file:../core"
+    "@testably/reporter-core": "0.1.0-alpha.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

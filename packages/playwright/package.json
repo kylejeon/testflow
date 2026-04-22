@@ -1,43 +1,66 @@
 {
-  "name": "@testably.kr/playwright-reporter",
-  "version": "1.0.0",
+  "name": "@testably/playwright-reporter",
+  "version": "0.1.0-alpha.0",
   "description": "Playwright custom reporter for Testably — automatically uploads test results to your Testably runs",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.js"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts",
     "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
-    "test": "jest"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [
     "testably",
     "playwright",
     "reporter",
     "ci",
-    "test-automation"
+    "test-automation",
+    "qa",
+    "test-case-management"
   ],
   "license": "MIT",
+  "author": "Testably",
+  "homepage": "https://github.com/kylejeon/testflow/tree/main/packages/playwright#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kylejeon/testflow.git",
+    "directory": "packages/playwright"
+  },
+  "bugs": {
+    "url": "https://github.com/kylejeon/testflow/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "peerDependencies": {
-    "@playwright/test": ">=1.30.0"
+    "@playwright/test": ">=1.40.0"
   },
   "dependencies": {
-    "@testably.kr/reporter-core": "file:../core"
+    "@testably/reporter-core": "0.1.0-alpha.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.44.0",
     "@types/node": "^20.0.0",
     "tsup": "^8.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^4.1.4"
   }
 }

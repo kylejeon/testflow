@@ -1,10 +1,10 @@
 import { TestablyConfig, TestResult, UploadResponse, DryRunResponse } from './types';
 import { resolveConfig, ResolvedConfig } from './config';
 import { Logger } from './logger';
-import { withRetry, RateLimitError, UploadError } from './retry';
+import { withRetry, RateLimitError, UploadError, NonRetryableUploadError } from './retry';
 
-const SDK_NAME = '@testably.kr/reporter-core';
-const SDK_VERSION = '1.0.0';
+const SDK_NAME = '@testably/reporter-core';
+const SDK_VERSION = '0.1.0-alpha.0';
 
 export class TestablyClient {
   private config: ResolvedConfig;
@@ -70,9 +70,32 @@ export class TestablyClient {
       }),
     });
 
+    if (response.status === 429) {
+      const retryAfter = parseInt(response.headers.get('Retry-After') ?? '5', 10);
+      throw new RateLimitError(retryAfter);
+    }
+
+    if (
+      response.status === 400 ||
+      response.status === 401 ||
+      response.status === 403 ||
+      response.status === 404
+    ) {
+      const body = await response.text();
+      throw new NonRetryableUploadError(
+        `Connection test rejected (${response.status}): ${body}`,
+        response.status,
+        body,
+      );
+    }
+
     if (!response.ok) {
       const body = await response.text();
-      throw new UploadError(`Connection test failed (${response.status}): ${body}`);
+      throw new UploadError(
+        `Connection test failed (${response.status}): ${body}`,
+        response.status,
+        body,
+      );
     }
 
     return response.json() as Promise<DryRunResponse>;
@@ -89,15 +112,35 @@ export class TestablyClient {
       }),
     });
 
-    // Rate Limit 처리
+    // Rate Limit 처리 (retry 대상)
     if (response.status === 429) {
       const retryAfter = parseInt(response.headers.get('Retry-After') ?? '5', 10);
       throw new RateLimitError(retryAfter);
     }
 
+    // Terminal 4xx — 재시도 불가
+    if (
+      response.status === 400 ||
+      response.status === 401 ||
+      response.status === 403 ||
+      response.status === 404
+    ) {
+      const body = await response.text();
+      throw new NonRetryableUploadError(
+        `Upload rejected (${response.status}): ${body}`,
+        response.status,
+        body,
+      );
+    }
+
+    // 207 partial_failure 는 성공 분기로 통과
     if (!response.ok && response.status !== 207) {
       const body = await response.text();
-      throw new UploadError(`Upload failed (${response.status}): ${body}`);
+      throw new UploadError(
+        `Upload failed (${response.status}): ${body}`,
+        response.status,
+        body,
+      );
     }
 
     return response.json() as Promise<UploadResponse>;
