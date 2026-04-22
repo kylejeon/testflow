@@ -1,7 +1,7 @@
 {
   "generated_at": "2026-04-20",
   "updated_at": "2026-04-21",
-  "total_count": 27,
+  "total_count": 26,
   "features": [
     {
       "id": "f001",
@@ -288,19 +288,6 @@
       "dependencies": [],
       "status": "backlog",
       "notes": "다수 Dev Spec에서 OOS. PRD 6.5에 약속됨"
-    },
-    {
-      "id": "f028",
-      "title": "Test Automation SDK — @testably.kr/playwright-reporter",
-      "category": "integration",
-      "description": "Playwright 테스트 결과를 CI에서 Testably로 자동 동기화하는 npm 패키지. 기존 CI/CD Results Upload API(Pro+) 래핑. 이어서 Cypress/JUnit Parser 확장.",
-      "priority": "P1",
-      "impact": "high",
-      "effort": "large",
-      "source": "prd | pm-next-feature-candidates",
-      "dependencies": [],
-      "status": "code_ready_blocked_on_npm_org",
-      "notes": "코드 구현 완료 (claude 브랜치): packages/core + packages/playwright + cypress/jest scaffold. 35 유닛 테스트 PASS. BLOCKER: CEO가 npmjs.com에서 @testably organization 생성 필요 (Free). 생성 후 `npm publish --access public --tag alpha` 로 재개."
     },
     {
       "id": "f029",

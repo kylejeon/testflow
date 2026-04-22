@@ -1,3 +1,77 @@
+2026-04-22: f028 publish 완료 — scope `@testably.kr` (not `@testably`)
+(dev-spec-f028-playwright-reporter)
+
+## 뭘 했냐 (claude 브랜치)
+
+이전 세션에서 이전 Planner/Developer 가 scope를 `@testably` 로 rebrand
+했으나 실제 CEO의 npm organization 이름은 **`@testably.kr`** (`.kr` 접미사).
+기존 초안의 scope (`@testably.kr`) 가 원래 맞았고 rebrand 가 역방향
+실수였음 — 되돌려서 publish 완료.
+
+### Scope 되돌리기 (perl -pi 전수 치환)
+- `@testably/` → `@testably.kr/` 전수 치환 (15 파일)
+- packages/core, playwright, cypress, jest package.json + src/ + README/CHANGELOG
+- 루트 README + feature_list 문구
+- tsup 재빌드로 dist/ 에도 올바른 scope 내장
+
+### npm publish 성공 ✅
+1. `@testably.kr/reporter-core@0.1.0-alpha.0`
+   - Package: 5.8 kB packed / 27.5 kB unpacked
+   - dist-tags: alpha (latest 는 기존 `1.0.0` 유지)
+   - URL: https://www.npmjs.com/package/@testably.kr/reporter-core
+2. `@testably.kr/playwright-reporter@0.1.0-alpha.0`
+   - Package: 7.2 kB packed / 24.3 kB unpacked
+   - dist-tags: alpha (latest 는 기존 `1.0.0` 유지)
+   - URL: https://www.npmjs.com/package/@testably.kr/playwright-reporter
+
+### 사용자 설치 예시
+```bash
+npm install --save-dev @testably.kr/playwright-reporter@alpha
+```
+
+```ts
+// playwright.config.ts
+export default defineConfig({
+  reporter: [
+    ['list'],
+    ['@testably.kr/playwright-reporter', { testCaseIdSource: 'title' }],
+  ],
+});
+// env: TESTABLY_URL, TESTABLY_TOKEN, TESTABLY_RUN_ID
+```
+
+### 검증
+- `npm view @testably.kr/reporter-core` → alpha 0.1.0-alpha.0 확인
+- `npm view @testably.kr/playwright-reporter` → alpha 0.1.0-alpha.0 확인
+- core 21 + playwright 14 vitest PASS (재빌드 후)
+- 앱 루트 npm run build 회귀 없음
+
+### 보안
+- NPM_TOKEN 은 `/tmp/.npmrc.f028` 로만 전달, publish 직후 rm -f 로 즉시 삭제
+- git grep / log 로 토큰 유출 0건 확인
+- `.gitignore` 에 `.npmrc` 계속 포함
+- **CEO 에게 publish 후 토큰 rotate 권장**
+
+## 어디까지 됐냐
+- feature_list: 27 → 26 (f028 제거)
+- 남은 P1: 0건 🎉
+- Free/Hobby/Starter 설치 시 업로드 시도 → 서버 403 → reporter 안내 로그 + exit 0
+  (CI 파이프라인은 죽지 않음, BR-2 플랜 게이팅 서버 측 인증)
+
+## 다음엔 뭘 할 거냐 (자동화 가능)
+- Phase 4 i18n Epic (`src/components/` 나머지 ~25개)
+- Phase 5 i18n Epic (`src/pages/` ~150 파일)
+- EmptyState kbd 힌트 CTA 3건 (f025 Minor W-2)
+- Cypress / JUnit reporter (f028 확장 — 별도 feature_list 등재 필요)
+
+## 다음엔 뭘 할 거냐 (CEO 액션)
+- NPM token rotate (보안 관례, 필수는 아님)
+- Desi SVG 일러스트 3종 의뢰 (Milestones / Sessions / Nothing)
+- KO 원어민 용어 리뷰
+- ErrorBoundary 다크모드
+
+───
+
 2026-04-22: f033 완료 + f025 완료 + f028 코드 완료(npm org 블로커)
 (dev-spec-f033-xlsx-to-exceljs, design-spec-f025-empty-state, dev-spec-f028-playwright-reporter)
 
