@@ -50,6 +50,8 @@ interface Props {
    *  'add-to-plan' = plan-detail 페이지에서 현재 열린 plan 에 TC 추가.
    *  mode=add-to-plan 일 땐 Plan Name/Attach 필드 숨김 + 버튼 라벨 변경. */
   mode?: 'create-plan' | 'add-to-plan';
+  /** add-to-plan 모드에서 '어느 plan 에 추가되는지' 사용자에게 표시. */
+  targetPlanName?: string;
 }
 
 // Risk score helper (0–100 scale from priority)
@@ -75,7 +77,7 @@ const SIGNAL_OPTIONS = [
   { id: 'stale', label: 'Untested ≥30d' },
 ];
 
-export default function AIPlanAssistantModal({ projectId, milestones, onClose, onApply, mode = 'create-plan' }: Props) {
+export default function AIPlanAssistantModal({ projectId, milestones, onClose, onApply, mode = 'create-plan', targetPlanName }: Props) {
   const isAddToPlan = mode === 'add-to-plan';
   const aiFeature = useAiFeature('plan_assistant');
   const { t } = useTranslation('common');
@@ -243,6 +245,16 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
           {/* ── LEFT: Context / Prompt panel ── */}
           {/* overflowY:'auto' — signals 가 4행 wrap 될 때 좌측 패널 overflow 방어. */}
           <div style={{ padding:18, borderRight:'1px solid #E2E8F0', background:'#F8FAFC', display:'flex', flexDirection:'column', gap:14, minHeight:0, overflowY:'auto' }}>
+
+            {/* Target plan indicator — add-to-plan mode only */}
+            {isAddToPlan && (
+              <div style={{ background:'#EEF2FF', border:'1px solid #C7D2FE', borderRadius:10, padding:'10px 12px', fontSize:12, color:'#4338CA', lineHeight:1.45 }}>
+                <div style={{ fontWeight:600, marginBottom:2 }}>Adding to current plan</div>
+                <div style={{ color:'#6366F1', fontSize:11 }}>
+                  {targetPlanName ? `“${targetPlanName}”` : 'this plan'} — already-added TCs are skipped
+                </div>
+              </div>
+            )}
 
             {/* Plan Name field — create-plan mode only */}
             {!isAddToPlan && (

@@ -3309,6 +3309,7 @@ export default function PlanDetailPage() {
       {showAIModal && (
         <AIPlanAssistantModal
           mode="add-to-plan"
+          targetPlanName={plan?.name ?? undefined}
           projectId={projectId!}
           milestones={milestones.map(m => ({ id: m.id, name: m.name, status: 'active', end_date: null }))}
           onClose={() => setShowAIModal(false)}
