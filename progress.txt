@@ -1,3 +1,68 @@
+2026-04-22: f021 Claude 다국어 출력 완료 (dev-spec-f021-claude-locale)
+
+## 뭘 했냐 (claude 브랜치)
+
+### 1. 공유 locale helper (클라/서버 mirror)
+- `src/lib/claudeLocale.ts` + `claudeLocale.test.ts` (27 vitest cases)
+  - `resolveLocale(input): 'ko' | 'en'` — allowlist 정확 match, 그 외 전부 'en'
+  - `normalizeLocale` alias (향후 클라 전용 정규화 여지)
+  - 테이블 테스트: 'ko'/'en' 허용, 'KO'/'ko-KR'/'fr'/' ko '/null/undefined/123/{}/[]/true/false 전부 'en' fallback
+  - KO AI 응답 fixture 3건 (milestone-risk/plan-assistant/run-summary) JSON.parse 회귀 검증
+- `supabase/functions/_shared/localePrompt.ts`
+  - `resolveLocale`, `LOCALE_INSTRUCTION_KO` (keys 영문 유지 + 기술 용어 preserve + 존댓말 지시 + 예시 JSON)
+  - `localeInstructionFor(locale)`, `maybeAppendLocaleInstruction(sys, locale)`
+
+### 2. 4개 Edge Function 수정
+- `milestone-risk-predictor/index.ts`
+  - body.locale → resolveLocale → SupportedLocale
+  - 캐시 히트 판정에 `cachedLocale !== locale` mismatch 조건 추가 (BR-5)
+  - systemPromptBase 분리 + `maybeAppendLocaleInstruction` 래핑
+  - cachePayload.meta.locale 저장 (JSONB free-form, 마이그레이션 불필요)
+  - ai_generation_logs.input_data.locale 저장 (BR-6)
+- `risk-predictor/index.ts`
+  - locale 수용 + systemPrompt 래핑 + input_data.locale 로깅 (캐시 없음)
+- `plan-assistant/index.ts`
+  - locale 수용 + systemPrompt 래핑 + metadata.locale 로깅
+- `generate-testcases/index.ts` (5 action 모두 locale 전달)
+  - summarize-run / coverage-gap / suggest-from-requirement / analyze-flaky:
+    각 분기 systemPromptBase 분리 + maybeAppendLocaleInstruction
+  - step1/step2 (user-message-only 구조): prompt + localeInstructionFor(locale) 끝에 append
+  - 각 action 의 input_data/metadata 에 locale 추가
+
+### 3. 8개 클라이언트 호출 사이트 수정
+모두 `locale: normalizeLocale(i18n.language)` 필드 추가:
+1. src/pages/milestone-detail/useMilestoneAiRisk.ts — i18n singleton import
+2. src/pages/plan-detail/page.tsx — 기존 useTranslation().i18n 재사용
+3. src/pages/project-plans/AIPlanAssistantModal.tsx — i18n singleton import
+4. src/pages/run-detail/components/AIRunSummaryPanel.tsx — useTranslation().i18n 추가
+5. src/pages/project-detail/components/CoverageGapModal.tsx — i18n singleton import
+6. src/pages/project-detail/widgets/FlakyDetector.tsx — i18n singleton import
+7. src/hooks/useRequirementLinks.ts — i18n singleton import
+8. src/pages/project-detail/components/AIAssistModal.tsx — i18n singleton import
+
+### 4. DB 스키마 변경 — 없음
+- `ai_risk_cache.meta.locale` 은 JSONB free-form 확장이라 migration 불필요 (Dev Spec §5 확인)
+- `ai_generation_logs.input_data.locale` 도 동일
+
+### 검증 (전부 PASS)
+- npx tsc --noEmit: 0 errors
+- npm run test -- --run: 10 files / 170 tests PASS (기존 143 + 신규 27 claudeLocale)
+- npm run scan:i18n:check: 0 hardcoded matches
+- npm run scan:i18n:parity: 0 diff
+- npm run build: 성공 (6.75s)
+
+### Grep 검증
+- 클라 호출 사이트 `normalizeLocale(i18n.language)`: 8건 (AC-1 target)
+- Edge Function `resolveLocale` 참조: 9건 (definition + import/call x 4 funcs)
+
+## 다음
+- (선택) QA: KO/EN locale 전환 후 각 AI 기능 수동 회귀 — summary/bullets/recommendations KO 렌더 확인
+- (선택) 2주 후 ai_generation_logs 에서 locale 별 tokens_used 평균 비교 (모니터링)
+- 후속 후보: ai_risk_cache_ko/en 분리 슬롯 (현재는 덮어쓰기, 월 credit 한도 부담 시 재검토)
+- 후속 후보: ja/zh 등 3rd 언어 allowlist 확장 — 별도 티켓
+
+---
+
 2026-04-22: f028 publish 완료 — scope `@testably.kr` (not `@testably`)
 (dev-spec-f028-playwright-reporter)
 
