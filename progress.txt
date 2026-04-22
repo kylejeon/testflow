@@ -2500,3 +2500,49 @@ planner 입력(@testably scope rebrand + npm workspaces + tests/docs + publish)
 - 자동 TC 생성 / 첨부파일 업로드 / JUnit XML parsing — 전부 OOS.
 - 앱 본체 `src/` 변경 — 건드리지 않음.
 - NPM_TOKEN 로그/파일/커밋 어디에도 기록하지 않음.
+
+=== 2026-04-22 — ES256 Edge Function 게이트웨이 우회 + Settings 한국어 옵션 ===
+
+## 했던 것
+1. Settings > Preferences > Language 드롭다운에 한국어 옵션 추가
+   - `src/pages/settings/page.tsx` — state 타입 확장, useLanguage 연동, Save 시 i18n.changeLanguage 호출
+   - 커밋 7a2fbfd
+
+2. Supabase ES256 migration 이슈 우회 (FlakyDetector AI Analyze 401 에러)
+   - 원인: Supabase 가 4개월 전 JWT signing key 를 ECC P-256 (ES256) 으로 자동 전환.
+     Edge Functions 게이트웨이가 ES256 유저 JWT 를 Authorization 헤더에서 파싱 실패
+     (UNAUTHORIZED_UNSUPPORTED_TOKEN_ALGORITHM), verify_jwt=false 여도 함수 실행 전 차단.
+     게다가 anon key 를 새 publishable key (sb_publishable_*) 로 넣으면 INVALID_JWT_FORMAT.
+   - 해결 패턴: Authorization 에 HS256 legacy anon JWT, apikey 에 동일, 유저 JWT 는
+     커스텀 헤더 x-user-token 으로 분리. 서버는 x-user-token 우선 읽고 Authorization Bearer fallback.
+   - Path A (검증): FlakyDetector + generate-testcases — 커밋 22ba788, ddc6b7a, bed8677, f4a9e4d
+     CEO 가 Vercel env VITE_PUBLIC_SUPABASE_ANON_KEY 를 publishable key → HS256 anon JWT 로 교체
+   - Path B (확장): src/lib/aiFetch.ts 헬퍼 + 3개 AI Edge Function (risk-predictor,
+     milestone-risk-predictor, plan-assistant) + 8개 호출 사이트 마이그레이션 — 커밋 cb62bbe
+   - 배포 완료: generate-testcases, risk-predictor, milestone-risk-predictor, plan-assistant
+
+## 어디까지 됐는지
+- 4개 AI Edge Function 전부 새 auth 패턴 적용 + 배포 완료
+- 프론트 9개 AI 호출 사이트 전부 aiFetch 헬퍼 또는 직접 헤더 수정으로 마이그레이션
+- Vercel env 교체로 게이트웨이 통과 확인
+- 타입체크 통과
+- FlakyDetector Path A 실제 동작 확인 완료 (CEO 검증)
+
+## 다음엔 뭘 해야 해 (Path C — 남은 대응)
+- **비-AI Edge Function 도 동일 이슈 잠재** — 로그인 유저가 호출할 때 ES256 토큰 전달
+  하면 게이트웨이가 거부. 대상:
+  - accept-invitation, delete-account, fetch-paddle-invoices, test-jira-connection,
+    fetch-jira-fields, fetch-jira-requirements, fetch-github-issues, create-jira-issue,
+    create-github-issue, send-invitation, send-notification, sync-github-metadata,
+    sync-jira-metadata, import-testrail, log-consent, send-loops-event, start-trial
+  - 이 중 일부는 이미 publishable-key 환경에서도 안 깨지는 로직 (webhook 서명 등)일 수 있음.
+  - 사용자가 버그 신고할 때마다 동일 패턴 (aiFetch 유사 헬퍼 또는 직접 헤더) 로 처리 가능.
+- **(선택) start-trial (verify_jwt=true) 예외 처리** — 플랫폼 검증이 ES256 지원하면
+  그대로 OK, 아니면 verify_jwt=false 로 바꾸고 수동 디코드 패턴 적용 필요. 검증 후 판단.
+- **anon JWT exp 2082-07-03** — Legacy JWT Secret 키가 revoke 되면 토큰도 무효화.
+  Supabase 쪽 키 관리 정책 모니터링 필요.
+
+## 배포 완료
+- Supabase: generate-testcases, risk-predictor, milestone-risk-predictor, plan-assistant
+- Vercel: 푸시 자동 배포 (cb62bbe)
+- DB 마이그레이션 변경 없음
