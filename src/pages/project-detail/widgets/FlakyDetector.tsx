@@ -286,13 +286,16 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
 
       const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL;
       const anonKey = import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
-      // Supabase 가 anon JWT 를 새 publishable key (sb_publishable_*) 로 전환해서 Authorization Bearer 에 넣으면 INVALID_JWT_FORMAT.
-      // 사용자 토큰은 ES256 이라 넣어도 UNSUPPORTED_TOKEN_ALGORITHM. 둘 다 Authorization 에 못 넣음.
-      // → Authorization 생략, apikey 헤더만 쓰고 사용자 JWT 는 x-user-token 커스텀 헤더로 전달.
+      // Supabase Edge Functions 게이트웨이 요구사항:
+      //   - Authorization 필수 (없으면 UNAUTHORIZED_NO_AUTH_HEADER)
+      //   - JWT 포맷이어야 함 (publishable key sb_* 는 INVALID_JWT_FORMAT)
+      //   - ES256 유저 JWT 는 UNSUPPORTED_TOKEN_ALGORITHM 거부
+      // → HS256 legacy anon JWT 를 Authorization 에 넣고, 실제 유저 JWT 는 x-user-token 커스텀 헤더로 전달.
       const response = await fetch(`${supabaseUrl}/functions/v1/generate-testcases`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${anonKey}`,
           apikey: anonKey,
           'x-user-token': session.access_token,
         },
