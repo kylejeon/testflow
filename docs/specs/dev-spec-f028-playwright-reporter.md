@@ -1,12 +1,29 @@
-# Dev Spec: f028 — Test Automation SDK: `@testably/playwright-reporter`
+# Dev Spec: f028 — Test Automation SDK: `@testably.kr/playwright-reporter`
 
 > **작성일:** 2026-04-21
 > **작성자:** PM (planner agent)
-> **상태:** Draft → Review
+> **상태:** Draft → Review → **Revised 2026-04-23 (현실 반영)**
 > **관련 디자인:** 불필요 (npm 패키지 + CLI 출력, UI 없음)
 > **feature_list.json:** f028 / P1 / impact=high / effort=large
 > **선행 작업:** 없음 (기존 `upload-ci-results` Edge Function 재사용)
 > **후속 작업:** f028b(Cypress Reporter 정식 출시), f028c(Jest / JUnit XML Parser 확장)
+
+---
+
+## Revision 2026-04-23
+
+본 revision 은 스펙을 **현실(실제 배포된 상태)** 에 맞춰 재정렬한다.
+
+- **npm scope 확정:** `@testably` → `@testably.kr` 로 전면 교체. 이유: `@testably.kr/reporter-core@1.0.0` 과 `@testably.kr/playwright-reporter@1.0.0`(+`0.1.0-alpha.0` alpha tag) 이 이미 공식 npm 에 배포 완료됨. 메모리 + npm 기배포 근거.
+- **디렉터리 rename 계획 철회:** `packages/core` → `packages/reporter-core`, `packages/playwright` → `packages/playwright-reporter` rename 지시를 전부 제거. 현 이름 그대로 유지 확정.
+- **삭제된 BLOCKER / AC:**
+  - AC-A1, AC-A2 (디렉터리 rename) — `(removed — revised 2026-04-23)` 로 마커 유지
+  - AC-G4 (npm org `@testably` 점유 확인) — `(removed — revised 2026-04-23)`
+  - 리스크 "npm org `@testably` 이미 점유됨" 항목 제거
+  - 개발 착수 전 체크리스트 `npm org @testably 점유 확인` 항목 제거
+- **신규 열린 태스크:**
+  - AC-G5: `.github/workflows/publish-sdk.yml` 에 `permissions.id-token: write` 추가 (npm provenance publish 필수 조건 — 현재 누락 상태)
+- **코드베이스 건드리지 않음.** 본 revision 은 문서 (`docs/specs/dev-spec-f028-playwright-reporter.md`) 만 편집하며, `packages/`, `supabase/`, workflow 파일은 변경하지 않는다.
 
 ---
 
@@ -20,18 +37,18 @@
 | 업로드 포맷 | `{ run_id, results[], format?, junit_xml?, dry_run? }`, 100개 배치 분할은 SDK 측 책임 | `packages/core/src/client.ts` L42-52 |
 | TC 매핑 키 | `test_case_id`는 UUID 또는 프로젝트 내 `custom_id` 문자열 — 서버가 자동 해석 | `upload-ci-results/index.ts` L298-333 |
 | Rate Limit | `ci_upload`: 60 burst / 1 rps | `supabase/functions/_shared/rate-limit.ts` L22-24 |
-| 기존 SDK 코드 | **존재함 (v1.0.0 초안)** — `packages/playwright`, `packages/core`, `packages/cypress`, `packages/jest`. 단, npm scope가 `@testably.kr` 임시 이름. 아직 미배포 추정 (monorepo workspaces 설정 없음, dist는 로컬 빌드본). | `packages/*/package.json` |
+| 기존 SDK 코드 | **존재함 + npm 배포 완료.** `packages/core` (`@testably.kr/reporter-core@1.0.0`), `packages/playwright` (`@testably.kr/playwright-reporter@1.0.0` + `0.1.0-alpha.0` alpha tag), `packages/cypress`, `packages/jest`. 디렉터리 이름은 현 상태 유지 확정. | `packages/*/package.json` |
 | DB 로그 테이블 | `ci_upload_logs` 존재 (업로드 기록), `ci_tokens` 참조 | `supabase/migrations/20260407_ci_upload_logs.sql` |
-| npm Org `@testably` | **미확인** — 이 스펙에서 신규 확보 필요. 기존 로컬 패키지는 `@testably.kr` 스코프. |
+| npm Scope | **`@testably.kr` 확정.** 이미 npm 에 2개 패키지 배포 완료 (`@testably.kr/reporter-core`, `@testably.kr/playwright-reporter`). |
 
-> **핵심 전환**: 본 스펙은 "백지에서 신규 구현"이 아니라, 이미 존재하는 `packages/playwright` (`@testably.kr/playwright-reporter@1.0.0`) 를 **`@testably/playwright-reporter@0.1.0-alpha.0` 으로 재브랜딩 + 공식 npm 배포 준비**하는 작업이다. 구현 자체는 90% 이미 됨.
+> **핵심 전환 (2026-04-23 revised)**: 본 스펙은 "백지에서 신규 구현" 도 아니고 "rename + 재브랜딩" 도 아니다. **이미 `@testably.kr` scope 로 npm 배포 완료된 `@testably.kr/playwright-reporter` (alpha) 의 품질/문서/workflow 를 stable release 수준으로 마감**하는 작업이다. 구현 자체는 완료. 테스트 (core 21/21, playwright 14/14) 및 `npm publish --dry-run` 통과 확인.
 
 ---
 
 ## 1. 개요
 
-- **문제:** Pro+ 고객이 CI(GitHub Actions, GitLab CI)에서 Playwright 테스트를 돌려도 Testably에 수동으로 결과를 올려야 한다. Run 단위 결과 동기화를 자동화할 수 있는 공식 SDK가 아직 미배포 상태다.
-- **해결:** `@testably/playwright-reporter` npm 패키지를 공식 배포한다. 사용자는 `playwright.config.ts` 에 한 줄 추가 + 환경변수 3개 세팅으로 CI 결과를 Testably Run에 자동 반영한다.
+- **문제:** Pro+ 고객이 CI(GitHub Actions, GitLab CI)에서 Playwright 테스트를 돌려도 Testably에 수동으로 결과를 올려야 한다. 공식 SDK 는 alpha tag 로만 배포되어 있어 공식화(stable release) 가 필요하다.
+- **해결:** `@testably.kr/playwright-reporter` npm 패키지의 alpha 를 stable 로 승격하고 workflow 자동화(provenance publish) 를 마무리한다. 사용자는 `playwright.config.ts` 에 한 줄 추가 + 환경변수 3개 세팅으로 CI 결과를 Testably Run에 자동 반영한다.
 - **성공 지표:**
   - 배포 후 30일 내 npm weekly downloads ≥ 50
   - SDK 출처(`source=playwright`) 업로드 이벤트 ≥ 전체 CI 업로드의 30%
@@ -53,11 +70,11 @@
 
 ### AC-A: 패키지 구조 & 빌드
 
-- [ ] **AC-A1**: `packages/playwright-reporter/` 디렉터리 생성 (기존 `packages/playwright/`의 **이름을 변경**하되 기존 파일은 보존). `package.json.name = "@testably/playwright-reporter"`.
-- [ ] **AC-A2**: `packages/reporter-core/` (기존 `packages/core`에서 이름 변경). `package.json.name = "@testably/reporter-core"`. `playwright-reporter`의 `dependencies`에 `"@testably/reporter-core": "workspace:^0.1.0"` 로 연결.
-- [ ] **AC-A3**: 루트 `package.json` 에 `"workspaces": ["packages/*"]` 추가 (npm workspaces 사용 — pnpm 미도입, 이미 `package-lock.json` 존재).
-- [ ] **AC-A4**: `npm run build -w @testably/playwright-reporter` 실행 시 `packages/playwright-reporter/dist/` 에 `index.js` (CJS), `index.mjs` (ESM), `index.d.ts` (types) 모두 생성된다.
-- [ ] **AC-A5**: `package.json.files` = `["dist", "README.md", "LICENSE"]`. `npm pack --dry-run` 실행 시 `src/`, `tests/`, `node_modules/` 가 포함되지 않음을 확인한다.
+- [x] **AC-A1** *(removed — revised 2026-04-23)*: ~~`packages/playwright-reporter/` 디렉터리 생성~~ → 디렉터리 rename 계획 철회. 현 이름 `packages/playwright/` 그대로 유지. `package.json.name = "@testably.kr/playwright-reporter"` 로 이미 배포 완료.
+- [x] **AC-A2** *(removed — revised 2026-04-23)*: ~~`packages/reporter-core/` 로 rename~~ → 현 이름 `packages/core/` 그대로 유지. `package.json.name = "@testably.kr/reporter-core"` 로 이미 배포 완료. `playwright-reporter` 의 `dependencies` 는 `"@testably.kr/reporter-core"` 를 참조한다.
+- [ ] **AC-A3**: 루트 `package.json` 에 `"workspaces": ["packages/*"]` 가 설정되어 있다 (npm workspaces 사용). 이미 적용되어 있으면 유지 확인만.
+- [ ] **AC-A4**: `npm run build -w @testably.kr/playwright-reporter` 실행 시 `packages/playwright/dist/` 에 `index.js` (CJS), `index.mjs` (ESM), `index.d.ts` (types) 모두 생성된다.
+- [ ] **AC-A5**: `package.json.files` = `["dist", "README.md", "LICENSE"]`. `npm pack --dry-run` 실행 시 `src/`, `tests/`, `node_modules/` 가 포함되지 않음을 확인한다. (현재 `npm publish --dry-run` 통과 상태 — 리그레션 방지)
 - [ ] **AC-A6**: TypeScript target `ES2020`, Node 18+ 최소 지원.
 
 ### AC-B: Reporter 동작
@@ -86,35 +103,36 @@
   ```
   CI exit code 는 0.
 - [ ] **AC-C2**: `401` (invalid token) / `404` (run not found) / `400` (invalid payload) 는 1회만 로그 후 재시도 없음, exit 0 (기본).
-- [ ] **AC-C3**: `X-Testably-SDK-Version` 및 `User-Agent: @testably/playwright-reporter/<version>` 헤더가 모든 요청에 포함된다 → 서버 `ci_upload_logs.source = 'playwright'` 로 기록된다.
+- [ ] **AC-C3**: `X-Testably-SDK-Version` 및 `User-Agent: @testably.kr/playwright-reporter/<version>` 헤더가 모든 요청에 포함된다 → 서버 `ci_upload_logs.source = 'playwright'` 로 기록된다.
 
 ### AC-D: 타입 & DX
 
-- [ ] **AC-D1**: 사용자는 `import type { PlaywrightReporterOptions } from '@testably/playwright-reporter'` 로 옵션 타입을 import 할 수 있다.
+- [ ] **AC-D1**: 사용자는 `import type { PlaywrightReporterOptions } from '@testably.kr/playwright-reporter'` 로 옵션 타입을 import 할 수 있다.
 - [ ] **AC-D2**: TypeScript strict 모드에서 사용자 `playwright.config.ts` 작성 시 빨간 줄 없음.
 - [ ] **AC-D3**: ESM 사용자(`"type": "module"` 프로젝트)와 CJS 사용자 모두 같은 config 문법으로 사용 가능 (tsup `--format cjs,esm --dts`).
 
 ### AC-E: 테스트
 
-- [ ] **AC-E1**: `packages/playwright-reporter/tests/reporter.test.ts` — vitest. `onTestEnd` 모의 TestCase/TestResult 입력 → 내부 버퍼에 기대 payload 가 쌓이는지 검증.
-- [ ] **AC-E2**: Mock fetch 사용. `onEnd` 호출 시 `POST /functions/v1/upload-ci-results` 로 정확한 payload(`{ run_id, format: 'json', results }`) 가 전송되는지 검증.
-- [ ] **AC-E3**: 500 에러 → 재시도 3회 후 포기 검증. 429 → `Retry-After` 만큼 기다림 검증 (fake timers).
+- [x] **AC-E1**: `packages/playwright/tests/reporter.test.ts` — vitest. `onTestEnd` 모의 TestCase/TestResult 입력 → 내부 버퍼에 기대 payload 가 쌓이는지 검증. (현재 playwright 14/14 PASS)
+- [x] **AC-E2**: Mock fetch 사용. `onEnd` 호출 시 `POST /functions/v1/upload-ci-results` 로 정확한 payload(`{ run_id, format: 'json', results }`) 가 전송되는지 검증.
+- [ ] **AC-E3**: 500 에러 → 재시도 3회 후 포기 검증. 429 → `Retry-After` 만큼 기다림 검증 (fake timers). (현 테스트 커버리지 확인 필요)
 - [ ] **AC-E4**: TC ID 추출 4가지 모드 각각에 대한 단위 테스트.
-- [ ] **AC-E5**: `packages/reporter-core/tests/client.test.ts` — 100개 초과 results 가 2 batch로 분할되는지.
+- [x] **AC-E5**: `packages/core/tests/client.test.ts` — 100개 초과 results 가 2 batch로 분할되는지. (현재 core 21/21 PASS)
 
 ### AC-F: 문서
 
-- [ ] **AC-F1**: `packages/playwright-reporter/README.md` — Quick Start 5분 가이드, 모든 환경변수, 3가지 TC 매칭 전략 예시, troubleshooting (토큰 오류/플랜 거부/매핑 실패).
-- [ ] **AC-F2**: `packages/playwright-reporter/CHANGELOG.md` — Keep a Changelog 포맷. `0.1.0-alpha.0` 엔트리 최소 포함.
-- [ ] **AC-F3**: 루트 `README.md` 에 `## SDK` 섹션 추가 — `@testably/playwright-reporter`, `@testably/reporter-core` 패키지 링크.
-- [ ] **AC-F4**: `packages/playwright-reporter/LICENSE` = MIT (Testably 본체가 private 이므로, SDK는 별도 MIT 로 오픈소스화).
+- [x] **AC-F1**: `packages/playwright/README.md` — Quick Start 5분 가이드 존재 확인 완료. 모든 환경변수, 3가지 TC 매칭 전략 예시, troubleshooting (토큰 오류/플랜 거부/매핑 실패) 포함 여부 리뷰는 열린 태스크.
+- [x] **AC-F2**: `packages/playwright/CHANGELOG.md` 존재 확인 완료. `0.1.0-alpha.0` 엔트리 포함 여부 리뷰는 열린 태스크.
+- [ ] **AC-F3**: 루트 `README.md` 에 `## SDK` 섹션 추가 — `@testably.kr/playwright-reporter`, `@testably.kr/reporter-core` 패키지 링크.
+- [x] **AC-F4**: `packages/playwright/LICENSE` = MIT. 존재 확인 완료.
 
 ### AC-G: 퍼블리시 준비(실행은 Developer 단계)
 
-- [ ] **AC-G1**: `npm publish --access public --dry-run` 성공. 최종 tarball 사이즈 < 50KB.
-- [ ] **AC-G2**: `package.json.publishConfig = { "access": "public", "registry": "https://registry.npmjs.org/" }` 명시.
+- [x] **AC-G1**: `npm publish --access public --dry-run` 성공. 최종 tarball 사이즈 < 50KB. (둘 다 통과 확인됨)
+- [ ] **AC-G2**: `package.json.publishConfig = { "access": "public", "registry": "https://registry.npmjs.org/" }` 명시 확인.
 - [ ] **AC-G3**: 스펙 본문에 "Developer가 배포할 때 사용할 명령어" 스니펫 포함(§11).
-- [ ] **AC-G4**: npm organization `@testably` 점유 확인 필요 — 선행 체크리스트에 올림.
+- [x] **AC-G4** *(removed — revised 2026-04-23)*: ~~npm organization `@testably` 점유 확인~~ → `@testably.kr` scope 확정. 이미 `@testably.kr/reporter-core@1.0.0` + `@testably.kr/playwright-reporter@1.0.0`(+alpha tag) 배포 완료.
+- [ ] **AC-G5** *(new — revised 2026-04-23)*: `.github/workflows/publish-sdk.yml` 에 `permissions.id-token: write` 추가. **provenance publish 필수 조건** 이며 현재 누락 상태. 이 permission 없이는 `npm publish --provenance` 가 `OIDC token not available` 로 실패한다. 참고: [npm provenance docs](https://docs.npmjs.com/generating-provenance-statements).
 
 ---
 
@@ -125,11 +143,11 @@
 **정상 흐름 (Happy Path):**
 1. 유저가 Testably 웹 Settings → CI/CD Tokens 에서 토큰 1개 발급 (`testably_<32hex>`).
 2. 유저가 CI(예: GitHub Actions)에 `TESTABLY_TOKEN`, `TESTABLY_URL`, `TESTABLY_RUN_ID` 3개 env 등록.
-3. 유저가 `npm i -D @testably/playwright-reporter` 후 `playwright.config.ts` 에 리포터 추가:
+3. 유저가 `npm i -D @testably.kr/playwright-reporter` 후 `playwright.config.ts` 에 리포터 추가:
    ```ts
    reporter: [
      ['list'],
-     ['@testably/playwright-reporter', { testCaseIdSource: 'title' }],
+     ['@testably.kr/playwright-reporter', { testCaseIdSource: 'title' }],
    ],
    ```
 4. 테스트 제목에 `[TC-123]` 포함 (또는 annotation 사용).
@@ -166,7 +184,7 @@
 | BR-1 | 업로드 실패는 절대 CI 테스트 실패로 전파되지 않는다 (기본 `failOnUploadError=false`) | 유저 신뢰 확보 |
 | BR-2 | `TESTABLY_RUN_ID` / `TESTABLY_TOKEN` / `TESTABLY_URL` 셋 중 하나라도 누락되면 Reporter 생성자에서 fail-fast | 무음 업로드 실패 방지 |
 | BR-3 | Pro 미만 플랜은 서버 403 으로 거부하며, SDK 측에서는 이를 "업로드 스킵" 으로 처리한다 (테스트 실패 아님) | 플랜 게이팅 명확화 |
-| BR-4 | 모든 업로드는 `User-Agent: @testably/playwright-reporter/<version>` 필수 | 트래픽 소스 추적 |
+| BR-4 | 모든 업로드는 `User-Agent: @testably.kr/playwright-reporter/<version>` 필수 | 트래픽 소스 추적 |
 | BR-5 | 배치 크기 100개 고정 (기존 reporter-core 로직 유지) | 서버 payload 제한 대비 |
 | BR-6 | API 토큰은 로그에 절대 출력되지 않는다 (`buildHeaders` 함수 외부 노출 금지) | 시크릿 보호 |
 | BR-7 | TC ID 매칭 실패 케이스는 **자동 TC 생성하지 않는다** (PRD 명세 - 명시적 "매핑 실패" 로그만) | 서버 정책 일치 |
@@ -243,8 +261,8 @@
 POST ${TESTABLY_URL}/functions/v1/upload-ci-results
 Authorization: Bearer ${TESTABLY_TOKEN}
 Content-Type: application/json
-User-Agent: @testably/playwright-reporter/0.1.0-alpha.0
-X-Testably-SDK-Version: @testably/playwright-reporter/0.1.0-alpha.0
+User-Agent: @testably.kr/playwright-reporter/0.1.0-alpha.0
+X-Testably-SDK-Version: @testably.kr/playwright-reporter/0.1.0-alpha.0
 ```
 
 ### 6-2. Request (SDK 생성 페이로드)
@@ -307,50 +325,47 @@ export interface PlaywrightReporterOptions {
 
 ## 7. 영향 범위 (변경 파일 목록)
 
-### 7-1. 이름 변경 (rename, 내용 유지)
+### 7-1. 이름 변경 (rename) — *(removed — revised 2026-04-23)*
 
-| From | To | 작업 |
-|------|----|------|
-| `packages/core/` | `packages/reporter-core/` | 디렉터리 rename. `package.json.name` 을 `@testably.kr/reporter-core` → `@testably/reporter-core` 로 변경. |
-| `packages/playwright/` | `packages/playwright-reporter/` | 디렉터리 rename. `@testably.kr/playwright-reporter` → `@testably/playwright-reporter`. |
-| `packages/cypress/` | (유지, 단 `package.json.name` 만 `@testably/cypress-reporter` 로 변경) | Out of Scope 이므로 **본 스펙에서는 이름만 변경, 배포 안 함** |
-| `packages/jest/` | (유지, 이름만 `@testably/jest-reporter`) | 동일 |
+~~디렉터리 rename 계획~~ 철회. 아래 이름 그대로 유지:
+- `packages/core/` → **유지** (`@testably.kr/reporter-core`)
+- `packages/playwright/` → **유지** (`@testably.kr/playwright-reporter`)
+- `packages/cypress/`, `packages/jest/` → **유지** (본 스펙 Out of Scope)
 
-> 디렉터리 rename은 `git mv` 로 진행 (history 보존). Developer가 수행.
+### 7-2. 신규 파일 (이미 존재하는 파일은 verify 만)
 
-### 7-2. 신규 파일
-
-| 파일 | 역할 |
-|------|------|
-| `packages/playwright-reporter/README.md` | Quick Start, TC 매핑 전략, troubleshooting |
-| `packages/playwright-reporter/CHANGELOG.md` | Keep a Changelog |
-| `packages/playwright-reporter/LICENSE` | MIT |
-| `packages/playwright-reporter/tests/reporter.test.ts` | vitest 단위 테스트 (TC ID 추출 4모드, status 매핑, onEnd 페이로드) |
-| `packages/playwright-reporter/tests/setup.ts` | vitest mock fetch 세팅 |
-| `packages/playwright-reporter/vitest.config.ts` | vitest 설정 (node env, include: tests/**) |
-| `packages/reporter-core/README.md` | 내부 코어 설명 (간단) |
-| `packages/reporter-core/LICENSE` | MIT |
-| `packages/reporter-core/tests/client.test.ts` | 배치 분할, retry, rate-limit 처리 테스트 |
-| `packages/reporter-core/tests/config.test.ts` | env fallback 검증 |
+| 파일 | 역할 | 현재 상태 |
+|------|------|---------|
+| `packages/playwright/README.md` | Quick Start, TC 매핑 전략, troubleshooting | **존재** (5분 가이드 확인됨) |
+| `packages/playwright/CHANGELOG.md` | Keep a Changelog | **존재** |
+| `packages/playwright/LICENSE` | MIT | **존재** |
+| `packages/playwright/tests/reporter.test.ts` | vitest 단위 테스트 (TC ID 추출 4모드, status 매핑, onEnd 페이로드) | **존재** (14/14 PASS) |
+| `packages/playwright/tests/setup.ts` | vitest mock fetch 세팅 | verify |
+| `packages/playwright/vitest.config.ts` | vitest 설정 (node env, include: tests/**) | verify |
+| `packages/core/README.md` | 내부 코어 설명 (간단) | verify |
+| `packages/core/LICENSE` | MIT | verify |
+| `packages/core/tests/client.test.ts` | 배치 분할, retry, rate-limit 처리 테스트 | **존재** (21/21 PASS) |
+| `packages/core/tests/config.test.ts` | env fallback 검증 | verify |
 
 ### 7-3. 수정 파일
 
 | 파일 | 변경 내용 |
 |------|---------|
-| `package.json` (루트) | `"workspaces": ["packages/*"]` 추가. `private: true` 유지. |
-| `package-lock.json` (루트) | workspaces 등록 후 `npm install` 로 자동 재생성 |
+| `package.json` (루트) | `"workspaces": ["packages/*"]` 설정 확인. `private: true` 유지. |
+| `package-lock.json` (루트) | 이미 workspaces 기반으로 정상. 변경 없음. |
 | `.gitignore` | `packages/*/dist/` 이미 무시되는지 확인 — 없으면 추가 |
-| `README.md` (루트) | `## SDK` 섹션 추가, `@testably/playwright-reporter` npm 배지 + 설치 링크 |
-| `packages/playwright-reporter/package.json` | name 변경, version `0.1.0-alpha.0`, `publishConfig`, `peerDependencies: { "@playwright/test": ">=1.40.0" }` (기존 `>=1.30.0` 에서 상향 — `TestResult.attachments` 안정성), `dependencies: { "@testably/reporter-core": "workspace:^0.1.0" }`, `files: ["dist", "README.md", "LICENSE"]`, `repository`, `bugs`, `homepage` 필드 추가 |
-| `packages/playwright-reporter/src/reporter.ts` | 상수 `SDK_AGENT` 를 `@testably/playwright-reporter/0.1.0-alpha.0` 로 변경. import 경로 `@testably.kr/reporter-core` → `@testably/reporter-core`. `dryRun` 옵션 분기 추가 (`client.testConnection()` 호출 경로) |
-| `packages/playwright-reporter/src/index.ts` | export 유지 |
-| `packages/playwright-reporter/tsconfig.json` | `lib: ["ES2020"]` 이미 정상 — 변경 불필요 |
-| `packages/reporter-core/package.json` | name/version 변경, `publishConfig`, `files`, `repository` 추가 |
-| `packages/reporter-core/src/*` | import 경로는 상대경로여서 변경 불필요. `SDK_NAME = '@testably/reporter-core'`, `SDK_VERSION = '0.1.0-alpha.0'` |
+| `README.md` (루트) | `## SDK` 섹션 추가, `@testably.kr/playwright-reporter` npm 배지 + 설치 링크 |
+| `packages/playwright/package.json` | version bump (alpha→stable 준비), `publishConfig` 확인, `peerDependencies: { "@playwright/test": ">=1.40.0" }` 확인, `dependencies: { "@testably.kr/reporter-core": "^..." }` 확인, `files: ["dist", "README.md", "LICENSE"]`, `repository`, `bugs`, `homepage` 필드 확인/보강 |
+| `packages/playwright/src/reporter.ts` | 상수 `SDK_AGENT` 가 `@testably.kr/playwright-reporter/<version>` 로 이미 설정됨. `dryRun` 옵션 분기 (`client.testConnection()` 호출 경로) 확인/추가 |
+| `packages/playwright/src/index.ts` | export 유지 |
+| `packages/playwright/tsconfig.json` | `lib: ["ES2020"]` 이미 정상 — 변경 불필요 |
+| `packages/core/package.json` | `publishConfig`, `files`, `repository` 확인/보강 |
+| `packages/core/src/*` | `SDK_NAME = '@testably.kr/reporter-core'`, `SDK_VERSION = '<version>'` 확인 |
+| `.github/workflows/publish-sdk.yml` | **신규 열린 태스크 (AC-G5):** `permissions.id-token: write` 추가 — npm provenance publish 필수 조건 |
 
 ### 7-4. 빌드 도구
 
-- **선택: tsup (기존 유지).** 이유: 이미 기존 `packages/playwright/package.json` 이 `tsup src/index.ts --format cjs,esm --dts` 를 쓰고 정상 동작. esbuild 기반이라 빠르고 ESM/CJS 듀얼 + .d.ts 동시 생성. tsc 직접 쓰면 ESM/CJS 듀얼 번들이 번거롭고, rollup 은 오버킬.
+- **선택: tsup (기존 유지).** 이유: 이미 `packages/playwright/package.json` 이 `tsup src/index.ts --format cjs,esm --dts` 를 쓰고 정상 동작. esbuild 기반이라 빠르고 ESM/CJS 듀얼 + .d.ts 동시 생성. tsc 직접 쓰면 ESM/CJS 듀얼 번들이 번거롭고, rollup 은 오버킬.
 - tsup 은 devDependency. 런타임 의존성에 추가하지 않음.
 
 ### 7-5. 서버 측 변경
@@ -371,7 +386,7 @@ export interface PlaywrightReporterOptions {
 | 토큰에 포함된 hex 가 DB 에 없음 | 서버 401 → SDK 경고 로그, exit 0 |
 | Run이 archived/locked 상태 | 서버가 write 실패 → 207 partial_failure → SDK 가 `failed_test_case_ids` 로그 |
 | 배치 중간에 네트워크 끊김 (배치 1 성공, 배치 2 실패) | `reporter-core.uploadResults` 가 배치마다 독립 재시도. 최종 `mergeResponses` 가 부분 합 | 
-| `playwright.config.ts` 가 TypeScript module 인데 reporter가 CJS (`"type": "module"` 없음) | tsup 듀얼 번들이므로 `require('@testably/playwright-reporter')` / `import` 둘 다 동작 |
+| `playwright.config.ts` 가 TypeScript module 인데 reporter가 CJS (`"type": "module"` 없음) | tsup 듀얼 번들이므로 `require('@testably.kr/playwright-reporter')` / `import` 둘 다 동작 |
 | Playwright 병렬 worker가 여러 개 — `onEnd` 여러 번 호출? | Playwright spec: `onEnd` 는 reporter 인스턴스당 **정확히 1회**. 문제없음. |
 | 테스트 중간에 CI가 kill 됨 (Ctrl+C) | Playwright `result.status = 'interrupted'` → `blocked` 로 기록. `onEnd` 가 호출되지 않으면 버퍼 손실됨 (현재 한계, Out of Scope 로 명시). |
 | API 토큰을 실수로 `token:` 옵션에 생 값으로 박음 | `SDK` 는 입력 검증 안 함. README 에 "TESTABLY_TOKEN env var 사용 권장" 명시. 로그에는 `Authorization` 헤더 절대 출력 금지. |
@@ -414,29 +429,31 @@ export interface PlaywrightReporterOptions {
 
 ## 11. 배포 체크리스트 (Developer 단계에서 사용)
 
-> **이번 스펙에서는 배포 금지**. 아래는 Developer가 Phase 4 에 수행할 스니펫.
+> **현재 상태 (2026-04-23):** `@testably.kr/reporter-core@1.0.0` 및 `@testably.kr/playwright-reporter@1.0.0` (+ `0.1.0-alpha.0` alpha tag) **이미 npm 배포 완료**. 본 스펙의 퍼블리시 체크리스트는 후속 버전 릴리스(예: stable promotion 이나 hotfix) 에 사용한다.
 
 ```bash
-# 0. npm org 존재 확인 (실패 시 https://www.npmjs.com/org/create 에서 @testably 생성)
-npm org ls testably
+# 0. npm scope 확인 (@testably.kr 확정)
+npm access list packages @testably.kr
 
 # 1. 로컬 빌드 검증
-npm run build -w @testably/reporter-core
-npm run build -w @testably/playwright-reporter
+npm run build -w @testably.kr/reporter-core
+npm run build -w @testably.kr/playwright-reporter
 
 # 2. 패키지 내용 dry-run
-npm publish -w @testably/reporter-core      --access public --dry-run
-npm publish -w @testably/playwright-reporter --access public --dry-run
+npm publish -w @testably.kr/reporter-core      --access public --dry-run
+npm publish -w @testably.kr/playwright-reporter --access public --dry-run
 
-# 3. 실제 배포 (alpha)
-npm publish -w @testably/reporter-core      --access public --tag alpha
-npm publish -w @testably/playwright-reporter --access public --tag alpha
+# 3. 실제 배포 (예시: alpha 버전)
+npm publish -w @testably.kr/reporter-core      --access public --tag alpha
+npm publish -w @testably.kr/playwright-reporter --access public --tag alpha
 
 # 4. 검증
-npm view @testably/playwright-reporter
+npm view @testably.kr/playwright-reporter
 ```
 
 **토큰은 CI Secret 으로만 주입.** 로컬 publish 도 `NPM_TOKEN` env 로.
+
+**중요 (AC-G5):** GitHub Actions 를 통한 자동 publish (`publish-sdk.yml`) 를 사용하려면 workflow 파일의 `permissions:` 블록에 `id-token: write` 를 반드시 추가해야 한다. 이 permission 없이는 `npm publish --provenance` 가 OIDC token 을 발급받지 못해 실패한다.
 
 ---
 
@@ -444,7 +461,8 @@ npm view @testably/playwright-reporter
 
 | 리스크 | 영향도 | 완화 |
 |--------|-------|------|
-| npm org `@testably` 이미 점유됨 | Blocker | Developer 단계 맨 첫 스텝에서 `npm org ls` 확인. 점유됐으면 `@testably-io` 등 백업 네이밍 사전 승인 필요 (CEO 승인) |
+| ~~npm org `@testably` 이미 점유됨~~ | ~~Blocker~~ | *(removed — revised 2026-04-23)* `@testably.kr` scope 확정 및 기배포 완료로 해소됨. |
+| `publish-sdk.yml` 에 `id-token: write` permission 누락 | Medium | AC-G5 로 명시. 후속 릴리스 (provenance publish) 전 반드시 workflow 패치 필요. 현재는 alpha tag publish 가 provenance 없이 통과한 것으로 추정되며, stable 승격 시 provenance 를 요구하도록 정책 강화 |
 | Playwright Reporter API breaking change (1.50+) | Medium | CI 에 Playwright 최신 버전과의 통합 스모크 테스트 추가 (후속) |
 | 서버 upload-ci-results payload 스키마 변경 시 SDK도 깨짐 | Medium | `reporter-core` 에 버저닝된 payload 인터페이스 고정. 서버 변경 전 SDK 호환 체크 의무화 |
 | API 토큰 CI 로그 leak | High | `buildHeaders` 결과를 **절대 로깅하지 않는다**. verbose 모드에서도 masking. CI workflow 문서에 `::add-mask::` 가이드 포함 |
@@ -462,7 +480,7 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   reporter: [
     ['list'],
-    ['@testably/playwright-reporter', {
+    ['@testably.kr/playwright-reporter', {
       testCaseIdSource: 'title',   // 테스트 제목 안 [TC-123] 패턴 사용
     }],
   ],
@@ -498,5 +516,6 @@ env:
 - [x] Out of Scope 명시 (§9)
 - [x] i18n 키 — 본 기능은 CI 로그 only 이므로 해당 없음 표기 (§10)
 - [x] 관련 디자인 명세 — Designer 불필요 명시 (§14)
-- [ ] npm org `@testably` 점유 확인 (Developer 첫 작업)
+- [x] ~~npm org `@testably` 점유 확인~~ *(removed — revised 2026-04-23)*: `@testably.kr` 확정 및 기배포 완료.
+- [ ] `publish-sdk.yml` 에 `permissions.id-token: write` 추가 (AC-G5, 신규 열린 태스크)
 - [ ] CEO 승인: 본체 private + SDK MIT 오픈소스화 OK?

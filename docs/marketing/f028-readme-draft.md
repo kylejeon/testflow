@@ -1,4 +1,4 @@
-# f028 — README Draft: @testably/playwright-reporter
+# f028 — README Draft: @testably.kr/playwright-reporter
 > 유형: Package README Draft
 > 작성일: 2026-04-22
 > 타겟 채널: npm / GitHub (packages/playwright-reporter/README.md)
@@ -8,11 +8,11 @@
 ---
 
 ```markdown
-# @testably/playwright-reporter
+# @testably.kr/playwright-reporter
 
-[![npm version](https://img.shields.io/npm/v/@testably/playwright-reporter?color=0a7ea4&label=npm)](https://www.npmjs.com/package/@testably/playwright-reporter)
-[![npm downloads](https://img.shields.io/npm/dw/@testably/playwright-reporter?color=0a7ea4)](https://www.npmjs.com/package/@testably/playwright-reporter)
-[![license](https://img.shields.io/npm/l/@testably/playwright-reporter)](./LICENSE)
+[![npm version](https://img.shields.io/npm/v/@testably.kr/playwright-reporter?color=0a7ea4&label=npm)](https://www.npmjs.com/package/@testably.kr/playwright-reporter)
+[![npm downloads](https://img.shields.io/npm/dw/@testably.kr/playwright-reporter?color=0a7ea4)](https://www.npmjs.com/package/@testably.kr/playwright-reporter)
+[![license](https://img.shields.io/npm/l/@testably.kr/playwright-reporter)](./LICENSE)
 [![playwright](https://img.shields.io/badge/playwright-%3E%3D1.40.0-green)](https://playwright.dev/)
 
 Official [Playwright](https://playwright.dev/) reporter for [Testably](https://testably.app) — automatically upload your CI test results to a Testably test run when your suite finishes.
@@ -27,7 +27,7 @@ Official [Playwright](https://playwright.dev/) reporter for [Testably](https://t
 ## Install
 
 ```bash
-npm install --save-dev @testably/playwright-reporter
+npm install --save-dev @testably.kr/playwright-reporter
 ```
 
 **Peer dependency:** `@playwright/test >= 1.40.0`
@@ -67,7 +67,7 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   reporter: [
     ['list'],                               // keep your existing reporters
-    ['@testably/playwright-reporter', {
+    ['@testably.kr/playwright-reporter', {
       testCaseIdSource: 'title',            // or 'annotation', 'tag', 'custom'
     }],
   ],
@@ -92,7 +92,7 @@ Run `npx playwright test`. When the suite finishes, results are batched and uplo
 ## All options
 
 ```ts
-import type { PlaywrightReporterOptions } from '@testably/playwright-reporter';
+import type { PlaywrightReporterOptions } from '@testably.kr/playwright-reporter';
 ```
 
 | Option | Type | Default | Description |
@@ -153,7 +153,7 @@ test('user can log in', { tag: '@TC-42' }, async ({ page }) => { /* ... */ });
 Supply your own mapping function. Useful for teams with an existing ID mapping file.
 
 ```ts
-reporter: [['@testably/playwright-reporter', {
+reporter: [['@testably.kr/playwright-reporter', {
   testCaseIdSource: 'custom',
   mapTestCaseId: (title, filePath) => myMappingTable[filePath]?.[title],
 }]]

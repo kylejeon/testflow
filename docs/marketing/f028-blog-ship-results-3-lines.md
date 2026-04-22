@@ -8,7 +8,7 @@
 
 **SEO Meta**
 - **Title tag:** Ship Playwright Test Results to Your QA Dashboard in 3 Lines | Testably
-- **Meta description:** Stop losing CI test data. `@testably/playwright-reporter` syncs every Playwright run to Testably automatically — one npm install, one config line, three env vars.
+- **Meta description:** Stop losing CI test data. `@testably.kr/playwright-reporter` syncs every Playwright run to Testably automatically — one npm install, one config line, three env vars.
 - **Target keywords:** playwright reporter, playwright ci integration, playwright test results dashboard, CI test management, playwright testably
 - **og:image suggestion:** Dark-themed code editor screenshot showing the 3-line `playwright.config.ts` setup with Testably dashboard result visible in split pane. Dimensions: 1200x630.
 - **Canonical URL:** `https://testably.app/blog/playwright-reporter-ci-integration`
@@ -43,14 +43,14 @@ None of these solutions are wrong. They're just the wrong tool for the problem. 
 
 ## The fix: one reporter, three env vars
 
-`@testably/playwright-reporter` is a standard Playwright reporter plugin that uploads your test results to Testably the moment the run completes.
+`@testably.kr/playwright-reporter` is a standard Playwright reporter plugin that uploads your test results to Testably the moment the run completes.
 
 Here is the entire setup.
 
 **Step 1: Install the package**
 
 ```bash
-npm install --save-dev @testably/playwright-reporter
+npm install --save-dev @testably.kr/playwright-reporter
 ```
 
 Peer dependency: `@playwright/test >= 1.40.0`.
@@ -63,7 +63,7 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   reporter: [
     ['list'],  // keep your existing reporters
-    ['@testably/playwright-reporter', {
+    ['@testably.kr/playwright-reporter', {
       testCaseIdSource: 'title',
     }],
   ],
@@ -128,7 +128,7 @@ test('user can log in @TC-42', async ({ page }) => { /* ... */ });
 If your test file paths or titles already encode some identifier that maps to Testably IDs, you can supply a callback:
 
 ```ts
-reporter: [['@testably/playwright-reporter', {
+reporter: [['@testably.kr/playwright-reporter', {
   testCaseIdSource: 'custom',
   mapTestCaseId: (title, filePath) => myMappingTable[filePath]?.[title],
 }]]
@@ -179,8 +179,8 @@ If you see `Upload skipped: this feature requires a Professional plan (current: 
 ## Next steps
 
 - **Generate a CI token:** Settings → CI/CD Tokens in your Testably workspace
-- **Install:** `npm install --save-dev @testably/playwright-reporter`
-- **Full options reference:** [npm README](https://www.npmjs.com/package/@testably/playwright-reporter)
+- **Install:** `npm install --save-dev @testably.kr/playwright-reporter`
+- **Full options reference:** [npm README](https://www.npmjs.com/package/@testably.kr/playwright-reporter)
 - **Don't have a Testably account?** [Start free](https://testably.app) — no credit card required. CI/CD integration requires the Professional plan ($99/month flat-rate, up to 20 members).
 
-Cypress and Jest reporter support is coming soon as part of the same SDK family (`@testably/cypress-reporter`, `@testably/jest-reporter`). If your team uses multiple frameworks, watch the changelog.
+Cypress and Jest reporter support is coming soon as part of the same SDK family (`@testably.kr/cypress-reporter`, `@testably.kr/jest-reporter`). If your team uses multiple frameworks, watch the changelog.

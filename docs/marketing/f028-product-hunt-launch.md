@@ -1,4 +1,4 @@
-# f028 — Product Hunt Launch: @testably/playwright-reporter
+# f028 — Product Hunt Launch: @testably.kr/playwright-reporter
 > 유형: Product Hunt
 > 작성일: 2026-04-22
 > 타겟 채널: Product Hunt
@@ -29,11 +29,11 @@ Stop copy-pasting CI results. One reporter, 3 env vars, and every Playwright run
 
 ### Short (140 chars)
 
-`@testably/playwright-reporter` — add one line to `playwright.config.ts` and your CI test results automatically sync to Testably. No scripts, no manual uploads.
+`@testably.kr/playwright-reporter` — add one line to `playwright.config.ts` and your CI test results automatically sync to Testably. No scripts, no manual uploads.
 
 ### Long (260 chars)
 
-`@testably/playwright-reporter` closes the gap between your CI pipeline and your QA dashboard. Add the reporter to `playwright.config.ts`, set 3 env vars in your CI secrets, and every test run lands in Testably automatically — status, failures, timing, and all. Tag tests with `[TC-42]` in the title (or use annotations/tags) and results map to existing Testably test cases without any configuration file. Built for teams already on Playwright 1.40+. Requires a Testably Professional plan.
+`@testably.kr/playwright-reporter` closes the gap between your CI pipeline and your QA dashboard. Add the reporter to `playwright.config.ts`, set 3 env vars in your CI secrets, and every test run lands in Testably automatically — status, failures, timing, and all. Tag tests with `[TC-42]` in the title (or use annotations/tags) and results map to existing Testably test cases without any configuration file. Built for teams already on Playwright 1.40+. Requires a Testably Professional plan.
 
 ---
 
@@ -43,7 +43,7 @@ Hey Product Hunt! Kyle here, founder of Testably.
 
 We've heard this story dozens of times: the CI pipeline goes green (or red), and someone has to manually update the test run in the QA tool. Sometimes it's copy-paste, sometimes it's a custom script cobbled together on a Friday afternoon. Either way, the information arrives late, incomplete, or not at all.
 
-`@testably/playwright-reporter` is our fix for that. It's a standard Playwright reporter — the same plugin interface as the built-in `list` or `dot` reporters — that batches your test results and uploads them to Testably the moment `onEnd` fires.
+`@testably.kr/playwright-reporter` is our fix for that. It's a standard Playwright reporter — the same plugin interface as the built-in `list` or `dot` reporters — that batches your test results and uploads them to Testably the moment `onEnd` fires.
 
 The setup is genuinely three lines: install the package, add it to your `reporter` array, and drop three env vars into your CI secrets. That's it.
 
@@ -55,7 +55,7 @@ If you're already using Testably and Playwright: try it today. Questions or bugs
 
 ## Maker Profile Bullet Points (3)
 
-1. **The CI result blackhole, solved** — `@testably/playwright-reporter` auto-syncs every Playwright run to your Testably dashboard. No scripts, no manual updates, no lost data.
+1. **The CI result blackhole, solved** — `@testably.kr/playwright-reporter` auto-syncs every Playwright run to your Testably dashboard. No scripts, no manual updates, no lost data.
 2. **3-line setup, 0 new infrastructure** — One npm install, one config line, three CI secrets. Works with GitHub Actions, GitLab CI, Jenkins, and any CI that can run `npx playwright test`.
 3. **Built on Testably's AI-native QA platform** — Results land in the same dashboard where your team writes test cases, runs AI analysis, tracks milestones, and generates run summaries. Professional plan or higher.
 
@@ -67,7 +67,7 @@ If you're already using Testably and Playwright: try it today. Questions or bugs
 **Format:** Split-screen illustration (left: dark, right: light)
 - Left half: A terminal showing a Playwright run ending with `42 passed, 3 failed`, followed by a developer manually typing into a QA spreadsheet. Label: "Before Testably Reporter"
 - Right half: Same terminal output, but below it a clean animation of the Testably dashboard populating with live results — green/red status indicators, test names, timing. Label: "After"
-- Bottom strip: `npm install --save-dev @testably/playwright-reporter`
+- Bottom strip: `npm install --save-dev @testably.kr/playwright-reporter`
 - Tone: dark background, accent colors matching Testably brand
 
 ### Image 2: "3-line setup code snippet"
@@ -75,7 +75,7 @@ If you're already using Testably and Playwright: try it today. Questions or bugs
 - Show `playwright.config.ts` open in VS Code dark theme
 - Highlight exactly the 3 lines being added:
   ```ts
-  ['@testably/playwright-reporter', {
+  ['@testably.kr/playwright-reporter', {
     testCaseIdSource: 'title',
   }],
   ```

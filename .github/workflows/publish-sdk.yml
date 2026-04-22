@@ -40,6 +40,9 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      # npm provenance publish 는 GitHub Actions OIDC 를 쓰므로 id-token 필수.
+      # 미설정 시 `npm publish --provenance` 가 403 으로 실패한다.
+      id-token: write
 
     steps:
       - name: Checkout

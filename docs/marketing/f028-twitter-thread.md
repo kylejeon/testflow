@@ -1,4 +1,4 @@
-# f028 — Twitter/X Thread: @testably/playwright-reporter
+# f028 — Twitter/X Thread: @testably.kr/playwright-reporter
 > 유형: Social Media
 > 작성일: 2026-04-22
 > 타겟 채널: Twitter/X
@@ -14,7 +14,7 @@
 
 If your Playwright CI results aren't automatically syncing to your QA dashboard, you're losing data on every single run.
 
-We just shipped `@testably/playwright-reporter` to fix that.
+We just shipped `@testably.kr/playwright-reporter` to fix that.
 
 Here's how it works (and how to set it up in 5 minutes):
 
@@ -34,7 +34,7 @@ This is how pass/fail trends get lost and flaky tests stay hidden for months.
 
 **Tweet 3 — The solution**
 
-`@testably/playwright-reporter` is a standard Playwright reporter that uploads results to Testably automatically when `onEnd` fires.
+`@testably.kr/playwright-reporter` is a standard Playwright reporter that uploads results to Testably automatically when `onEnd` fires.
 
 No custom scripts. No manual updates. No data loss.
 
@@ -48,7 +48,7 @@ No custom scripts. No manual updates. No data loss.
 // playwright.config.ts
 reporter: [
   ['list'],
-  ['@testably/playwright-reporter', {
+  ['@testably.kr/playwright-reporter', {
     testCaseIdSource: 'title',
   }],
 ],
@@ -93,9 +93,9 @@ Once results sync, Testably gives you:
 
 **Tweet 7 — CTA**
 
-Install: `npm i -D @testably/playwright-reporter`
+Install: `npm i -D @testably.kr/playwright-reporter`
 
-Full docs + troubleshooting: npmjs.com/package/@testably/playwright-reporter
+Full docs + troubleshooting: npmjs.com/package/@testably.kr/playwright-reporter
 
 Requires Testably Professional plan. Start free at testably.app
 
@@ -115,13 +115,13 @@ Cypress and Jest reporters are coming next.
 
 ## LinkedIn Version (single post)
 
-**Title:** We just shipped @testably/playwright-reporter — CI test results, automatically synced to your QA dashboard.
+**Title:** We just shipped @testably.kr/playwright-reporter — CI test results, automatically synced to your QA dashboard.
 
 ---
 
 If you use Playwright for E2E testing, you've probably felt this friction: the CI run finishes, results appear in the terminal, and then someone has to manually update your test management tool. Or write a one-off upload script. Or the data just gets lost.
 
-We built `@testably/playwright-reporter` to close that gap.
+We built `@testably.kr/playwright-reporter` to close that gap.
 
 It's a standard Playwright reporter plugin — the same interface as the built-in `list` or `html` reporters. Add it to your `playwright.config.ts`, set three environment variables in your CI secrets, and every run automatically populates your Testably test cases with real results.
 
@@ -133,13 +133,13 @@ It's a standard Playwright reporter plugin — the same interface as the built-i
 
 **Setup is genuinely 5 minutes:**
 ```
-npm install --save-dev @testably/playwright-reporter
+npm install --save-dev @testably.kr/playwright-reporter
 ```
 Then add the reporter to your config and three env vars to your CI secrets. Done.
 
 Available now as `0.1.0-alpha.0`. Requires Testably Professional plan or higher.
 
-Full docs: npmjs.com/package/@testably/playwright-reporter
+Full docs: npmjs.com/package/@testably.kr/playwright-reporter
 
 Happy to answer questions in the comments. If you're already using Testably and Playwright — give it a try and let us know what you think.
 

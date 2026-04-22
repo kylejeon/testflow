@@ -1,4 +1,4 @@
-# f028 — Changelog Entry: @testably/playwright-reporter 0.1.0-alpha.0
+# f028 — Changelog Entry: @testably.kr/playwright-reporter 0.1.0-alpha.0
 > 유형: Changelog
 > 작성일: 2026-04-22
 > 타겟 채널: packages/playwright-reporter/CHANGELOG.md + Testably public changelog
@@ -11,7 +11,7 @@
 ```markdown
 # Changelog
 
-All notable changes to `@testably/playwright-reporter` will be documented in this file.
+All notable changes to `@testably.kr/playwright-reporter` will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This package uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -87,7 +87,7 @@ First public alpha release.
 
 You can now connect your Playwright CI runs directly to Testably with a single reporter plugin.
 
-Install `@testably/playwright-reporter`, add one line to your `playwright.config.ts`, and set three environment variables in your CI secrets. Every test run automatically lands in your Testably dashboard — pass/fail status, failure notes, timing, and all — ready for AI analysis, trend tracking, and team review.
+Install `@testably.kr/playwright-reporter`, add one line to your `playwright.config.ts`, and set three environment variables in your CI secrets. Every test run automatically lands in your Testably dashboard — pass/fail status, failure notes, timing, and all — ready for AI analysis, trend tracking, and team review.
 
 **What changed for you:**
 
@@ -98,11 +98,11 @@ Install `@testably/playwright-reporter`, add one line to your `playwright.config
 **How to set it up:**
 
 ```bash
-npm install --save-dev @testably/playwright-reporter
+npm install --save-dev @testably.kr/playwright-reporter
 ```
 
-Then follow the 5-minute quick start in the [npm README](https://www.npmjs.com/package/@testably/playwright-reporter).
+Then follow the 5-minute quick start in the [npm README](https://www.npmjs.com/package/@testably.kr/playwright-reporter).
 
 **Requires:** Testably Professional plan or higher. [See pricing](https://testably.app/pricing).
 
-**Coming soon:** Cypress Reporter (`@testably/cypress-reporter`) and Jest Reporter are in progress as part of the same SDK family.
+**Coming soon:** Cypress Reporter (`@testably.kr/cypress-reporter`) and Jest Reporter are in progress as part of the same SDK family.

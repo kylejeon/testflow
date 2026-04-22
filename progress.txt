@@ -2707,3 +2707,30 @@ f033 은 **추가 구현 불필요** — 이미 claude 브랜치에 머지되어
 - f033 관련 브라우저 스모크(AC-4~AC-8) 는 QA 가 실사용 파일로 수동 확인 후
   종결 처리 — 이미 2214a46 커밋 메시지에서 QA M-2 completed 표기됨.
 - 신규 CVE 발생 시 npm audit 주기 모니터링 유지.
+
+---
+
+2026-04-23: f028 Dev Spec 현실 반영 revise (planner)
+
+## 뭘 했냐
+`docs/specs/dev-spec-f028-playwright-reporter.md` 문서만 편집. 코드/패키지/workflow 파일은 미변경.
+
+- npm scope: 전부 `@testably/` → `@testably.kr/` 치환 (이미 npm 배포 완료된 실제 scope 반영)
+- 디렉터리 rename 계획 철회: `packages/core`/`packages/playwright` 현 이름 유지 확정
+- 삭제된 AC (marker 로 tracer 유지):
+  - AC-A1, AC-A2: 디렉터리 rename 지시 → *(removed — revised 2026-04-23)*
+  - AC-G4: npm org `@testably` 점유 확인 → *(removed — revised 2026-04-23)*
+- 신규 AC: AC-G5 — `publish-sdk.yml` 에 `permissions.id-token: write` 추가 (provenance publish 조건)
+- AC-E1/E2/E5, AC-F1/F2/F4, AC-G1 은 이미 현실에 구현된 상태이므로 체크([x]) + "현재 상태" 주석
+- 리스크 "npm org `@testably` 점유됨" 항목 제거. 대신 "publish-sdk.yml id-token permission 누락" Medium 리스크 추가
+- 배포 체크리스트(§11) 스니펫을 `@testably.kr` 기준으로 재작성 + "이미 배포 완료" 배너 추가
+- Revision 2026-04-23 섹션을 파일 상단에 삽입해 history 보존
+
+## 어디까지 됐냐
+- `@testably/` 잔존 reference 0건 확인 (grep 검증 완료)
+- 스펙 문서 전체 coherent. 실제 코드/패키지/workflow 파일 건드리지 않음.
+
+## 다음엔 뭘 해야 해
+- @developer: AC-G5 (`.github/workflows/publish-sdk.yml` 에 `permissions.id-token: write` 추가) 실행
+- @developer: AC-A3 workspaces 설정 확인, AC-A5 files/publish dry-run 리그레션 방지 검증
+- @developer: alpha → stable 승격 판단 (AC-F1/F2 리뷰 완료 후)
