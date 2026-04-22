@@ -4,7 +4,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import PageLoader from '../../components/PageLoader';
 import ProjectHeader from '../../components/ProjectHeader';
-import { useToast } from '../../components/Toast';
+import { useToast, getApiErrorMessage } from '../../components/Toast';
 import { notifyProjectMembers } from '../../hooks/useNotifications';
 import { triggerWebhook } from '../../hooks/useWebhooks';
 import AIPlanAssistantModal from '../project-plans/AIPlanAssistantModal';
@@ -789,38 +789,50 @@ export default function ProjectMilestones() {
           ]}
           onClose={() => { setShowAIModal(false); setAiMilestoneId(null); }}
           onApply={async (tcIds, planName, milestoneId) => {
+            console.log('[AIPlanAssistant] onApply start', { tcIds: tcIds.length, planName, milestoneId, aiMilestoneId });
             try {
-              const { data: { user } } = await supabase.auth.getUser();
-              // 우선순위: dropdown 에서 고른 milestoneId → AI 버튼 클릭 당시 컨텍스트 → standalone (null)
+              // Step 1: 세션 검증. ES256 전환 이후 세션 만료 시 auth.uid() NULL → RLS 위반 가능.
+              const { data: { user }, error: authErr } = await supabase.auth.getUser();
+              console.log('[AIPlanAssistant] auth.getUser result', { user: user?.id, authErr });
+              if (authErr) throw new Error('Auth failed: ' + authErr.message);
+              if (!user) throw new Error('Session expired. Please refresh and log in again.');
+
               const attachMilestoneId = milestoneId || aiMilestoneId || null;
 
-              // Claude 가 hallucinated 된 UUID 를 돌려줄 수 있으므로 실제 존재하는 TC 만 필터링.
+              // Step 2: Claude hallucinated UUID 방어. RLS 가 auth.uid() NULL 이면 모든 TC 가 filter 되어 throw.
               let validTcIds = tcIds;
               if (tcIds.length > 0) {
                 const { data: existingRows, error: existErr } = await supabase
                   .from('test_cases')
                   .select('id')
                   .in('id', tcIds);
+                console.log('[AIPlanAssistant] test_cases validation', { requested: tcIds.length, existing: existingRows?.length, existErr });
                 if (existErr) throw existErr;
                 const existingSet = new Set((existingRows ?? []).map((r: { id: string }) => r.id));
                 validTcIds = tcIds.filter(id => existingSet.has(id));
                 if (validTcIds.length === 0 && tcIds.length > 0) {
-                  throw new Error(`None of the ${tcIds.length} recommended TCs exist in DB (possible AI hallucination).`);
+                  throw new Error(`None of the ${tcIds.length} TCs were found in DB. This usually means your session is expired (RLS filtered them out). Please refresh the page.`);
                 }
               }
 
+              // Step 3: test_plans INSERT. RLS 정책: project_id IN (project_members where user_id = auth.uid()).
+              console.log('[AIPlanAssistant] inserting test_plans', { project_id: projectId, milestone_id: attachMilestoneId, owner_id: user.id });
               const { data: planData, error: planErr } = await supabase
                 .from('test_plans')
-                .insert([{ project_id: projectId, milestone_id: attachMilestoneId, name: planName, priority: 'medium', status: 'planning', owner_id: user?.id || null }])
-                .select().single();
+                .insert([{ project_id: projectId, milestone_id: attachMilestoneId, name: planName, priority: 'medium', status: 'planning', owner_id: user.id }])
+                .select()
+                .single();
+              console.log('[AIPlanAssistant] test_plans insert result', { planData, planErr });
               if (planErr) throw planErr;
+              if (!planData) throw new Error('test_plans INSERT returned no row — likely RLS policy denied (not a project member?).');
 
+              // Step 4: test_plan_test_cases INSERT.
               if (validTcIds.length > 0) {
                 const { error: linkErr } = await supabase.from('test_plan_test_cases').insert(
                   validTcIds.map(tcId => ({ test_plan_id: planData.id, test_case_id: tcId }))
                 );
+                console.log('[AIPlanAssistant] test_plan_test_cases insert result', { count: validTcIds.length, linkErr });
                 if (linkErr) {
-                  // 롤백: 방금 만든 plan 삭제 (TC 링크 실패한 orphan plan 방지)
                   await supabase.from('test_plans').delete().eq('id', planData.id);
                   throw linkErr;
                 }
@@ -835,6 +847,7 @@ export default function ProjectMilestones() {
                 : `Plan "${planName}" created with ${validTcIds.length} TCs`;
               showToast(successMsg, 'success');
               fetchData();
+              console.log('[AIPlanAssistant] SUCCESS — navigating to plan', { planId, attachMilestoneId });
               if (attachMilestoneId && planId) {
                 navigate(`/projects/${projectId}/milestones/${attachMilestoneId}/plans/${planId}`);
               } else if (planId) {
@@ -842,7 +855,8 @@ export default function ProjectMilestones() {
               }
             } catch (err: any) {
               console.error('[AIPlanAssistant onApply] failed:', err);
-              showToast('Failed to create AI plan: ' + (err?.message || String(err)), 'error');
+              const msg = err?.message || err?.error_description || getApiErrorMessage(err);
+              showToast('Failed to create AI plan: ' + msg, 'error');
             }
           }}
         />
