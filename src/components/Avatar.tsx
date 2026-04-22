@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { useTranslation } from 'react-i18next';
 
 // ── Color palette (10 colors, WCAG AA against white) ──────────────────────────
 const PALETTE = [
@@ -72,6 +73,7 @@ export function Avatar({
   style,
   title,
 }: AvatarProps) {
+  const { t } = useTranslation('common');
   const s = SIZE[size];
   const seed = userId || name || email || '?';
   const bg = getAvatarColor(seed);
@@ -96,7 +98,7 @@ export function Avatar({
       <div className={className} style={base} title={title}>
         <img
           src={photoUrl}
-          alt={name || email || 'Avatar'}
+          alt={name || email || t('avatar.altFallback')}
           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
         />
       </div>

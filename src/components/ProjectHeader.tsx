@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { queryClient } from '../lib/queryClient';
 import { LogoMark } from './Logo';
@@ -37,6 +38,7 @@ interface Props {
 const projectNameCache = new Map<string, string>();
 
 export default function ProjectHeader({ projectId, projectName }: Props) {
+  const { t } = useTranslation(['common', 'projects']);
   const navigate = useNavigate();
   const location = useLocation();
   const [resolvedName, setResolvedName] = useState<string>(
@@ -154,53 +156,55 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
 
   const path = location.pathname;
 
-  const navItems = [
+  // Phase 3 AC-12: 9 nav labels — 4 reuse existing flat keys
+  // (testCases / runsAndResults / milestones / sessions), 5 new under common.nav.*
+  const navItems = useMemo(() => [
     {
-      label: 'Dashboard',
+      label: t('common:nav.dashboard'),
       to: `/projects/${projectId}`,
       active: path === `/projects/${projectId}`,
     },
     {
-      label: 'Test Cases',
+      label: t('common:testCases'),
       to: `/projects/${projectId}/testcases`,
       active: path.includes('/testcases'),
     },
     {
-      label: 'Steps Library',
+      label: t('common:nav.stepsLibrary'),
       to: `/projects/${projectId}/shared-steps`,
       active: path.includes('/shared-steps'),
     },
     {
-      label: 'Runs',
+      label: t('common:runsAndResults'),
       to: `/projects/${projectId}/runs`,
       active: path.includes('/runs'),
     },
     {
-      label: 'Requirements',
+      label: t('common:nav.requirements'),
       to: `/projects/${projectId}/requirements`,
       active: path.includes('/requirements'),
     },
     {
-      label: 'Traceability',
+      label: t('common:nav.traceability'),
       to: `/projects/${projectId}/traceability`,
       active: path.includes('/traceability'),
     },
     {
-      label: 'Milestones',
+      label: t('common:milestones'),
       to: `/projects/${projectId}/milestones`,
       active: path.includes('/milestones'),
     },
     {
-      label: 'Exploratory',
+      label: t('common:sessions'),
       to: `/projects/${projectId}/discovery-logs`,
       active: path.includes('/discovery-logs') || path.includes('/sessions'),
     },
     {
-      label: 'Documents',
+      label: t('common:nav.documents'),
       to: `/projects/${projectId}/documentation`,
       active: path.includes('/documentation'),
     },
-  ];
+  ], [t, projectId, path]);
 
   return (
     <header
@@ -268,10 +272,10 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
             }}
           >
             <div style={{ padding: '0.5rem 0.875rem', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94A3B8', borderBottom: '1px solid #F1F5F9' }}>
-              Switch project
+              {t('common:nav.switchProject')}
             </div>
             {projects.length === 0 ? (
-              <div style={{ padding: '0.75rem 0.875rem', fontSize: '0.875rem', color: '#94A3B8' }}>No projects found</div>
+              <div style={{ padding: '0.75rem 0.875rem', fontSize: '0.875rem', color: '#94A3B8' }}>{t('projects:noProjects')}</div>
             ) : (
               projects.map((p) => (
                 <Link
@@ -340,7 +344,7 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
 
         <button
           onClick={() => window.dispatchEvent(new CustomEvent('open-shortcuts'))}
-          title="Keyboard Shortcuts (?)"
+          title={t('common:nav.keyboardShortcutsTooltip')}
           className="hidden md:flex w-8 h-8 items-center justify-center rounded-lg text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
         >
           <i className="ri-keyboard-line text-base" />
@@ -374,7 +378,7 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
                 }}
               >
                 <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #F1F5F9' }}>
-                  <p className="text-sm font-semibold text-slate-900">{userProfile?.full_name || userProfile?.email || 'User'}</p>
+                  <p className="text-sm font-semibold text-slate-900">{userProfile?.full_name || userProfile?.email || t('common:nav.userFallback')}</p>
                   <p className="text-xs text-slate-400">{userProfile?.email}</p>
                   <div
                     className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded border ${tierInfo.color}`}
@@ -400,7 +404,7 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
                   className="hover:bg-gray-50"
                 >
                   <i className="ri-settings-3-line text-lg"></i>
-                  <span>Settings</span>
+                  <span>{t('common:settings')}</span>
                 </Link>
                 <button
                   onClick={handleLogout}
@@ -421,7 +425,7 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
                   className="hover:bg-gray-50"
                 >
                   <i className="ri-logout-box-line text-lg"></i>
-                  <span>Log out</span>
+                  <span>{t('common:logout')}</span>
                 </button>
               </div>
             </>
