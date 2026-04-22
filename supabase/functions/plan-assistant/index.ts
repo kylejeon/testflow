@@ -264,7 +264,7 @@ Rules:
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2048,
+        max_tokens: 4096,
         system: systemPrompt,
         messages: [{ role: 'user', content: userPrompt }],
       }),
@@ -280,12 +280,26 @@ Rules:
 
     let result: PlanAssistantResponse;
     try {
-      // JSON 블록 추출 (```json ... ``` 감싸인 경우 처리)
-      const jsonMatch = rawContent.match(/```json\s*([\s\S]*?)```/) ||
-                        rawContent.match(/```\s*([\s\S]*?)```/);
-      const jsonStr = jsonMatch ? jsonMatch[1] : rawContent;
+      // JSON 블록 추출: 우선순위
+      //   1. ```json ... ``` 펜스 내부
+      //   2. ``` ... ``` 일반 펜스 내부
+      //   3. 응답 전체에서 첫 '{' 부터 마지막 '}' 까지 (preamble/epilogue 텍스트 제거)
+      const fenced = rawContent.match(/```json\s*([\s\S]*?)```/) ||
+                     rawContent.match(/```\s*([\s\S]*?)```/);
+      let jsonStr = fenced ? fenced[1] : rawContent;
+      if (!fenced) {
+        const firstBrace = jsonStr.indexOf('{');
+        const lastBrace = jsonStr.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace > firstBrace) {
+          jsonStr = jsonStr.slice(firstBrace, lastBrace + 1);
+        }
+      }
       result = JSON.parse(jsonStr.trim());
-    } catch {
+    } catch (parseErr) {
+      console.error('plan-assistant JSON parse failure', {
+        err: String(parseErr),
+        rawPreview: rawContent.slice(0, 500),
+      });
       throw new Error('Failed to parse Claude response as JSON');
     }
 
