@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../../../lib/supabase';
 import { getMySharedPoolUsage } from '../../../lib/aiUsage';
 import { markOnboardingStep } from '../../../lib/onboardingMarker';
+import { normalizeLocale } from '../../../lib/claudeLocale';
 import { ModalShell } from '../../../components/ModalShell';
 
 interface SessionLog {
@@ -81,6 +83,7 @@ export default function AIGenerateModal({
   onClose,
   initialTitles,
 }: AIGenerateModalProps) {
+  const { i18n } = useTranslation();
   const [currentStep, setCurrentStep] = useState<Step>('mode');
   const [mode, setMode] = useState<Mode>('text');
 
@@ -186,7 +189,7 @@ export default function AIGenerateModal({
         Authorization: `Bearer ${session.access_token}`,
         apikey: import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ ...body, locale: normalizeLocale(i18n.language) }),
     });
     const data = await response.json();
     if (!response.ok) {

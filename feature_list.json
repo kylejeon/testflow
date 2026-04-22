@@ -1,7 +1,7 @@
 {
   "generated_at": "2026-04-20",
   "updated_at": "2026-04-21",
-  "total_count": 26,
+  "total_count": 25,
   "features": [
     {
       "id": "f001",
@@ -223,19 +223,6 @@
       "dependencies": [],
       "status": "backlog",
       "notes": "OOS. 13개 AI 기능 공통 도입"
-    },
-    {
-      "id": "f021",
-      "title": "Claude 다국어 출력 (KO locale 시 한국어 응답)",
-      "category": "ai",
-      "description": "현재 Claude 출력은 영어 고정. KO 로케일 감지 시 시스템 프롬프트에 'Respond in Korean' + 용어집 주입. AI Risk Analysis, Coverage Gap, Run Summary 전부 대응.",
-      "priority": "P2",
-      "impact": "medium",
-      "effort": "small",
-      "source": "dev-spec-milestone-ai-risk-insight",
-      "dependencies": [],
-      "status": "backlog",
-      "notes": "OOS. 한국 시장 런칭 전 필수"
     },
     {
       "id": "f022",
