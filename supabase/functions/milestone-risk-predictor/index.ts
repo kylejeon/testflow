@@ -556,7 +556,7 @@ Rules:
       .eq('id', milestone_id);
 
     // ── Log credit usage ─────────────────────────────────────────────────────
-    await supabase.from('ai_generation_logs').insert({
+    const { error: logErr } = await supabase.from('ai_generation_logs').insert({
       user_id: user.id,
       project_id: projectId,
       mode: 'milestone-risk',
@@ -578,6 +578,9 @@ Rules:
       tokens_used: tokensUsed,
       latency_ms: latencyMs,
     });
+    if (logErr) {
+      console.error('milestone-risk-predictor ai_generation_logs insert failed:', logErr);
+    }
 
     return jsonResponse({
       risk_level: result.risk_level,

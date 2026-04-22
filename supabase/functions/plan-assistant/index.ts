@@ -304,13 +304,14 @@ Rules:
     }
 
     // ── credit 소비 로그 기록 ─────────────────────────────────────────────────
-    await supabase.from('ai_generation_logs').insert({
+    // ai_generation_logs 컬럼: input_data (JSONB). `metadata` 컬럼 없음 — 과거 오타로 silent fail.
+    const { error: logErr } = await supabase.from('ai_generation_logs').insert({
       user_id: user.id,
       project_id,
       mode: 'plan-assistant',
       step: 1,
       credits_used: feature.creditCost,
-      metadata: {
+      input_data: {
         affected_areas,
         target_milestone_id: target_milestone_id || null,
         tc_count: relevantTcs.length,
@@ -318,6 +319,10 @@ Rules:
         locale, // f021 BR-6
       },
     });
+    if (logErr) {
+      // 로그 실패는 사용자 응답을 블록하지 않되 서버 로그에 반드시 노출.
+      console.error('plan-assistant ai_generation_logs insert failed:', logErr);
+    }
 
     return new Response(JSON.stringify({
       ...result,

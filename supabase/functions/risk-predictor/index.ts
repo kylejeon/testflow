@@ -318,7 +318,7 @@ Rules:
     const latencyMs = Date.now() - startTime;
 
     // ── Log credit usage ─────────────────────────────────────────────────────
-    await supabase.from('ai_generation_logs').insert({
+    const { error: logErr } = await supabase.from('ai_generation_logs').insert({
       user_id: user.id,
       project_id,
       mode: 'risk-predictor',
@@ -339,6 +339,9 @@ Rules:
       tokens_used: tokensUsed,
       latency_ms: latencyMs,
     });
+    if (logErr) {
+      console.error('risk-predictor ai_generation_logs insert failed:', logErr);
+    }
 
     return jsonResponse({
       ...result,
