@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../../components/Toast';
+import { ErrorBoundary } from '../../components/ErrorBoundary';
 import PassRateTrend from './widgets/PassRateTrend';
 import MilestoneTracker from './widgets/MilestoneTracker';
 import ExecutionSummary from './widgets/ExecutionSummary';
@@ -77,42 +78,60 @@ export default function AnalyticsTab({ projectId, milestones, subscriptionTier }
         </div>
 
         {/* Row 1: Pass Rate Trend (full width) */}
-        <PassRateTrend projectId={projectId} period={period} />
+        <ErrorBoundary section sectionName="Pass Rate Trend">
+          <PassRateTrend projectId={projectId} period={period} />
+        </ErrorBoundary>
 
         {/* Row 2: Milestone (55%) + Execution Summary (45%) */}
         <div className="grid grid-cols-12 gap-5">
           <div className="col-span-7">
-            <MilestoneTracker projectId={projectId} milestones={filteredMilestones} />
+            <ErrorBoundary section sectionName="Milestone Tracker">
+              <MilestoneTracker projectId={projectId} milestones={filteredMilestones} />
+            </ErrorBoundary>
           </div>
           <div className="col-span-5">
-            <ExecutionSummary projectId={projectId} />
+            <ErrorBoundary section sectionName="Execution Summary">
+              <ExecutionSummary projectId={projectId} />
+            </ErrorBoundary>
           </div>
         </div>
 
         {/* Row 3: Team Performance (full width, Pro+) */}
         <TierGate requiredTier={3} currentTier={subscriptionTier} featureName="Team Performance Analysis">
-          <TeamPerformance projectId={projectId} period={period} />
+          <ErrorBoundary section sectionName="Team Performance">
+            <TeamPerformance projectId={projectId} period={period} />
+          </ErrorBoundary>
         </TierGate>
 
         {/* Row 4: Coverage Heatmap (50%) + TC Quality (50%) */}
         <div className="grid grid-cols-2 gap-5">
-          <CoverageHeatmap
-            projectId={projectId}
-            subscriptionTier={subscriptionTier}
-            onFindGaps={() => setShowCoverageGapModal(true)}
-          />
-          <TCQualityAnalysis projectId={projectId} />
+          <ErrorBoundary section sectionName="Coverage Heatmap">
+            <CoverageHeatmap
+              projectId={projectId}
+              subscriptionTier={subscriptionTier}
+              onFindGaps={() => setShowCoverageGapModal(true)}
+            />
+          </ErrorBoundary>
+          <ErrorBoundary section sectionName="TC Quality Analysis">
+            <TCQualityAnalysis projectId={projectId} />
+          </ErrorBoundary>
         </div>
 
         {/* Row 5: Tag Analytics (full width) */}
-        <TagAnalytics projectId={projectId} />
+        <ErrorBoundary section sectionName="Tag Analytics">
+          <TagAnalytics projectId={projectId} />
+        </ErrorBoundary>
 
         {/* Row 6: Flaky TC Detector (50%, Starter+) + AI Insights (50%, Free+) */}
         <div className="grid grid-cols-2 gap-5">
           <TierGate requiredTier={3} currentTier={subscriptionTier} featureName="Flaky TC Detection">
-            <FlakyDetector projectId={projectId} subscriptionTier={subscriptionTier} />
+            <ErrorBoundary section sectionName="Flaky Detector">
+              <FlakyDetector projectId={projectId} subscriptionTier={subscriptionTier} />
+            </ErrorBoundary>
           </TierGate>
-          <AIInsightsPanel projectId={projectId} milestones={milestones} />
+          <ErrorBoundary section sectionName="AI Insights">
+            <AIInsightsPanel projectId={projectId} milestones={milestones} />
+          </ErrorBoundary>
         </div>
       </div>
 

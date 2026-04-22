@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Trans, useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
+import { ErrorBoundary } from '../../components/ErrorBoundary';
 import BurndownChart from './BurndownChart';
 import KpiStrip from './KpiStrip';
 import FailedBlockedCard from './FailedBlockedCard';
@@ -393,70 +394,88 @@ export default function OverviewTab(props: OverviewTabProps) {
       {/* ── Hero Row (v3): Chart+KPI (1.7fr) + Risk Insight (1fr), stretch align ── */}
       <div className="mo-hero-row">
         <div className="mo-chart-stack">
-          <BurndownChart
-            startDate={startDate}
-            endDate={endDate}
-            totalTCs={tcStats.total}
-            executedPerDay={executedPerDay}
-          />
-          <KpiStrip
-            remaining={remaining}
-            executed={executed}
-            total={tcStats.total}
-            velocityPerDay={velocityAvg}
-            passed={tcStats.passed}
-            passRate={tcStats.passRate}
-            etaDaysLeft={daysLeft}
-            etaProjDays={projDays}
-            etaOnTrack={onTrack}
-          />
+          <ErrorBoundary section sectionName="Burndown Chart">
+            <BurndownChart
+              startDate={startDate}
+              endDate={endDate}
+              totalTCs={tcStats.total}
+              executedPerDay={executedPerDay}
+            />
+          </ErrorBoundary>
+          <ErrorBoundary section sectionName="KPI Strip">
+            <KpiStrip
+              remaining={remaining}
+              executed={executed}
+              total={tcStats.total}
+              velocityPerDay={velocityAvg}
+              passed={tcStats.passed}
+              passRate={tcStats.passRate}
+              etaDaysLeft={daysLeft}
+              etaProjDays={projDays}
+              etaOnTrack={onTrack}
+            />
+          </ErrorBoundary>
         </div>
-        <RiskInsightContainer
-          projectId={projectId}
-          milestoneId={milestoneId}
-          riskLevel={riskLevel}
-          bullets={riskBullets}
-          aiCache={aiRiskCache}
-          hasTcs={tcStats.total > 0}
-        />
+        <ErrorBoundary section sectionName="Risk Insight">
+          <RiskInsightContainer
+            projectId={projectId}
+            milestoneId={milestoneId}
+            riskLevel={riskLevel}
+            bullets={riskBullets}
+            aiCache={aiRiskCache}
+            hasTcs={tcStats.total > 0}
+          />
+        </ErrorBoundary>
       </div>
 
       {/* ── Utility Row (v3.1): Intel Strip 4-col incl. Contributors (equal width+height) ── */}
       <div className="mo-intel-strip mo-intel-strip-4" style={{ marginBottom: 10 }}>
-        <FailedBlockedCard
-          tcs={failedBlockedTcs}
-          totalCount={failedBlockedTcs.length}
-          onViewAll={onGoIssues}
-        />
-        <VelocitySparkline weekCounts={velocity7d} />
-        <TopFailTagsCard tags={topFailTags} totalFails={totalFails} />
-        <ContributorsCard
-          contributors={contributors}
-          contributorProfiles={contributorProfiles}
-          getAuthorColor={getAuthorColor}
-          getContributorInitials={getContributorInitials}
-        />
+        <ErrorBoundary section sectionName="Failed/Blocked">
+          <FailedBlockedCard
+            tcs={failedBlockedTcs}
+            totalCount={failedBlockedTcs.length}
+            onViewAll={onGoIssues}
+          />
+        </ErrorBoundary>
+        <ErrorBoundary section sectionName="Velocity">
+          <VelocitySparkline weekCounts={velocity7d} />
+        </ErrorBoundary>
+        <ErrorBoundary section sectionName="Top Fail Tags">
+          <TopFailTagsCard tags={topFailTags} totalFails={totalFails} />
+        </ErrorBoundary>
+        <ErrorBoundary section sectionName="Contributors">
+          <ContributorsCard
+            contributors={contributors}
+            contributorProfiles={contributorProfiles}
+            getAuthorColor={getAuthorColor}
+            getContributorInitials={getContributorInitials}
+          />
+        </ErrorBoundary>
       </div>
 
       {/* ── 24h Activity inline strip ── */}
-      <Activity24hFeed logs={activity24h} onViewAll={onGoActivity} variant="strip" />
+      <ErrorBoundary section sectionName="24h Activity">
+        <Activity24hFeed logs={activity24h} onViewAll={onGoActivity} variant="strip" />
+      </ErrorBoundary>
 
       {/* ── Bottom Row (v3): Execution 풀폭 (Contributors 이동됨) ── */}
       <div className="mo-bottom-row">
-        <ExecutionSections
-          projectId={projectId}
-          subMilestones={subMilestones}
-          subMilestoneProgress={subMilestoneProgress}
-          plans={plans}
-          plansLoading={extraLoading}
-          plansError={plansError}
-          planProgressMap={planProgressMap}
-          runs={runs}
-          sessions={sessions}
-          sessionActivityMap={sessionActivityMap}
-          planMap={planMap}
-          formatDateRange={formatDateRange}
-        />
+        <ErrorBoundary section sectionName="Execution Sections">
+          <ExecutionSections
+            projectId={projectId}
+            subMilestones={subMilestones}
+            subMilestoneProgress={subMilestoneProgress}
+            plans={plans}
+            plansLoading={extraLoading}
+            plansError={plansError}
+            planProgressMap={planProgressMap}
+            runs={runs}
+            sessions={sessions}
+            sessionActivityMap={sessionActivityMap}
+            planMap={planMap}
+            formatDateRange={formatDateRange}
+          />
+        </ErrorBoundary>
       </div>
     </div>
   );
