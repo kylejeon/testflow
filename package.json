@@ -51,6 +51,9 @@
   },
   "name": "react",
   "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "build": "vite build",
     "dev": "vite",

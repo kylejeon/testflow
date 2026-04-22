@@ -23,6 +23,10 @@ build
 .env.test.local
 .env.production.local
 
+# npm auth / tokens — never commit
+.npmrc
+packages/**/.npmrc
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
