@@ -1,4 +1,9 @@
-interface EmptyStateProps {
+// Onboarding-only EmptyState — used on the Projects landing when the workspace
+// has zero projects. Intentionally distinct from the generic
+// `src/components/EmptyState.tsx` (which is the reusable v2 pattern per
+// f025 Design Spec §10-3).
+
+interface OnboardingEmptyStateProps {
   onCreateProject: () => void;
   onTrySample: () => void;
   isSampleLoading?: boolean;
@@ -23,7 +28,7 @@ const steps = [
   },
 ];
 
-export default function EmptyState({ onCreateProject, onTrySample, isSampleLoading, onImport }: EmptyStateProps) {
+export default function OnboardingEmptyState({ onCreateProject, onTrySample, isSampleLoading, onImport }: OnboardingEmptyStateProps) {
   return (
     <div
       className="flex flex-col items-center justify-center py-16 px-8 text-center"

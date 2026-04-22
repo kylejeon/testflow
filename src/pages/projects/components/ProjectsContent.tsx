@@ -8,7 +8,7 @@ import { loadProjectDetailData } from '../../project-detail/queryFns';
 import CreateProjectModal from './CreateProjectModal';
 import EditProjectModal from './EditProjectModal';
 import DeleteConfirmModal from './DeleteConfirmModal';
-import EmptyState from './EmptyState';
+import OnboardingEmptyState from './OnboardingEmptyState';
 import SparseState from './SparseState';
 import QuickCreateTCModal from './QuickCreateTCModal';
 import TestRailImportModal from './TestRailImportModal';
@@ -712,7 +712,7 @@ export default function ProjectsContent() {
       <>
         <div className="flex flex-col" style={{ background: '#F8FAFC' }}>
           {SubHeader}
-          <EmptyState
+          <OnboardingEmptyState
             onCreateProject={() => setShowCreateModal(true)}
             onTrySample={handleTrySample}
             isSampleLoading={sampleLoading}
