@@ -455,7 +455,14 @@ export default function SettingsPage() {
 
   // Preferences state
   const [checklistDismissed, setChecklistDismissed] = useState(false);
+  // 최초 initializer 는 currentLanguage 로 잡되, 이후 i18n 이 비동기로 바뀌는 경우
+  // (localStorage 로드 + languageChanged 이벤트) 에도 dropdown 이 최신 값을 반영하도록
+  // 아래 useEffect 로 동기화. DB 로드 시 setLanguage(prefs.language) 가 이 값을
+  // override 하는 건 의도된 동작 (DB = source of truth).
   const [language, setLanguage] = useState<'en' | 'ko'>(currentLanguage || 'en');
+  useEffect(() => {
+    setLanguage(currentLanguage || 'en');
+  }, [currentLanguage]);
   const [timezone, setTimezone] = useState('UTC');
   const [autoDetectTz, setAutoDetectTz] = useState(true);
   const [dateFormat, setDateFormat] = useState('YYYY-MM-DD');
