@@ -530,6 +530,21 @@ export const runs = {
     assigneeUpdateFailed: '담당자 업데이트에 실패했어요.',
     assigneeBulkUpdateFailed: '담당자 일괄 업데이트에 실패했어요.',
   },
+
+  // f025 — EmptyState 문구
+  empty: {
+    title: '아직 실행이 없어요',
+    description:
+      '첫 번째 실행을 시작해 보세요. 어떤 케이스가 통과하고, 실패하고, 추가 확인이 필요한지 한눈에 추적할 수 있어요.',
+    cta: '실행 시작하기',
+    secondaryCta: '결과 가져오기 (CSV)',
+    illustrationAlt: '재생 버튼과 성공 체크마크, 진행 트랙',
+  },
+  emptyFiltered: {
+    title: '이 화면에 표시할 실행이 없어요',
+    description: '다른 상태 탭을 보거나 필터를 해제해 보세요.',
+    clearCta: '전체 실행 보기',
+  },
 };
 
 export default runs;

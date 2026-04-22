@@ -328,6 +328,15 @@ export const common = {
       refresh: '이슈 메타데이터 새로고침',
     },
   },
+
+  // f025 — EmptyState 공통 문구
+  clearFilters: '필터 초기화',
+  emptyState: {
+    nothing: {
+      title: '아직 아무것도 없어요',
+      illustrationAlt: '반짝이가 떠오르는 빈 상자',
+    },
+  },
 };
 
 export default common;

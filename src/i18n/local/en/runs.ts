@@ -539,6 +539,21 @@ export const runs = {
     assigneeUpdateFailed: 'Failed to update assignee.',
     assigneeBulkUpdateFailed: 'Failed to update assignees.',
   },
+
+  // f025 — EmptyState copy
+  empty: {
+    title: 'No runs yet',
+    description:
+      'Kick off your first run to track which test cases pass, fail, or need attention.',
+    cta: 'Start a run',
+    secondaryCta: 'Import results (CSV)',
+    illustrationAlt: 'Play button with a success check mark on a progress track',
+  },
+  emptyFiltered: {
+    title: 'No runs in this view',
+    description: 'Try a different status tab or clear filters.',
+    clearCta: 'View all runs',
+  },
 };
 
 export default runs;

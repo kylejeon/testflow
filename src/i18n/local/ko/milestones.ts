@@ -718,6 +718,21 @@ export const milestones = {
       retry: '재시도',
     },
   },
+
+  // f025 — EmptyState 문구
+  empty: {
+    title: '첫 번째 릴리즈를 계획해 보세요',
+    description:
+      '마일스톤은 실행과 테스트 케이스를 릴리즈 단위로 묶어줘요. 지금 무엇이 배포 준비됐는지 한눈에 볼 수 있어요.',
+    cta: '마일스톤 만들기',
+    secondaryCta: '마일스톤 사용법 보기',
+    illustrationAlt: '언덕 위에 꽂힌 깃발과 정상으로 향하는 점선 경로, 반짝이는 별 2개',
+  },
+  emptyFiltered: {
+    title: '이 화면에 표시할 마일스톤이 없어요',
+    description: '필터를 조정하거나 해제하면 모든 마일스톤을 볼 수 있어요.',
+    clearCta: '필터 초기화',
+  },
 };
 
 export default milestones;

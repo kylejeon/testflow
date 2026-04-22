@@ -8,6 +8,7 @@ import { documentation as enDocumentation } from './en/documentation';
 import { settings as enSettings } from './en/settings';
 import { onboarding as enOnboarding } from './en/onboarding';
 import { environments as enEnvironments } from './en/environments';
+import { requirements as enRequirements } from './en/requirements';
 
 import { common as koCommon } from './ko/common';
 import { projects as koProjects } from './ko/projects';
@@ -19,6 +20,7 @@ import { documentation as koDocumentation } from './ko/documentation';
 import { settings as koSettings } from './ko/settings';
 import { onboarding as koOnboarding } from './ko/onboarding';
 import { environments as koEnvironments } from './ko/environments';
+import { requirements as koRequirements } from './ko/requirements';
 
 const resources = {
   en: {
@@ -32,6 +34,7 @@ const resources = {
     settings: enSettings,
     onboarding: enOnboarding,
     environments: enEnvironments,
+    requirements: enRequirements,
   },
   ko: {
     common: koCommon,
@@ -44,6 +47,7 @@ const resources = {
     settings: koSettings,
     onboarding: koOnboarding,
     environments: koEnvironments,
+    requirements: koRequirements,
   },
 };
 

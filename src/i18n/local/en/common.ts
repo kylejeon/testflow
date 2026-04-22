@@ -329,6 +329,15 @@ export const common = {
       refresh: 'Refresh issue metadata',
     },
   },
+
+  // f025 — EmptyState generic copy (shared across pages)
+  clearFilters: 'Clear filters',
+  emptyState: {
+    nothing: {
+      title: 'Nothing here yet',
+      illustrationAlt: 'An empty open box with sparkles floating above it',
+    },
+  },
 };
 
 export default common;

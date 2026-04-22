@@ -721,6 +721,21 @@ export const milestones = {
       retry: 'Retry',
     },
   },
+
+  // f025 — EmptyState copy
+  empty: {
+    title: 'Plan your first release',
+    description:
+      "Milestones group runs and test cases into release targets — so you can see exactly what's ready to ship.",
+    cta: 'Create milestone',
+    secondaryCta: 'See how milestones work',
+    illustrationAlt: 'A flag planted on a hill with a dashed path leading up and two sparkles',
+  },
+  emptyFiltered: {
+    title: 'No milestones match this view',
+    description: 'Adjust filters or clear them to see all milestones.',
+    clearCta: 'Clear filters',
+  },
 };
 
 export default milestones;

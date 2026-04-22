@@ -80,6 +80,22 @@ export const testcases = {
     xlsOldFormatBlocked: 'Legacy .xls files are no longer supported.',
     xlsUseXlsxInstead: 'Please re-save as .xlsx in Excel and try again.',
   },
+
+  // f025 — EmptyState copy
+  empty: {
+    title: 'No test cases yet',
+    description:
+      'Capture what your product should do. Test cases keep your team aligned on expected behavior.',
+    cta: 'Create test case',
+    secondaryCta: 'Generate with AI',
+    readonlyDescription: 'Ask an admin to add test cases.',
+    illustrationAlt: 'Clipboard with checked items and a magnifying glass',
+  },
+  emptyFiltered: {
+    title: 'No test cases match these filters',
+    description: 'Try a different folder, tag, or search term.',
+    clearCta: 'Clear filters',
+  },
 };
 
 export default testcases;

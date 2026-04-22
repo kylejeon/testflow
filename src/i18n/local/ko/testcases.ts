@@ -80,6 +80,22 @@ export const testcases = {
     xlsOldFormatBlocked: '구 버전 .xls 파일은 더 이상 지원되지 않습니다.',
     xlsUseXlsxInstead: 'Excel에서 .xlsx로 저장한 뒤 다시 시도해주세요.',
   },
+
+  // f025 — EmptyState 문구
+  empty: {
+    title: '아직 테스트 케이스가 없어요',
+    description:
+      '프로덕트가 무엇을 해야 하는지 기록해 보세요. 테스트 케이스는 팀 전체의 기대치를 맞추는 기준이에요.',
+    cta: '테스트 케이스 만들기',
+    secondaryCta: 'AI로 생성',
+    readonlyDescription: '관리자에게 테스트 케이스 추가를 요청하세요.',
+    illustrationAlt: '체크된 항목이 있는 클립보드와 돋보기',
+  },
+  emptyFiltered: {
+    title: '필터 조건에 맞는 테스트 케이스가 없어요',
+    description: '다른 폴더나 태그, 검색어를 시도해 보세요.',
+    clearCta: '필터 초기화',
+  },
 };
 
 export default testcases;
