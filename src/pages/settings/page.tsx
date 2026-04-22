@@ -19,6 +19,7 @@ import { sendLoopsEvent } from '../../lib/loops';
 import { registerPaddleErrorHandler, registerPaddleSuccessHandler } from '../../lib/paddle';
 import { useToast, getApiErrorMessage } from '../../components/Toast';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
+import useLanguage from '../../hooks/useLanguage';
 
 interface JiraSettings {
   domain: string;
@@ -336,6 +337,7 @@ function DangerZoneSection({ email }: { email: string }) {
 
 export default function SettingsPage() {
   const { showToast } = useToast();
+  const { changeLanguage, currentLanguage } = useLanguage();
 
   useEffect(() => {
     registerPaddleErrorHandler((msg) => showToast(msg, 'error'));
@@ -453,7 +455,7 @@ export default function SettingsPage() {
 
   // Preferences state
   const [checklistDismissed, setChecklistDismissed] = useState(false);
-  const [language, setLanguage] = useState<'en'>('en');
+  const [language, setLanguage] = useState<'en' | 'ko'>(currentLanguage || 'en');
   const [timezone, setTimezone] = useState('UTC');
   const [autoDetectTz, setAutoDetectTz] = useState(true);
   const [dateFormat, setDateFormat] = useState('YYYY-MM-DD');
@@ -720,7 +722,7 @@ export default function SettingsPage() {
             if (prefs.date_format) setDateFormat(prefs.date_format);
             if (prefs.time_format) setTimeFormat(prefs.time_format as '24h' | '12h');
             if (prefs.default_project_id) setDefaultProjectId(prefs.default_project_id);
-            if (prefs.language) setLanguage(prefs.language as 'en');
+            if (prefs.language === 'en' || prefs.language === 'ko') setLanguage(prefs.language);
           })
           .catch(() => {/* preferences 컬럼 없는 환경 — 무시 */});
       } else {
@@ -1591,6 +1593,9 @@ def pytest_sessionfinish(session, exitstatus):
         { onConflict: 'id' }
       );
       if (error) throw error;
+      if (language !== currentLanguage) {
+        changeLanguage(language);
+      }
       setPreferencesSaved(true);
       setTimeout(() => setPreferencesSaved(false), 3000);
     } catch (e) {
@@ -3818,10 +3823,11 @@ describe('Login', () => {
                         <p className="text-[0.8125rem] text-slate-500 mb-3">Choose your preferred language for the Testably interface.</p>
                         <select
                           value={language}
-                          onChange={(e) => setLanguage(e.target.value as 'en')}
+                          onChange={(e) => setLanguage(e.target.value as 'en' | 'ko')}
                           className="w-full max-w-xs px-3 py-2 border border-slate-200 rounded-lg text-[0.8125rem] bg-white focus:outline-none focus:border-indigo-200 cursor-pointer"
                         >
                           <option value="en">English</option>
+                          <option value="ko">한국어</option>
                         </select>
 
                         <div className="border-t border-slate-200 my-6"></div>
