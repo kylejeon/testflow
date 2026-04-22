@@ -1963,3 +1963,87 @@ Dev Spec `docs/specs/dev-spec-f024-error-boundary.md` + Design Spec
 - 기존 번역 키 값 변경 X — 재사용만 (A11 statusUpdateFailed,
   A2/A3 logoutFailed alias, A16 loadFailed alias)
 - RichTextEditor/QuillEditor 구조 변경 X (AC-7)
+
+────────────────────────────────────────────────────────────────────
+# 2026-04-21 세션 — f033 xlsx → exceljs 마이그레이션 (완료)
+────────────────────────────────────────────────────────────────────
+
+## 뭘 했냐
+Dev Spec `docs/specs/dev-spec-f033-xlsx-to-exceljs.md` 기반 구현 완료.
+
+1. **excelImport.ts 교체** (xlsx → exceljs)
+   - `parseExcelImport` 내부 `await import('xlsx')` → `await import('exceljs')`
+   - `XLSX.read(buffer)` → `new Workbook() + workbook.xlsx.load(buffer)`
+   - `XLSX.utils.sheet_to_json` → `eachRow` 순회 + 수동 직렬화
+   - `serializeCellValue` 헬퍼 추가 — RichText / Hyperlink / Formula.result
+     / Date / Error / null 케이스 전부 커버하여 `Record<string,string>`
+     스키마 보존. 기존 `rowToTestCase` 파이프라인 그대로 재사용.
+   - serializeCellValue export → 테스트 대상.
+
+2. **excelImport.test.ts 신규** (16 케이스, 전원 PASS)
+   - serializeCellValue 8: null/undefined, string, number/bool, Date,
+     RichText, Hyperlink, Formula.result, Error cell.
+   - parseExcelImport 8: 정상 행 / 빈 셀 / Date / RichText / 한글+이모지
+     / Title 누락 / header-only / corrupted buffer.
+   - `buildXlsxBuffer` 헬퍼가 Node Buffer → 독립 ArrayBuffer로 복사해
+     JSDOM에서 exceljs round-trip 동작.
+
+3. **ExportImportModal .xls 차단**
+   - `handleFileSelect` / `handleDrop`가 .xls 확장자 감지 시 parseExcelImport
+     호출 전 명시적 에러 2줄 (i18n 키) 설정.
+   - `<input accept>` → `.csv,.xlsx` (-`.xls`).
+   - supported formats 배지 배열에서 `.xls` 제거.
+   - `useTranslation(['testcases'])` hook 추가.
+
+4. **i18n 신규 키 2쌍 (en/ko)**
+   - `src/i18n/local/en/testcases.ts` + `src/i18n/local/ko/testcases.ts` 에
+     `import.xlsOldFormatBlocked` + `import.xlsUseXlsxInstead` 추가.
+   - Planner 정정: `src/locales/*.json` 이 아닌 TS 모듈 구조.
+   - scan:i18n:check 0 매치 / scan:i18n:parity 0 diff.
+
+5. **package.json 에서 "xlsx": "^0.18.5" 제거**
+   - `npm install` 로 lockfile 재생성. 8 하위 패키지 제거.
+   - `npm ls xlsx` → empty.
+   - `npm audit` → **0 vulnerabilities**.
+
+## 어디까지 됐냐 — 품질 체크 (전부 PASS)
+- `npx tsc --noEmit` → 0 에러
+- `npm run test -- --run` → **143 tests passed** (기존 127 + 신규 16)
+- `npm run scan:i18n:check` → 0 매치 across 29 files
+- `npm run scan:i18n:parity` → 0 diff
+- `npm run build` → 성공 (6.74s). dist/assets/ 에 xlsx 청크 부재.
+  exceljs는 `exceljs.min-D0YNMMsU.js` 별도 청크 (937kB) — 동적 import.
+- `npm audit` → 0 vulnerabilities. GHSA-4r6h-8v6p-xvw6 +
+  GHSA-5pgg-2g8v-p4x9 모두 해소.
+
+## 해소된 CVE
+- **GHSA-4r6h-8v6p-xvw6** — xlsx Prototype Pollution
+- **GHSA-5pgg-2g8v-p4x9** — xlsx ReDoS
+
+## 커밋 (3건)
+1. `feat(security): excelImport.ts xlsx -> exceljs 교체 (f033)` — 3ec16f9
+2. `feat(security): .xls 업로드 차단 + i18n 에러 메시지 (f033)` — 0d21d6c
+3. `chore(deps): xlsx 의존성 제거 (f033 CVE 해소)` — 66f7de9
+
+## 다음에 할 것
+- `git push origin claude` — CEO 머지 대기
+- 수동 스모크 (로컬 dev):
+  - Excel Import: 이전 xlsx 라이브러리로 export된 .xlsx 파일 재import
+    (AC-5 회귀 확인)
+  - Excel Export: Project TC Export .xlsx → 다시 Import round-trip
+  - Run Detail → Export XLSX → 열기 확인
+  - .xls 업로드 시 한/영 에러 토스트 확인
+
+## 포함 안 된 것 (금기 준수 / OOS)
+- jspdf / 기타 라이브러리 건드리지 않음.
+- Phase 3 완료된 i18n 기존 키 값 변경 X — 재사용/신규 추가만.
+- TestRail CSV export 회귀 X (이미 exceljs 사용 중).
+- main 브랜치 push X.
+
+## 건너뛴 항목 + 사유
+- `src/components/ExportModal.tsx` — `xlsx` 문자열은 ExportFormat 리터럴,
+  라이브러리 import 아니므로 변경 불필요.
+- `src/pages/project-runs/page.tsx` / `src/pages/run-detail/page.tsx` /
+  `src/utils/testRailExport.ts` — 이미 `await import('exceljs')` 사용.
+- `npm run lint` — eslint 설정 파일 부재 (프로젝트가 lint 스크립트를
+  package.json 에 노출하지 않음).
