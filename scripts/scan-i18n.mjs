@@ -27,12 +27,24 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..');
 
 // ── Phase 1 directories (dev-spec §4-1 A) + Phase 2a plan-detail +
-//    Phase 2b run-detail ────────────────────────────────────────────────
+//    Phase 2b run-detail + Phase 3 shared components (6 whitelist files) ─
 const SCOPE_DIRS = [
   'src/components/issues',
   'src/pages/milestone-detail',
   'src/pages/run-detail',
   'src/pages/plan-detail',
+];
+
+// Phase 3 (AC-7): 6 shared-component files explicitly enrolled in scan.
+// A-plan whitelist — `src/components/` is not scanned wholesale until
+// Phase 4, so we pick these 6 files by explicit path.
+const SCOPE_FILES = [
+  'src/components/DetailPanel.tsx',
+  'src/components/ExportModal.tsx',
+  'src/components/FocusMode.tsx',
+  'src/components/StatusBadge.tsx',
+  'src/components/Avatar.tsx',
+  'src/components/ProjectHeader.tsx',
 ];
 
 // Phase 2 files to ignore globally. With run-detail/page.tsx activated
@@ -234,6 +246,14 @@ async function main() {
   const files = [];
   for (const sub of SCOPE_DIRS) {
     walkDir(join(REPO_ROOT, sub), files);
+  }
+  // Phase 3: individual whitelisted files outside SCOPE_DIRS.
+  for (const rel of SCOPE_FILES) {
+    const abs = join(REPO_ROOT, rel);
+    try {
+      const s = statSync(abs);
+      if (s.isFile()) files.push(abs);
+    } catch { /* missing file: skip quietly */ }
   }
 
   let total = 0;

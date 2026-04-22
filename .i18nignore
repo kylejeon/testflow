@@ -104,3 +104,10 @@ showToast('error'
 showToast('success'
 showToast('info'
 showToast('warning'
+
+# ── Phase 3 (AC-12 / AC-15): keyboard shortcut characters ──────────────────
+# FocusMode <kbd>Esc</kbd> tag renders the literal key cap, translating it
+# would break the shortcut indicator. Same policy as the single-letter kbd
+# hints (P / F / B / R / S / C / H / N / [ / ] / /) which are already safe
+# under the single-letter regex above.
+>Esc<
