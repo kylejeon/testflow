@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
+import { supabase } from '../../lib/supabase';
 import { useAiFeature } from '../../hooks/useAiFeature';
 import { normalizeLocale } from '../../lib/claudeLocale';
 import { aiFetch } from '../../lib/aiFetch';
@@ -21,6 +22,8 @@ interface SuggestedTC {
   priority: string;
   tags?: string[];
   rationale: string;
+  /** DB 의 custom_id (e.g. "TC-001") — Claude 응답엔 없고 client-side 에서 enrichment */
+  custom_id?: string | null;
 }
 
 interface AssistantResult {
@@ -49,11 +52,11 @@ const RISK_SCORE: Record<string, number> = { critical: 92, high: 78, medium: 55,
 // Rationale tags
 type RatTag = { key: string; cls: string; label: string };
 const RAT_MAP: Record<string, RatTag> = {
-  changed:  { key:'changed',  cls:'bg-orange-50 text-orange-700 border border-orange-200',  label:'● 최근 수정' },
-  failure:  { key:'failure',  cls:'bg-red-50 text-red-700 border border-red-200',            label:'● 실패 이력' },
+  changed:  { key:'changed',  cls:'bg-orange-50 text-orange-700 border border-orange-200',  label:'● Recent changes' },
+  failure:  { key:'failure',  cls:'bg-red-50 text-red-700 border border-red-200',            label:'● Failure history' },
   flaky:    { key:'flaky',    cls:'bg-yellow-50 text-yellow-800 border border-yellow-200',   label:'● Flaky' },
-  req:      { key:'req',      cls:'bg-blue-50 text-blue-700 border border-blue-200',         label:'● 요구사항' },
-  ai:       { key:'ai',       cls:'bg-violet-50 text-violet-700 border border-violet-200',   label:'● AI 분석' },
+  req:      { key:'req',      cls:'bg-blue-50 text-blue-700 border border-blue-200',         label:'● Requirements' },
+  ai:       { key:'ai',       cls:'bg-violet-50 text-violet-700 border border-violet-200',   label:'● AI analysis' },
   critical: { key:'critical', cls:'bg-red-50 text-red-800 border border-red-300 font-semibold', label:'● Critical' },
 };
 
@@ -106,6 +109,24 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'AI request failed');
+
+      // Enrich with custom_id (Claude 응답의 tc.id 는 UUID. 사용자에게 TC-XXX 형태로 보여줘야 함)
+      const suggestedTCs = (data.suggested_test_cases as SuggestedTC[] | undefined) ?? [];
+      if (suggestedTCs.length > 0) {
+        const ids = suggestedTCs.map(tc => tc.id);
+        const { data: tcRows } = await supabase
+          .from('test_cases')
+          .select('id, custom_id')
+          .in('id', ids);
+        const customIdMap = new Map<string, string | null>(
+          (tcRows ?? []).map((row: { id: string; custom_id: string | null }) => [row.id, row.custom_id]),
+        );
+        data.suggested_test_cases = suggestedTCs.map(tc => ({
+          ...tc,
+          custom_id: customIdMap.get(tc.id) ?? null,
+        }));
+      }
+
       setResult(data);
       setStep('result');
       showAiCreditToast(showToast, t, data);
@@ -242,7 +263,7 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
                   </div>
                 )}
                 <div style={{ fontSize:11, color:'#9CA3AF', marginTop:6, lineHeight:1.45 }}>
-                  비워두면 <b>standalone Plan</b>으로 생성 (나중에 Milestone에 붙일 수 있음)
+                  Leave empty to create a <b>standalone Plan</b> (can be attached to a Milestone later)
                 </div>
               </div>
             </div>
@@ -415,10 +436,12 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
                         {/* Content */}
                         <div>
                           <div style={{ fontSize:13, fontWeight:600, display:'flex', alignItems:'center', gap:8 }}>
-                            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, fontWeight:700,
-                              padding:'1px 5px', borderRadius:4, background:'#EEF2FF', color:'#6366F1' }}>
-                              {tc.id.slice(0,6).toUpperCase()}
-                            </span>
+                            {tc.custom_id && (
+                              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, fontWeight:700,
+                                padding:'1px 5px', borderRadius:4, background:'#EEF2FF', color:'#6366F1' }}>
+                                {tc.custom_id}
+                              </span>
+                            )}
                             {tc.title}
                           </div>
                           <div style={{ fontSize:11, color:'#9CA3AF', marginTop:2 }}>{tc.rationale}</div>
@@ -428,7 +451,7 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
                             {(tc.tags||[]).includes('flaky') && <span style={{...ratStyle(RAT_MAP.flaky)}}>{RAT_MAP.flaky.label}</span>}
                             {(tc.tags||[]).includes('req') && <span style={{...ratStyle(RAT_MAP.req)}}>{RAT_MAP.req.label}</span>}
                             {tc.priority==='high' && <span style={{...ratStyle(RAT_MAP.failure)}}>{RAT_MAP.failure.label}</span>}
-                            <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 7px', borderRadius:10, fontSize:10, fontWeight:500, background:'#F5F3FF', color:'#6D28D9', border:'1px solid #DDD6FE' }}>● AI 분석</span>
+                            <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 7px', borderRadius:10, fontSize:10, fontWeight:500, background:'#F5F3FF', color:'#6D28D9', border:'1px solid #DDD6FE' }}>{RAT_MAP.ai.label}</span>
                           </div>
                         </div>
                         {/* Risk score */}
@@ -459,7 +482,7 @@ export default function AIPlanAssistantModal({ projectId, milestones, onClose, o
           <div style={{ padding:'14px 22px', borderTop:'1px solid #E2E8F0', display:'flex', alignItems:'center', gap:10, background:'#F8FAFC' }}>
             <div style={{ fontSize:12, color:'#9CA3AF' }}>
               <b style={{ color:'#0F172A' }}>{selectedCount} of {totalCount}</b> selected
-              {selectedCount > 0 && <> · 예상 실행 시간 <b style={{color:'#0F172A'}}>~{estimatedHours}h</b></>}
+              {selectedCount > 0 && <> · Est. time <b style={{color:'#0F172A'}}>~{estimatedHours}h</b></>}
             </div>
             <div style={{ marginLeft:'auto', display:'flex', gap:8 }}>
               <button onClick={() => { setStep('input'); setResult(null); }}
