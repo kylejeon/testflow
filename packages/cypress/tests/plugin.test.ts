@@ -377,4 +377,40 @@ describe('setupTestablyReporter — config resolution priority', () => {
       ),
     ).toThrow(/TESTABLY_URL|required/i);
   });
+
+  it('ConfigError (URL missing): TOKEN + RUN_ID present, URL absent → throws about URL', () => {
+    process.env['TESTABLY_TOKEN'] = 'tok-only';
+    process.env['TESTABLY_RUN_ID'] = 'run-only';
+    expect(() =>
+      setupTestablyReporter(
+        (() => undefined) as unknown as Cypress.PluginEvents,
+        fakeConfig(),
+        { testCaseIdSource: 'title' },
+      ),
+    ).toThrow(/TESTABLY_URL/i);
+  });
+
+  it('ConfigError (TOKEN missing): URL + RUN_ID present, TOKEN absent → throws about TOKEN', () => {
+    process.env['TESTABLY_URL'] = 'https://example.testably.app';
+    process.env['TESTABLY_RUN_ID'] = 'run-only';
+    expect(() =>
+      setupTestablyReporter(
+        (() => undefined) as unknown as Cypress.PluginEvents,
+        fakeConfig(),
+        { testCaseIdSource: 'title' },
+      ),
+    ).toThrow(/TESTABLY_TOKEN/i);
+  });
+
+  it('ConfigError (RUN_ID missing): URL + TOKEN present, RUN_ID absent → throws about RUN_ID', () => {
+    process.env['TESTABLY_URL'] = 'https://example.testably.app';
+    process.env['TESTABLY_TOKEN'] = 'tok-only';
+    expect(() =>
+      setupTestablyReporter(
+        (() => undefined) as unknown as Cypress.PluginEvents,
+        fakeConfig(),
+        { testCaseIdSource: 'title' },
+      ),
+    ).toThrow(/TESTABLY_RUN_ID/i);
+  });
 });

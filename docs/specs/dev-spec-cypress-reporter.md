@@ -71,7 +71,7 @@ README 에 "Playwright 와 달리 Cypress 는 annotation API 가 없어서 title
 
 ## 3. 수용 기준 (Acceptance Criteria)
 
-> 총 **28 개**. 각 AC 에 "검증 방법" 포함.
+> 총 **47 개**. 각 AC 에 "검증 방법" 포함.
 
 ### AC-A: 패키지 메타 & 빌드
 

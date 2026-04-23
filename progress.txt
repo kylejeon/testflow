@@ -284,3 +284,88 @@
 3. 5/11 Playwright 런칭 후 48h 리그레션 관측 → 문제 없으면 5/13 sdk-cypress-v1.0.1
    태그 푸시 → GitHub Actions 자동 publish
 4. 5/13 마케팅 플립 PR 병행 (f028-*.md + 루트 README + Settings UI 카드 스펙)
+
+---
+
+2026-04-23 (밤): f028b Cypress Reporter SDK — QA P1 3건 수정 (재검수 준비)
+
+## 뭘 했냐 (claude 브랜치)
+
+### P1-1: AC-H2 TS/CJS integration 테스트 추가
+- packages/cypress/tests/integration/ts-config.test.ts (신규, 5 케이스)
+  - dist/index.mjs 를 직접 import → named/default export, 재export 에러 클래스,
+    .d.ts 의 CypressReporterOptions shape (annotation 모드 부재 assertion),
+    setupTestablyReporter 시그니처 타입 5개 assertion
+- packages/cypress/tests/integration/cjs-config.test.ts (신규, 4 케이스)
+  - tests/fixtures/cjs-consumer/cypress.config.js (유저 샘플) 신규
+  - 임시 디렉토리에 CJS probe 작성 후 node 서브프로세스로 require(dist/index.js)
+    → setupTestablyReporter 호출 시 after:run 정상 등록 검증
+  - vitest 가 CJS 에서 import 불가하므로 .test.ts 에서 execFileSync(node) 로 우회
+
+### P1-2: AC-H3 strict tsconfig fixture + 통합 테스트
+- packages/cypress/tests/fixtures/strict-tsconfig/cypress.config.ts (신규)
+  - Dev Spec §8 샘플 미러 (defineConfig + setupTestablyReporter 호출)
+- packages/cypress/tests/fixtures/strict-tsconfig/tsconfig.json (신규)
+  - strict:true + noImplicitAny/Returns/This/NullChecks/FunctionTypes/
+    BindCallApply/PropertyInitialization + alwaysStrict + noUnusedLocals/
+    Parameters + noFallthroughCasesInSwitch 전부 on
+  - paths 로 @testably.kr/cypress-reporter → ../../../dist/index.d.ts resolve
+- packages/cypress/tests/integration/strict-ts.test.ts (신규, 2 케이스)
+  - execSync('npx tsc --noEmit -p tsconfig.json') → exit 0 + 빈 stdout 검증
+
+### P1-3: AC-I2 retry.test.ts 3 → 11 케이스
+- packages/cypress/tests/retry.test.ts (대폭 확장)
+  1. 500 × 4 → 포기 (기존)
+  2. 500 → 200 recovery (기존)
+  3. failOnUploadError=true + 500 × 4 → throw (기존)
+  4. (신규) 500 → 500 → 200 recovery
+  5. (신규) 429 + Retry-After:3 → 3s 대기 후 recovery + logger.warn 검증
+  6. (신규) 429 + Retry-After 헤더 없음 → 기본 5s 후 recovery
+  7. (신규) 401 non-retry → 1회 호출 + Invalid API token warn
+  8. (신규) 403 non-retry → 1회 호출
+  9. (신규) 404 non-retry → 1회 호출 + Run not found warn
+  10. (신규) 네트워크 에러 (fetch reject) → 3회 재시도 후 포기
+  11. (신규) failOnUploadError=false (명시) + 네트워크 에러 → resolves
+
+### P2-2 + P2-3: ConfigError 3종 개별 unit test (plugin.test.ts 14 → 17)
+- packages/cypress/tests/plugin.test.ts
+  - (신규) URL만 없음 → /TESTABLY_URL/ throw
+  - (신규) TOKEN만 없음 → /TESTABLY_TOKEN/ throw
+  - (신규) RUN_ID만 없음 → /TESTABLY_RUN_ID/ throw
+
+### P2-5: Dev Spec 헤더 오기 수정
+- docs/specs/dev-spec-cypress-reporter.md §3
+  - "총 **28 개**" → "총 **47 개**" (AC 실제 개수 일치)
+
+### 검증 (전부 PASS)
+- cd packages/cypress && npm run build: CJS 7.2KB + ESM 5.9KB + DTS 2.2KB 재생성
+- cd packages/cypress && npx vitest run: 76/76 passed (기존 54 + 신규 22)
+  - plugin: 14 → 17 (+3)
+  - retry: 3 → 11 (+8)
+  - ts-config integration: +5 (신규)
+  - cjs-config integration: +4 (신규)
+  - strict-ts integration: +2 (신규)
+- cd packages/cypress && npx tsc --noEmit -p tests/fixtures/strict-tsconfig/tsconfig.json:
+  strict 모드 0 errors (수동 확인 + CI 통합 테스트 양쪽)
+- npx tsc --noEmit (root): 0 errors
+- npm run test -- --run (root): 232/232 passed (회귀 없음)
+- npm pack --dry-run -w @testably.kr/cypress-reporter: 8.7KB tarball, 7 파일
+  (tests/ fixtures/ 는 files[] 에 없으므로 유출 없음 확인)
+
+## 어디까지 됐냐
+
+### QA 이슈 처리 상태 (P0 0 / P1 3 / P2 5)
+- P0: 없음
+- P1-1 (AC-H2): FIXED — TS+CJS integration 9 케이스
+- P1-2 (AC-H3): FIXED — strict fixture + 2 케이스
+- P1-3 (AC-I2): FIXED — retry 11 케이스 (429 rate-limit + 401/403/404 non-retry + 네트워크)
+- P2-1: 런칭 당일 (5/13) 마케팅 플립 PR 예정 — 본 커밋 제외
+- P2-2: FIXED — ConfigError 3종 개별 unit test
+- P2-3: FIXED — plugin.test.ts 14 → 17 (P2-2 로 자동 달성)
+- P2-4: SKIP — 본 사이클 제외 (SDK_AGENT 하드코딩 리팩토링은 후속 이슈)
+- P2-5: FIXED — Dev Spec §3 헤더 47 AC 로 정정
+
+## 다음엔 뭘 해야 해
+1. QA 재검수 요청 → Ship 판정 받으면 CEO main 머지
+2. 5/3 내 0.9.0-rc.1 태그 push
+3. 5/13 sdk-cypress-v1.0.1 태그 push → 마케팅 플립 PR 병행
