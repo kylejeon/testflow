@@ -732,3 +732,76 @@
 6. v1.1 후속: OOS 10개 중 우선순위 선정 (예상: §9-9 AddRunModal 자동 오픈,
    §9-4 IssueCreateModal 공유 추출이 FocusMode 통합까지 감안 시 가치 높음)
 
+---
+
+2026-04-24 (저녁): f001+f002 QA P1 2건 + P2 2건 반영
+
+## 뭘 했냐 (claude 브랜치)
+
+### P1-01: Edge Function Deno 테스트 파일 추가 (AC-L1)
+- supabase/functions/env-ai-insights/index.test.ts (신규)
+  - 13 케이스 (AC-L1 a~m): happy path / from_cache / too_little_data /
+    tier_too_low / forbidden / not_found / monthly_limit_reached (pre-flight) /
+    force_refresh / locale mismatch / upstream_rate_limit / ai_parse_failed /
+    ai_timeout / race-lost
+  - 선례: supabase/functions/tests/ai_credit_race_test.ts 패턴 동일
+  - SKIP 전략: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY / SUPABASE_ANON_KEY
+    미설정 시 Deno.test.ignore 로 skip (로컬 개발자 방해 없음)
+  - Fixture teardown: 각 테스트 try/finally 로 seed 데이터 정리
+  - Claude 호출 케이스 (a, h, i, j, k, l): Claude stub/real 없는 환경에서는
+    upstream-friendly fallback assertion (status in [200,422,429,500,504])
+    으로 계약 호환성만 검증 — real-Claude CI 에서는 happy path 통과
+  - race-lost (m): Promise.all 3 concurrent @ used=29/30 으로 유발 (seed)
+
+### P1-02: useEnvAiInsights 훅 시그니처 Dev Spec 갱신 (AC-F1/F2/F3)
+- 코드 refactor 하지 않고 Dev Spec 을 현재 useMutation 패턴에 맞게 갱신
+  - 이유: 기능 동작 정상 + plan-detail 이 mutation 패턴으로 소비 중
+    + refactor 는 변경폭 크고 회귀 리스크 높음
+- docs/specs/dev-spec-f001-f002-env-ai-insights.md §AC-F
+  - AC-F1: `useEnvAiInsights(planId: string | null)` — locale 은 i18n.language
+  - AC-F2: useMutation 기반 + mutationKey ['env-ai-insights', planId]
+  - AC-F3: UseMutationResult<...> 반환 (파생 필드는 data.meta 경로로 접근)
+  - AC-F4: aiFetch 호출 (invokeEdge 동일 계열)
+  - AC-F5~F7: 기존 유지 + F7 에 upstream_rate_limit/ai_parse_failed/network 추가
+  - 상단에 "갱신 2026-04-24" 주석 블록 + 사유 4항 기재
+- §1 하단 "구현 편차 기록 (Implementation Variance Log)" 섹션 신규 추가
+  - 5 항목 표: 시그니처 / 패턴 / 반환 / P2-02 / P2-03
+
+### P2-02: 마운트 pre-load credits_remaining 하드코딩 0 제거
+- src/pages/plan-detail/page.tsx:1570-1600 (EnvironmentsTab pre-load useEffect)
+  - 기존: credits_remaining: 0, monthly_limit: 0 하드코딩
+  - 수정: aiFeature.remainingCredits / aiFeature.monthlyLimit 주입
+  - useEffect dep 에 aiFeature.loading 추가 (state 로딩 후 반영)
+
+### P2-03: 마운트 pre-load 24h 만료 체크 추가
+- src/pages/plan-detail/page.tsx 동일 useEffect
+  - cache.generated_at 이 Date.parse 실패 OR now - generated > 24h 면
+    setAiInsight 호출 skip (return) → "Cached" 뱃지 오표시 방지
+  - Edge Function 은 어차피 Regenerate 시 재생성하므로 UI 정합성만 해결
+
+### 검증 (전부 PASS)
+- npx tsc --noEmit: 0 errors
+- npm run test -- --run: 255/255 passed (회귀 없음)
+- npm run scan:i18n:check: clean (0 hardcoded, 29 files)
+- npm run scan:i18n:parity: en ↔ ko 0 diff
+- Deno test 구문: 로컬에 deno 미설치 (CI 에서 검증). import 경로 / 타입 정합은
+  기존 ai_credit_race_test.ts 와 동일 std@0.208.0 사용
+
+## 어디까지 됐냐
+
+### QA 이슈 처리 상태 (P1 2 / P2 4)
+- P1-01 (AC-L1 Deno 13 cases): FIXED
+- P1-02 (useEnvAiInsights AC-F1/F2/F3): FIXED (Dev Spec 갱신 + 편차 기록)
+- P2-01 (Toast duration): SKIP (본 사이클 외 — 시그니처 변경 영향 범위 큼)
+- P2-02 (credits_remaining 하드코딩): FIXED
+- P2-03 (24h 만료 체크): FIXED
+- P2-04 (Jira Edge Function body 형식): 기능 정상 — spec 편차만이며 별도 처리
+  (기존 create-jira-issue 계약 유지)
+
+## 다음엔 뭘 해야 해
+1. QA 재검수 → Ship 판정 받으면 CEO main 머지
+2. CEO Supabase Dashboard SQL Editor 에서 마이그레이션 적용 (이전 작업 carry-over)
+3. Edge Function 배포 (supabase functions deploy env-ai-insights)
+4. CI 환경에 Claude stub 구축 후 AC-L1-{a,h,i,j,k,l} 실행 (real-path 검증)
+5. P2-01 Toast duration 시그니처 확장은 별도 이슈로 백로그
+

@@ -1548,7 +1548,11 @@ function EnvironmentsTab({
   const aiFeature = useAiFeature('environment_ai_insights');
   const envAiMutation = useEnvAiInsights(plan.id);
 
-  // Pre-load cache on mount (if already stored)
+  // Pre-load cache on mount (if already stored + not expired)
+  // - P2-02: credits_remaining / monthly_limit 은 useAiFeature state 로 주입
+  //          (기존 하드코딩 0 은 사용자에게 "남은 크레딧 0" 오표시 유발).
+  // - P2-03: cache.generated_at + 24h < now 이면 aiInsight 를 세팅하지 않는다.
+  //          Edge Function 은 어차피 Claude 재생성하므로 UI "Cached" 뱃지 노출 방지.
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -1560,7 +1564,10 @@ function EnvironmentsTab({
       if (cancelled) return;
       const cache = (data?.ai_env_insights_cache as any) || null;
       if (cache && cache.generated_at) {
-        // Render cached payload (credits_remaining will be recomputed next time)
+        const generatedTs = Date.parse(cache.generated_at);
+        const isExpired =
+          Number.isNaN(generatedTs) || Date.now() - generatedTs > 24 * 3600_000;
+        if (isExpired) return; // P2-03: 만료 캐시는 표시하지 않음
         setAiInsight({
           headline: cache.headline ?? null,
           critical_env: cache.critical_env ?? null,
@@ -1574,8 +1581,10 @@ function EnvironmentsTab({
           meta: {
             from_cache: true,
             credits_used: 0,
-            credits_remaining: 0,
-            monthly_limit: 0,
+            // P2-02: 실제 remaining credits / monthly limit 은 useAiFeature 이
+            //        로드 완료된 뒤 채운다 (초기 0 하드코딩 제거).
+            credits_remaining: aiFeature.remainingCredits,
+            monthly_limit: aiFeature.monthlyLimit,
             tokens_used: 0,
             latency_ms: 0,
             locale: cache.meta?.locale,
@@ -1584,7 +1593,8 @@ function EnvironmentsTab({
       }
     })();
     return () => { cancelled = true; };
-  }, [plan.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plan.id, aiFeature.loading]);
 
   const handleRegenerate = useCallback((force: boolean) => {
     setAiError(null);

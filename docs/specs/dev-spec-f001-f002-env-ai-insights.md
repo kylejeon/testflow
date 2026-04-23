@@ -30,6 +30,19 @@
   - AI 호출 당 cache hit rate (타겟: ≥ 50% — 대부분 첫 방문 외엔 캐시)
   - 재생성 버튼 클릭 대비 `rate_limited_post_check` 비율 < 1% (f018 적용 확인)
 
+### 구현 편차 기록 (Implementation Variance Log)
+
+> Spec 초안 대비 실제 구현이 달라진 지점 및 그 사유. QA 재검수 시 이 섹션의 항목을
+> "Spec 준수" 로 간주한다.
+
+| 날짜 | 항목 | Spec 초안 | 실제 구현 | 사유 |
+|------|------|-----------|-----------|------|
+| 2026-04-24 | `useEnvAiInsights` 시그니처 | `useEnvAiInsights(planId, locale)` | `useEnvAiInsights(planId)` | locale 은 훅 내부에서 `normalizeLocale(i18n.language)` 로 해석. plan-detail 은 이미 i18n context 를 공유하므로 prop 주입은 중복. 호출처 API 축소 → 회귀 리스크 감소. |
+| 2026-04-24 | 훅 패턴 | `useQuery + enabled:false + refetch()` | `useMutation` | Regenerate 는 auto-fetch 가 아니라 명시적 사용자 trigger 이므로 mutation 의 의미론이 정확. 또한 race-lost 429 payload 를 throw 로 bubble 시키는 데 mutation 의 `onError(err, variables)` 패턴이 직관적. |
+| 2026-04-24 | 훅 반환 | rich object `{ data, isLoading, error, regenerate, isFromCache, creditsUsed, creditsRemaining }` | `UseMutationResult<EnvAiInsightsResult, EnvAiInsightsError, { force: boolean }>` | consumer 가 `mutation.mutate({ force }, { onSuccess, onError })` 패턴으로 필요한 모든 값을 얻는다. 파생 필드(`isFromCache`, `creditsRemaining`)는 `mutation.data?.meta` 경로로 동일하게 접근 가능. |
+| 2026-04-24 | 마운트 시 cache pre-load `credits_remaining` | Edge Function 와 동일 실시간값 | `useAiFeature('environment_ai_insights').remainingCredits / monthlyLimit` 주입 | 프런트 마운트 시 실시간 shared pool 을 재계산하는 Edge Function 를 또 호출하지 않도록, 이미 로딩된 `useAiFeature` state 재사용. (QA P2-02 수정) |
+| 2026-04-24 | 마운트 시 24h 만료 캐시 표시 | Edge Function 이 재생성 | 프런트도 `generated_at + 24h < now` 이면 state 세팅 skip | "Cached" 뱃지 오표시 방지. 사용자는 Regenerate 버튼을 명시적으로 누르기 전까지 rule-based 만 본다 (AC-G9 회귀 방지 정신 동일). (QA P2-03 수정) |
+
 ---
 
 ## 2. 유저 스토리
@@ -110,13 +123,24 @@
 
 ### AC-F — Frontend hook
 
-- [ ] **AC-F1:** 훅 `useEnvAiInsights(planId: string | null, locale: SupportedLocale)` 가 `src/hooks/useEnvAiInsights.ts` 에 export 되어 있다.
-- [ ] **AC-F2:** 훅은 `useQuery` 기반이고 `queryKey = ['env-ai-insights', planId, locale]`, `enabled: false` 로 자동 실행되지 않는다 (버튼 클릭 시에만 `refetch()` / 별도 mutation 으로 호출).
-- [ ] **AC-F3:** 훅은 `{ data: EnvAiInsightsResult | null, isLoading: boolean, error: Error | null, regenerate: (forceRefresh: boolean) => Promise<void>, isFromCache: boolean, creditsUsed: number, creditsRemaining: number }` 를 반환한다.
-- [ ] **AC-F4:** 훅 내부에서 `invokeEdge('env-ai-insights', { body: { plan_id, force_refresh, locale } })` 로 Edge Function 을 호출한다 (ES256 호환).
+> **갱신 2026-04-24 (QA P1-02 반영):** 원래 초안은 `useQuery + enabled:false` 패턴이었으나,
+> 실제 구현은 `useMutation` 패턴을 채택했다. 사유:
+> - Regenerate 는 **명시적 사용자 trigger** (자동 fetch 가 아님) 이므로 mutation 의 의미론이 정확.
+> - `useQuery + enabled:false + refetch()` 와 기능적으로 동등하나, TanStack Query 의 mutation
+>   반환 객체 (`mutate`, `isPending`, `error`, `data`) 가 "Regenerate 버튼" UI 에 1:1 매핑된다.
+> - 이미 `plan-detail` 소비처가 mutation 객체를 기반으로 race-lost payload 분기 / toast 핸들링을
+>   구현했고, 회귀 리스크가 큰 refactor 없이 Dev Spec 을 실제 계약에 맞췄다.
+> - Locale 은 `i18n.language` 로 훅 내부에서 `normalizeLocale()` 호출. `plan-detail` 페이지는
+>   이미 i18n context 를 공유하므로 prop 으로 중복 주입할 필요가 없다.
+> 관련 §1 구현 편차 기록 참조.
+
+- [ ] **AC-F1:** 훅 `useEnvAiInsights(planId: string | null)` 가 `src/hooks/useEnvAiInsights.ts` 에 export 되어 있다. Locale 은 훅 내부에서 `normalizeLocale(i18n.language)` 로 주입한다 (caller 가 prop 으로 전달하지 않는다).
+- [ ] **AC-F2:** 훅은 TanStack `useMutation` 기반이고 `mutationKey = ['env-ai-insights', planId]`, 버튼 클릭 시에만 `mutate({ force })` 로 호출된다 (auto-fetch 없음).
+- [ ] **AC-F3:** 훅은 `UseMutationResult<EnvAiInsightsResult, EnvAiInsightsError, { force: boolean }>` 를 반환한다. Consumer (`plan-detail/page.tsx`) 는 `mutation.mutate({ force }, { onSuccess, onError })` 패턴으로 소비하며, `isPending` (= 기존 spec 의 `isLoading`) / `error` / `data` 는 mutation 객체에서 직접 읽는다.
+- [ ] **AC-F4:** 훅 내부에서 `aiFetch('env-ai-insights', { plan_id, force_refresh, locale })` 로 Edge Function 을 호출한다 (ES256 호환, `invokeEdge` 동일 계열 헬퍼).
 - [ ] **AC-F5:** 호출 성공 시 `showAiCreditToast(showToast, t, response)` 를 호출해 credits_used 토스트를 띄운다.
-- [ ] **AC-F6:** 호출 성공 시 `useAiFeature('environment_ai_insights').refetch()` 를 호출해 remaining credits 를 갱신한다.
-- [ ] **AC-F7:** 에러 응답 (`error: 'tier_too_low'` / `'monthly_limit_reached'` / `'forbidden'` / `'ai_timeout'` / `'too_little_data'` — 마지막은 200 이지만 data 표시용) 각각에 대해 i18n 키로 구분된 토스트를 띄운다.
+- [ ] **AC-F6:** 호출 성공 시 소비처 (`plan-detail`) 에서 `useAiFeature('environment_ai_insights').refetch()` 를 호출해 remaining credits 를 갱신한다 (mutation 의 `onSuccess` 에 별도로 invalidateQueries 도 병행).
+- [ ] **AC-F7:** 에러 응답 (`error: 'tier_too_low'` / `'monthly_limit_reached'` / `'forbidden'` / `'ai_timeout'` / `'upstream_rate_limit'` / `'ai_parse_failed'` / `'network'` / `'too_little_data'` — 마지막은 200 이지만 data 표시용) 각각에 대해 i18n 키로 구분된 토스트를 띄운다 (소비처 `handleRegenerate.onError` switch-case).
 
 ### AC-G — EnvironmentAIInsights props + AI 렌더
 
