@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>f028 PH Image 1 — Before / After Split</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Pacifico&display=swap"
+  rel="stylesheet"
+/>
+<link
+  href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css"
+  rel="stylesheet"
+/>
+<style>
+  :root {
+    --slate-950: #020617;
+    --slate-900: #0f172a;
+    --slate-800: #1e293b;
+    --slate-700: #334155;
+    --slate-400: #94a3b8;
+    --slate-500: #64748b;
+    --slate-300: #cbd5e1;
+    --slate-200: #e2e8f0;
+    --slate-100: #f1f5f9;
+    --slate-50: #f8fafc;
+    --white: #ffffff;
+    --indigo-700: #4338ca;
+    --indigo-600: #4f46e5;
+    --indigo-500: #6366f1;
+    --indigo-400: #818cf8;
+    --indigo-300: #a5b4fc;
+    --indigo-50: #eef2ff;
+    --violet-500: #8b5cf6;
+    --violet-400: #a78bfa;
+    --pink-400: #f472b6;
+    --orange-400: #fb923c;
+    --emerald-500: #10b981;
+    --red-500: #ef4444;
+    --amber-500: #f59e0b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1270px; height: 760px; font-family: "Inter", "Noto Sans KR", sans-serif; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+
+  .stage {
+    position: relative;
+    width: 1270px;
+    height: 760px;
+    overflow: hidden;
+    background: var(--slate-50);
+  }
+
+  /* Left Dark half */
+  .left {
+    position: absolute; inset: 0 635px 80px 0;
+    background: var(--slate-900);
+  }
+  .left::before {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(circle at 20% 10%, rgba(99,102,241,0.22) 0%, transparent 55%);
+  }
+  /* Right Light half */
+  .right {
+    position: absolute; inset: 0 0 80px 635px;
+    background: var(--slate-50);
+    border-left: 1px solid var(--slate-200);
+  }
+
+  /* Eyebrows */
+  .eyebrow {
+    position: absolute;
+    font-size: 12px; font-weight: 700; line-height: 16px;
+    text-transform: uppercase; letter-spacing: 0.18em;
+  }
+  .eyebrow-before { left: 40px; top: 40px; color: var(--orange-400); }
+  .eyebrow-after { left: 675px; top: 40px; color: var(--indigo-500); }
+
+  /* H2 */
+  .h2 {
+    position: absolute; font-weight: 900;
+    font-size: 32px; line-height: 40px; letter-spacing: -0.02em;
+    width: 555px;
+  }
+  .h2-left { left: 40px; top: 68px; color: var(--white); }
+  .h2-right { left: 675px; top: 68px; color: var(--slate-900); }
+
+  /* Window (terminal/browser) shared */
+  .window {
+    position: absolute;
+    width: 555px; height: 300px;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .terminal {
+    left: 40px; top: 140px;
+    background: var(--slate-950);
+    box-shadow: 0 40px 80px -20px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.06);
+  }
+  .browser {
+    left: 675px; top: 140px;
+    background: var(--white);
+    box-shadow: 0 20px 25px -5px rgba(16,24,40,0.10), 0 8px 10px -6px rgba(16,24,40,0.08);
+    border: 1px solid var(--slate-200);
+  }
+
+  /* Chrome bar */
+  .chrome {
+    height: 36px; display: flex; align-items: center;
+    padding: 0 16px; gap: 8px;
+    font-size: 12px; font-weight: 500;
+  }
+  .chrome.dark { background: var(--slate-800); color: var(--slate-500); }
+  .chrome.light { background: var(--slate-100); color: var(--slate-500); }
+  .dots { display: flex; gap: 8px; }
+  .dots i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+  .dots .r { background: var(--red-500); }
+  .dots .a { background: var(--amber-500); }
+  .dots .g { background: var(--emerald-500); }
+  .chrome-title { flex: 1; text-align: center; }
+
+  /* Terminal body */
+  .term-body {
+    padding: 20px 24px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 14px; line-height: 22px;
+    color: var(--slate-200);
+  }
+  .term-body .prompt { color: var(--indigo-500); }
+  .term-body .ok { color: var(--emerald-500); }
+  .term-body .bad { color: var(--red-500); }
+  .term-body .dim { color: var(--slate-500); }
+  .blink {
+    display: inline-block;
+    width: 8px; height: 18px;
+    background: var(--indigo-300);
+    vertical-align: -3px;
+    margin-left: 2px;
+    animation: blink 1s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* Browser URL bar */
+  .urlbar {
+    flex: 1; text-align: center;
+    font-family: "Inter", sans-serif;
+    font-size: 12px; font-weight: 400; color: var(--slate-400);
+  }
+
+  /* Dashboard mock body */
+  .dash {
+    padding: 14px 16px;
+  }
+  .dash-header {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 10px;
+  }
+  .dash-title {
+    font-size: 15px; font-weight: 700; color: var(--slate-900);
+  }
+  .live-pulse {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 999px;
+    background: var(--indigo-50);
+    font-size: 10px; font-weight: 600; color: var(--indigo-500);
+  }
+  .live-pulse::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--indigo-500);
+    box-shadow: 0 0 0 0 rgba(99,102,241,0.7);
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse { 70% { box-shadow: 0 0 0 6px rgba(99,102,241,0); } 100% { box-shadow: 0 0 0 0 rgba(99,102,241,0); } }
+
+  .kpi-row { display: flex; gap: 6px; margin-bottom: 10px; }
+  .kpi {
+    height: 26px; padding: 0 10px; display: inline-flex; align-items: center;
+    border: 1px solid var(--slate-200); border-radius: 8px;
+    font-size: 11px; font-weight: 600; color: var(--slate-900);
+    background: var(--white);
+    gap: 4px;
+  }
+  .kpi.p { color: var(--emerald-500); }
+  .kpi.f { color: var(--red-500); }
+  .kpi.b { color: var(--amber-500); }
+
+  .progress {
+    width: 100%; height: 8px; background: var(--slate-100); border-radius: 4px;
+    display: flex; gap: 1px; overflow: hidden; margin-bottom: 12px;
+  }
+  .progress .sp { background: var(--emerald-500); width: 84%; height: 100%; }
+  .progress .sf { background: var(--red-500); width: 7%; height: 100%; }
+  .progress .sb { background: var(--amber-500); width: 9%; height: 100%; }
+
+  .tc-row {
+    display: flex; align-items: center; gap: 10px;
+    height: 30px; border-bottom: 1px solid var(--slate-100);
+    font-size: 12px;
+  }
+  .tc-row:last-child { border-bottom: none; }
+  .tc-row .icon { width: 14px; height: 14px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .tc-row .icon.pass { background: var(--emerald-500); }
+  .tc-row .icon.fail { background: var(--red-500); }
+  .tc-id {
+    font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--indigo-500); font-weight: 600;
+  }
+  .tc-title { color: var(--slate-900); font-weight: 500; flex: 1; }
+  .tc-time { color: var(--slate-400); font-size: 11px; font-family: "JetBrains Mono", monospace; }
+  .from-ci {
+    font-size: 9px; color: var(--indigo-500); background: var(--indigo-50);
+    padding: 2px 6px; border-radius: 4px; font-weight: 600;
+  }
+
+  /* Captions under windows */
+  .caption {
+    position: absolute; width: 555px;
+    font-size: 14px; font-weight: 500; line-height: 22px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .caption-left {
+    left: 40px; top: 480px; color: var(--slate-400);
+  }
+  .caption-left i { color: var(--red-500); font-size: 18px; }
+  .caption-right {
+    left: 675px; top: 480px; color: var(--slate-500);
+  }
+  .caption-right i { color: var(--emerald-500); font-size: 18px; }
+
+  /* Bottom strip */
+  .strip {
+    position: absolute; left: 0; top: 680px;
+    width: 1270px; height: 80px;
+    background: var(--slate-900);
+    display: flex; align-items: center; padding: 0 40px;
+    gap: 20px;
+  }
+  .logo-mark {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: var(--indigo-500);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--white); font-weight: 900; font-size: 20px;
+    box-shadow: 0 0 30px rgba(99,102,241,0.30);
+  }
+  .wordmark {
+    font-family: "Pacifico", cursive;
+    font-size: 28px; color: var(--white);
+    line-height: 1;
+    transform: translateY(2px);
+  }
+  .dash-sep { color: var(--slate-500); font-size: 16px; }
+  .tagline { color: var(--white); font-size: 16px; font-weight: 600; flex: 1; }
+  .install-pill {
+    background: var(--slate-950);
+    border: 1px solid var(--slate-700);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px; font-weight: 500;
+    color: var(--indigo-300);
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="left"></div>
+  <div class="right"></div>
+
+  <div class="eyebrow eyebrow-before">BEFORE</div>
+  <div class="eyebrow eyebrow-after">AFTER</div>
+  <div class="h2 h2-left">The old way</div>
+  <div class="h2 h2-right">With Testably Reporter</div>
+
+  <!-- Terminal window -->
+  <div class="window terminal">
+    <div class="chrome dark">
+      <span class="dots"><i class="r"></i><i class="a"></i><i class="g"></i></span>
+      <span class="chrome-title">bash — ~/my-project</span>
+    </div>
+    <div class="term-body">
+<span class="prompt">$</span> npx playwright test<br/>
+<span class="dim">Running 45 tests using 4 workers</span><br/>
+&nbsp;&nbsp;<span class="ok">✓</span> <span class="dim">[chromium]</span> login.spec.ts:12 › user can log in <span class="dim">(1.2s)</span><br/>
+&nbsp;&nbsp;<span class="ok">✓</span> <span class="dim">[chromium]</span> cart.spec.ts:8 › add to cart <span class="dim">(890ms)</span><br/>
+&nbsp;&nbsp;<span class="bad">✗</span> <span class="dim">[chromium]</span> checkout.spec.ts:24 › payment fails <span class="dim">(2.3s)</span><br/>
+<span class="dim">…</span><br/>
+<br/>
+<span class="ok">42 passed</span> · <span class="bad">3 failed</span> · <span class="dim">4 skipped</span>&nbsp;&nbsp;<span class="dim">(1m 42s)</span><span class="blink"></span>
+    </div>
+  </div>
+
+  <!-- Browser/dashboard window -->
+  <div class="window browser">
+    <div class="chrome light">
+      <span class="dots"><i class="r"></i><i class="a"></i><i class="g"></i></span>
+      <span class="urlbar"><i class="ri-lock-line" style="color:var(--emerald-500);font-size:11px;"></i>&nbsp;testably.app/runs/abcd…</span>
+    </div>
+    <div class="dash">
+      <div class="dash-header">
+        <span class="dash-title">Checkout Flow</span>
+        <span class="live-pulse">live</span>
+      </div>
+      <div class="kpi-row">
+        <span class="kpi">Total&nbsp;<strong>45</strong></span>
+        <span class="kpi p">✓ 38</span>
+        <span class="kpi f">✗ 3</span>
+        <span class="kpi b">⚠ 4</span>
+      </div>
+      <div class="progress">
+        <span class="sp"></span><span class="sf"></span><span class="sb"></span>
+      </div>
+      <div class="tc-row"><span class="icon pass"></span><span class="tc-id">TC-101</span><span class="tc-title">user can log in</span><span class="tc-time">1.2s</span></div>
+      <div class="tc-row"><span class="icon pass"></span><span class="tc-id">TC-102</span><span class="tc-title">add to cart</span><span class="tc-time">0.9s</span></div>
+      <div class="tc-row"><span class="icon fail"></span><span class="tc-id">TC-103</span><span class="tc-title">payment fails on Visa</span><span class="from-ci">from CI</span><span class="tc-time">2.3s</span></div>
+      <div class="tc-row"><span class="icon pass"></span><span class="tc-id">TC-104</span><span class="tc-title">receipt rendered</span><span class="tc-time">1.1s</span></div>
+    </div>
+  </div>
+
+  <!-- Captions -->
+  <div class="caption caption-left">
+    <i class="ri-arrow-down-line"></i>
+    <span>Manual copy-paste into your QA spreadsheet.</span>
+  </div>
+  <div class="caption caption-right">
+    <i class="ri-check-line"></i>
+    <span>Auto-synced from CI — zero manual steps.</span>
+  </div>
+
+  <!-- Bottom strip -->
+  <div class="strip">
+    <div class="logo-mark">T</div>
+    <div class="wordmark">Testably</div>
+    <span class="dash-sep">—</span>
+    <span class="tagline">Your Playwright CI results, live in Testably.</span>
+    <span class="install-pill">$ npm i -D @testably.kr/playwright-reporter</span>
+  </div>
+</div>
+</body>
+</html>

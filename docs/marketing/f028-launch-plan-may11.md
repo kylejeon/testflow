@@ -63,8 +63,9 @@
 
 | 일자 | 작업 | 담당 | 상태 |
 |------|------|------|------|
-| 4/23 (수) | @designer 에이전트가 런칭 이미지 디자인 스펙 작성 → `docs/specs/design-spec-f028-launch-images.md` | @designer | 진행중 |
-| 4/28-4/30 | 디자인 스펙 기반 이미지 3종 실제 제작 (Figma 또는 CEO 가 실제 Testably UI 스크린샷 + annotate) | CEO | 대기 |
+| 4/23 (수) | @designer 에이전트가 런칭 이미지 디자인 스펙 작성 → `docs/specs/design-spec-f028-launch-images.md` | @designer | ✅ |
+| 4/23 (수) | HTML + Playwright 빌드로 Image 1/2/3 PNG v1 생성 → `docs/marketing/assets/f028/` | Claude | ✅ |
+| 4/28-4/30 | Image 3 의 목업 대시보드 → 실제 Testably 앱 스크린샷으로 교체 (진정성 강화) + Figma 최종 터치 (선택) | CEO | 대기 |
 | 5/1 (금) | Product Hunt 초안 등록 (비공개 preview) | CEO | 대기 |
 | 5/2 (토) | 블로그 포스트 최종 교정 — `docs/marketing/f028-blog-ship-results-3-lines.md` | CEO | 대기 |
 | 5/3 (일) | 트위터 스레드 예약 세팅 (Buffer 또는 Typefully) | CEO | 대기 |

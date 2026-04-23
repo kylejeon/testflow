@@ -669,3 +669,26 @@ export default defineConfig({
 5. **2026-05-11 (월) 00:01 PST** — PH submit (Gallery 순서: 1 → 2 → 3)
 
 > 본 문서는 Design Spec 이며, 실제 이미지 파일은 `docs/marketing/assets/f028/` 에 PNG+WebP 로 저장할 것. 파일 생성 후 이 스펙에 링크 추가.
+
+---
+
+## 8. 산출된 이미지 파일 (2026-04-23 v1)
+
+HTML 소스 + 빌드 스크립트: [`marketing/launch-images-f028/`](../../marketing/launch-images-f028/README.md)
+
+| Slot | 파일 | 크기 | 해상도 |
+|------|------|------|--------|
+| Gallery 1 (Thumbnail) | [`f028-ph-image-1-split@2x.png`](../marketing/assets/f028/f028-ph-image-1-split@2x.png) | ~407 KB | 2540×1520 |
+| Gallery 2 | [`f028-ph-image-2-setup@2x.png`](../marketing/assets/f028/f028-ph-image-2-setup@2x.png) | ~702 KB | 2540×1520 |
+| Gallery 3 | [`f028-ph-image-3-dashboard@2x.png`](../marketing/assets/f028/f028-ph-image-3-dashboard@2x.png) | ~476 KB | 2540×1520 |
+
+**재생성 방법:**
+```bash
+node marketing/launch-images-f028/build.mjs          # 3장 전부
+node marketing/launch-images-f028/build.mjs --only=2 # 특정 이미지만
+```
+
+**권장 후속 작업:**
+- Image 3 의 목업 대시보드를 **실제 Testably 앱 스크린샷**으로 교체 (`image3.html` 의 `.app` 블록을 `<img>` 로 교체 후 재빌드) — 진정성 강화.
+- WebP 폴백 생성: `npx @squoosh/cli --webp '{"quality":90}' docs/marketing/assets/f028/*.png`
+- Figma 로 re-export 원하면 HTML 의 수치를 그대로 픽셀 단위 Frame 으로 옮기면 됨.

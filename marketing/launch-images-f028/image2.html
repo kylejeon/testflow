@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>f028 PH Image 2 — 3-line setup code snippet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap"
+  rel="stylesheet"
+/>
+<link
+  href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css"
+  rel="stylesheet"
+/>
+<style>
+  :root {
+    --slate-950: #020617;
+    --slate-900: #0f172a;
+    --slate-800: #1e293b;
+    --slate-700: #334155;
+    --slate-600: #475569;
+    --slate-500: #64748b;
+    --slate-400: #94a3b8;
+    --slate-300: #cbd5e1;
+    --slate-200: #e2e8f0;
+    --white: #ffffff;
+    --indigo-500: #6366f1;
+    --indigo-400: #818cf8;
+    --indigo-300: #a5b4fc;
+    --violet-400: #a78bfa;
+    --emerald-500: #10b981;
+    --amber-500: #f59e0b;
+    --red-500: #ef4444;
+    /* VS Code Dark+ */
+    --vs-default: #e2e8f0;
+    --vs-keyword: #c586c0;
+    --vs-type: #4ec9b0;
+    --vs-string: #ce9178;
+    --vs-property: #9cdcfe;
+    --vs-punct: #d4d4d4;
+    --vs-number: #b5cea8;
+    --vs-gutter: #6b7280;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1270px; height: 760px; font-family: "Inter", "Noto Sans KR", sans-serif; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+
+  .stage {
+    position: relative;
+    width: 1270px; height: 760px;
+    background: var(--slate-900);
+    overflow: hidden;
+  }
+  .stage::before {
+    content: ""; position: absolute; inset: 0;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(99,102,241,0.22) 0%, transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(139,92,246,0.14) 0%, transparent 40%);
+    pointer-events: none;
+  }
+
+  /* Eyebrow */
+  .eyebrow {
+    position: absolute; left: 40px; top: 40px;
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.18em;
+    color: var(--indigo-300);
+    text-transform: uppercase;
+  }
+  .eyebrow i { color: var(--violet-400); font-size: 14px; }
+
+  /* Hero H1 */
+  .h1 {
+    position: absolute; left: 40px;
+    font-weight: 900; font-size: 56px; line-height: 60px; letter-spacing: -0.03em;
+    color: var(--white);
+  }
+  .h1.line1 { top: 68px; }
+  .h1.line2 { top: 132px; }
+  .gradient-text {
+    background: linear-gradient(90deg, #a5b4fc 0%, #6366f1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Sub copy */
+  .sub {
+    position: absolute; left: 40px; top: 212px;
+    font-size: 18px; font-weight: 400; line-height: 28px;
+    color: var(--slate-400);
+  }
+
+  /* Cards */
+  .card {
+    position: absolute;
+    background: var(--slate-800);
+    border: 1px solid var(--slate-700);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 40px 80px -20px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.04);
+  }
+  .card-chrome {
+    height: 36px; background: var(--slate-900);
+    display: flex; align-items: center; padding: 0 16px; gap: 10px;
+    font-size: 12px; font-weight: 500; color: var(--slate-400);
+  }
+  .dots { display: flex; gap: 8px; }
+  .dots i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+  .dots .r { background: var(--red-500); }
+  .dots .a { background: var(--amber-500); }
+  .dots .g { background: var(--emerald-500); }
+  .card-title { flex: 1; text-align: center; font-family: "JetBrains Mono", monospace; }
+
+  .step1 { left: 40px; top: 274px; width: 580px; height: 254px; }
+  .step2 { left: 660px; top: 274px; width: 570px; height: 254px; }
+  .step3 { left: 40px; top: 554px; width: 1190px; height: 136px; }
+
+  /* Step 1 — terminal */
+  .term {
+    padding: 20px 24px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 14px; line-height: 22px;
+    color: var(--slate-200);
+  }
+  .term .prompt { color: var(--indigo-500); }
+  .term .pkg { color: var(--indigo-300); font-weight: 500; }
+  .term .log { color: var(--slate-400); }
+  .term .ok { color: var(--emerald-500); }
+
+  /* Step 2 — code */
+  .code-wrap {
+    display: flex;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 14px; line-height: 22px;
+    height: 218px;
+  }
+  .gutter {
+    width: 40px; text-align: right; padding: 12px 8px 0 0;
+    color: var(--vs-gutter); font-size: 12px; line-height: 22px;
+    border-right: 1px solid var(--slate-700);
+    user-select: none;
+    flex-shrink: 0;
+  }
+  .gutter span { display: block; }
+  .gutter .hi { color: var(--indigo-300); font-weight: 500; }
+  .code {
+    flex: 1; padding: 12px 16px 0 16px;
+    color: var(--vs-default);
+    position: relative;
+    overflow: hidden;
+  }
+  .code .line { position: relative; }
+  .code .line.highlighted {
+    background: rgba(99,102,241,0.12);
+    border-left: 3px solid var(--indigo-500);
+    margin-left: -16px; padding-left: 13px;
+    margin-right: -16px; padding-right: 16px;
+  }
+  .code .kw { color: var(--vs-keyword); }
+  .code .ty { color: var(--vs-type); }
+  .code .str { color: var(--vs-string); }
+  .code .prop { color: var(--vs-property); }
+  .code .p { color: var(--vs-punct); }
+  .arrows {
+    position: absolute; right: -32px; top: 96px;
+    display: flex; flex-direction: column; gap: 2px;
+    color: var(--indigo-500); font-size: 14px; font-weight: 700;
+  }
+
+  /* Step 3 — GitHub Secrets */
+  .gh-rows { display: flex; flex-direction: column; height: 100px; }
+  .gh-row {
+    display: flex; align-items: center;
+    height: 32px; padding: 0 20px; gap: 12px;
+    border-bottom: 1px solid var(--slate-700);
+  }
+  .gh-row:last-child { border-bottom: none; }
+  .gh-lock { color: var(--amber-500); font-size: 14px; }
+  .gh-name {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px; font-weight: 700; color: var(--slate-200);
+    min-width: 180px;
+  }
+  .gh-eq { color: var(--slate-500); font-size: 13px; }
+  .gh-value {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px; font-weight: 400;
+    color: var(--vs-string);
+  }
+  .gh-value.masked { color: var(--slate-500); }
+
+  /* Step labels */
+  .step-label {
+    position: absolute;
+    font-size: 14px; font-weight: 600; color: var(--indigo-300);
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .step-label .num {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--slate-800); border: 1px solid var(--indigo-500);
+    color: var(--indigo-300);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+  }
+  .step-label-1 { left: 60px; top: 536px; }
+  .step-label-2 { left: 680px; top: 536px; }
+  .step-label-3 {
+    left: 60px; top: 706px;
+    font-size: 14px;
+  }
+  .step-label-3 .tail { color: var(--slate-400); font-weight: 500; margin-left: 4px; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="eyebrow"><i class="ri-sparkling-2-line"></i>3-STEP SETUP</div>
+
+  <div class="h1 line1">Ship Playwright results</div>
+  <div class="h1 line2">in <span class="gradient-text">3 lines.</span></div>
+  <div class="sub">5-minute setup. Works with any CI provider.</div>
+
+  <!-- Step 1: Terminal -->
+  <div class="card step1">
+    <div class="card-chrome">
+      <span class="dots"><i class="r"></i><i class="a"></i><i class="g"></i></span>
+      <span class="card-title">bash — ~/my-project</span>
+    </div>
+    <div class="term">
+<span class="prompt">$</span> npm i -D <span class="pkg">@testably.kr/playwright-reporter</span><br/>
+<br/>
+<span class="log">added 3 packages, and audited 1284 packages in 2.1s</span><br/>
+<span class="log">found </span><span class="ok">0 vulnerabilities</span>
+    </div>
+  </div>
+
+  <!-- Step 2: playwright.config.ts -->
+  <div class="card step2">
+    <div class="card-chrome">
+      <span class="dots"><i class="r"></i><i class="a"></i><i class="g"></i></span>
+      <span class="card-title">playwright.config.ts</span>
+    </div>
+    <div class="code-wrap">
+      <div class="gutter">
+        <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+        <span class="hi">6</span><span class="hi">7</span><span class="hi">8</span>
+        <span>9</span><span>10</span>
+      </div>
+      <div class="code">
+        <div class="line"><span class="kw">import</span> <span class="p">{</span> <span class="prop">defineConfig</span> <span class="p">}</span> <span class="kw">from</span> <span class="str">'@playwright/test'</span><span class="p">;</span></div>
+        <div class="line">&nbsp;</div>
+        <div class="line"><span class="kw">export</span> <span class="kw">default</span> <span class="ty">defineConfig</span><span class="p">({</span></div>
+        <div class="line">&nbsp;&nbsp;<span class="prop">reporter</span><span class="p">:</span> <span class="p">[</span></div>
+        <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="p">[</span><span class="str">'list'</span><span class="p">],</span></div>
+        <div class="line highlighted">&nbsp;&nbsp;&nbsp;&nbsp;<span class="p">[</span><span class="str">'@testably.kr/playwright-reporter'</span><span class="p">,</span> <span class="p">{</span></div>
+        <div class="line highlighted">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="prop">testCaseIdSource</span><span class="p">:</span> <span class="str">'title'</span><span class="p">,</span></div>
+        <div class="line highlighted">&nbsp;&nbsp;&nbsp;&nbsp;<span class="p">}],</span></div>
+        <div class="line">&nbsp;&nbsp;<span class="p">],</span></div>
+        <div class="line"><span class="p">});</span></div>
+        <div class="arrows">◀<br/>◀<br/>◀</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: GitHub Secrets -->
+  <div class="card step3">
+    <div class="card-chrome">
+      <span class="dots"><i class="r"></i><i class="a"></i><i class="g"></i></span>
+      <span class="card-title"><i class="ri-github-fill" style="margin-right:6px;color:var(--slate-200);"></i>GitHub Actions — Secrets</span>
+    </div>
+    <div class="gh-rows">
+      <div class="gh-row">
+        <i class="ri-lock-line gh-lock"></i>
+        <span class="gh-name">TESTABLY_URL</span>
+        <span class="gh-eq">=</span>
+        <span class="gh-value">https://app.testably.app</span>
+      </div>
+      <div class="gh-row">
+        <i class="ri-lock-line gh-lock"></i>
+        <span class="gh-name">TESTABLY_TOKEN</span>
+        <span class="gh-eq">=</span>
+        <span class="gh-value">testably_<span class="masked">••••••••••••••••••••••••</span></span>
+      </div>
+      <div class="gh-row">
+        <i class="ri-lock-line gh-lock"></i>
+        <span class="gh-name">TESTABLY_RUN_ID</span>
+        <span class="gh-eq">=</span>
+        <span class="gh-value">a2b4c9d1-5e6f-4a8b-9c2d-3e4f5a6b7c8d</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step labels -->
+  <div class="step-label step-label-1"><span class="num">1</span>Install</div>
+  <div class="step-label step-label-2"><span class="num">2</span>Add reporter (3 lines)</div>
+  <div class="step-label step-label-3"><span class="num">3</span>Add 3 CI secrets<span class="tail">— That's it. Every run now lands in Testably.</span></div>
+</div>
+</body>
+</html>
