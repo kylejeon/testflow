@@ -2,20 +2,28 @@
  * f011 — Export CSV button (Team View only, AC-18)
  * Design Spec §3 Toolbar + §14 (CSV spec)
  *
- * Generates a UTF-8 CSV (no BOM) with columns: date,user_email,mode,credits
+ * Generates a UTF-8 CSV (no BOM) with columns:
+ *   date, user_name, user_email, feature, credits
  * Sorted by date ASC, user_email ASC. Filename: ai-usage-{YYYY-MM-DD}.csv
  *
- * Data source: breakdown rows (RPC result) + profiles email map (passed in).
+ * `feature` is the human-readable translated mode label (matches on-screen
+ * Breakdown by Feature table) instead of the raw DB mode slug.
+ *
+ * Data source: breakdown rows (RPC result) + profiles email/name maps
+ * (passed in) + translation function for mode labels.
  */
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AiUsageBreakdownRow } from '../../../../types/aiUsage';
+import { MODE_LABEL_KEYS, normalizeMode } from '../../../../lib/aiUsageMeta';
 
 export interface ExportCsvButtonProps {
   rows: AiUsageBreakdownRow[];
   /** userId -> email mapping used to resolve user_email column */
   emails: Record<string, string>;
+  /** userId -> display name mapping for the user_name column (falls back to email) */
+  names: Record<string, string>;
   /** date string (YYYY-MM-DD) used in filename */
   today: string;
   disabled?: boolean;
@@ -31,15 +39,28 @@ function csvEscape(value: string): string {
   return s;
 }
 
-export function buildCsv(rows: AiUsageBreakdownRow[], emails: Record<string, string>): string {
-  const header = 'date,user_email,mode,credits';
-  // Flatten rows (already grouped by day × mode × user) then sort date ASC, email ASC
-  const flat = rows.map((r) => ({
-    date: r.day,
-    email: emails[r.user_id] ?? r.user_id,
-    mode: r.mode,
-    credits: r.credits_sum,
-  }));
+/**
+ * Build a CSV body from RPC rows.
+ * `translateMode` resolves a raw `ai_generation_logs.mode` value to the same
+ * human-readable label shown in the UI (e.g. 'run-summary' → 'Run Analysis').
+ */
+export function buildCsv(
+  rows: AiUsageBreakdownRow[],
+  emails: Record<string, string>,
+  names: Record<string, string>,
+  translateMode: (rawMode: string) => string,
+): string {
+  const header = 'date,user_name,user_email,feature,credits';
+  const flat = rows.map((r) => {
+    const email = emails[r.user_id] ?? r.user_id;
+    return {
+      date: r.day,
+      name: names[r.user_id] ?? email,
+      email,
+      feature: translateMode(r.mode),
+      credits: r.credits_sum,
+    };
+  });
   flat.sort((a, b) => {
     if (a.date !== b.date) return a.date < b.date ? -1 : 1;
     if (a.email !== b.email) return a.email < b.email ? -1 : 1;
@@ -47,7 +68,7 @@ export function buildCsv(rows: AiUsageBreakdownRow[], emails: Record<string, str
   });
   const lines = flat.map(
     (row) =>
-      `${csvEscape(row.date)},${csvEscape(row.email)},${csvEscape(row.mode)},${row.credits}`,
+      `${csvEscape(row.date)},${csvEscape(row.name)},${csvEscape(row.email)},${csvEscape(row.feature)},${row.credits}`,
   );
   return [header, ...lines].join('\n');
 }
@@ -55,6 +76,7 @@ export function buildCsv(rows: AiUsageBreakdownRow[], emails: Record<string, str
 export default function ExportCsvButton({
   rows,
   emails,
+  names,
   today,
   disabled = false,
   onSuccess,
@@ -68,7 +90,8 @@ export default function ExportCsvButton({
     if (busy || disabled) return;
     setBusy(true);
     try {
-      const csv = buildCsv(rows, emails);
+      const translateMode = (raw: string) => t(MODE_LABEL_KEYS[normalizeMode(raw)]);
+      const csv = buildCsv(rows, emails, names, translateMode);
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

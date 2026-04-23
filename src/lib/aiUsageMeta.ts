@@ -126,8 +126,15 @@ const TIER_MAX_PERIOD: Record<number, PeriodKey> = {
   7: '12m',
 };
 
-/** Numeric ordering of periods (shorter → longer). */
-const PERIOD_RANK: Record<PeriodKey, number> = { '30d': 0, '90d': 1, '6m': 2, '12m': 3 };
+/** Numeric ordering of periods (shorter → longer). `thisMonth` sits at the
+ *  short end (≤ 30 days) so any tier that allows 30d also allows thisMonth. */
+const PERIOD_RANK: Record<PeriodKey, number> = {
+  thisMonth: 0,
+  '30d': 0,
+  '90d': 1,
+  '6m': 2,
+  '12m': 3,
+};
 
 /** Returns the max period allowed for `tier`. Defaults to '30d' for unknown. */
 export function planHistoryLimit(tier: number): PeriodKey {
@@ -152,6 +159,7 @@ export function isPeriodAllowed(period: PeriodKey, tier: number): boolean {
  */
 export function requiredTierLabelFor(period: PeriodKey): string {
   switch (period) {
+    case 'thisMonth': return 'Hobby';   // defensive (calendar month is Free-allowed)
     case '30d':  return 'Hobby';        // defensive (30d is Free-allowed)
     case '90d':  return 'Hobby';        // unlocks at Hobby
     case '6m':   return 'Starter';      // unlocks at Starter
@@ -170,6 +178,10 @@ export function resolvePeriodRange(
   const to = new Date(now);
   const from = new Date(now);
   switch (period) {
+    case 'thisMonth':
+      // First day of current UTC month, 00:00.
+      from.setUTCDate(1);
+      break;
     case '30d': from.setUTCDate(from.getUTCDate() - 30); break;
     case '90d': from.setUTCDate(from.getUTCDate() - 90); break;
     case '6m':  from.setUTCMonth(from.getUTCMonth() - 6); break;

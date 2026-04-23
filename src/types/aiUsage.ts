@@ -71,7 +71,13 @@ export interface MemberContributionRow {
 
 // ─── Filter / plan helpers ───────────────────────────────────────────────────
 
-export type PeriodKey = '30d' | '90d' | '6m' | '12m';
+/**
+ * Period filter keys.
+ * - `thisMonth`: calendar-month-to-date in UTC (matches sidebar `getSharedPoolUsage` scope).
+ *               Default on page load so panel, KPI and CSV all agree on the same window.
+ * - `30d` / `90d` / `6m` / `12m`: rolling windows anchored at `now`.
+ */
+export type PeriodKey = 'thisMonth' | '30d' | '90d' | '6m' | '12m';
 
 export interface PeriodRange {
   from: Date;

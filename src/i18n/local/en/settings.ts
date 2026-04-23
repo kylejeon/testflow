@@ -80,6 +80,7 @@ export const settings = {
     period: {
       label: 'Period',
       triggerAria: 'Select period',
+      thisMonth: 'This month',
       '30d': 'Last 30 days',
       '90d': 'Last 90 days',
       '6m': 'Last 6 months',

@@ -80,6 +80,7 @@ export const settings = {
     period: {
       label: '기간',
       triggerAria: '기간 선택',
+      thisMonth: '이번 달',
       '30d': '최근 30일',
       '90d': '최근 90일',
       '6m': '최근 6개월',

@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import type { PeriodKey } from '../../../../types/aiUsage';
 import { isPeriodAllowed, requiredTierLabelFor } from '../../../../lib/aiUsageMeta';
 
-const ORDERED_PERIODS: PeriodKey[] = ['30d', '90d', '6m', '12m'];
+const ORDERED_PERIODS: PeriodKey[] = ['thisMonth', '30d', '90d', '6m', '12m'];
 
 export interface PeriodFilterProps {
   value: PeriodKey;

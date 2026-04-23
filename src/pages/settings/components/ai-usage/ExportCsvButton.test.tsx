@@ -2,7 +2,7 @@
  * Tests for ExportCsvButton — CSV builder + download trigger.
  *
  * f011 AC-18: "Export CSV" button downloads ai-usage-{YYYY-MM-DD}.csv with
- * columns (date, user_email, mode, credits). Team View only.
+ * columns (date, user_name, user_email, feature, credits). Team View only.
  */
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
@@ -43,30 +43,58 @@ const SAMPLE_ROWS: AiUsageBreakdownRow[] = [
 ];
 
 const EMAILS = { u1: 'alice@example.com', u2: 'bob@example.com' };
+const NAMES = { u1: 'Alice Kim', u2: 'Bob Park' };
+
+// Identity translator — keeps tests independent of i18n state.
+const identityTranslate = (raw: string) => raw;
 
 describe('buildCsv', () => {
   it('emits header + rows in date ASC, email ASC order', () => {
-    const csv = buildCsv(SAMPLE_ROWS, EMAILS);
+    const csv = buildCsv(SAMPLE_ROWS, EMAILS, NAMES, identityTranslate);
     const lines = csv.split('\n');
-    expect(lines[0]).toBe('date,user_email,mode,credits');
-    expect(lines[1]).toBe('2026-04-01,alice@example.com,jira,2');
-    expect(lines[2]).toBe('2026-04-01,alice@example.com,text,4');
-    expect(lines[3]).toBe('2026-04-02,bob@example.com,text,3');
+    expect(lines[0]).toBe('date,user_name,user_email,feature,credits');
+    expect(lines[1]).toBe('2026-04-01,Alice Kim,alice@example.com,jira,2');
+    expect(lines[2]).toBe('2026-04-01,Alice Kim,alice@example.com,text,4');
+    expect(lines[3]).toBe('2026-04-02,Bob Park,bob@example.com,text,3');
   });
 
   it('escapes email containing comma', () => {
-    const csv = buildCsv(SAMPLE_ROWS, {
-      u1: 'Alice, Doe <alice@example.com>',
-      u2: 'bob@example.com',
-    });
+    const csv = buildCsv(
+      SAMPLE_ROWS,
+      {
+        u1: 'Alice, Doe <alice@example.com>',
+        u2: 'bob@example.com',
+      },
+      NAMES,
+      identityTranslate,
+    );
     expect(csv).toContain('"Alice, Doe <alice@example.com>"');
   });
 
   it('falls back to user_id when email is missing', () => {
-    const csv = buildCsv(SAMPLE_ROWS, {});
-    // emails map is empty → falls back to user_id
-    expect(csv).toContain(',u1,');
-    expect(csv).toContain(',u2,');
+    const csv = buildCsv(SAMPLE_ROWS, {}, {}, identityTranslate);
+    // both emails map and names map empty → both fall back to user_id
+    expect(csv).toContain('u1,u1,');
+    expect(csv).toContain('u2,u2,');
+  });
+
+  it('falls back to email when name is missing', () => {
+    const csv = buildCsv(SAMPLE_ROWS, EMAILS, {}, identityTranslate);
+    expect(csv).toContain('alice@example.com,alice@example.com,');
+    expect(csv).toContain('bob@example.com,bob@example.com,');
+  });
+
+  it('uses translated mode label in feature column', () => {
+    const translate = (raw: string) => {
+      if (raw === 'text') return 'Test Cases (Text)';
+      if (raw === 'jira') return 'Test Cases (Jira)';
+      return raw;
+    };
+    const csv = buildCsv(SAMPLE_ROWS, EMAILS, NAMES, translate);
+    expect(csv).toContain('Test Cases (Text)');
+    expect(csv).toContain('Test Cases (Jira)');
+    expect(csv).not.toMatch(/,text,/);
+    expect(csv).not.toMatch(/,jira,/);
   });
 });
 
@@ -84,6 +112,7 @@ describe('ExportCsvButton — render + click', () => {
       <ExportCsvButton
         rows={SAMPLE_ROWS}
         emails={EMAILS}
+        names={NAMES}
         today="2026-04-23"
         onSuccess={onSuccess}
       />,
@@ -106,6 +135,7 @@ describe('ExportCsvButton — render + click', () => {
       <ExportCsvButton
         rows={SAMPLE_ROWS}
         emails={EMAILS}
+        names={NAMES}
         today="2026-04-23"
         disabled
       />,

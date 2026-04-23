@@ -300,9 +300,14 @@ export default function AiUsagePanel() {
   const isForbidden = attemptingTeamView && !isTeamView && !loadingEffective;
 
   // ── 3. Period filter (URL-synced) ──
+  //
+  // Default = 'thisMonth' (calendar-month-to-date). This matches the "THIS MONTH"
+  // KPI card scope + the project sidebar's aiUsageCount so all three surfaces
+  // render the same number for new visitors. Users can still switch to rolling
+  // windows (30d / 90d / 6m / 12m) via the PeriodFilter dropdown.
   const rawPeriod = searchParams.get('period') as PeriodKey | null;
-  const validPeriods: PeriodKey[] = ['30d', '90d', '6m', '12m'];
-  let period: PeriodKey = '30d';
+  const validPeriods: PeriodKey[] = ['thisMonth', '30d', '90d', '6m', '12m'];
+  let period: PeriodKey = 'thisMonth';
   if (rawPeriod && validPeriods.includes(rawPeriod) && isPeriodAllowed(rawPeriod, effectiveTier)) {
     period = rawPeriod;
   }
@@ -564,6 +569,9 @@ export default function AiUsagePanel() {
             rows={teamQuery.data ?? []}
             emails={Object.fromEntries(
               Object.values(profileById).map((p) => [p.id, p.email ?? '']),
+            )}
+            names={Object.fromEntries(
+              Object.values(profileById).map((p) => [p.id, p.full_name ?? p.email ?? '']),
             )}
             today={todayIsoDate()}
             onSuccess={() => showToast(t('aiUsage.toast.exportReady'), 'success')}
