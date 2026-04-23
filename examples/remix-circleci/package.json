@@ -1,0 +1,16 @@
+{
+  "name": "testably-example-remix-circleci",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Remix + CircleCI integration example for @testably.kr/playwright-reporter",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:dry": "TESTABLY_DRY_RUN=true playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.0",
+    "@testably.kr/playwright-reporter": "^1.0.1",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}

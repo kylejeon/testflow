@@ -13,6 +13,29 @@ A modern test management platform built with React, TypeScript, and Supabase.
 - **Documentation**: Store project documents and links
 - **Team Collaboration**: Invite team members and track contributions
 - **Timeline**: View project activity history
+- **AI-native**: Test case generation, AI Run Summary, flaky detection, milestone risk analysis
+- **AI Credit Observability**: per-member / per-feature / daily usage breakdown (Owner view)
+
+## SDK Packages
+
+Connect your CI pipeline to Testably — test results land in your dashboard
+automatically, no manual uploads.
+
+| Package | npm | Status |
+|---------|-----|--------|
+| [`@testably.kr/playwright-reporter`](./packages/playwright) | [npm](https://www.npmjs.com/package/@testably.kr/playwright-reporter) | **Stable (1.0.1)** |
+| [`@testably.kr/reporter-core`](./packages/core) | [npm](https://www.npmjs.com/package/@testably.kr/reporter-core) | Stable (1.0.1) — shared HTTP client |
+| `@testably.kr/cypress-reporter` | — | Planned |
+| `@testably.kr/jest-reporter` | — | Planned |
+
+```bash
+npm install --save-dev @testably.kr/playwright-reporter
+```
+
+See the [Playwright Reporter README](./packages/playwright/README.md) for the
+5-minute quick start, or browse [`examples/`](./examples) for real-world
+framework + CI combinations (Next.js + GitHub Actions, Nuxt + GitLab CI,
+Remix + CircleCI).
 
 ## Tech Stack
 

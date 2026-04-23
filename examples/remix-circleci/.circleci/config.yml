@@ -1,0 +1,35 @@
+version: 2.1
+
+# CircleCI pipeline for Playwright + Testably reporter.
+#
+# Required env vars (Project Settings → Environment Variables):
+#   TESTABLY_URL, TESTABLY_TOKEN, TESTABLY_RUN_ID
+#
+# Runs on all branches. To limit to PRs only, add a workflow filter on
+# `only-build-pull-requests` (Project Settings → Advanced).
+
+orbs:
+  node: circleci/node@5.3.0
+
+jobs:
+  e2e:
+    docker:
+      - image: mcr.microsoft.com/playwright:v1.44.0-jammy
+    resource_class: medium+
+    steps:
+      - checkout
+      - node/install-packages:
+          pkg-manager: npm
+      - run:
+          name: Run Playwright tests
+          command: npx playwright test
+      - store_artifacts:
+          path: playwright-report
+          destination: playwright-report
+      - store_test_results:
+          path: playwright-report
+
+workflows:
+  e2e:
+    jobs:
+      - e2e

@@ -1,0 +1,36 @@
+# CODEOWNERS — who must review what.
+# Reference: https://docs.github.com/en/repositories/managing-your-repositories-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Rules are matched last-line-wins. List the narrowest patterns near the bottom.
+# All merges to `main` require at least one CODEOWNER approval per branch
+# protection rules (configure this in Settings → Branches).
+
+# ───────────────────────────────────────────────────────────────────────────
+# Default: everything needs Kyle's review unless a more specific rule matches.
+*                                       @kylejeon
+
+# ───────────────────────────────────────────────────────────────────────────
+# SDK packages — published to npm as @testably.kr/*. Extra care on these:
+# versioning, breaking changes, and lock-file churn have blast radius beyond
+# Testably's own app.
+/packages/                              @kylejeon
+/packages/core/                         @kylejeon
+/packages/playwright/                   @kylejeon
+/packages/cypress/                      @kylejeon
+/packages/jest/                         @kylejeon
+
+# Release pipelines — any change here affects npm publish flow.
+/.github/workflows/publish-sdk.yml      @kylejeon
+/.github/workflows/ci.yml               @kylejeon
+/.github/workflows/smoke.yml            @kylejeon
+
+# Database schema / RLS policies — high-impact, Kyle reviews every one.
+/supabase/migrations/                   @kylejeon
+/supabase/functions/_shared/            @kylejeon
+
+# Integration examples — keep in sync with SDK API changes.
+/examples/                              @kylejeon
+
+# Auto-memory + CLAUDE.md — agent-specific config. Kyle only.
+/CLAUDE.md                              @kylejeon
+/progress.txt                           @kylejeon

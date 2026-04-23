@@ -1,0 +1,52 @@
+# GitLab CI pipeline for Playwright + Testably reporter.
+#
+# Variables required (Settings → CI/CD → Variables, all Masked):
+#   TESTABLY_URL, TESTABLY_TOKEN, TESTABLY_RUN_ID
+#
+# Runs on MR events only. Remove the `rules` block to run on every push.
+
+stages:
+  - test
+
+default:
+  image: mcr.microsoft.com/playwright:v1.44.0-jammy
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - .npm/
+      - node_modules/
+
+variables:
+  NPM_CONFIG_CACHE: '.npm'
+
+e2e:
+  stage: test
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - npm ci --prefer-offline
+    - npx playwright test
+  artifacts:
+    when: always
+    paths:
+      - playwright-report/
+    reports:
+      junit: playwright-report/results.xml
+    expire_in: 7 days
+  # `allow_failure: false` (default) gates MR merge on Playwright status.
+  # The reporter's `failOnUploadError: false` means network hiccups with
+  # Testably itself won't block the MR, but actual test failures will.
+
+# Optional dry-run job — uncomment to verify credentials without writing to Testably.
+#
+# e2e:dryrun:
+#   stage: test
+#   rules:
+#     - if: $CI_PIPELINE_SOURCE == "web"
+#   variables:
+#     TESTABLY_DRY_RUN: 'true'
+#   script:
+#     - npm ci --prefer-offline
+#     - npx playwright test

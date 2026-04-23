@@ -1,0 +1,11 @@
+# GitHub Sponsors / funding links shown on the repo "Sponsor" button.
+# Reference: https://docs.github.com/en/repositories/managing-your-repositories-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
+
+# Testably is a commercial SaaS — most users should sign up at
+# https://testably.app for a hosted plan. GitHub Sponsors is an optional
+# channel for individual contributors who want to back the open SDK work.
+custom:
+  - https://testably.app/pricing
+
+# Uncomment once the Testably GitHub Sponsors profile is live:
+# github: [kylejeon]
