@@ -211,8 +211,18 @@
       "effort": "small",
       "source": "qa-report-milestone-overview-v2",
       "dependencies": [],
-      "status": "backlog",
-      "notes": "SEC-H-2. Hobby 한도(15)에서 실질적 영향"
+      "status": "done",
+      "notes": "SEC-H-2. Hobby 한도(15)에서 실질적 영향",
+      "completed_at": "2026-04-23",
+      "completed_refs": {
+        "commits": [
+          "f99591f",
+          "6940b53"
+        ],
+        "dev_spec": "docs/specs/dev-spec-f018-ai-credit-race-condition.md",
+        "qa_report": "docs/qa/qa-report-f018-ai-credit-race-condition.md",
+        "migration": "supabase/migrations/20260424_f018_ai_credit_atomic_consume_rpc.sql"
+      }
     },
     {
       "id": "f019",
