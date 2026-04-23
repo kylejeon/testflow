@@ -15,6 +15,7 @@ on:
     tags:
       - 'sdk-core-v*'
       - 'sdk-playwright-v*'
+      - 'sdk-cypress-v*'
   workflow_dispatch:
     inputs:
       package:
@@ -24,6 +25,7 @@ on:
         options:
           - core
           - playwright
+          - cypress
       dist_tag:
         description: 'npm dist-tag (e.g. alpha, beta, latest)'
         required: true
@@ -72,6 +74,9 @@ jobs:
                 ;;
               sdk-playwright-v*)
                 echo "package=playwright" >> "$GITHUB_OUTPUT"
+                ;;
+              sdk-cypress-v*)
+                echo "package=cypress" >> "$GITHUB_OUTPUT"
                 ;;
               *)
                 echo "Unknown tag format: $TAG" >&2

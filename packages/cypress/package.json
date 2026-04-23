@@ -1,24 +1,27 @@
 {
   "name": "@testably.kr/cypress-reporter",
-  "version": "0.0.0-dev",
-  "private": true,
-  "description": "Cypress plugin for Testably — automatically uploads test results to your Testably runs via after:run event (not yet published)",
+  "version": "1.0.1",
+  "description": "Cypress plugin for Testably — automatically uploads test results to your Testably runs via the after:run event",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.js"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts",
-    "dev": "tsup src/index.ts --format cjs,esm --dts --watch"
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [
     "testably",
@@ -26,19 +29,39 @@
     "reporter",
     "plugin",
     "ci",
-    "test-automation"
+    "test-automation",
+    "qa",
+    "test-case-management"
   ],
   "license": "MIT",
+  "author": "Testably",
+  "homepage": "https://github.com/kylejeon/testflow/tree/main/packages/cypress#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kylejeon/testflow.git",
+    "directory": "packages/cypress"
+  },
+  "bugs": {
+    "url": "https://github.com/kylejeon/testflow/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "peerDependencies": {
-    "cypress": ">=10.0.0"
+    "cypress": ">=12.0.0"
   },
   "dependencies": {
-    "@testably.kr/reporter-core": "0.1.0-alpha.0"
+    "@testably.kr/reporter-core": "1.0.1"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "cypress": "^13.0.0",
     "tsup": "^8.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^4.1.4"
   }
 }

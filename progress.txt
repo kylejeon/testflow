@@ -155,3 +155,132 @@
 2. 프로덕션 배포 전 20260424 migration 적용
 3. Playwright E2E 스모크 — 브라우저 검증 자동화
 4. v1.1 후속 이슈 백로그 정리 (OOS 10개 중 우선순위)
+
+---
+
+2026-04-23 (저녁): f028b Cypress Reporter SDK v1.0.1 stable — Phase 4 구현 완료 (28/28 AC)
+
+## 뭘 했냐 (claude 브랜치)
+
+### 1. packages/cypress/package.json
+- version 0.0.0-dev → 1.0.1
+- private 필드 삭제 (공개 배포용)
+- dep @testably.kr/reporter-core 0.1.0-alpha.0 → 1.0.1 (Playwright 과 버전 락)
+- peerDependencies.cypress >=10 → >=12 (Cypress 10.x EOL)
+- engines.node >=18 신규
+- publishConfig { access: public } 신규
+- files 에 README.md / LICENSE 추가
+- author / homepage / repository / bugs 신규 (Playwright 스타일 미러)
+- keywords 에 qa / test-case-management 추가
+- scripts.test / test:watch 신규 (vitest)
+- devDependencies.vitest ^4.1.4 신규
+
+### 2. packages/cypress/src/plugin.ts (전면 개편)
+- SDK_AGENT 1.0.1 로 버전 문자열 교체
+- CypressReporterOptions: testCaseIdSource 'title'|'tag'|'custom' (annotation 없음)
+  + dryRun?: boolean 필드 추가
+- 설정 resolution 순서 명시 (options > config.env > process.env)
+- on('after:run') 핸들러에 dryRun 분기 + handleUploadError(err) 헬퍼 도입
+- extractTestCaseId 신규 구현: title/tag/custom 3종 + UUID 패턴 + tag 앞 공백 anchor
+  (email@host 오매칭 방지)
+- mapCypressStatus: passed/failed/pending/skipped/default(=untested) 5 케이스
+- extractNote: attempts.length > 1 일 때 "Retried N time(s). " prefix + displayError + 800자 절단
+- handleUploadError: NonRetryableUploadError catch → 403 업그레이드 안내,
+  401/404/400 각각 1줄 warn, failOnUploadError=true 일 때만 throw
+
+### 3. packages/cypress/src/index.ts
+- setupTestablyReporter / extractTestCaseId / mapCypressStatus / extractNote export
+- CypressReporterOptions type re-export
+- reporter-core 의 ConfigError / NonRetryable / Upload / RateLimit 에러 re-export
+- TestablyConfig / TestResult / UploadResponse / DryRunResponse 타입 re-export
+
+### 4. tests/ (신규, 54 개 테스트)
+- tests/fixtures/cypress-run-result.ts — FakeCypressRunResult 빌더 + on/fire capture 헬퍼
+- tests/plugin.test.ts — 14 케이스 (event 등록, 페이로드 포맷, 헤더, 요약 로그,
+  150개 배치 분할, verbose, 207 partial_failure, 설정 우선순위 4종 + ConfigError)
+- tests/extractTestCaseId.test.ts — 15 케이스 (title 6종, tag 6종, custom 3종)
+- tests/mapCypressStatus.test.ts — 6 케이스 (4 상태 + default + undefined)
+- tests/extractNote.test.ts — 7 케이스 (passed skip, 단일 attempt, 복수 retry,
+  단수/복수 영어 처리, pending, 800자 절단, 에러 없어도 retry prefix 유지)
+- tests/retry.test.ts — 3 케이스 (500 3회 재시도 → 포기, 2회째 recovery,
+  failOnUploadError=true throw)
+- tests/fallback.test.ts — 9 케이스 (403/401/404/400 각각 warn + exit 0,
+  failOnUploadError=true 403 throw, dryRun 3 소스 options/process.env/config.env,
+  dryRun 403)
+
+### 5. README / CHANGELOG / LICENSE
+- packages/cypress/README.md — Playwright README 1:1 미러 (Install, 5분 quick start
+  ts+js, Configuration 표, Matching 3종, Playwright annotation 제거 이유,
+  Status mapping, Dry-run, Troubleshooting, Security, 버전 호환표)
+- packages/cypress/CHANGELOG.md — Keep-a-Changelog, [1.0.1] 2026-05-13 엔트리 +
+  Playwright 과의 차이 명시
+- packages/cypress/LICENSE — MIT (Playwright 파일 동일 텍스트)
+
+### 6. vitest.config.ts (신규)
+- Playwright 파일 미러: environment node / include tests/**/*.test.ts /
+  clearMocks / restoreMocks
+
+### 7. .github/workflows/publish-sdk.yml
+- on.push.tags 에 'sdk-cypress-v*' 추가
+- workflow_dispatch inputs.package.options 에 cypress 추가
+- Determine package step case 문에 sdk-cypress-v*) → package=cypress 분기 추가
+
+### 8. package-lock.json
+- rm -rf packages/cypress/node_modules + npm install 로 재생성
+- @testably.kr/cypress-reporter 1.0.1 + core dep 워크스페이스 1.0.1 에 정상 resolve
+
+### 검증 (전부 PASS)
+- npx tsc --noEmit: 0 errors
+- npm run test -- --run: 232/232 passed (회귀 없음, 기존 테스트 그대로)
+- cd packages/core && npx vitest run: 21/21 passed
+- cd packages/playwright && npx vitest run: 14/14 passed
+- cd packages/cypress && npx vitest run: 54/54 passed (신규 전체)
+- cd packages/cypress && npm run build: CJS 7.08KB + ESM 5.77KB + DTS 1.92KB 생성
+- npm pack --dry-run -w @testably.kr/cypress-reporter: 8.7 KB tarball (50KB 한도 이하)
+  — LICENSE / README.md / dist/{index.js,mjs,d.ts,d.mts} / package.json 7 파일
+- npm publish --access public --dry-run -w @testably.kr/cypress-reporter: 통과
+- npm ls @testably.kr/reporter-core -w @testably.kr/cypress-reporter:
+  → 1.0.1 워크스페이스로 정상 resolve (alpha 흔적 제거)
+- npm run scan:i18n:check: clean (SDK 영어 전용, 스코프 밖)
+
+## 어디까지 됐냐
+
+### AC 달성 (28/28 완료)
+- AC-A1~A9: 패키지 메타 + 빌드 (9/9) — package.json, files 배열, build dual bundle,
+  publish dry-run 8.7KB
+- AC-B1~B4: Plugin API 시그니처 (4/4) — default+named export, exact ts 시그니처,
+  CypressReporterOptions shape, 설정 resolution 우선순위
+- AC-C1~C5: TC ID 매핑 3 모드 (5/5) — title 대소문자 무시, tag email 오매칭 방지,
+  custom mapper, skip 로그, 요약 로그
+- AC-D1~D3: Status 매핑 (3/3) — 4 상태+default, Retried prefix, passed undefined
+- AC-E1~E6: 업로드 + 에러 처리 (6/6) — 150→2 배치, core 재시도, failOnUploadError
+  토글, 403 업그레이드, 401/404/400 분기, 207 warn
+- AC-F1~F3: dryRun 3 소스 (3/3) — options / env / config.env 각각 unit test
+- AC-G1~G3: 환경변수 + SDK 헤더 (3/3) — User-Agent + X-Testably-SDK-Version 헤더,
+  ConfigError fail-fast, source='cypress' 서버 변경 없음
+- AC-H1~H3: TypeScript / ESM·CJS 듀얼 (3/3) — tsup dual bundle, ts+js config 둘 다
+  import 가능, strict mode 타입 에러 없음
+- AC-I1~I4: 테스트 커버리지 (4/4) — 54 테스트 (플러그인 14 + extract 15 + status 6 +
+  note 7 + retry 3 + fallback 9) > Playwright 14
+- AC-J1~J4: 문서 (4/4 중 3/4 완료, J4 루트 README SDK 섹션은 cypress 런칭 시
+  marketing 플립과 함께 — 현재는 본 스펙 OOS)
+  - J1 README.md: 10 섹션 (Badges는 런칭 후 교체), J2 CHANGELOG, J3 LICENSE MIT,
+    J4 루트 README: 런칭 때 일괄 플립 예정
+- AC-K1: publish-sdk.yml cypress 분기 추가 (1/1)
+  - AC-K2/K3 은 실제 태그 푸시 + npm publish 성공 후 검증 가능 (본 커밋 범위 외)
+
+### OOS (Dev Spec §12, 10개 전부 미구현 - 의도적)
+- Cypress Cloud 연동 / Component test 공식 지원 / Multi-spec realtime 업로드 /
+  Screenshot·Video 첨부 / JUnit XML 호환 / Cypress 자체 retry override /
+  Auto TC 생성 / Annotation polyfill / i18n 로그 / SIGINT 복구
+
+### 마케팅 동기화 (§9) - OOS (5/13 런칭 당일 처리)
+- docs/marketing/f028-*.md 플립 / 루트 README SDK 섹션 / Settings CI/CD 가이드 카드
+  는 5/13 런칭 day 별도 PR
+
+## 다음엔 뭘 해야 해
+1. CEO 에게 PR 알림 → main 수동 머지
+2. 5/3 내 0.9.0-rc.1 태그로 내부 smoke test 배포
+3. 5/11 Playwright 런칭 후 48h 리그레션 관측 → 문제 없으면 5/13 sdk-cypress-v1.0.1
+   태그 푸시 → GitHub Actions 자동 publish
+4. 5/13 마케팅 플립 PR 병행 (f028-*.md + 루트 README + Settings UI 카드 스펙)
