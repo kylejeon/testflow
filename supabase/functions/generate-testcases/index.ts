@@ -607,7 +607,7 @@ Quality Gates: Pass Rate ≥90%, Critical Failures = 0, Coverage ≥80%, Blocked
             summary: aiSummary,
             usage: { current: consume.used, limit: consume.limit },
             upgradeUrl: 'https://testably.app/pricing',
-            meta: { credits_used: 0, credits_logged: false, rate_limited_post_check: true },
+            meta: { credits_used: 0, credits_remaining: 0, credits_logged: false, rate_limited_post_check: true },
           }, 429);
         }
         return jsonResponse({
@@ -872,7 +872,7 @@ Respond in valid JSON:
             result: gapResult,
             usage: { current: consume.used, limit: consume.limit },
             upgradeUrl: 'https://testably.app/pricing',
-            meta: { credits_used: 0, credits_logged: false, rate_limited_post_check: true },
+            meta: { credits_used: 0, credits_remaining: 0, credits_logged: false, rate_limited_post_check: true },
           }, 429);
         }
         return jsonResponse({
@@ -1006,7 +1006,7 @@ Suggest test cases not yet covered.`;
             requirement_id,
             usage: { current: consume.used, limit: consume.limit },
             upgradeUrl: 'https://testably.app/pricing',
-            meta: { credits_used: 0, credits_logged: false, rate_limited_post_check: true },
+            meta: { credits_used: 0, credits_remaining: 0, credits_logged: false, rate_limited_post_check: true },
           }, 429);
         }
         return jsonResponse({
@@ -1164,7 +1164,7 @@ Respond in valid JSON:
             result: analysisResult,
             usage: { current: consume.used, limit: consume.limit },
             upgradeUrl: 'https://testably.app/pricing',
-            meta: { credits_used: 0, credits_logged: false, rate_limited_post_check: true },
+            meta: { credits_used: 0, credits_remaining: 0, credits_logged: false, rate_limited_post_check: true },
           }, 429);
         }
         return jsonResponse({
@@ -1400,7 +1400,7 @@ Respond in valid JSON:
             latency_ms: latency,
             usage: { current: consume.used, limit: consume.limit },
             upgradeUrl: 'https://testably.app/pricing',
-            meta: { credits_used: 0, credits_logged: false, rate_limited_post_check: true },
+            meta: { credits_used: 0, credits_remaining: 0, credits_logged: false, rate_limited_post_check: true },
           }, 429);
         }
         responseData = {

@@ -358,6 +358,7 @@ Rules:
           ...result,
           meta: {
             credits_used: 0,
+            credits_remaining: 0,
             credits_logged: false,
             rate_limited_post_check: true,
             monthly_limit: monthlyLimit,

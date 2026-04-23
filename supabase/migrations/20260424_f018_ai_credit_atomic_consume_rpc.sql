@@ -69,7 +69,9 @@ BEGIN
   PERFORM pg_advisory_xact_lock(v_lock_key);
 
   -- Observability: lock 획득까지 걸린 시간 기록 (50ms 초과만 로깅) — AC-16
-  v_lock_wait_ms := EXTRACT(MILLISECOND FROM (clock_timestamp() - v_lock_start))::int;
+  --   주의: EXTRACT(MILLISECOND FROM interval) 은 초 컴포넌트의 ms(0-999) 만 반환하여
+  --         1s 이상 대기 시 왜곡된다. EXTRACT(EPOCH)*1000 으로 전체 ms 경과시간 계산.
+  v_lock_wait_ms := (EXTRACT(EPOCH FROM (clock_timestamp() - v_lock_start)) * 1000)::int;
   IF v_lock_wait_ms > 50 THEN
     RAISE NOTICE '[f018] lock contention owner=% wait_ms=%', p_owner_id, v_lock_wait_ms;
   END IF;

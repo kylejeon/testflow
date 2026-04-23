@@ -486,3 +486,52 @@
 4. 5/11 SDK 런칭 전 staging smoke 통과 확인 후 프로덕션 배포
 5. Rollback 리허설: DROP FUNCTION 한 번 실행하고 원복 테스트
 
+---
+
+2026-04-23 (심야, 재수정): f018 QA P1 2건 반영
+
+## 뭘 했냐 (claude 브랜치)
+
+### P1-1: AC-16 lock wait 측정 버그 수정
+- supabase/migrations/20260424_f018_ai_credit_atomic_consume_rpc.sql:72-74
+  - 기존: `EXTRACT(MILLISECOND FROM (clock_timestamp() - v_lock_start))::int`
+    (초 컴포넌트의 0-999ms 만 반환 → 1.5s 대기 시 500 으로 기록)
+  - 수정: `(EXTRACT(EPOCH FROM (clock_timestamp() - v_lock_start)) * 1000)::int`
+    (전체 ms 경과시간 — 1.5s 대기 시 1500 으로 정확 기록)
+  - 주석 2줄 추가: 버그 배경 + EPOCH*1000 선택 이유 명시
+  - NOTIFY pgrst 마지막 줄 유지, rollback SQL 주석 유지
+
+### P1-2: AC-15 429 meta.credits_remaining:0 누락 (8개 지점)
+- supabase/functions/generate-testcases/index.ts (5 지점)
+  - L610 (run-summary), L875 (coverage-gap), L1009 (requirement-suggest),
+    L1167 (analyze-flaky), L1403 (tc-generation step=1)
+  - 단일라인 meta 에 `credits_remaining: 0` 삽입
+- supabase/functions/milestone-risk-predictor/index.ts (1 지점)
+  - L605-614 multi-line meta 에 `credits_remaining: 0` 삽입 (from_cache 다음)
+- supabase/functions/risk-predictor/index.ts (1 지점)
+  - L358-367 multi-line meta 에 `credits_remaining: 0` 삽입
+- supabase/functions/plan-assistant/index.ts (1 지점)
+  - L343-354 multi-line meta 에 `credits_remaining: 0` 삽입
+- 단순화 판단: 429 는 항상 한도 도달이므로 `credits_remaining: 0` 하드코딩
+  (race-lost used 는 이미 response.used 에 존재, meta 는 계약용)
+
+### 검증 (전부 PASS)
+- npx tsc --noEmit (root): 0 errors
+- npm run test -- --run: 232/232 passed (회귀 없음)
+- Grep 확인: rate_limited_post_check 지점 8개 모두 credits_remaining: 0 보유
+- SQL 마이그레이션 파일 끝부분 일관성 유지 (NOTIFY pgrst + rollback 주석)
+
+## 어디까지 됐냐
+
+### QA P1 처리 상태
+- P1-1 (AC-16 EXTRACT 버그): FIXED
+- P1-2 (AC-15 credits_remaining:0 누락): FIXED (8/8)
+- P2 이슈 (3건): 본 사이클 외 — pgTAP 동시성 추가는 후속, spec 텍스트 오타는
+  docs 만 별도 수정 권장
+
+## 다음엔 뭘 해야 해
+1. QA 재검수 → Ship 판정 받으면 CEO main 머지
+2. CEO Supabase Dashboard SQL Editor 에서 migration 재실행 (EXTRACT 수정 반영)
+3. 4개 Edge Function 재배포 (credits_remaining:0 반영)
+4. Staging smoke: 429 응답 body.meta.credits_remaining 필드 실측
+
