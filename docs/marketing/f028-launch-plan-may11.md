@@ -112,10 +112,10 @@
 | 일자 | 작업 | 담당 |
 |------|------|------|
 | 5/12 (화) | 버그 리포트 triage → `1.0.2` hotfix 필요 여부 판단 | Claude + CEO |
-| 5/13 (수) | Day 2 review — 전환 깔때기 분석 (PH click → install → CI 통합) | CEO |
-| 5/14 (목) | 고객 인터뷰 — 통합 완료한 첫 3팀에게 1:1 피드백 | CEO |
-| 5/15 (금) | Retrospective + post-mortem 노트 작성 | Claude |
-| 5/16-18 (토-월) | `1.0.2` 패치 (필요 시) + Cypress Reporter SDK 예고 블로그 초안 | 팀 전체 |
+| 5/13 (수) | **🎯 Cypress Reporter `1.0.1` 공개 런칭** (별도 섹션 §9 참고) | CEO |
+| 5/14 (목) | Day 3 review — Playwright+Cypress 전환 깔때기 분석 | CEO |
+| 5/15 (금) | 고객 인터뷰 — 통합 완료한 첫 3팀 1:1 피드백 + Retrospective 노트 | CEO |
+| 5/16-18 (토-월) | `1.0.2` 패치 (필요 시) + Jest Reporter SDK 초안 | 팀 전체 |
 
 ## 5. 커뮤니케이션 채널 체크리스트
 
@@ -207,3 +207,66 @@ npm view @testably.kr/playwright-reporter dist-tags
 - [ ] 첫 upload 실패 리포트 → 403(plan), 401(token), 404(run_id) 구분
 - [ ] Edge Function 응답 시간 p95 > 2s 시 알림 (Supabase dashboard)
 - [ ] PH 댓글 중 "feature request" 는 별도 `docs/feedback/f028-ph-day1-feedback.md` 에 수집
+
+---
+
+## 9. Cypress Reporter SDK 2026-05-13 서브 런칭 (Option B)
+
+> **전략:** 5/11 Playwright 런칭 48 시간 후 **별도 sub-launch**. 단일 SDK 가
+> 아니라 **"SDK family"** 포지셔닝으로 헤드라인 재활성화 + 48h 안정성 버퍼.
+> 구현 상태: **Ship-ready** (27e828a, 76/76 테스트 PASS — QA 리포트 `docs/qa/qa-report-cypress-reporter.md`).
+
+### 9.1 5/13 타임라인 (KST)
+
+| 시간 | 작업 | 담당 |
+|------|------|------|
+| 09:00 | `main` 머지 (claude → main, CEO 수동) | CEO |
+| 09:30 | 루트 `README.md` 의 SDK 테이블 → "Stable" + npm 링크로 업데이트 (AC-J4) | CEO |
+| 10:00 | `docs/marketing/f028-*.md` 의 "Coming Soon: Cypress" → "Available now" 플립 커밋 | CEO |
+| 11:00 | `sdk-cypress-v1.0.1` 태그 push → publish-sdk.yml 자동 배포 | CEO |
+| 11:10 | `npm view @testably.kr/cypress-reporter dist-tags.latest` → `1.0.1` 확인 | CEO |
+| 11:30 | PH 코멘트 업데이트 ("Cypress Reporter is live as of today") | CEO |
+| 12:00 | 트위터 **5-tweet thread** (Cypress 전용, Playwright thread 에 reply) | CEO |
+| 13:00 | 블로그 포스트 게시 (`testably.app/blog/cypress-reporter-stable`) | CEO |
+| 14:00 | Dev.to 크로스포스트 | @marketer |
+| 15:00 | LinkedIn 포스팅 | CEO |
+| 15:30 | Hacker News `Show HN` (또는 skip — Playwright 때 썼으면 중복) | CEO |
+| 16:00-24:00 | 댓글/이슈 대응 | CEO + Claude |
+
+### 9.2 배포 명령 (부록)
+
+```bash
+# 사전: CEO 가 claude → main 수동 머지 완료 상태
+git tag sdk-cypress-v1.0.1 -m 'release: cypress-reporter 1.0.1'
+git push origin sdk-cypress-v1.0.1
+
+# 배포 확인
+npm view @testably.kr/cypress-reporter dist-tags
+# expected: latest: 1.0.1
+```
+
+### 9.3 마케팅 플립 체크리스트
+
+- [ ] `README.md` (루트) — SDK 테이블 cypress 행 "Planned" → "Stable (1.0.1)" + npm 링크
+- [ ] `docs/marketing/f028-product-hunt-launch.md` — "Coming Soon" 섹션 제거 or 업데이트
+- [ ] `docs/marketing/f028-blog-ship-results-3-lines.md` — Cypress 언급 활성
+- [ ] `docs/marketing/f028-twitter-thread.md` — Cypress reply thread 초안 추가
+- [ ] `docs/marketing/f028-changelog.md` — Cypress 1.0.1 엔트리 추가
+- [ ] `packages/cypress/README.md` status 라인 확인 (이미 "1.0.1 stable" 완료)
+
+### 9.4 Day-1 Cypress KPI
+
+| 지표 | 목표 |
+|------|------|
+| npm Day 1 downloads | 30+ (Playwright 의 60%) |
+| GitHub star 증가 | +10 |
+| Cypress Professional upgrade 문의 | 2+ |
+| Playwright thread 에 달린 reply 인지율 | 30%+ (리트윗/좋아요 측정) |
+
+### 9.5 리스크 & 컨틴전시
+
+| 리스크 | 대응 |
+|--------|------|
+| 5/11 Playwright 런칭에서 critical 버그 발견 → 5/13 일정 연기 | Cypress 는 5/18 로 슬라이드, 동일 콘텐츠 재사용 |
+| npm publish 실패 (OIDC 토큰 만료 등) | 부록 A 의 publish-sdk.yml 디버그 가이드 재활용 |
+| "왜 Cypress 가 Playwright 보다 늦어요?" 질문 | 답변 템플릿: "Playwright stable 검증 후 48h 버퍼로 품질 보장. 코어는 같은 `@testably.kr/reporter-core`." |
