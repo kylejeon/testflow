@@ -74,6 +74,84 @@
 ## 다음엔 뭘 해야 해
 1. CEO 에게 PR 알림 → main 수동 머지
 2. 프로덕션 배포 전 supabase migration 적용 순서 확인
-   (20260423_f011_ai_usage_breakdown_rpc.sql)
+   (20260424_f011_ai_usage_breakdown_rpc.sql — QA P0 반영 후 rename)
 3. Playwright E2E 스모크 테스트 (AC-1 deep-link, AC-16 키보드)
+4. v1.1 후속 이슈 백로그 정리 (OOS 10개 중 우선순위)
+
+---
+
+2026-04-23 (오후): f011 QA 리뷰 반영 (P0 1건 + P1 2건 + P2 3건)
+
+## 뭘 했냐 (claude 브랜치)
+
+### P0-1: 마이그레이션 파일명 AC-20 위반 수정
+- supabase/migrations/20260423_f011_ai_usage_breakdown_rpc.sql
+  → 20260424_f011_ai_usage_breakdown_rpc.sql 로 rename
+- 이 파일은 claude 브랜치에서만 존재 (main 미머지) — production 미적용,
+  안전하게 rename. 후속 2026042x 범위에 다른 마이그레이션 없음 (순서 영향 0).
+
+### P1-1: requiredTierLabelFor 로직 오류 (AC-5)
+- src/lib/aiUsageMeta.ts:139-147
+  - 30d → 'Hobby' (defensive)
+  - 90d → 'Hobby' (was 'Starter' 오류) — 90d 는 Hobby 에서 해금
+  - 6m  → 'Starter' (was 'Professional' 오류) — 6m 은 Starter 에서 해금
+  - 12m → 'Professional' — 12m 는 Professional 에서 해금
+- src/lib/aiUsageMeta.test.ts — 기대값 3건 갱신
+- src/pages/settings/components/ai-usage/PeriodFilter.test.tsx — 90d/6m/12m
+  각각의 tooltip 라벨 검증 강화
+
+### P1-2: 403 Forbidden 전용 배너 (AC-14, Dev Spec §4-1 alt 2)
+- src/pages/settings/components/AiUsagePanel.tsx
+  - `?view=team` URL 파라미터 추가 — Team View 명시적 요청
+  - `isForbidden = attemptingTeamView && !isTeamView && !loadingEffective`
+    계산 로직 추가
+  - isForbidden 일 때 Team/Self RPC 둘 다 skip, 전용 amber 배너 렌더
+    (ri-shield-keyhole-line + title + body + "View my usage" CTA)
+  - CTA 클릭 시 `view` 파라미터 제거 → Self View 로 전환
+- 선택한 접근: 옵션 1 (UI-level pre-check). RPC 계약 변경 없음,
+  기존 Member 의 default Self View 경로 그대로 유지
+
+### P2-1: "View Details" 하드코딩 i18n 처리
+- src/pages/project-detail/page.tsx:1297
+  - 하드코딩 'View Details' → `t('settings:aiUsage.viewDetails')`
+
+### P2-2: RPC 날짜 범위 2년 가드
+- supabase/migrations/20260424_f011_ai_usage_breakdown_rpc.sql
+  - WHERE 에 `(p_to - p_from) <= INTERVAL '2 years'` 조건 추가
+  - UI 최대값 12m 대비 넉넉한 여유 + 악의적/실수 대형 스캔 차단
+
+### P2-3: Dev Spec §5 인덱스 스키마 갱신
+- docs/specs/dev-spec-f011-ai-token-budget-dashboard.md
+  - INCLUDE 절에 tokens_used 추가 (실제 마이그레이션과 일치)
+
+### i18n 추가 키 (en/ko 양쪽)
+- settings.aiUsage.forbidden.selfCta: "View my usage" / "내 사용량 보기"
+
+### 검증 (전부 PASS)
+- npx tsc --noEmit: 0 errors
+- npm run test -- --run: 230/230 passed (기존 + 갱신된 테스트 포함)
+- npm run scan:i18n:check: clean (0 hardcoded)
+- npm run scan:i18n:parity: en ↔ ko 0 diff
+
+## 어디까지 됐냐
+
+### QA 이슈 처리 상태
+- P0-1: FIXED (파일명 rename)
+- P1-1: FIXED (로직 + 테스트)
+- P1-2: FIXED (UI-level forbidden 배너)
+- P2-1: FIXED (i18n 처리)
+- P2-2: FIXED (SQL 가드)
+- P2-3: FIXED (Dev Spec 문서 갱신)
+- P2-4: 작업 불필요 (OOS 경계 유지 확인만)
+
+### 추후 Playwright 스모크
+- 브라우저에서 Member 계정으로 `/settings?tab=ai-usage&view=team` 접근 시
+  Forbidden amber 배너 정상 표시 확인 (수동 검증)
+- Free 계정으로 PeriodFilter 열어 90d=Hobby / 6m=Starter / 12m=Professional
+  tooltip 확인 (수동 검증)
+
+## 다음엔 뭘 해야 해
+1. CEO 에게 QA 수정 PR 알림 → main 수동 머지
+2. 프로덕션 배포 전 20260424 migration 적용
+3. Playwright E2E 스모크 — 브라우저 검증 자동화
 4. v1.1 후속 이슈 백로그 정리 (OOS 10개 중 우선순위)

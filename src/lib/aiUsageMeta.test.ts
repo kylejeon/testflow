@@ -119,10 +119,14 @@ describe('isPeriodAllowed', () => {
 });
 
 describe('requiredTierLabelFor', () => {
-  it('matches Design Spec §3-1 upgrade tooltip copy', () => {
+  it('returns the minimum tier that unlocks each period (Design Spec §3-1)', () => {
+    // 30d is always allowed (Free+); defensive branch returns 'Hobby'.
     expect(requiredTierLabelFor('30d')).toBe('Hobby');
-    expect(requiredTierLabelFor('90d')).toBe('Starter');
-    expect(requiredTierLabelFor('6m')).toBe('Professional');
+    // 90d unlocks at Hobby
+    expect(requiredTierLabelFor('90d')).toBe('Hobby');
+    // 6m unlocks at Starter
+    expect(requiredTierLabelFor('6m')).toBe('Starter');
+    // 12m unlocks at Professional
     expect(requiredTierLabelFor('12m')).toBe('Professional');
   });
 });

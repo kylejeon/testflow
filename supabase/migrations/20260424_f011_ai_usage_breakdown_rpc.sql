@@ -83,6 +83,10 @@ AS $$
     COALESCE(SUM(l.tokens_used), 0)::bigint                          AS tokens_sum
   FROM   ai_generation_logs l
   WHERE  EXISTS (SELECT 1 FROM caller_authorized)
+    -- Server-side window guard (QA P2-2): reject windows longer than 2 years
+    -- to prevent accidental/malicious wide scans. 2y covers the widest UI
+    -- option (12m in v1, 24m reserved for Enterprise) with headroom.
+    AND  (p_to - p_from) <= INTERVAL '2 years'
     AND  l.user_id IN (SELECT uid FROM team_ids)
     AND  l.step = 1
     AND  l.created_at >= p_from

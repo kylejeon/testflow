@@ -146,6 +146,7 @@ export const settings = {
       title: "You don't have permission to view team usage.",
       body: 'Contact your Owner if this is unexpected.',
       cta: 'Contact Owner',
+      selfCta: 'View my usage',
     },
     warning: {
       near: "You've used {{used}} of {{limit}} AI generations this month. Consider upgrading to avoid hitting the limit mid-cycle.",

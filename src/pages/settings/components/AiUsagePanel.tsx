@@ -258,6 +258,24 @@ export default function AiUsagePanel() {
 
   const isTeamView = isOwnerSelf || isOrgAdmin;
 
+  // ── 2b. Forbidden detection (Dev Spec §4-1 alt-flow 2) ──
+  //
+  // When a caller explicitly requests Team View via `?view=team` but their
+  // role does NOT qualify (neither owner nor org admin), render a dedicated
+  // 403 banner instead of silently falling back to Self View or Empty State.
+  //
+  // Rationale (QA P1-2, option 1):
+  //   The RPC returns an empty array for unauthorized callers (by design,
+  //   to avoid leaking role state). That collides with the "no data" empty
+  //   state. We disambiguate at the UI layer by gating on an explicit URL
+  //   intent — safer than changing the RPC contract. Any future entry point
+  //   that wants to express "Team View" intent (e.g. a deep link from an
+  //   email alert) can pass `?view=team` and will get a useful banner when
+  //   the caller is a non-admin Member.
+  const viewIntent = searchParams.get('view');
+  const attemptingTeamView = viewIntent === 'team';
+  const isForbidden = attemptingTeamView && !isTeamView && !loadingEffective;
+
   // ── 3. Period filter (URL-synced) ──
   const rawPeriod = searchParams.get('period') as PeriodKey | null;
   const validPeriods: PeriodKey[] = ['30d', '90d', '6m', '12m'];
@@ -279,12 +297,19 @@ export default function AiUsagePanel() {
   );
 
   // ── 4. Fetch usage data ──
+  //
+  // When `isForbidden === true` we suppress both Team and Self fetches so the
+  // dedicated banner is the only thing rendered (AC-14, Dev Spec §4-1 alt 2).
   const teamQuery = useAiUsageBreakdown(
-    isTeamView ? effective?.ownerId : null,
+    isTeamView && !isForbidden ? effective?.ownerId : null,
     from,
     to,
   );
-  const selfQuery = useMyAiUsage(!isTeamView ? session?.id : null, from, to);
+  const selfQuery = useMyAiUsage(
+    !isTeamView && !isForbidden ? session?.id : null,
+    from,
+    to,
+  );
 
   // For Team View: fetch profiles of team members to enrich Member Contribution + CSV export
   const memberIds = useMemo(() => {
@@ -418,6 +443,66 @@ export default function AiUsagePanel() {
   }, [navigate, session]);
 
   // ── 8. Renders ──
+  //
+  // Forbidden short-circuit: the caller explicitly requested Team View
+  // (`?view=team`) but does not qualify. Render only the header + a dedicated
+  // 403 banner with a "Contact Owner" CTA. No data fetch, no chart, no tables.
+  if (isForbidden) {
+    return (
+      <div className="max-w-[1160px] mx-auto px-4 md:px-8 pt-6 pb-12">
+        <div className="flex items-center gap-3 mb-1">
+          <div
+            aria-hidden="true"
+            className="w-10 h-10 rounded-[0.625rem] bg-violet-500/10 flex items-center justify-center"
+          >
+            <i className="ri-sparkling-2-fill text-violet-500 text-xl" />
+          </div>
+          <h2 className="text-[1.25rem] font-bold text-slate-900 dark:text-white">
+            {t('aiUsage.title')}
+          </h2>
+        </div>
+        <p className="text-[0.8125rem] text-slate-500 dark:text-slate-400 mb-4">
+          {t('aiUsage.subtitle.team')}
+        </p>
+        <div className="border-t border-slate-200 dark:border-white/[0.06] my-4" />
+
+        <div
+          role="alert"
+          data-testid="ai-usage-forbidden-banner"
+          className="flex items-start gap-3 px-4 py-4 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-900/10 dark:border-amber-800/30"
+        >
+          <i
+            className="ri-shield-keyhole-line text-amber-500 text-lg shrink-0 mt-0.5"
+            aria-hidden="true"
+          />
+          <div className="flex-1 min-w-0">
+            <p className="text-[0.875rem] font-semibold text-amber-800 dark:text-amber-200">
+              {t('aiUsage.forbidden.title')}
+            </p>
+            <p className="text-[0.8125rem] text-amber-700 dark:text-amber-300 mt-0.5">
+              {t('aiUsage.forbidden.body')}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                // Drop the `?view=team` intent so Self View (the Member's
+                // valid default) renders on the next tick.
+                const params = new URLSearchParams(searchParams);
+                params.delete('view');
+                setSearchParams(params, { replace: true });
+              }}
+              data-testid="ai-usage-forbidden-self-cta"
+              className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white border border-amber-300 hover:bg-amber-100 text-[0.75rem] font-semibold text-amber-800 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
+            >
+              <i className="ri-user-line" aria-hidden="true" />
+              {t('aiUsage.forbidden.selfCta')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-[1160px] mx-auto px-4 md:px-8 pt-6 pb-12">
       {/* ── Header ── */}

@@ -59,11 +59,22 @@ describe('PeriodFilter', () => {
   });
 
   it('shows upgrade tooltip on disabled option (title attribute)', () => {
+    // Free tier user — all non-30d options are disabled. The tooltip tier
+    // label reflects the minimum tier that unlocks each period:
+    //   90d → Hobby, 6m → Starter, 12m → Professional (Design Spec §3-1).
     renderWithI18n(<PeriodFilter value="30d" onChange={() => {}} tier={1} />);
     fireEvent.click(screen.getByRole('button'));
-    const disabled = screen.getByTestId('period-option-90d');
-    const titleStr = disabled.getAttribute('title');
-    expect(titleStr).toBeTruthy();
-    expect(titleStr).toContain('Starter');
+
+    const d90 = screen.getByTestId('period-option-90d').getAttribute('title');
+    expect(d90).toBeTruthy();
+    expect(d90).toContain('Hobby');
+
+    const d6m = screen.getByTestId('period-option-6m').getAttribute('title');
+    expect(d6m).toBeTruthy();
+    expect(d6m).toContain('Starter');
+
+    const d12m = screen.getByTestId('period-option-12m').getAttribute('title');
+    expect(d12m).toBeTruthy();
+    expect(d12m).toContain('Professional');
   });
 });

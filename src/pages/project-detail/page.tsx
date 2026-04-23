@@ -1294,7 +1294,7 @@ export default function ProjectDetail() {
                         <div className="flex items-center justify-between">
                           <span className="text-[11px] text-gray-400">Plan: <strong className="text-gray-600">{tierInfo?.name || 'Free'}</strong></span>
                           <Link to="/settings?tab=ai-usage" className="text-[11px] text-indigo-600 font-medium hover:text-indigo-700 flex items-center gap-0.5">
-                            View Details <i className="ri-arrow-right-up-line text-xs" />
+                            {t('settings:aiUsage.viewDetails')} <i className="ri-arrow-right-up-line text-xs" />
                           </Link>
                         </div>
                         {aiLimit > 0 && aiUsageCount / aiLimit >= 0.8 && (

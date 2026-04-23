@@ -135,13 +135,22 @@ export function isPeriodAllowed(period: PeriodKey, tier: number): boolean {
   return PERIOD_RANK[period] <= PERIOD_RANK[max];
 }
 
-/** Returns the tier label required to unlock `period`, or null if already unlocked. */
+/**
+ * Returns the tier label required to unlock `period` (i.e. the minimum tier
+ * whose `planHistoryLimit` includes `period`).
+ *
+ * Design Spec §3-1 mapping:
+ *   - 30d is always unlocked (Free+) — this branch is defensive only.
+ *   - 90d unlocks at Hobby.
+ *   - 6m  unlocks at Starter.
+ *   - 12m unlocks at Professional.
+ */
 export function requiredTierLabelFor(period: PeriodKey): string {
   switch (period) {
-    case '30d':  return 'Hobby';
-    case '90d':  return 'Starter';
-    case '6m':   return 'Professional';
-    case '12m':  return 'Professional';
+    case '30d':  return 'Hobby';        // defensive (30d is Free-allowed)
+    case '90d':  return 'Hobby';        // unlocks at Hobby
+    case '6m':   return 'Starter';      // unlocks at Starter
+    case '12m':  return 'Professional'; // unlocks at Professional
     default:     return 'Professional';
   }
 }

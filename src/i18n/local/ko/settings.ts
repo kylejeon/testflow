@@ -146,6 +146,7 @@ export const settings = {
       title: '팀 사용량을 볼 권한이 없습니다.',
       body: '예상하지 못한 경우 오너에게 문의하세요.',
       cta: '오너에게 문의',
+      selfCta: '내 사용량 보기',
     },
     warning: {
       near: '이번 달 {{limit}} 크레딧 중 {{used}} 크레딧을 사용했습니다. 한도 도달 전에 플랜 업그레이드를 고려하세요.',
