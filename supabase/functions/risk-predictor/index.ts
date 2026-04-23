@@ -7,6 +7,8 @@ import {
 import {
   getEffectiveTier,
   getSharedPoolUsage,
+  consumeAiCredit,
+  ConsumeAiCreditError,
 } from '../_shared/ai-usage.ts';
 import { sanitizeShortName, sanitizeTitle } from '../_shared/promptSanitize.ts';
 import {
@@ -317,42 +319,81 @@ Rules:
 
     const latencyMs = Date.now() - startTime;
 
-    // ── Log credit usage ─────────────────────────────────────────────────────
-    const { error: logErr } = await supabase.from('ai_generation_logs').insert({
-      user_id: user.id,
-      project_id,
-      mode: 'risk-predictor',
-      step: 1,
-      credits_used: feature.creditCost,
-      input_data: {
-        plan_id,
-        total_tcs: totalTCs,
-        passed,
-        failed,
-        blocked,
-        untested,
-        pass_rate: passRate,
-        run_count: (runs || []).length,
-        locale, // f021 BR-6
-      },
-      output_data: result,
-      tokens_used: tokensUsed,
-      latency_ms: latencyMs,
-    });
-    if (logErr) {
-      console.error('risk-predictor ai_generation_logs insert failed:', logErr);
+    // ── f018 — Atomic credit consume (AC-11) ─────────────────────────────────
+    // owner-level advisory lock + re-check + INSERT.
+    // RPC 실패 시 AI payload 는 보존하고 meta.credits_logged:false (AC-14).
+    // quota 초과(race-lost) 시 AI payload 보존 + 429 (AC-15).
+    try {
+      const consume = await consumeAiCredit(supabase, {
+        userId: user.id,
+        ownerId,
+        projectId: project_id,
+        mode: 'risk-predictor',
+        step: 1,
+        creditCost: feature.creditCost,
+        limit: monthlyLimit,
+        tokensUsed,
+        latencyMs,
+        inputData: {
+          plan_id,
+          total_tcs: totalTCs,
+          passed,
+          failed,
+          blocked,
+          untested,
+          pass_rate: passRate,
+          run_count: (runs || []).length,
+          locale,
+        },
+        outputData: result,
+      });
+      if (!consume.allowed) {
+        console.warn('[f018] race-lost risk-predictor owner=', ownerId, 'used=', consume.used);
+        return jsonResponse({
+          error: 'Monthly AI credit limit reached. Upgrade your plan for more credits.',
+          used: consume.used,
+          limit: consume.limit,
+          upgradeUrl: 'https://testably.app/pricing',
+          // AI payload 보존
+          ...result,
+          meta: {
+            credits_used: 0,
+            credits_logged: false,
+            rate_limited_post_check: true,
+            monthly_limit: monthlyLimit,
+            tokens_used: tokensUsed,
+            latency_ms: latencyMs,
+          },
+        }, 429);
+      }
+      return jsonResponse({
+        ...result,
+        meta: {
+          credits_used: consume.creditCost,
+          credits_remaining: consume.limit === -1 ? -1 : Math.max(0, consume.limit - consume.used),
+          monthly_limit: consume.limit,
+          tokens_used: tokensUsed,
+          latency_ms: latencyMs,
+          log_id: consume.logId,
+        },
+      });
+    } catch (err) {
+      if (err instanceof ConsumeAiCreditError) {
+        console.error('[f018] consume_ai_credit_and_log failed', { ownerId, mode: 'risk-predictor', err: String(err.cause ?? err.message) });
+        return jsonResponse({
+          ...result,
+          meta: {
+            credits_used: 0,
+            credits_logged: false,
+            error: 'credit_log_failed',
+            monthly_limit: monthlyLimit,
+            tokens_used: tokensUsed,
+            latency_ms: latencyMs,
+          },
+        });
+      }
+      throw err;
     }
-
-    return jsonResponse({
-      ...result,
-      meta: {
-        credits_used: feature.creditCost,
-        credits_remaining: monthlyLimit === -1 ? -1 : Math.max(0, monthlyLimit - usedCredits - feature.creditCost),
-        monthly_limit: monthlyLimit,
-        tokens_used: tokensUsed,
-        latency_ms: latencyMs,
-      },
-    });
 
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);

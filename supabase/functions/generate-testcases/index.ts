@@ -9,6 +9,8 @@ import {
   getOwnerTeamUserIds,
   getSharedPoolUsage,
   checkAiAccess,
+  consumeAiCredit,
+  ConsumeAiCreditError,
 } from '../_shared/ai-usage.ts';
 import {
   sanitizeShortName,
@@ -582,25 +584,51 @@ Quality Gates: Pass Rate ≥90%, Critical Failures = 0, Coverage ≥80%, Blocked
         return jsonResponse({ error: 'Analysis failed — invalid response' }, 500);
       }
 
-      // Log usage (step=1 so it counts against monthly quota)
-      await adminClient.from('ai_generation_logs').insert({
-        user_id: user.id,
-        project_id: runData.project_id,
-        mode: 'run-summary',
-        step: 1,
-        input_data: { run_id: run_id, total_tcs: totalCount, locale }, // f021 BR-6
-        output_data: aiSummary,
-        tokens_used: tokensUsed,
-        latency_ms: latencyMs,
-        credits_used: AI_FEATURES.run_summary.creditCost,
-      });
-
-      const usage = await getSharedPoolUsage(adminClient, ownerId);
-      return jsonResponse({
-        success: true,
-        summary: aiSummary,
-        usage: { current: usage, limit: PLAN_LIMITS[tier] },
-      });
+      // f018 — Atomic credit consume: owner-level advisory lock + re-check + INSERT.
+      // RPC 자체 실패 시 AI payload 는 보존하고 meta.credits_logged:false 로 응답 (AC-14).
+      try {
+        const consume = await consumeAiCredit(adminClient, {
+          userId: user.id,
+          ownerId,
+          projectId: runData.project_id,
+          mode: 'run-summary',
+          step: 1,
+          creditCost: AI_FEATURES.run_summary.creditCost,
+          limit: PLAN_LIMITS[tier] ?? -1,
+          tokensUsed,
+          latencyMs,
+          inputData: { run_id: run_id, total_tcs: totalCount, locale },
+          outputData: aiSummary,
+        });
+        if (!consume.allowed) {
+          // quota 초과 (lock 안에서 재검증 실패) — AI payload 보존, 429 (AC-15).
+          return jsonResponse({
+            error: 'monthly_limit_reached',
+            summary: aiSummary,
+            usage: { current: consume.used, limit: consume.limit },
+            upgradeUrl: 'https://testably.app/pricing',
+            meta: { credits_used: 0, credits_logged: false, rate_limited_post_check: true },
+          }, 429);
+        }
+        return jsonResponse({
+          success: true,
+          summary: aiSummary,
+          usage: { current: consume.used, limit: consume.limit },
+          meta: { credits_used: consume.creditCost, log_id: consume.logId },
+        });
+      } catch (err) {
+        if (err instanceof ConsumeAiCreditError) {
+          console.error('[f018] consume_ai_credit_and_log failed', { ownerId, mode: 'run-summary', err: String(err.cause ?? err.message) });
+          const usage = await getSharedPoolUsage(adminClient, ownerId);
+          return jsonResponse({
+            success: true,
+            summary: aiSummary,
+            usage: { current: usage, limit: PLAN_LIMITS[tier] },
+            meta: { credits_logged: false, error: 'credit_log_failed' },
+          });
+        }
+        throw err;
+      }
     }
 
     // ── COVERAGE GAP ANALYSIS (action: 'coverage-gap') ────────
@@ -823,25 +851,49 @@ Respond in valid JSON:
         return jsonResponse({ error: 'Analysis failed — invalid response' }, 500);
       }
 
-      // Log usage — store full result + hash for future cache hits
-      await adminClient.from('ai_generation_logs').insert({
-        user_id: user.id,
-        project_id,
-        mode: 'run-summary',
-        step: 1,
-        input_data: { action: 'coverage-gap', total_tcs: tcList.length, content_hash: contentHash, locale }, // f021 BR-6
-        output_data: gapResult,
-        tokens_used: tokensUsed,
-        latency_ms: latencyMs,
-        credits_used: AI_FEATURES.coverage_gap.creditCost,
-      });
-
-      const usage = await getSharedPoolUsage(adminClient, ownerId);
-      return jsonResponse({
-        success: true,
-        result: gapResult,
-        usage: { current: usage, limit: PLAN_LIMITS[tier] },
-      });
+      // f018 — Atomic credit consume (AC-9, AC-14, AC-15).
+      try {
+        const consume = await consumeAiCredit(adminClient, {
+          userId: user.id,
+          ownerId,
+          projectId: project_id,
+          mode: 'run-summary',
+          step: 1,
+          creditCost: AI_FEATURES.coverage_gap.creditCost,
+          limit: PLAN_LIMITS[tier] ?? -1,
+          tokensUsed,
+          latencyMs,
+          inputData: { action: 'coverage-gap', total_tcs: tcList.length, content_hash: contentHash, locale },
+          outputData: gapResult,
+        });
+        if (!consume.allowed) {
+          return jsonResponse({
+            error: 'monthly_limit_reached',
+            result: gapResult,
+            usage: { current: consume.used, limit: consume.limit },
+            upgradeUrl: 'https://testably.app/pricing',
+            meta: { credits_used: 0, credits_logged: false, rate_limited_post_check: true },
+          }, 429);
+        }
+        return jsonResponse({
+          success: true,
+          result: gapResult,
+          usage: { current: consume.used, limit: consume.limit },
+          meta: { credits_used: consume.creditCost, log_id: consume.logId },
+        });
+      } catch (err) {
+        if (err instanceof ConsumeAiCreditError) {
+          console.error('[f018] consume_ai_credit_and_log failed', { ownerId, mode: 'coverage-gap', err: String(err.cause ?? err.message) });
+          const usage = await getSharedPoolUsage(adminClient, ownerId);
+          return jsonResponse({
+            success: true,
+            result: gapResult,
+            usage: { current: usage, limit: PLAN_LIMITS[tier] },
+            meta: { credits_logged: false, error: 'credit_log_failed' },
+          });
+        }
+        throw err;
+      }
     }
 
     // ── AI TC SUGGESTION FROM REQUIREMENT (action: 'suggest-from-requirement') ──
@@ -932,25 +984,52 @@ Suggest test cases not yet covered.`;
         return jsonResponse({ error: 'AI returned an unexpected format' }, 500);
       }
 
-      await adminClient.from('ai_generation_logs').insert({
-        user_id: user.id,
-        project_id: project_id || null,
-        mode: 'requirement-suggest',
-        step: 1,
-        input_data: { action: 'suggest-from-requirement', requirement_id, existing_tc_count: existing_tcs.length, locale }, // f021 BR-6
-        output_data: { suggestions },
-        tokens_used: tokensUsed,
-        latency_ms: latencyMs,
-        credits_used: AI_FEATURES.requirement_suggest.creditCost,
-      });
-
-      const usage = await getSharedPoolUsage(adminClient, ownerId);
-      return jsonResponse({
-        success: true,
-        suggestions,
-        requirement_id,
-        usage: { current: usage, limit: PLAN_LIMITS[tier] },
-      });
+      // f018 — Atomic credit consume (AC-9, AC-14, AC-15).
+      try {
+        const consume = await consumeAiCredit(adminClient, {
+          userId: user.id,
+          ownerId,
+          projectId: project_id || null,
+          mode: 'requirement-suggest',
+          step: 1,
+          creditCost: AI_FEATURES.requirement_suggest.creditCost,
+          limit: PLAN_LIMITS[tier] ?? -1,
+          tokensUsed,
+          latencyMs,
+          inputData: { action: 'suggest-from-requirement', requirement_id, existing_tc_count: existing_tcs.length, locale },
+          outputData: { suggestions },
+        });
+        if (!consume.allowed) {
+          return jsonResponse({
+            error: 'monthly_limit_reached',
+            suggestions,
+            requirement_id,
+            usage: { current: consume.used, limit: consume.limit },
+            upgradeUrl: 'https://testably.app/pricing',
+            meta: { credits_used: 0, credits_logged: false, rate_limited_post_check: true },
+          }, 429);
+        }
+        return jsonResponse({
+          success: true,
+          suggestions,
+          requirement_id,
+          usage: { current: consume.used, limit: consume.limit },
+          meta: { credits_used: consume.creditCost, log_id: consume.logId },
+        });
+      } catch (err) {
+        if (err instanceof ConsumeAiCreditError) {
+          console.error('[f018] consume_ai_credit_and_log failed', { ownerId, mode: 'requirement-suggest', err: String(err.cause ?? err.message) });
+          const usage = await getSharedPoolUsage(adminClient, ownerId);
+          return jsonResponse({
+            success: true,
+            suggestions,
+            requirement_id,
+            usage: { current: usage, limit: PLAN_LIMITS[tier] },
+            meta: { credits_logged: false, error: 'credit_log_failed' },
+          });
+        }
+        throw err;
+      }
     }
 
     // ── FLAKY ANALYSIS (action: 'analyze-flaky') ───────────────
@@ -1064,24 +1143,49 @@ Respond in valid JSON:
         return jsonResponse({ error: 'Analysis failed — invalid response' }, 500);
       }
 
-      await adminClient.from('ai_generation_logs').insert({
-        user_id: user.id,
-        project_id,
-        mode: 'run-summary',
-        step: 1,
-        input_data: { action: 'analyze-flaky', flaky_count: flakyTests.length, content_hash: flakyHash, locale }, // f021 BR-6
-        output_data: analysisResult,
-        tokens_used: tokensUsed,
-        latency_ms: latencyMs,
-        credits_used: AI_FEATURES.flaky_analysis.creditCost,
-      });
-
-      const usage = await getSharedPoolUsage(adminClient, ownerId);
-      return jsonResponse({
-        success: true,
-        result: analysisResult,
-        usage: { current: usage, limit: PLAN_LIMITS[tier] },
-      });
+      // f018 — Atomic credit consume (AC-9, AC-14, AC-15).
+      try {
+        const consume = await consumeAiCredit(adminClient, {
+          userId: user.id,
+          ownerId,
+          projectId: project_id,
+          mode: 'run-summary',
+          step: 1,
+          creditCost: AI_FEATURES.flaky_analysis.creditCost,
+          limit: PLAN_LIMITS[tier] ?? -1,
+          tokensUsed,
+          latencyMs,
+          inputData: { action: 'analyze-flaky', flaky_count: flakyTests.length, content_hash: flakyHash, locale },
+          outputData: analysisResult,
+        });
+        if (!consume.allowed) {
+          return jsonResponse({
+            error: 'monthly_limit_reached',
+            result: analysisResult,
+            usage: { current: consume.used, limit: consume.limit },
+            upgradeUrl: 'https://testably.app/pricing',
+            meta: { credits_used: 0, credits_logged: false, rate_limited_post_check: true },
+          }, 429);
+        }
+        return jsonResponse({
+          success: true,
+          result: analysisResult,
+          usage: { current: consume.used, limit: consume.limit },
+          meta: { credits_used: consume.creditCost, log_id: consume.logId },
+        });
+      } catch (err) {
+        if (err instanceof ConsumeAiCreditError) {
+          console.error('[f018] consume_ai_credit_and_log failed', { ownerId, mode: 'analyze-flaky', err: String(err.cause ?? err.message) });
+          const usage = await getSharedPoolUsage(adminClient, ownerId);
+          return jsonResponse({
+            success: true,
+            result: analysisResult,
+            usage: { current: usage, limit: PLAN_LIMITS[tier] },
+            meta: { credits_logged: false, error: 'credit_log_failed' },
+          });
+        }
+        throw err;
+      }
     }
 
     if (!project_id || !mode) {
@@ -1268,22 +1372,56 @@ Respond in valid JSON:
         return jsonResponse({ error: 'Failed to parse AI response', raw: content }, 500);
       }
 
-      await adminClient.from('ai_generation_logs').insert({
-        user_id: user.id,
-        project_id,
-        mode,
-        step: 1,
-        input_text: mode === 'text' ? input_text : mode === 'jira' ? jira_issue_keys?.join(',') : null,
-        session_id: mode === 'session' ? session_id : null,
-        titles_generated: titles.length,
-        model_used: 'claude-sonnet-4-20250514',
-        tokens_used: tokens,
-        latency_ms: latency,
-        credits_used: AI_FEATURES.tc_generation_text.creditCost,
-        input_data: { locale }, // f021 BR-6
-      });
-
-      responseData = { titles, tokens_used: tokens, latency_ms: latency };
+      // f018 — Atomic credit consume (AC-9: step=1 text/jira/session).
+      // quota 초과 시 AI 결과 payload 는 보존하고 429 (AC-15).
+      // RPC 실패 시 credits_logged:false meta 로 AI 결과 보존 (AC-14).
+      try {
+        const consume = await consumeAiCredit(adminClient, {
+          userId: user.id,
+          ownerId,
+          projectId: project_id,
+          mode: mode ?? 'text',
+          step: 1,
+          creditCost: AI_FEATURES.tc_generation_text.creditCost,
+          limit: PLAN_LIMITS[tier] ?? -1,
+          tokensUsed: tokens,
+          latencyMs: latency,
+          inputData: { locale },
+          modelUsed: 'claude-sonnet-4-20250514',
+          sessionId: mode === 'session' ? (session_id ?? null) : null,
+          inputText: mode === 'text' ? (input_text ?? null) : mode === 'jira' ? (jira_issue_keys?.join(',') ?? null) : null,
+          titlesGenerated: titles.length,
+        });
+        if (!consume.allowed) {
+          return jsonResponse({
+            error: 'monthly_limit_reached',
+            titles,
+            tokens_used: tokens,
+            latency_ms: latency,
+            usage: { current: consume.used, limit: consume.limit },
+            upgradeUrl: 'https://testably.app/pricing',
+            meta: { credits_used: 0, credits_logged: false, rate_limited_post_check: true },
+          }, 429);
+        }
+        responseData = {
+          titles,
+          tokens_used: tokens,
+          latency_ms: latency,
+          meta: { credits_used: consume.creditCost, log_id: consume.logId },
+        };
+      } catch (err) {
+        if (err instanceof ConsumeAiCreditError) {
+          console.error('[f018] consume_ai_credit_and_log failed', { ownerId, mode, err: String(err.cause ?? err.message) });
+          responseData = {
+            titles,
+            tokens_used: tokens,
+            latency_ms: latency,
+            meta: { credits_logged: false, error: 'credit_log_failed' },
+          };
+        } else {
+          throw err;
+        }
+      }
 
     // ── Step 2: 상세 케이스 생성 ──────────────────────────────
     } else {

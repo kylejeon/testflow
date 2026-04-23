@@ -7,6 +7,8 @@ import {
 import {
   getEffectiveTier,
   getSharedPoolUsage,
+  consumeAiCredit,
+  ConsumeAiCreditError,
 } from '../_shared/ai-usage.ts';
 import {
   sanitizeShortName,
@@ -59,6 +61,7 @@ Deno.serve(async (req: Request) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  const startTime = Date.now();
   try {
     // Service role client for DB operations
     const supabase = createClient(
@@ -277,6 +280,7 @@ Rules:
 
     const claudeData = await claudeRes.json();
     const rawContent = claudeData.content?.[0]?.text ?? '{}';
+    const tokensUsed = (claudeData.usage?.input_tokens || 0) + (claudeData.usage?.output_tokens || 0);
 
     let result: PlanAssistantResponse;
     try {
@@ -303,38 +307,87 @@ Rules:
       throw new Error('Failed to parse Claude response as JSON');
     }
 
-    // ── credit 소비 로그 기록 ─────────────────────────────────────────────────
-    // ai_generation_logs 컬럼: input_data (JSONB). `metadata` 컬럼 없음 — 과거 오타로 silent fail.
-    const { error: logErr } = await supabase.from('ai_generation_logs').insert({
-      user_id: user.id,
-      project_id,
-      mode: 'plan-assistant',
-      step: 1,
-      credits_used: feature.creditCost,
-      input_data: {
-        affected_areas,
-        target_milestone_id: target_milestone_id || null,
-        tc_count: relevantTcs.length,
-        suggested_count: result.suggested_test_cases?.length || 0,
-        locale, // f021 BR-6
-      },
-    });
-    if (logErr) {
-      // 로그 실패는 사용자 응답을 블록하지 않되 서버 로그에 반드시 노출.
-      console.error('plan-assistant ai_generation_logs insert failed:', logErr);
-    }
+    const latencyMs = Date.now() - startTime;
 
-    return new Response(JSON.stringify({
-      ...result,
-      meta: {
-        credits_used: feature.creditCost,
-        credits_remaining: monthlyLimit === -1 ? -1 : Math.max(0, monthlyLimit - usedCredits - feature.creditCost),
-        monthly_limit: monthlyLimit,
-      },
-    }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    // ── f018 — Atomic credit consume (AC-12) ─────────────────────────────────
+    // 기존 INSERT 는 tokens_used / latency_ms / output_data 를 저장하지 않던 버그가
+    // 있었는데, RPC 로 교체하며 함께 전달하여 모니터링 데이터 정합성 복원.
+    try {
+      const consume = await consumeAiCredit(supabase, {
+        userId: user.id,
+        ownerId,
+        projectId: project_id,
+        mode: 'plan-assistant',
+        step: 1,
+        creditCost: feature.creditCost,
+        limit: monthlyLimit,
+        tokensUsed,
+        latencyMs,
+        inputData: {
+          affected_areas,
+          target_milestone_id: target_milestone_id || null,
+          tc_count: relevantTcs.length,
+          suggested_count: result.suggested_test_cases?.length || 0,
+          locale,
+        },
+        outputData: result,
+      });
+      if (!consume.allowed) {
+        console.warn('[f018] race-lost plan-assistant owner=', ownerId, 'used=', consume.used);
+        return new Response(JSON.stringify({
+          error: 'Monthly AI credit limit reached. Upgrade your plan for more credits.',
+          used: consume.used,
+          limit: consume.limit,
+          upgradeUrl: 'https://testably.app/pricing',
+          // AI payload 보존
+          ...result,
+          meta: {
+            credits_used: 0,
+            credits_logged: false,
+            rate_limited_post_check: true,
+            monthly_limit: monthlyLimit,
+            tokens_used: tokensUsed,
+            latency_ms: latencyMs,
+          },
+        }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      return new Response(JSON.stringify({
+        ...result,
+        meta: {
+          credits_used: consume.creditCost,
+          credits_remaining: consume.limit === -1 ? -1 : Math.max(0, consume.limit - consume.used),
+          monthly_limit: consume.limit,
+          tokens_used: tokensUsed,
+          latency_ms: latencyMs,
+          log_id: consume.logId,
+        },
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } catch (err) {
+      if (err instanceof ConsumeAiCreditError) {
+        console.error('[f018] consume_ai_credit_and_log failed', { ownerId, mode: 'plan-assistant', err: String(err.cause ?? err.message) });
+        return new Response(JSON.stringify({
+          ...result,
+          meta: {
+            credits_used: 0,
+            credits_logged: false,
+            error: 'credit_log_failed',
+            monthly_limit: monthlyLimit,
+            tokens_used: tokensUsed,
+            latency_ms: latencyMs,
+          },
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      throw err;
+    }
 
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);

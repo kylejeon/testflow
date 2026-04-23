@@ -165,6 +165,12 @@ export async function getSharedPoolUsage(
 /**
  * AI 기능 접근 통합 체크 — tier gate + credit quota 동시 검사.
  *
+ * ⚠ pre-flight ONLY. 실제 원자성 보장은 `consume_ai_credit_and_log` RPC
+ *    (20260424_f018_ai_credit_atomic_consume_rpc.sql) 에서 owner 단위
+ *    advisory lock + re-check + INSERT 로 처리한다. 이 함수의 반환값은
+ *    tier gate + UX hint 용도이며, Claude API 호출 이후의 최종 차감은
+ *    `consumeAiCredit()` 헬퍼를 통해 수행해야 한다 (f018).
+ *
  * 반환 필드:
  *   - allowed    : 호출 허용 여부
  *   - tier       : 유효 tier
@@ -237,3 +243,120 @@ export async function checkAiAccess(
     creditCost: config.creditCost,
   };
 }
+
+// ─── f018 — Atomic credit consume ────────────────────────────────────────────
+
+/**
+ * consume_ai_credit_and_log RPC 호출 파라미터.
+ *
+ * 대응 SQL: supabase/migrations/20260424_f018_ai_credit_atomic_consume_rpc.sql
+ */
+export interface ConsumeAiCreditParams {
+  userId: string;
+  ownerId: string;
+  projectId: string | null;
+  mode: string;
+  step: number;
+  creditCost: number;
+  /** PLAN_LIMITS[tier] ?? -1. -1 = unlimited. */
+  limit: number;
+  tokensUsed?: number;
+  latencyMs?: number;
+  inputData?: Record<string, unknown> | null;
+  outputData?: unknown;
+  titlesGenerated?: number | null;
+  titlesSelected?: number | null;
+  modelUsed?: string | null;
+  sessionId?: string | null;
+  inputText?: string | null;
+}
+
+/**
+ * consume_ai_credit_and_log RPC 반환 JSON (타입 안전).
+ *
+ * - allowed=true  → INSERT 수행됨, used=INSERT 이후 합계
+ * - allowed=false → INSERT 안 됨, reason='quota_exceeded'
+ */
+export interface ConsumeAiCreditResult {
+  allowed: boolean;
+  used: number;
+  limit: number;
+  creditCost: number;
+  logId: string | null;
+  reason: 'quota_exceeded' | null;
+}
+
+/**
+ * RPC 호출 실패 (DB error) 시 throw 되는 에러 타입.
+ * Edge Function 은 이 에러를 catch 하여 AC-14 fallback (AI payload 보존)
+ * 을 수행해야 한다.
+ */
+export class ConsumeAiCreditError extends Error {
+  readonly cause: unknown;
+  constructor(message: string, cause: unknown) {
+    super(message);
+    this.name = 'ConsumeAiCreditError';
+    this.cause = cause;
+  }
+}
+
+/**
+ * `consume_ai_credit_and_log` RPC 를 호출하여 AI credit 을 원자적으로
+ * 소비하고 `ai_generation_logs` 에 INSERT 한다. owner 단위 advisory lock
+ * 아래에서 usage 를 재검증하므로 concurrent 호출 시에도 limit over-shoot
+ * 이 발생하지 않는다 (f018).
+ *
+ * 호출자는 이 함수 호출 전에 `checkAiAccess` 로 tier gate 를 통과한 상태이며,
+ * Claude API 호출도 이미 완료한 상태여야 한다. (Dev Spec §4-1 Happy Path)
+ *
+ * RPC 자체 실패 (error 반환) 시 `ConsumeAiCreditError` 를 throw. 호출자는
+ * AC-14 에 따라 AI payload 를 보존하고 `meta.credits_logged:false` 로 응답.
+ */
+export async function consumeAiCredit(
+  supabase: SB,
+  params: ConsumeAiCreditParams,
+): Promise<ConsumeAiCreditResult> {
+  const { data, error } = await supabase.rpc('consume_ai_credit_and_log', {
+    p_user_id: params.userId,
+    p_owner_id: params.ownerId,
+    p_project_id: params.projectId,
+    p_mode: params.mode,
+    p_step: params.step,
+    p_credit_cost: params.creditCost,
+    p_limit: params.limit,
+    p_tokens_used: params.tokensUsed ?? 0,
+    p_latency_ms: params.latencyMs ?? 0,
+    p_input_data: params.inputData ?? null,
+    p_output_data: params.outputData ?? null,
+    p_titles_generated: params.titlesGenerated ?? null,
+    p_titles_selected: params.titlesSelected ?? null,
+    p_model_used: params.modelUsed ?? null,
+    p_session_id: params.sessionId ?? null,
+    p_input_text: params.inputText ?? null,
+  });
+
+  if (error) {
+    throw new ConsumeAiCreditError(
+      `[f018] consume_ai_credit_and_log failed: ${error.message ?? 'unknown error'}`,
+      error,
+    );
+  }
+
+  if (!data || typeof data !== 'object') {
+    throw new ConsumeAiCreditError(
+      '[f018] consume_ai_credit_and_log returned empty payload',
+      data,
+    );
+  }
+
+  const row = data as Record<string, unknown>;
+  return {
+    allowed: row.allowed === true,
+    used: Number(row.used ?? 0),
+    limit: Number(row.limit ?? -1),
+    creditCost: Number(row.credit_cost ?? params.creditCost),
+    logId: (row.log_id as string | null | undefined) ?? null,
+    reason: row.reason === 'quota_exceeded' ? 'quota_exceeded' : null,
+  };
+}
+

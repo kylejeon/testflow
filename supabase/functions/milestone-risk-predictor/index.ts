@@ -8,6 +8,8 @@ import { checkRateLimit, rateLimitResponse } from '../_shared/rate-limit.ts';
 import {
   getEffectiveTier,
   getSharedPoolUsage,
+  consumeAiCredit,
+  ConsumeAiCreditError,
 } from '../_shared/ai-usage.ts';
 import { sanitizeShortName, sanitizeTitle, sanitizeTag } from '../_shared/promptSanitize.ts';
 import {
@@ -555,49 +557,102 @@ Rules:
       .update({ ai_risk_cache: cachePayload })
       .eq('id', milestone_id);
 
-    // ── Log credit usage ─────────────────────────────────────────────────────
-    const { error: logErr } = await supabase.from('ai_generation_logs').insert({
-      user_id: user.id,
-      project_id: projectId,
-      mode: 'milestone-risk',
-      step: 1,
-      credits_used: feature.creditCost,
-      input_data: {
-        milestone_id,
-        total_tcs: totalTcs,
-        passed,
-        failed,
-        blocked,
-        retest,
-        untested,
-        pass_rate: passRate,
-        days_left: daysLeft,
-        locale, // f021 BR-6: resolved locale 을 모니터링용으로 기록
-      },
-      output_data: result,
-      tokens_used: tokensUsed,
-      latency_ms: latencyMs,
-    });
-    if (logErr) {
-      console.error('milestone-risk-predictor ai_generation_logs insert failed:', logErr);
+    // ── f018 — Atomic credit consume (AC-10) ─────────────────────────────────
+    // owner-level advisory lock + re-check + INSERT.
+    // RPC 실패 시 AI payload 는 보존하고 meta.credits_logged:false (AC-14).
+    // quota 초과(race-lost) 시 기존 monthly_limit_reached 포맷 유지 + payload 보존 (AC-15).
+    try {
+      const consume = await consumeAiCredit(supabase, {
+        userId: user.id,
+        ownerId,
+        projectId,
+        mode: 'milestone-risk',
+        step: 1,
+        creditCost: feature.creditCost,
+        limit: monthlyLimit,
+        tokensUsed,
+        latencyMs,
+        inputData: {
+          milestone_id,
+          total_tcs: totalTcs,
+          passed,
+          failed,
+          blocked,
+          retest,
+          untested,
+          pass_rate: passRate,
+          days_left: daysLeft,
+          locale,
+        },
+        outputData: result,
+      });
+      if (!consume.allowed) {
+        // race-lost: Claude 는 이미 호출됨. AI payload 보존 + 429 (AC-15).
+        console.warn('[f018] race-lost milestone-risk owner=', ownerId, 'used=', consume.used);
+        return jsonResponse({
+          error: 'monthly_limit_reached',
+          detail: 'Monthly AI credit limit reached. Upgrade your plan for more credits.',
+          used: consume.used,
+          limit: consume.limit,
+          upgradeUrl: 'https://testably.app/pricing',
+          // AI payload 보존
+          risk_level: result.risk_level,
+          confidence: result.confidence,
+          summary: result.summary,
+          bullets: result.bullets,
+          recommendations: result.recommendations,
+          generated_at: generatedAt,
+          meta: {
+            from_cache: false,
+            credits_used: 0,
+            credits_logged: false,
+            rate_limited_post_check: true,
+            monthly_limit: monthlyLimit,
+            tokens_used: tokensUsed,
+            latency_ms: latencyMs,
+          },
+        }, 429);
+      }
+      return jsonResponse({
+        risk_level: result.risk_level,
+        confidence: result.confidence,
+        summary: result.summary,
+        bullets: result.bullets,
+        recommendations: result.recommendations,
+        generated_at: generatedAt,
+        meta: {
+          from_cache: false,
+          credits_used: consume.creditCost,
+          credits_remaining: consume.limit === -1 ? -1 : Math.max(0, consume.limit - consume.used),
+          monthly_limit: consume.limit,
+          tokens_used: tokensUsed,
+          latency_ms: latencyMs,
+          log_id: consume.logId,
+        },
+      });
+    } catch (err) {
+      if (err instanceof ConsumeAiCreditError) {
+        console.error('[f018] consume_ai_credit_and_log failed', { ownerId, mode: 'milestone-risk', err: String(err.cause ?? err.message) });
+        return jsonResponse({
+          risk_level: result.risk_level,
+          confidence: result.confidence,
+          summary: result.summary,
+          bullets: result.bullets,
+          recommendations: result.recommendations,
+          generated_at: generatedAt,
+          meta: {
+            from_cache: false,
+            credits_used: 0,
+            credits_logged: false,
+            error: 'credit_log_failed',
+            monthly_limit: monthlyLimit,
+            tokens_used: tokensUsed,
+            latency_ms: latencyMs,
+          },
+        });
+      }
+      throw err;
     }
-
-    return jsonResponse({
-      risk_level: result.risk_level,
-      confidence: result.confidence,
-      summary: result.summary,
-      bullets: result.bullets,
-      recommendations: result.recommendations,
-      generated_at: generatedAt,
-      meta: {
-        from_cache: false,
-        credits_used: feature.creditCost,
-        credits_remaining: monthlyLimit === -1 ? -1 : Math.max(0, monthlyLimit - usedCredits - feature.creditCost),
-        monthly_limit: monthlyLimit,
-        tokens_used: tokensUsed,
-        latency_ms: latencyMs,
-      },
-    });
 
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);

@@ -369,3 +369,120 @@
 1. QA 재검수 요청 → Ship 판정 받으면 CEO main 머지
 2. 5/3 내 0.9.0-rc.1 태그 push
 3. 5/13 sdk-cypress-v1.0.1 태그 push → 마케팅 플립 PR 병행
+
+---
+
+2026-04-23 (심야): f018 AI Credit Race Condition 방어 (Advisory Lock) — Phase 4 구현 완료 (22/22 AC)
+
+## 뭘 했냐 (claude 브랜치)
+
+### 1. DB 마이그레이션 (AC-1 ~ AC-8, AC-16, AC-21, AC-22)
+- supabase/migrations/20260424_f018_ai_credit_atomic_consume_rpc.sql
+  - SECURITY DEFINER + SET search_path=public 신규 RPC
+    `consume_ai_credit_and_log(p_user_id, p_owner_id, p_project_id, p_mode,
+     p_step, p_credit_cost, p_limit, p_tokens_used, p_latency_ms,
+     p_input_data, p_output_data, p_titles_generated, p_titles_selected,
+     p_model_used, p_session_id, p_input_text)` → RETURNS jsonb
+  - 반환 JSON: `{allowed, used, limit, credit_cost, log_id, reason}`
+  - `pg_advisory_xact_lock(hashtextextended('ai_credit:' || owner_id::text, 0))`
+    로 owner 단위 직렬화 — xact-scoped → 데드락 불가
+  - Lock 획득 후 `get_ai_shared_pool_usage()` 재호출로 usage 재검증
+  - p_limit = -1 (unlimited) 분기: lock + INSERT 하되 limit 체크 skip (AC-5)
+  - p_limit >= 0 & (used + cost) > limit → allowed=false, INSERT skip
+    (AC-4 — race condition 핵심 방어선)
+  - lock 대기 시간 > 50ms 시 `RAISE NOTICE '[f018] lock contention ...'`
+    (AC-16 — Postgres 로그 grep 추적용)
+  - CREATE OR REPLACE FUNCTION (AC-21 idempotent)
+  - GRANT EXECUTE authenticated + service_role (anon 차단, AC-2)
+  - 파일 하단 Rollback SQL 주석 (AC-22)
+
+### 2. _shared/ai-usage.ts 보강 (AC-13)
+- checkAiAccess 함수 상단 JSDoc 에 "pre-flight ONLY; authoritative check is
+  in consume_ai_credit_and_log" 주석 추가 (시그니처 변경 無, backward compat)
+- 신규 export:
+  - ConsumeAiCreditParams (17 필드)
+  - ConsumeAiCreditResult ({allowed, used, limit, creditCost, logId, reason})
+  - ConsumeAiCreditError (RPC DB error wrap, cause 보존)
+  - consumeAiCredit(supabase, params) — RPC 호출 + JSON 타입 안전 파싱
+
+### 3. 4개 Edge Function 리팩토링 (AC-9 ~ AC-12)
+
+**generate-testcases/index.ts (5개 INSERT 지점 교체 — AC-9):**
+- line ~586 run-summary INSERT → consumeAiCredit('run-summary')
+- line ~827 coverage-gap INSERT → consumeAiCredit('run-summary' + action=coverage-gap)
+- line ~935 requirement-suggest INSERT → consumeAiCredit('requirement-suggest')
+- line ~1067 analyze-flaky INSERT → consumeAiCredit('run-summary' + action=analyze-flaky)
+- line ~1271 step=1 text/jira/session INSERT → consumeAiCredit(mode, tc_generation_text.creditCost)
+- step=2 INSERT (line ~1307) 는 creditCost=0 이므로 변경 없음 (AC-9 명시)
+- 각 지점 공통 패턴:
+  1. try: consume = await consumeAiCredit(...)
+  2. !consume.allowed → 429 + AI payload 보존 + meta.credits_logged=false
+     + rate_limited_post_check=true (AC-15)
+  3. catch ConsumeAiCreditError → console.error + AI payload 보존 + 200
+     + meta.credits_logged=false + error='credit_log_failed' (AC-14)
+
+**milestone-risk-predictor/index.ts (AC-10):**
+- line 559 INSERT → consumeAiCredit('milestone-risk')
+- race-lost 시 기존 monthly_limit_reached 포맷 유지 + AI 5종 필드
+  (risk_level/confidence/summary/bullets/recommendations) 보존
+
+**risk-predictor/index.ts (AC-11):**
+- line 321 INSERT → consumeAiCredit('risk-predictor')
+- race-lost 시 forecast_date/risk_signals/recommendation 등 결과 전체 보존
+
+**plan-assistant/index.ts (AC-12):**
+- line 308 INSERT → consumeAiCredit('plan-assistant')
+- 기존 누락된 필드 함께 전달 — tokensUsed / latencyMs / outputData —
+  버그 수정 효과 (Dev Spec AC-12)
+- startTime = Date.now() 추가 (기존엔 measure 안 함)
+- tokensUsed = claudeData.usage.input_tokens + output_tokens 추출 추가
+
+### 4. 테스트 (AC-17, AC-18)
+- supabase/tests/f018_ai_credit_race.test.sql (pgTAP, 5 케이스)
+  1. boundary consume (14→15) allowed=true
+  2. over-limit consume reason=quota_exceeded
+  3. SUM(credits_used)=15 정확히 일치 (no over-shoot)
+  4. unlimited(-1) allowed=true
+  5. creditCost=0 allowed=true
+  - BEGIN/ROLLBACK 로 DB 상태 변경 無
+- supabase/functions/tests/ai_credit_race_test.ts (Deno, 4 케이스)
+  1. AC-18 핵심: Promise.all 5 concurrent @ usage=11/15 → allowed=4, blocked=1,
+     SUM=15 (over-shoot 검출)
+  2. 단일 allowed 호출 return shape
+  3. unlimited(-1) 항상 allow
+  4. usage=15/15 에서 단일 호출 → quota_exceeded, INSERT 안 됨
+  - SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY 없으면 Deno.test ignore
+  - fixture teardown 포함 (seed 데이터 정리)
+
+### 검증 (전부 PASS)
+- npx tsc --noEmit (root): 0 errors
+- npm run test -- --run: 232/232 passed (회귀 없음, 기존 그대로)
+- Deno / pgTAP 은 로컬 환경 없음 → CEO 수동 적용 + CI 에서 실행
+- npm run scan:i18n:check: scope 밖 (백엔드 전용, i18n 변경 無, AC Dev Spec §10)
+
+## 어디까지 됐냐
+
+### AC 달성 (22/22 완료)
+- AC-1 ~ AC-22 전부 구현 완료. OOS 10개는 미구현 (의도적):
+  - Claude 비용 환불 / per-user quota / historical 데이터 보정 /
+    lock contention 대시보드 / multi-region lock / step=2 credit 정책 /
+    checkAiAccess 원자화 / 프론트 UI 변경 / i18n / 타 Edge Function
+
+### 수동 검증 필요 항목 (프로덕션 배포 전)
+- **CEO 수동 SQL 적용**: Supabase Dashboard SQL Editor 에서
+  `supabase/migrations/20260424_f018_ai_credit_atomic_consume_rpc.sql`
+  전체 실행 (f011 선례와 동일 방식)
+- 로컬 supabase 에서 `supabase db reset` 2회 실행 (AC-21 idempotent)
+- 로컬 supabase + Deno 설치 후 concurrent 테스트 (AC-17, AC-18)
+- Staging 배포 후 smoke:
+  - generate-testcases 단일 호출 회귀 (AC-20)
+  - plan-assistant 단일 호출 → tokens_used 가 로그에 기록되는지 확인 (버그 수정 효과)
+  - milestone-risk-predictor 캐시 hit (from_cache:true) 정상 동작
+
+## 다음엔 뭘 해야 해
+1. CEO 수동 SQL 적용 (Supabase Dashboard) — 배포 첫 순서
+2. claude 브랜치 PR 알림 → main 수동 머지
+3. @qa 에이전트에게 검수 의뢰 (AC 22개 체크 + pgTAP/Deno 로컬 실행)
+4. 5/11 SDK 런칭 전 staging smoke 통과 확인 후 프로덕션 배포
+5. Rollback 리허설: DROP FUNCTION 한 번 실행하고 원복 테스트
+
