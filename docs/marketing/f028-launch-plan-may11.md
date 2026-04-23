@@ -63,11 +63,12 @@
 
 | 일자 | 작업 | 담당 | 상태 |
 |------|------|------|------|
-| 4/28-4/30 | 런칭 이미지 3종 제작 (Figma/디자이너) | 디자이너 | 대기 |
+| 4/23 (수) | @designer 에이전트가 런칭 이미지 디자인 스펙 작성 → `docs/specs/design-spec-f028-launch-images.md` | @designer | 진행중 |
+| 4/28-4/30 | 디자인 스펙 기반 이미지 3종 실제 제작 (Figma 또는 CEO 가 실제 Testably UI 스크린샷 + annotate) | CEO | 대기 |
 | 5/1 (금) | Product Hunt 초안 등록 (비공개 preview) | CEO | 대기 |
 | 5/2 (토) | 블로그 포스트 최종 교정 — `docs/marketing/f028-blog-ship-results-3-lines.md` | CEO | 대기 |
 | 5/3 (일) | 트위터 스레드 예약 세팅 (Buffer 또는 Typefully) | CEO | 대기 |
-| 5/4 (월) | Loops 이메일 캠페인 초안 (Pro 유저 전체 대상) | @marketer | 대기 |
+| 5/4 (월) | ~~Loops 이메일 캠페인 초안~~ → **보류** (Day 1 성과 보고 재결정) | — | 보류 |
 
 ### Phase 3 — 사전 빌드업 (T-6 ~ T-2, 5/5-5/9)
 
@@ -88,7 +89,7 @@
 | 11:00 | 테스트 계정으로 신규 repo → CI 연결 → 실제 업로드 성공까지 완료 | CEO |
 | 13:00 | 모든 마케팅 콘텐츠의 URL 라이브 여부 확인 (npm, GitHub, blog, pricing) | Claude |
 | 15:00 | Product Hunt submit 초안 재확인 (tagline, 이미지 3종, maker comment) | CEO |
-| 17:00 | Loops 이메일 발송 예약 (5/11 10:00 KST) | CEO |
+| ~~17:00~~ | ~~Loops 이메일 예약~~ → 보류 | — |
 | 21:00 | 최종 go/no-go 결정 | CEO |
 
 ### Phase 5 — 런칭 당일 (T-Day, 5/11 월)
@@ -99,7 +100,7 @@
 | 09:01 | 트위터 스레드 라이브 (11-tweet thread) | CEO |
 | 09:05 | 블로그 포스트 publish (testably.app/blog) | CEO |
 | 09:10 | LinkedIn 포스팅 (blog 링크 + 요약) | CEO |
-| 10:00 | Loops 이메일 발송 트리거 확인 | CEO |
+| ~~10:00~~ | ~~Loops 이메일 발송 트리거~~ → 보류 | — |
 | 10:30 | Hacker News 서브미션 — `Show HN: Playwright reporter for Testably` | CEO |
 | 11:00 | Dev.to / Medium 크로스포스팅 | @marketer |
 | 11:00-24:00 | PH 댓글 즉시 응답 (목표: 응답 지연 15분 이내) | CEO + Claude 보조 |
@@ -120,7 +121,7 @@
 - [ ] Product Hunt (`testably.app/playwright-reporter` 페이지)
 - [ ] 트위터 (@testably_app 계정 — 11-tweet thread)
 - [ ] Testably 블로그 (`testably.app/blog/playwright-reporter-stable`)
-- [ ] Loops 이메일 (Pro 유저 전체 + Starter 유저 upsell)
+- [ ] ~~Loops 이메일~~ → Day 1 성과 보고 재결정 (보류)
 - [ ] Dev.to 크로스포스트
 - [ ] Hacker News `Show HN`
 - [ ] Reddit `/r/QualityAssurance`, `/r/webdev` (Show-off 금지 규정 확인)
@@ -150,15 +151,29 @@
 | CI Secrets 설정 문서 오해 → 실패 리포트 폭주 | README 의 `## 5-minute quick start` 섹션 선점 강화 + `dryRun` 모드 적극 안내 |
 | Free/Hobby 유저가 403 문의 폭주 | 현재 reporter 의 "upgrade notice" 메시지가 이미 존재. PH 댓글 템플릿에도 미리 준비 |
 
-## 8. Open Decisions (사용자 확정 필요)
+## 8. Confirmed Decisions (2026-04-23 CEO 확정)
 
-| # | 질문 | 기본값 제안 |
-|---|------|-------------|
-| 1 | PH Hunter 섭외 — 있음 / self-hunt? | self-hunt |
-| 2 | 런칭 이미지 — 외부 디자이너 / CEO 가 Figma로 직접 / 실제 스크린샷 | 실제 Testably 스크린샷 기반 + 간단 annotate (비용 0, 신뢰도 높음) |
-| 3 | 블로그 1차 퍼블리시 채널 | testably.app/blog (canonical) + dev.to crosspost |
-| 4 | 5/11 당일 대응 — CEO 혼자 / 팀 전체 on-call | CEO + Claude 보조 (메인 상주) |
-| 5 | Loops 이메일 대상 — Pro only / 전체 유저 | 전체 유저 (Starter 이하는 upsell 문구) |
+| # | 질문 | 확정 |
+|---|------|------|
+| 1 | PH Hunter | **Self-hunt** (섭외 불가) |
+| 2 | 런칭 이미지 | **@designer 에이전트가 디자인 스펙 작성 → `docs/specs/design-spec-f028-launch-images.md`** |
+| 3 | 블로그 퍼블리시 | **Crosspost**: `testably.app/blog` (canonical) + `dev.to` (rel=canonical 설정) |
+| 4 | 5/11 당일 on-call | CEO + Claude 보조 (메인 상주) |
+| 5 | Loops 이메일 캠페인 | **보류** — Day 1 이후 성과 보고 재결정 |
+
+### Self-hunt 체크리스트 (PH)
+
+- [ ] PH 계정 "maker" 프로필 완비 (프로필 사진, bio, 이전 launch 경력 링크)
+- [ ] 런칭 24시간 전 PH 계정으로 Testably follow/보드 팔로워 확보
+- [ ] 5/11 00:01 PST 에 self-submit, maker comment 즉시 고정
+- [ ] 첫 3시간 내 50 vote 확보 (Discord/개인 네트워크 중심)
+
+### 블로그 crosspost 절차
+
+1. **Primary**: `testably.app/blog/playwright-reporter-stable` 먼저 publish (5/11 09:05 KST)
+2. **Dev.to crosspost**: `canonical_url: https://testably.app/blog/playwright-reporter-stable` 메타 설정 (SEO 중복 방지)
+3. dev.to 태그: `#playwright`, `#qa`, `#testing`, `#ci`, `#devops`
+4. Medium 은 Phase 6 까지 보류 (반응 보고 선택적으로 crosspost)
 
 ---
 
