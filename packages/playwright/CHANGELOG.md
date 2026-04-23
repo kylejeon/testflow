@@ -8,6 +8,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-05-11
+
+First stable release — the official public launch of `@testably.kr/playwright-reporter`.
+
+### Added
+
+- Bumped SDK agent string to `1.0.1` (`User-Agent` + `X-Testably-SDK-Version`
+  headers).
+- Locked peer dependency on `@testably.kr/reporter-core@1.0.1` so stable
+  installs never resolve against the 4/7 `1.0.0` placeholder build.
+
+### Changed
+
+- Marketing and positioning updated: the reporter is now a stable 1.x release.
+  API surface is frozen and will follow strict SemVer going forward.
+
+### Notes
+
+- Local versions `0.1.0-alpha.0` and `1.0.0` on npm were pre-release artifacts.
+  `1.0.1` is the first version that reflects the full feature set shipped for
+  the public launch.
+
 ## [0.1.0-alpha.0] - 2026-04-22
 
 ### Added
@@ -35,5 +57,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Free / Hobby / Starter plans will receive an HTTP 403 and the reporter will
   log an upgrade notice without failing CI.
 
-[Unreleased]: https://github.com/kylejeon/testflow/compare/v0.1.0-alpha.0...HEAD
+[Unreleased]: https://github.com/kylejeon/testflow/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/kylejeon/testflow/releases/tag/playwright-reporter-v1.0.1
 [0.1.0-alpha.0]: https://github.com/kylejeon/testflow/releases/tag/playwright-reporter-v0.1.0-alpha.0

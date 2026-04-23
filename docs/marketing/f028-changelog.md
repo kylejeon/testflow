@@ -1,7 +1,7 @@
-# f028 — Changelog Entry: @testably.kr/playwright-reporter 0.1.0-alpha.0
+# f028 — Changelog Entry: @testably.kr/playwright-reporter 1.0.1
 > 유형: Changelog
-> 작성일: 2026-04-22
-> 타겟 채널: packages/playwright-reporter/CHANGELOG.md + Testably public changelog
+> 작성일: 2026-04-22 (revised 2026-04-23 for May 11 stable launch)
+> 타겟 채널: packages/playwright/CHANGELOG.md + Testably public changelog
 > 관련 기능: f028 Playwright Reporter SDK
 
 ---
@@ -18,9 +18,9 @@ This package uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-## [0.1.0-alpha.0] — 2026-04-22
+## [1.0.1] — 2026-05-11
 
-First public alpha release.
+First stable public release.
 
 ### Added
 
@@ -54,8 +54,9 @@ First public alpha release.
 
 ### Notes
 
-- This is an alpha release. The API surface is stable but may receive additive
-  changes before `1.0`. Breaking changes (if any) will be documented here.
+- `1.0.1` is the first stable version. The API surface is frozen and will follow
+  strict SemVer from here. Prior `0.1.0-alpha.0` and `1.0.0` npm versions were
+  pre-release artifacts.
 - CI upload requires a **Testably Professional plan or higher**. On Free / Hobby /
   Starter, the server returns HTTP 403 and the reporter prints an upgrade notice.
   CI exit code remains 0.
@@ -74,18 +75,18 @@ First public alpha release.
 - Testably Professional plan or higher for live uploads
 - Three environment variables: `TESTABLY_URL`, `TESTABLY_TOKEN`, `TESTABLY_RUN_ID`
 
-[0.1.0-alpha.0]: https://github.com/testably/testably/releases/tag/%40testably%2Fplaywright-reporter%400.1.0-alpha.0
+[1.0.1]: https://github.com/kylejeon/testflow/releases/tag/playwright-reporter-v1.0.1
 ```
 
 ---
 
 ## Public Changelog Entry (for testably.app/changelog)
 
-### Playwright Reporter SDK — now in alpha
+### Playwright Reporter SDK — stable 1.0 is here
 
-**Released: April 2026**
+**Released: 2026-05-11**
 
-You can now connect your Playwright CI runs directly to Testably with a single reporter plugin.
+You can now connect your Playwright CI runs directly to Testably with a single reporter plugin — officially stable as of today.
 
 Install `@testably.kr/playwright-reporter`, add one line to your `playwright.config.ts`, and set three environment variables in your CI secrets. Every test run automatically lands in your Testably dashboard — pass/fail status, failure notes, timing, and all — ready for AI analysis, trend tracking, and team review.
 

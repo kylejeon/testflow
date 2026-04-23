@@ -1,6 +1,6 @@
 {
   "name": "@testably.kr/reporter-core",
-  "version": "0.1.0-alpha.0",
+  "version": "1.0.1",
   "description": "Core API client for Testably reporters — handles upload, retry, rate limiting, and TC ID mapping",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

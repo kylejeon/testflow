@@ -13,7 +13,7 @@ import {
   NonRetryableUploadError,
 } from '@testably.kr/reporter-core';
 
-const SDK_AGENT = '@testably.kr/playwright-reporter/0.1.0-alpha.0';
+const SDK_AGENT = '@testably.kr/playwright-reporter/1.0.1';
 
 export interface PlaywrightReporterOptions extends Partial<TestablyConfig> {
   /**

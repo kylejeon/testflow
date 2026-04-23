@@ -1,6 +1,6 @@
 {
   "name": "@testably.kr/playwright-reporter",
-  "version": "0.1.0-alpha.0",
+  "version": "1.0.1",
   "description": "Playwright custom reporter for Testably — automatically uploads test results to your Testably runs",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -54,7 +54,7 @@
     "@playwright/test": ">=1.40.0"
   },
   "dependencies": {
-    "@testably.kr/reporter-core": "0.1.0-alpha.0"
+    "@testably.kr/reporter-core": "1.0.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.44.0",

@@ -137,7 +137,7 @@ npm install --save-dev @testably.kr/playwright-reporter
 ```
 Then add the reporter to your config and three env vars to your CI secrets. Done.
 
-Available now as `0.1.0-alpha.0`. Requires Testably Professional plan or higher.
+Available now as `1.0.1` stable. Requires Testably Professional plan or higher.
 
 Full docs: npmjs.com/package/@testably.kr/playwright-reporter
 

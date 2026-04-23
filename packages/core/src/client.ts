@@ -4,7 +4,7 @@ import { Logger } from './logger';
 import { withRetry, RateLimitError, UploadError, NonRetryableUploadError } from './retry';
 
 const SDK_NAME = '@testably.kr/reporter-core';
-const SDK_VERSION = '0.1.0-alpha.0';
+const SDK_VERSION = '1.0.1';
 
 export class TestablyClient {
   private config: ResolvedConfig;

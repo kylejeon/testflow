@@ -17,7 +17,7 @@
 
 Official [Playwright](https://playwright.dev/) reporter for [Testably](https://testably.app) — automatically upload your CI test results to a Testably test run when your suite finishes.
 
-> **Status:** `0.1.0-alpha.0` — early access. The API surface is stable but may receive additive changes before `1.0`.
+> **Status:** `1.0.1` — stable. API is frozen and follows strict SemVer.
 >
 > **Plan requirement:** Testably **Professional plan or higher** ($99/month, up to 20 members).
 > Free / Hobby / Starter accounts receive HTTP 403 and an upgrade notice. CI exit code is always 0.

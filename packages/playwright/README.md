@@ -4,8 +4,7 @@ Official [Playwright](https://playwright.dev/) reporter for
 [Testably](https://testably.app) — upload your Playwright test results to a
 Testably test run automatically from any CI provider.
 
-> **Status:** `0.1.0-alpha.0` — early access. API is stable but may get
-> additive changes before `1.0`.
+> **Status:** `1.0.1` — stable. API is frozen and follows strict SemVer.
 >
 > **Server plan:** requires a Testably **Professional** plan or higher.
 > Free / Hobby / Starter plans will receive an HTTP 403 and the reporter

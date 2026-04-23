@@ -47,7 +47,7 @@ We've heard this story dozens of times: the CI pipeline goes green (or red), and
 
 The setup is genuinely three lines: install the package, add it to your `reporter` array, and drop three env vars into your CI secrets. That's it.
 
-We're shipping this as `0.1.0-alpha.0` — the API is stable, the server has been running upload-ci-results in production for months, and we want real teams to kick the tires before we cut `1.0`.
+We're shipping `1.0.1` stable today — the API is frozen, the server-side `upload-ci-results` endpoint has been running in production for months, and the reporter has been battle-tested against real Playwright CI pipelines. Strict SemVer from here on.
 
 If you're already using Testably and Playwright: try it today. Questions or bugs? Drop them in the comments or open an issue on GitHub.
 
