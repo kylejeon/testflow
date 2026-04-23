@@ -66,17 +66,22 @@ export const MODE_COLORS: Record<DisplayMode, string> = {
 
 /**
  * i18n key under `settings.aiUsage.mode.*` for each display mode.
+ *
+ * Keys are relative to the `settings` namespace (components call
+ * `useTranslation('settings')`), so they omit the namespace prefix.
+ * Prefixing with `settings.` caused lookups to resolve against
+ * `settings.settings.aiUsage.mode.*` and fall back to rendering the raw key.
  */
 export const MODE_LABEL_KEYS: Record<DisplayMode, string> = {
-  'text':                'settings.aiUsage.mode.text',
-  'jira':                'settings.aiUsage.mode.jira',
-  'session':             'settings.aiUsage.mode.session',
-  'run-summary':         'settings.aiUsage.mode.runAnalysis',
-  'plan-assistant':      'settings.aiUsage.mode.planAssistant',
-  'risk-predictor':      'settings.aiUsage.mode.riskPredictor',
-  'milestone-risk':      'settings.aiUsage.mode.milestoneRisk',
-  'requirement-suggest': 'settings.aiUsage.mode.requirementSuggest',
-  'other':               'settings.aiUsage.mode.other',
+  'text':                'aiUsage.mode.text',
+  'jira':                'aiUsage.mode.jira',
+  'session':             'aiUsage.mode.session',
+  'run-summary':         'aiUsage.mode.runAnalysis',
+  'plan-assistant':      'aiUsage.mode.planAssistant',
+  'risk-predictor':      'aiUsage.mode.riskPredictor',
+  'milestone-risk':      'aiUsage.mode.milestoneRisk',
+  'requirement-suggest': 'aiUsage.mode.requirementSuggest',
+  'other':               'aiUsage.mode.other',
 };
 
 /**

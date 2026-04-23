@@ -23,12 +23,12 @@ describe('MODE_COLORS / MODE_LABEL_KEYS / MODE_ORDER parity', () => {
   it('has a color + label for every DisplayMode in MODE_ORDER', () => {
     for (const mode of MODE_ORDER) {
       expect(MODE_COLORS[mode]).toMatch(/^#[0-9A-Fa-f]{6}$/);
-      expect(MODE_LABEL_KEYS[mode]).toMatch(/^settings\.aiUsage\.mode\./);
+      expect(MODE_LABEL_KEYS[mode]).toMatch(/^aiUsage\.mode\./);
     }
   });
 
   it('includes run-summary with "Run Analysis" i18n key (AC-7)', () => {
-    expect(MODE_LABEL_KEYS['run-summary']).toBe('settings.aiUsage.mode.runAnalysis');
+    expect(MODE_LABEL_KEYS['run-summary']).toBe('aiUsage.mode.runAnalysis');
     // color = violet-500 for Run Analysis per Design Spec §3-3
     expect(MODE_COLORS['run-summary']).toBe('#8B5CF6');
   });

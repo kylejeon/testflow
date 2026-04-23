@@ -19,7 +19,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../../lib/supabase';
-import { getEffectiveOwnerId } from '../../../lib/aiUsage';
+import { getEffectiveOwnerId, getSharedPoolUsage } from '../../../lib/aiUsage';
 import {
   MODE_COLORS,
   MODE_LABEL_KEYS,
@@ -257,6 +257,29 @@ export default function AiUsagePanel() {
   });
 
   const isTeamView = isOwnerSelf || isOrgAdmin;
+
+  // ── 2a. Calendar-month-to-date credits (THIS MONTH KPI) ──
+  //
+  // The THIS MONTH KPI card shows progress against the monthly plan quota
+  // (e.g. 27 / 150). Its number MUST be scoped to the current UTC calendar
+  // month regardless of the selected period filter — otherwise the
+  // "used / quota" ratio becomes meaningless.
+  //
+  // Previously this card used `totalCredits` which aggregates over the
+  // selected period (default 30d), so when a user started on Mar 24 the
+  // card showed 27 credits while the project sidebar — which always uses
+  // `getSharedPoolUsage` (calendar month) — showed 25. Same metric, two
+  // windows. We now call `getSharedPoolUsage` here too so both cards stay
+  // in lockstep.
+  const { data: monthCredits = 0 } = useQuery({
+    queryKey: ['aiUsagePanel', 'monthCredits', effective?.ownerId ?? 'none'],
+    queryFn: async () => {
+      if (!effective?.ownerId) return 0;
+      return await getSharedPoolUsage(effective.ownerId);
+    },
+    enabled: !!effective?.ownerId,
+    staleTime: 60_000,
+  });
 
   // ── 2b. Forbidden detection (Dev Spec §4-1 alt-flow 2) ──
   //
@@ -610,7 +633,7 @@ export default function AiUsagePanel() {
         >
           <BurnRateCard
             variant="thisMonth"
-            used={totalCredits}
+            used={monthCredits}
             limit={tierLimit}
             daysElapsedInCycle={daysElapsed}
             daysLeftInCycle={daysLeft}
