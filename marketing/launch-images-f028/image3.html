@@ -6,7 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link
-  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Pacifico&display=swap"
   rel="stylesheet"
 />
 <link
@@ -86,7 +86,7 @@
   /* Browser window */
   .window {
     position: absolute; left: 40px; top: 200px;
-    width: 1190px; height: 520px;
+    width: 1190px; height: 540px;
     background: var(--white);
     border: 1px solid var(--slate-200);
     border-radius: 16px;
@@ -113,44 +113,60 @@
   }
   .url-pill i { color: var(--emerald-500); font-size: 11px; }
 
-  /* Dashboard body — 2 column: sidebar + main */
-  .app { display: flex; height: 480px; }
-  .sidebar {
-    width: 200px; background: var(--slate-50);
-    border-right: 1px solid var(--slate-200);
-    padding: 14px 12px;
-    flex-shrink: 0;
+  /* Horizontal top nav (matches ProjectHeader) */
+  .topnav {
+    height: 44px; background: var(--white);
+    border-bottom: 1px solid var(--slate-200);
+    display: flex; align-items: stretch;
+    padding: 0 18px;
+    font-size: 13px;
   }
-  .sb-logo {
+  .nav-logo {
     display: flex; align-items: center; gap: 8px;
-    margin-bottom: 16px;
-    padding: 0 8px;
+    padding-right: 10px;
   }
-  .sb-logo-mark {
-    width: 26px; height: 26px; border-radius: 6px;
+  .nav-logo-mark {
+    width: 24px; height: 24px; border-radius: 6px;
     background: var(--indigo-500);
-    color: var(--white); font-weight: 900; font-size: 14px;
+    color: var(--white); font-weight: 900; font-size: 13px;
     display: flex; align-items: center; justify-content: center;
   }
-  .sb-logo-text { font-weight: 800; font-size: 14px; color: var(--slate-900); }
-  .sb-section {
-    font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
-    color: var(--slate-400); text-transform: uppercase;
-    padding: 10px 8px 6px;
+  .nav-divider {
+    width: 1px; height: 20px; background: var(--slate-300);
+    align-self: center; margin: 0 10px;
   }
-  .sb-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 7px 8px;
+  .nav-project {
+    display: flex; align-items: center; gap: 4px;
+    padding: 0 8px; margin-right: 6px;
+    font-size: 13.5px; font-weight: 500; color: var(--slate-800);
+    align-self: center; height: 28px;
     border-radius: 6px;
-    font-size: 12.5px; font-weight: 500; color: var(--slate-700);
   }
-  .sb-item i { font-size: 15px; color: var(--slate-400); }
-  .sb-item.active {
-    background: var(--indigo-50); color: var(--indigo-700);
+  .nav-project i { color: var(--slate-400); font-size: 14px; }
+  .nav-tabs {
+    display: flex; align-items: stretch; flex: 1;
+    overflow: hidden;
   }
-  .sb-item.active i { color: var(--indigo-500); }
+  .nav-tab {
+    position: relative;
+    display: inline-flex; align-items: center;
+    padding: 0 12px;
+    font-size: 12.5px; font-weight: 500; color: var(--slate-500);
+    height: 100%;
+    white-space: nowrap;
+  }
+  .nav-tab.active {
+    color: var(--indigo-500); font-weight: 600;
+  }
+  .nav-tab.active::after {
+    content: ""; position: absolute;
+    left: 12px; right: 12px; bottom: -1px;
+    height: 2px; background: var(--indigo-500);
+    border-radius: 2px 2px 0 0;
+  }
 
-  .main { flex: 1; padding: 16px 20px; overflow: hidden; }
+  /* Main content area */
+  .main { padding: 16px 20px; height: 456px; overflow: hidden; }
   .back {
     display: inline-flex; align-items: center; gap: 4px;
     font-size: 12px; color: var(--slate-500); margin-bottom: 10px;
@@ -185,6 +201,7 @@
     border-radius: 6px;
     font-size: 11px; font-weight: 600; color: var(--slate-700);
     background: var(--white);
+    display: inline-flex; align-items: center; gap: 4px;
   }
   .run-meta {
     font-size: 12px; color: var(--slate-500); margin-bottom: 10px;
@@ -211,48 +228,31 @@
   .progress .sf { background: var(--red-500); width: 7%; }
   .progress .sb { background: var(--amber-500); width: 9%; }
 
-  .two-col { display: flex; gap: 12px; }
+  /* AI Run Summary card — full width */
   .ai-card {
-    flex: 1; background: linear-gradient(135deg, #f5f3ff 0%, #eef2ff 100%);
+    background: linear-gradient(135deg, #f5f3ff 0%, #eef2ff 100%);
     border: 1px solid var(--indigo-100);
     border-radius: 10px;
-    padding: 12px 14px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
   }
   .ai-head {
     display: flex; align-items: center; gap: 6px;
     font-size: 11px; font-weight: 700; color: var(--violet-500);
     margin-bottom: 6px;
+    text-transform: uppercase; letter-spacing: 0.08em;
   }
   .ai-head i { font-size: 14px; }
   .ai-title {
-    font-size: 13px; font-weight: 700; color: var(--slate-900);
+    font-size: 14px; font-weight: 700; color: var(--slate-900);
     margin-bottom: 4px;
   }
   .ai-body {
-    font-size: 11.5px; color: var(--slate-700); line-height: 17px;
+    font-size: 12px; color: var(--slate-700); line-height: 18px;
   }
-  .filter-card {
-    width: 170px;
-    background: var(--white);
-    border: 1px solid var(--slate-200);
-    border-radius: 10px;
-    padding: 12px 14px;
-  }
-  .filter-head {
-    font-size: 11px; font-weight: 700; color: var(--slate-500);
-    text-transform: uppercase; letter-spacing: 0.08em;
-    margin-bottom: 8px;
-  }
-  .filter-chip {
-    display: block; padding: 4px 8px; background: var(--slate-100);
-    border-radius: 6px; font-size: 11px; color: var(--slate-700);
-    margin-bottom: 4px;
-  }
-  .filter-chip.active { background: var(--indigo-50); color: var(--indigo-700); font-weight: 600; }
 
   /* Test case list */
   .tc-list {
-    margin-top: 12px;
     border: 1px solid var(--slate-200); border-radius: 10px;
     overflow: hidden;
     background: var(--white);
@@ -349,91 +349,74 @@
       </span>
       <span style="width:72px"></span>
     </div>
-    <div class="app">
-      <div class="sidebar">
-        <div class="sb-logo">
-          <div class="sb-logo-mark">T</div>
-          <div class="sb-logo-text">Testably</div>
-        </div>
-        <div class="sb-section">Acme Shop</div>
-        <div class="sb-item"><i class="ri-dashboard-line"></i>Overview</div>
-        <div class="sb-item"><i class="ri-file-list-3-line"></i>Test Cases</div>
-        <div class="sb-item active"><i class="ri-play-circle-line"></i>Runs</div>
-        <div class="sb-item"><i class="ri-flag-line"></i>Milestones</div>
-        <div class="sb-item"><i class="ri-calendar-line"></i>Plans</div>
-        <div class="sb-section">Insights</div>
-        <div class="sb-item"><i class="ri-bar-chart-2-line"></i>Reports</div>
-        <div class="sb-item"><i class="ri-sparkling-2-line"></i>AI Summary</div>
+
+    <!-- Horizontal top nav (matches real ProjectHeader layout) -->
+    <div class="topnav">
+      <div class="nav-logo">
+        <div class="nav-logo-mark">T</div>
       </div>
-      <div class="main">
-        <div class="back"><i class="ri-arrow-left-s-line"></i>Back to runs</div>
-        <div class="run-hdr">
-          <div class="run-name">Checkout Flow CI Run #1247</div>
-          <span class="status-pill">in_progress</span>
-          <span class="auto-pill"><i class="ri-robot-line"></i>Automated</span>
-          <button class="focus-btn"><i class="ri-focus-3-line"></i> Focus</button>
-        </div>
-        <div class="run-meta">Started 2026-05-11 · 93% completed · 45 test cases</div>
-        <div class="kpi-row">
-          <span class="kpi">Total <strong>45</strong></span>
-          <span class="kpi p">✓ 38</span>
-          <span class="kpi f">✗ 3</span>
-          <span class="kpi b">⚠ 4</span>
-          <span class="kpi u">⏳ 0</span>
-        </div>
-        <div class="progress"><span class="sp"></span><span class="sf"></span><span class="sb"></span></div>
+      <div class="nav-divider"></div>
+      <div class="nav-project">Acme Shop <i class="ri-arrow-down-s-line"></i></div>
+      <div class="nav-tabs">
+        <div class="nav-tab">Dashboard</div>
+        <div class="nav-tab">Test Cases</div>
+        <div class="nav-tab">Steps Library</div>
+        <div class="nav-tab active">Runs and Results</div>
+        <div class="nav-tab">Requirements</div>
+        <div class="nav-tab">Traceability</div>
+        <div class="nav-tab">Milestones</div>
+        <div class="nav-tab">Sessions</div>
+        <div class="nav-tab">Documents</div>
+      </div>
+    </div>
 
-        <div class="two-col">
-          <div class="ai-card">
-            <div class="ai-head"><i class="ri-sparkling-2-line"></i>AI Run Summary · generated 12s ago</div>
-            <div class="ai-title">3 failures cluster on payment API timeouts.</div>
-            <div class="ai-body">Likely cause: slow checkout endpoint on Visa gateway. Failures repeat across TC-103 / TC-118 / TC-126. Retry with backoff recommended before triage.</div>
-          </div>
-          <div class="filter-card">
-            <div class="filter-head">Filters</div>
-            <div class="filter-chip active">All (45)</div>
-            <div class="filter-chip">Failed (3)</div>
-            <div class="filter-chip">Skipped (4)</div>
-          </div>
-        </div>
+    <div class="main">
+      <div class="back"><i class="ri-arrow-left-s-line"></i>Back to runs</div>
+      <div class="run-hdr">
+        <div class="run-name">Checkout Flow CI Run #1247</div>
+        <span class="status-pill">in_progress</span>
+        <span class="auto-pill"><i class="ri-robot-line"></i>Automated</span>
+        <button class="focus-btn"><i class="ri-focus-3-line"></i> Focus</button>
+      </div>
+      <div class="run-meta">Started 2026-05-11 · 93% completed · 45 test cases</div>
+      <div class="kpi-row">
+        <span class="kpi">Total <strong>45</strong></span>
+        <span class="kpi p">✓ 38</span>
+        <span class="kpi f">✗ 3</span>
+        <span class="kpi b">⚠ 4</span>
+        <span class="kpi u">⏳ 0</span>
+      </div>
+      <div class="progress"><span class="sp"></span><span class="sf"></span><span class="sb"></span></div>
 
-        <div class="tc-list">
-          <div class="tc-list-hdr">Test cases</div>
-          <div class="tc-row">
-            <span class="tc-icon pass">✓</span>
-            <span class="tc-id">TC-101</span>
-            <span class="tc-title">user can log in</span>
-            <span class="tc-status pass">passed</span>
-            <span class="tc-time">1.2s</span>
-          </div>
-          <div class="tc-row">
-            <span class="tc-icon pass">✓</span>
-            <span class="tc-id">TC-102</span>
-            <span class="tc-title">add to cart</span>
-            <span class="tc-status pass">passed</span>
-            <span class="tc-time">0.9s</span>
-          </div>
-          <div class="tc-row">
-            <span class="tc-icon fail">✗</span>
-            <span class="tc-id">TC-103</span>
-            <span class="tc-title">payment fails on Visa</span>
-            <span class="tc-status fail">failed</span>
-            <span class="tc-time">2.3s</span>
-          </div>
-          <div class="tc-error">⚠ Timeout 30000ms exceeded waiting for selector '[data-testid="submit-order"]'</div>
-          <div class="tc-row">
-            <span class="tc-icon pass">✓</span>
-            <span class="tc-id">TC-104</span>
-            <span class="tc-title">receipt rendered</span>
-            <span class="tc-status pass">passed</span>
-            <span class="tc-time">1.1s</span>
-          </div>
+      <!-- AI Run Summary (full width, no "generated Xs ago") -->
+      <div class="ai-card">
+        <div class="ai-head"><i class="ri-sparkling-2-line"></i>AI Run Summary</div>
+        <div class="ai-title">3 failures cluster on payment API timeouts.</div>
+        <div class="ai-body">Likely cause: slow checkout endpoint on Visa gateway. Failures repeat across TC-103 / TC-118 / TC-126. Retry with backoff recommended before triage.</div>
+      </div>
+
+      <div class="tc-list">
+        <div class="tc-list-hdr">Test cases</div>
+        <div class="tc-row">
+          <span class="tc-icon pass">✓</span>
+          <span class="tc-id">TC-101</span>
+          <span class="tc-title">user can log in</span>
+          <span class="tc-status pass">passed</span>
+          <span class="tc-time">1.2s</span>
         </div>
+        <div class="tc-row">
+          <span class="tc-icon fail">✗</span>
+          <span class="tc-id">TC-103</span>
+          <span class="tc-title">payment fails on Visa</span>
+          <span class="tc-status fail">failed</span>
+          <span class="tc-time">2.3s</span>
+        </div>
+        <div class="tc-error">⚠ Timeout 30000ms exceeded waiting for selector '[data-testid="submit-order"]'</div>
       </div>
     </div>
   </div>
 
-  <!-- Annotation overlays (leaders first, bubbles on top) -->
+  <!-- Annotation overlays -->
   <!-- Leader lines (SVG) -->
   <svg class="leader" style="left:0;top:0;width:1270px;height:760px" viewBox="0 0 1270 760">
     <defs>
@@ -444,36 +427,36 @@
         <circle cx="5" cy="5" r="3" fill="#FFFFFF" stroke="#6366F1" stroke-width="1.5" />
       </marker>
     </defs>
-    <!-- (1) 🤖 Synced from Playwright CI  → Automated pill on run header -->
-    <path d="M 970 264 Q 870 250 748 258" stroke="#6366F1" stroke-width="1.5" fill="none"
+    <!-- (1) Automated badge → run header auto-pill (approximately x=620, y=324) -->
+    <path d="M 970 320 Q 800 312 650 322" stroke="#6366F1" stroke-width="1.5" fill="none"
           marker-start="url(#dot)" marker-end="url(#ring)" />
-    <!-- (2) 38 mapped / 4 skipped → KPI row -->
-    <path d="M 500 404 Q 470 400 442 382" stroke="#6366F1" stroke-width="1.5" fill="none"
+    <!-- (2) KPI row mapping → KPI position (approximately x=215, y=400) -->
+    <path d="M 470 450 Q 380 430 240 400" stroke="#6366F1" stroke-width="1.5" fill="none"
           marker-start="url(#dot)" marker-end="url(#ring)" />
-    <!-- (3) Playwright error → Testably note → tc-error band -->
-    <path d="M 600 564 Q 560 555 480 520" stroke="#6366F1" stroke-width="1.5" fill="none"
+    <!-- (3) Playwright error → tc-error band (approximately x=280, y=680) -->
+    <path d="M 680 650 Q 520 670 320 680" stroke="#6366F1" stroke-width="1.5" fill="none"
           marker-start="url(#dot)" marker-end="url(#ring)" />
-    <!-- (4) AI Run Summary → AI card header -->
-    <path d="M 850 484 Q 790 470 720 444" stroke="#6366F1" stroke-width="1.5" fill="none"
+    <!-- (4) AI Run Summary → AI card (approximately x=150, y=530) -->
+    <path d="M 890 540 Q 520 540 240 530" stroke="#6366F1" stroke-width="1.5" fill="none"
           marker-start="url(#dot)" marker-end="url(#ring)" />
   </svg>
 
   <!-- Bubbles -->
-  <div class="callout" style="left:970px;top:240px;">
+  <div class="callout" style="left:965px;top:296px;">
     <span class="icon-box"><i class="ri-robot-line"></i></span>
-    Synced from Playwright CI
+    Automated run from CI
   </div>
-  <div class="callout" style="left:452px;top:380px;">
+  <div class="callout" style="left:430px;top:426px;">
     <span class="icon-box"><i class="ri-check-double-line"></i></span>
     38 mapped · 4 skipped (no TC id)
   </div>
-  <div class="callout" style="left:552px;top:540px;">
+  <div class="callout" style="left:640px;top:626px;">
     <span class="icon-box"><i class="ri-alert-line"></i></span>
     Playwright error → Testably note
   </div>
-  <div class="callout" style="left:850px;top:460px;">
+  <div class="callout" style="left:850px;top:516px;">
     <span class="icon-box"><i class="ri-sparkling-2-line"></i></span>
-    AI Run Summary — generated 12s ago
+    AI Run Summary
   </div>
 </div>
 </body>
