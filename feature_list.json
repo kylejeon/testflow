@@ -13,8 +13,8 @@
       "effort": "medium",
       "source": "dev-spec-environment-v2",
       "dependencies": [],
-      "status": "backlog",
-      "notes": "OOS §9-1 명시. 크레딧 비용 책정 + AI_FEATURES 키 신규 등록 필요"
+      "status": "done",
+      "notes": "구현 완료 2026-04-24 (c4ccbee + 03ac477). Dev Spec: dev-spec-f001-f002-env-ai-insights.md. QA: Ship with fixes (P1 수정 완료)."
     },
     {
       "id": "f002",
@@ -28,8 +28,8 @@
       "dependencies": [
         "f001"
       ],
-      "status": "backlog",
-      "notes": "OOS §9-2, AC-V13 명시"
+      "status": "done",
+      "notes": "구현 완료 2026-04-24 (c4ccbee). f001 과 번들. Create Issue inline modal + Filter column highlight + Assign Run scrollIntoView 전부 구현."
     },
     {
       "id": "f003",
