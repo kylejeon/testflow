@@ -21,6 +21,8 @@ import { registerPaddleErrorHandler, registerPaddleSuccessHandler } from '../../
 import { useToast, getApiErrorMessage } from '../../components/Toast';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
 import useLanguage from '../../hooks/useLanguage';
+import { useTranslation } from 'react-i18next';
+import AiUsagePanel from './components/AiUsagePanel';
 
 interface JiraSettings {
   domain: string;
@@ -339,6 +341,7 @@ function DangerZoneSection({ email }: { email: string }) {
 export default function SettingsPage() {
   const { showToast } = useToast();
   const { changeLanguage, currentLanguage } = useLanguage();
+  const { t } = useTranslation('settings');
 
   useEffect(() => {
     registerPaddleErrorHandler((msg) => showToast(msg, 'error'));
@@ -352,7 +355,7 @@ export default function SettingsPage() {
     });
   }, [showToast]);
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'billing' | 'preferences' | 'members' | 'integrations' | 'api' | 'notifications'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'billing' | 'preferences' | 'members' | 'integrations' | 'api' | 'notifications' | 'ai-usage'>('profile');
   const [userProjects, setUserProjects] = useState<{ id: string; name: string }[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [showMembersInviteModal, setShowMembersInviteModal] = useState(false);
@@ -569,7 +572,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    const VALID_TABS = ['profile', 'billing', 'preferences', 'members', 'integrations', 'api', 'notifications'];
+    const VALID_TABS = ['profile', 'billing', 'preferences', 'members', 'integrations', 'api', 'notifications', 'ai-usage'];
     const TAB_ALIAS: Record<string, typeof activeTab> = { general: 'billing', cicd: 'api' };
     const resolved = (TAB_ALIAS[tab ?? ''] ?? tab) as typeof activeTab;
     if (resolved && VALID_TABS.includes(resolved)) setActiveTab(resolved);
@@ -1902,7 +1905,8 @@ def pytest_sessionfinish(session, exitstatus):
                 { key: 'integrations',  label: 'Integrations',  icon: 'ri-plug-fill',            iconColor: '#F59E0B' },
                 { key: 'api',           label: 'API & Tokens',  icon: 'ri-key-2-fill',           iconColor: '#EC4899' },
                 { key: 'notifications', label: 'Notifications', icon: 'ri-notification-3-fill',  iconColor: '#EF4444' },
-              ] as { key: 'profile' | 'billing' | 'preferences' | 'members' | 'integrations' | 'api' | 'notifications'; label: string; icon: string; iconColor: string }[]).map(tab => (
+                { key: 'ai-usage',      label: t('aiUsage.tab'), icon: 'ri-sparkling-2-fill',    iconColor: '#8B5CF6' },
+              ] as { key: 'profile' | 'billing' | 'preferences' | 'members' | 'integrations' | 'api' | 'notifications' | 'ai-usage'; label: string; icon: string; iconColor: string }[]).map(tab => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
@@ -1922,7 +1926,7 @@ def pytest_sessionfinish(session, exitstatus):
 
           <main className="flex-1 overflow-y-auto bg-slate-50">
             <ErrorBoundary section sectionName="Settings">
-            <div className="max-w-[800px] mx-auto px-4 md:px-8 pt-6 pb-12">
+            <div className={activeTab === 'ai-usage' ? 'w-full' : 'max-w-[800px] mx-auto px-4 md:px-8 pt-6 pb-12'}>
                 <div>
                   {activeTab === 'profile' && userProfile && (
                     <>
@@ -3986,6 +3990,10 @@ describe('Login', () => {
                         )}
                       </div>
                     </div>
+                  )}
+
+                  {activeTab === 'ai-usage' && (
+                    <AiUsagePanel />
                   )}
                 </div>
             </div>

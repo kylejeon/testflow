@@ -1,51 +1,79 @@
-2026-04-23: f028 Playwright Reporter SDK — May 11 stable launch 준비 (Option A)
+2026-04-23: f011 AI Token Budget Monitoring Dashboard — Phase 4 구현 완료 (22 ACs)
 
-## 뭘 했냐 (claude 브랜치, bf5ed98)
+## 뭘 했냐 (claude 브랜치)
 
-### 1. 버전 정리 (0.1.0-alpha.0 → 1.0.1 stable)
-- packages/core/package.json, packages/playwright/package.json
-- packages/core/src/client.ts SDK_VERSION
-- packages/playwright/src/reporter.ts SDK_AGENT
-- reporter-core 의존성도 "1.0.1" 로 핀
+### 1. DB 마이그레이션 (Step 1, AC-10 / AC-11 / AC-20 / AC-21)
+- supabase/migrations/20260423_f011_ai_usage_breakdown_rpc.sql
+  - SECURITY DEFINER RPC `get_ai_usage_breakdown(p_owner_id, p_from, p_to)`
+  - caller 인증 (auth.uid() = owner 또는 organization admin/owner)
+  - composite partial index `idx_ai_generation_logs_owner_date` (WHERE step=1)
+  - CREATE OR REPLACE + IF NOT EXISTS 로 idempotent
 
-### 2. CHANGELOG 업데이트
-- packages/playwright/CHANGELOG.md [1.0.1] 2026-05-11 엔트리
-- packages/core/CHANGELOG.md [1.0.1] 2026-05-11 엔트리
-- 배경 설명: 1.0.0 (4/7) stale, 0.1.0-alpha.0 (4/22) 을 정리하고 1.0.1 로 출발
+### 2. Types + Hooks (Step 2)
+- src/types/aiUsage.ts — AiUsageBreakdownRow / AiGenerationLogRow / DailySeriesPoint / ModeBreakdownRow / MemberContributionRow / PeriodKey
+- src/hooks/useAiUsageBreakdown.ts — useAiUsageBreakdown(team) + useMyAiUsage(self) + queryKey helpers
+- src/lib/aiUsageMeta.ts — MODE_COLORS / MODE_LABEL_KEYS / MODE_ORDER / normalizeMode / planHistoryLimit / isPeriodAllowed / resolvePeriodRange
 
-### 3. 마케팅 5종 리라이트 (alpha → stable 포지셔닝)
-- docs/marketing/f028-product-hunt-launch.md (maker comment)
-- docs/marketing/f028-readme-draft.md (Status 라인)
-- docs/marketing/f028-twitter-thread.md (tweet 10)
-- docs/marketing/f028-changelog.md (전체 리라이트 1.0.1 기준)
-- docs/marketing/f028-blog-ship-results-3-lines.md (alpha 레퍼런스 없음, 무변경)
+### 3. 신규 컴포넌트 10개 (Step 3)
+- src/pages/settings/components/AiUsagePanel.tsx (루트, 권한 분기)
+- src/pages/settings/components/ai-usage/PeriodFilter.tsx (키보드 + 플랜 disable)
+- src/pages/settings/components/ai-usage/KpiCard.tsx (공통 primitive)
+- src/pages/settings/components/ai-usage/BurnRateCard.tsx (thisMonth + burnRate 변형)
+- src/pages/settings/components/ai-usage/DailyUsageChart.tsx (Recharts stacked bar + SR table)
+- src/pages/settings/components/ai-usage/ChartTooltip.tsx
+- src/pages/settings/components/ai-usage/ModeBreakdownTable.tsx
+- src/pages/settings/components/ai-usage/MemberContributionTable.tsx
+- src/pages/settings/components/ai-usage/ExportCsvButton.tsx (Team 전용, AC-18)
 
-### 4. 런칭 플랜 문서 신규 작성
-- docs/marketing/f028-launch-plan-may11.md
-- 6 phase × 18일 타임라인 (T-18 → T+7)
-- KPI (PH Top 5, npm Day 1 50+, Pro 업그레이드 5+)
-- 리스크/컨틴전시 매트릭스
-- Open Decisions 5개 (CEO 확정 필요)
-- npm 배포 명령 부록
+### 4. 라우팅 + Settings 통합 (Step 4, 6)
+- src/pages/settings/page.tsx
+  - activeTab 타입에 'ai-usage' 추가
+  - VALID_TABS 에 'ai-usage' 추가 (deep-link)
+  - tab 배열에 AI Usage 항목 추가 (sparkling 아이콘, violet)
+  - activeTab === 'ai-usage' 일 때 AiUsagePanel 렌더
+  - ai-usage 탭일 때 max-w-[800px] 컨테이너 제약 해제 (1160px 확장)
+- src/pages/project-detail/page.tsx
+  - AI Usage 사이드바 카드의 Upgrade 링크 → "View Details" → /settings?tab=ai-usage (AC-19)
+
+### 5. i18n (Step 5)
+- src/i18n/local/en/settings.ts + ko/settings.ts 양쪽에
+  - aiUsage 네임스페이스 추가 (Dev Spec 47 + Design Spec 26 = 73 키)
+  - EN/KO parity check: 0 diff
+
+### 6. 테스트 (Step 7)
+- src/hooks/useAiUsageBreakdown.test.ts (8 cases: RPC + Self View + query key)
+- src/lib/aiUsageMeta.test.ts (20 cases: mode / plan / period)
+- src/pages/settings/components/AiUsagePanel.test.tsx (smoke: 렌더 + empty)
+- src/pages/settings/components/ai-usage/BurnRateCard.test.tsx (9 cases: thisMonth/burnRate/Enterprise)
+- src/pages/settings/components/ai-usage/ExportCsvButton.test.tsx (5 cases: CSV + 클릭)
+- src/pages/settings/components/ai-usage/PeriodFilter.test.tsx (6 cases: disable + aria)
+- src/pages/settings/components/ai-usage/ModeBreakdownTable.test.tsx (3 cases: sort + AC-7)
 
 ### 검증 (전부 PASS)
 - npx tsc --noEmit: 0 errors
-- root: 170/170 tests
-- packages/playwright: 14/14 tests
-- packages/core: 21/21 tests
-- 양쪽 SDK 빌드 성공 (CJS+ESM+DTS)
+- npm run test -- --run: 230/230 passed (기존 170 + 신규 60)
+- npm run scan:i18n:check: clean (0 hardcoded strings in scope)
+- npm run scan:i18n:parity: en ↔ ko 0 diff
+- npm run build: 성공
 
 ## 어디까지 됐냐
-- 1.0.1 콘텐츠/코드 전부 stable 포지셔닝으로 정렬
-- 로컬 검증 완료, claude 브랜치 push 완료
+
+### AC 달성 (22/22 완료)
+- AC-1 ~ AC-22 전부 구현 완료. Dev Spec OOS 10개는 미구현 (의도적).
+  - OOS: retention / mode split / burn rate alert / project filter / tokens UI /
+    hourly drilldown / spending cap / anomaly / block workflow / Slack report
+
+### 수동 검증 필요 항목 (커밋 후)
+- 로컬 Supabase 에서 `supabase db reset` 2회 실행 (AC-20 idempotent)
+- EXPLAIN ANALYZE 로 composite index scan 확인 (AC-21, AC-11 p95<500ms)
+- Owner / Admin / Member 계정으로 `/settings?tab=ai-usage` 브라우저 확인
+- 기간 드롭다운 플랜별 disable 확인 (Free, Hobby, Starter)
+- CSV 다운로드 파일 구조 확인
+- i18n KO 토글 확인
 
 ## 다음엔 뭘 해야 해
-1. CEO 리뷰 (4/24) — 콘텐츠 톤/메시지 최종 승인
-2. CEO 태그 push (4/25) → publish-sdk.yml 자동 트리거 → npm latest=1.0.1
-3. 런칭 이미지 3종 제작 (4/28-4/30)
-4. Open Decisions 5개 확정:
-   - PH Hunter
-   - 런칭 이미지 제작 주체
-   - 블로그 퍼블리시 채널
-   - 5/11 당일 on-call 구성
-   - Loops 이메일 대상 범위
+1. CEO 에게 PR 알림 → main 수동 머지
+2. 프로덕션 배포 전 supabase migration 적용 순서 확인
+   (20260423_f011_ai_usage_breakdown_rpc.sql)
+3. Playwright E2E 스모크 테스트 (AC-1 deep-link, AC-16 키보드)
+4. v1.1 후속 이슈 백로그 정리 (OOS 10개 중 우선순위)
