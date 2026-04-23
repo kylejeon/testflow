@@ -61,8 +61,12 @@ export function useAiUsageBreakdown(
     queryKey: aiUsageBreakdownQueryKey(ownerId, from, to),
     queryFn: () => fetchAiUsageBreakdown(ownerId as string, from, to),
     enabled: !!ownerId,
-    staleTime: 60_000, // 1 minute (AI calls happen on the order of minutes)
+    // staleTime 0 — credit 소비는 panel 밖(plan/milestone detail) 에서 발생하므로
+    // panel 재진입 시 즉시 refetch 되어야 최신 사용량이 반영된다. React Query
+    // 의 in-flight 중복 제거가 있어 과도한 호출로 이어지지 않는다.
+    staleTime: 0,
     gcTime: 5 * 60_000,
+    refetchOnMount: 'always',
   });
 }
 
@@ -112,7 +116,8 @@ export function useMyAiUsage(
     queryKey: myAiUsageQueryKey(userId, from, to),
     queryFn: () => fetchMyAiUsage(userId as string, from, to),
     enabled: !!userId,
-    staleTime: 60_000,
+    staleTime: 0,
     gcTime: 5 * 60_000,
+    refetchOnMount: 'always',
   });
 }

@@ -278,7 +278,10 @@ export default function AiUsagePanel() {
       return await getSharedPoolUsage(effective.ownerId);
     },
     enabled: !!effective?.ownerId,
-    staleTime: 60_000,
+    // Panel 을 벗어나 다른 페이지에서 credit 을 소비한 뒤 돌아왔을 때
+    // "THIS MONTH" KPI 가 즉시 갱신되도록 staleTime 0 + refetchOnMount always.
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   // ── 2b. Forbidden detection (Dev Spec §4-1 alt-flow 2) ──
