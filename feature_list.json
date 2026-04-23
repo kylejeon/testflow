@@ -25,7 +25,9 @@
       "impact": "medium",
       "effort": "small",
       "source": "dev-spec-environment-v2",
-      "dependencies": ["f001"],
+      "dependencies": [
+        "f001"
+      ],
       "status": "backlog",
       "notes": "OOS §9-2, AC-V13 명시"
     },
@@ -51,7 +53,9 @@
       "impact": "medium",
       "effort": "large",
       "source": "dev-spec-environment-workflow",
-      "dependencies": ["f003"],
+      "dependencies": [
+        "f003"
+      ],
       "status": "backlog",
       "notes": "OOS §9-1. 기존 데이터 마이그레이션 + Run 생성 UX 대규모 변경"
     },
@@ -117,8 +121,20 @@
       "effort": "medium",
       "source": "dev-spec-ai-usage-shared-pool",
       "dependencies": [],
-      "status": "backlog",
-      "notes": "OOS 'Dashboard UI에 팀 전체 usage 중 본인 기여도 분해' 명시"
+      "status": "done",
+      "notes": "OOS 'Dashboard UI에 팀 전체 usage 중 본인 기여도 분해' 명시",
+      "completed_at": "2026-04-23",
+      "completed_refs": {
+        "commits": [
+          "194832e",
+          "5e1f9b4",
+          "4a76e20",
+          "1aa42ec"
+        ],
+        "dev_spec": "docs/specs/dev-spec-f011-ai-token-budget-dashboard.md",
+        "design_spec": "docs/specs/design-spec-f011-ai-token-budget-dashboard.md",
+        "qa_report": "docs/qa/qa-report-f011-ai-token-budget-dashboard.md"
+      }
     },
     {
       "id": "f012",
@@ -324,7 +340,9 @@
       "impact": "medium",
       "effort": "medium",
       "source": "pm-next-feature-candidates",
-      "dependencies": ["f031"],
+      "dependencies": [
+        "f031"
+      ],
       "status": "backlog",
       "notes": "TC Versioning 완료 후 착수 권장"
     }
