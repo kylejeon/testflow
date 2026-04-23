@@ -29,6 +29,7 @@ export type DisplayMode =
   | 'risk-predictor'
   | 'milestone-risk'
   | 'requirement-suggest'
+  | 'env-ai-insights'
   | 'other';
 
 /**
@@ -44,6 +45,7 @@ export const MODE_ORDER: DisplayMode[] = [
   'risk-predictor',
   'milestone-risk',
   'requirement-suggest',
+  'env-ai-insights',
   'other',
 ];
 
@@ -61,6 +63,7 @@ export const MODE_COLORS: Record<DisplayMode, string> = {
   'risk-predictor':      '#F59E0B', // amber-500
   'milestone-risk':      '#10B981', // emerald-500
   'requirement-suggest': '#F97316', // orange-500
+  'env-ai-insights':     '#7C3AED', // violet-600 — f001 env heatmap AI
   'other':               '#94A3B8', // slate-400
 };
 
@@ -81,6 +84,7 @@ export const MODE_LABEL_KEYS: Record<DisplayMode, string> = {
   'risk-predictor':      'aiUsage.mode.riskPredictor',
   'milestone-risk':      'aiUsage.mode.milestoneRisk',
   'requirement-suggest': 'aiUsage.mode.requirementSuggest',
+  'env-ai-insights':     'aiUsage.mode.envAiInsights',
   'other':               'aiUsage.mode.other',
 };
 
@@ -103,6 +107,7 @@ export function normalizeMode(raw: string | null | undefined): DisplayMode {
     'risk-predictor',
     'milestone-risk',
     'requirement-suggest',
+    'env-ai-insights',
   ];
   return (known as string[]).includes(value) ? (value as DisplayMode) : 'other';
 }

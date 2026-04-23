@@ -107,6 +107,7 @@ export const settings = {
       riskPredictor: '리스크 예측',
       milestoneRisk: '마일스톤 리스크',
       requirementSuggest: '요구사항 제안',
+      envAiInsights: '환경 인사이트',
       other: '기타',
     },
     modeBreakdown: {

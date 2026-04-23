@@ -107,6 +107,7 @@ export const settings = {
       riskPredictor: 'Risk Predictor',
       milestoneRisk: 'Milestone Risk',
       requirementSuggest: 'Requirement Suggestions',
+      envAiInsights: 'Environment Insights',
       other: 'Other',
     },
     modeBreakdown: {

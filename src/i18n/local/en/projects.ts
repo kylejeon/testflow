@@ -56,6 +56,45 @@ export const projects = {
   toast: {
     membersLoadFailed: 'Failed to load project members.',
   },
+
+  // f001 + f002 — Environment AI Insights plan-detail workflow
+  // nested under `plan.env.ai` so callers use `t('projects:plan.env.ai.xxx')`
+  plan: {
+    env: {
+      ai: {
+        issueModalTitle: 'Create issue from AI insight',
+        issueModalTabJira: 'Jira',
+        issueModalTabGithub: 'GitHub',
+        issueModalTitleField: 'Title',
+        issueModalTitleRequired: 'Title is required',
+        issueModalDescriptionField: 'Description',
+        issueModalLabelsField: 'Labels (optional)',
+        issueModalLabelsPlaceholder: 'Type and press Enter…',
+        issueModalPriorityField: 'Priority',
+        issueModalPriorityHigh: 'High',
+        issueModalPriorityMedium: 'Medium',
+        issueModalPriorityLow: 'Low',
+        issueModalCreate: 'Create issue',
+        issueModalCreating: 'Creating…',
+        issueModalCancel: 'Cancel',
+        issueModalNoIntegration: 'Connect an issue tracker first',
+        issueModalNoIntegrationDetail:
+          'Testably needs a Jira or GitHub connection to create issues from AI insights.',
+        issueModalGoSettings: 'Open Settings',
+        issueModalLoading: 'Loading connection…',
+        issueModalProjectKey: 'Jira project key',
+        issueModalIssueType: 'Issue type',
+        issueModalRepo: 'GitHub repo',
+        issueCreated: 'Issue created',
+        issueCreatedWithLink: 'Issue created · View',
+        issueCreateFailed: 'Failed to create issue: {{detail}}',
+        assignRunToast: 'Add a run targeting "{{tc}}" to close the coverage gap.',
+        filterActive: 'Showing {{env}}',
+        filterClear: 'Clear',
+        runsSectionNotFound: 'Runs section not found — navigate to the Runs tab.',
+      },
+    },
+  },
 };
 
 export default projects;

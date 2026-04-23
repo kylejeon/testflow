@@ -114,6 +114,11 @@ export const AI_FEATURES = {
     label: 'AI Tag Heatmap Insight',
     mode: 'tag-heatmap-insight',
   },
+  environment_ai_insights: {
+    minTier: 3, creditCost: 1,
+    label: 'AI Environment Insights',
+    mode: 'env-ai-insights',
+  },
 } as const satisfies Record<string, AiFeatureConfig>;
 
 export type AiFeatureKey = keyof typeof AI_FEATURES;

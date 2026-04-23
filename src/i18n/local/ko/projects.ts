@@ -56,6 +56,44 @@ export const projects = {
   toast: {
     membersLoadFailed: '프로젝트 멤버를 불러오지 못했어요.',
   },
+
+  // f001 + f002 — Environment AI Insights plan-detail 워크플로우
+  plan: {
+    env: {
+      ai: {
+        issueModalTitle: 'AI 인사이트로 이슈 생성',
+        issueModalTabJira: 'Jira',
+        issueModalTabGithub: 'GitHub',
+        issueModalTitleField: '제목',
+        issueModalTitleRequired: '제목은 필수입니다',
+        issueModalDescriptionField: '설명',
+        issueModalLabelsField: '라벨 (선택)',
+        issueModalLabelsPlaceholder: '입력 후 Enter…',
+        issueModalPriorityField: '우선순위',
+        issueModalPriorityHigh: '높음',
+        issueModalPriorityMedium: '보통',
+        issueModalPriorityLow: '낮음',
+        issueModalCreate: '이슈 생성',
+        issueModalCreating: '생성 중…',
+        issueModalCancel: '취소',
+        issueModalNoIntegration: '이슈 트래커를 먼저 연결해주세요',
+        issueModalNoIntegrationDetail:
+          'AI 인사이트로 이슈를 생성하려면 Jira 또는 GitHub 연동이 필요합니다.',
+        issueModalGoSettings: '설정 열기',
+        issueModalLoading: '연결 정보 불러오는 중…',
+        issueModalProjectKey: 'Jira 프로젝트 키',
+        issueModalIssueType: '이슈 타입',
+        issueModalRepo: 'GitHub 레포',
+        issueCreated: '이슈가 생성되었습니다',
+        issueCreatedWithLink: '이슈가 생성되었습니다 · 보기',
+        issueCreateFailed: '이슈 생성 실패: {{detail}}',
+        assignRunToast: '"{{tc}}" 커버리지를 채울 수 있도록 실행을 추가해주세요.',
+        filterActive: '{{env}} 필터 중',
+        filterClear: '해제',
+        runsSectionNotFound: '실행 섹션을 찾을 수 없습니다 — Runs 탭으로 이동해주세요.',
+      },
+    },
+  },
 };
 
 export default projects;

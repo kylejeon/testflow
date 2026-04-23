@@ -58,6 +58,7 @@ export const AI_FEATURES = {
   burndown_insight:      { minTier: 3, creditCost: 1, label: 'AI Burndown Insight' },
   issues_analysis:       { minTier: 4, creditCost: 1, label: 'AI Issues Analysis' },
   tag_heatmap_insight:   { minTier: 4, creditCost: 1, label: 'AI Tag Heatmap Insight' },
+  environment_ai_insights: { minTier: 3, creditCost: 1, label: 'AI Environment Insights' },
 } as const satisfies Record<string, AiFeatureConfig>;
 
 export type AiFeatureKey = keyof typeof AI_FEATURES;

@@ -16,12 +16,16 @@ import {
   type HeatmapMatrix,
 } from '../../lib/environments';
 import EnvironmentAIInsights from '../../components/EnvironmentAIInsights';
+import IssueCreateInlineModal from '../../components/IssueCreateInlineModal';
 import type { Environment } from '../../types/environment';
 import { formatShortDate, formatShortDateTime, formatShortTime, formatDayHeader } from '../../lib/dateFormat';
 import { formatRelativeTime } from '../../lib/formatRelativeTime';
 import { normalizeLocale } from '../../lib/claudeLocale';
 import { aiFetch } from '../../lib/aiFetch';
 import { showAiCreditToast } from '../../lib/aiCreditToast';
+import { useEnvAiInsights } from '../../hooks/useEnvAiInsights';
+import { useAiFeature, TIER_NAMES as AI_TIER_NAMES } from '../../hooks/useAiFeature';
+import type { EnvAiInsightsResult, EnvAiInsightsError, IssueCreatePrefill } from '../../types/envAiInsights';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1516,8 +1520,18 @@ type DrillRunEntry = {
   resultStatus: string;
 };
 
-function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestCase[] }) {
-  const { t } = useTranslation('environments');
+function EnvironmentsTab({
+  plan,
+  planTcs,
+  onRequestScrollToRuns,
+}: {
+  plan: TestPlan;
+  planTcs: PlanTestCase[];
+  /** parent (PlanDetailPage) handler — scrolls to plan-runs-section (creates section if on different tab) */
+  onRequestScrollToRuns?: (tcTitle: string) => void;
+}) {
+  const { t } = useTranslation(['environments', 'projects']);
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [matrix, setMatrix] = useState<HeatmapMatrix | null>(null);
@@ -1525,6 +1539,156 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
   const [drillMap, setDrillMap] = useState<Map<string, DrillRunEntry[]>>(new Map());
   const [drill, setDrill] = useState<DrillSelection | null>(null);
   const projectId = plan.project_id;
+
+  // ── f001/f002: AI insights + chip workflow state ────────────────────────────
+  const [aiInsight, setAiInsight] = useState<EnvAiInsightsResult | null>(null);
+  const [aiError, setAiError] = useState<EnvAiInsightsError['error'] | null>(null);
+  const [highlightedEnv, setHighlightedEnv] = useState<string | null>(null);
+  const [issueModalPrefill, setIssueModalPrefill] = useState<IssueCreatePrefill | null>(null);
+  const aiFeature = useAiFeature('environment_ai_insights');
+  const envAiMutation = useEnvAiInsights(plan.id);
+
+  // Pre-load cache on mount (if already stored)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('test_plans')
+        .select('ai_env_insights_cache')
+        .eq('id', plan.id)
+        .maybeSingle();
+      if (cancelled) return;
+      const cache = (data?.ai_env_insights_cache as any) || null;
+      if (cache && cache.generated_at) {
+        // Render cached payload (credits_remaining will be recomputed next time)
+        setAiInsight({
+          headline: cache.headline ?? null,
+          critical_env: cache.critical_env ?? null,
+          critical_reason: cache.critical_reason ?? null,
+          coverage_gap_tc: cache.coverage_gap_tc ?? null,
+          coverage_gap_reason: cache.coverage_gap_reason ?? null,
+          recommendations: Array.isArray(cache.recommendations) ? cache.recommendations : [],
+          confidence: typeof cache.confidence === 'number' ? cache.confidence : 0,
+          generated_at: cache.generated_at,
+          too_little_data: false,
+          meta: {
+            from_cache: true,
+            credits_used: 0,
+            credits_remaining: 0,
+            monthly_limit: 0,
+            tokens_used: 0,
+            latency_ms: 0,
+            locale: cache.meta?.locale,
+          },
+        });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [plan.id]);
+
+  const handleRegenerate = useCallback((force: boolean) => {
+    setAiError(null);
+    envAiMutation.mutate({ force }, {
+      onSuccess: (data) => {
+        setAiInsight(data);
+        setAiError(null);
+        aiFeature.refetch?.();
+      },
+      onError: (err: EnvAiInsightsError) => {
+        // race-lost: payload preserved — still render
+        const payload = err as unknown as Partial<EnvAiInsightsResult>;
+        if (err.error === 'monthly_limit_reached' && payload.headline !== undefined) {
+          setAiInsight({
+            headline: payload.headline ?? null,
+            critical_env: payload.critical_env ?? null,
+            critical_reason: payload.critical_reason ?? null,
+            coverage_gap_tc: payload.coverage_gap_tc ?? null,
+            coverage_gap_reason: payload.coverage_gap_reason ?? null,
+            recommendations: payload.recommendations ?? [],
+            confidence: payload.confidence ?? 0,
+            generated_at: payload.generated_at ?? new Date().toISOString(),
+            meta: (payload.meta as any) ?? {
+              from_cache: false,
+              credits_used: 0,
+              credits_remaining: 0,
+              monthly_limit: 0,
+              tokens_used: 0,
+              latency_ms: 0,
+            },
+          });
+        }
+        setAiError(err.error);
+        switch (err.error) {
+          case 'ai_timeout':
+            showToast(t('environments:heatmap.ai.toast.aiTimeout'), 'error');
+            break;
+          case 'upstream_rate_limit':
+            showToast(t('environments:heatmap.ai.toast.aiRateLimited', { sec: err.retry_after_sec ?? 60 }), 'error');
+            break;
+          case 'monthly_limit_reached':
+            showToast(t('environments:heatmap.ai.toast.limitReached'), 'error');
+            break;
+          case 'ai_parse_failed':
+            showToast(t('environments:heatmap.ai.toast.aiParseFailed'), 'error');
+            break;
+          case 'network':
+            showToast(t('environments:heatmap.ai.toast.networkError'), 'error');
+            break;
+          case 'tier_too_low':
+            showToast(t('environments:heatmap.ai.toast.tierTooLow'), 'info');
+            break;
+          default:
+            showToast(err.detail || t('environments:heatmap.ai.toast.internalError'), 'error');
+        }
+      },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [envAiMutation, showToast, t, aiFeature.refetch]);
+
+  const handleCreateIssue = useCallback((prefill: IssueCreatePrefill) => {
+    // Pre-fill with AI reasoning if available
+    if (aiInsight && !aiInsight.too_little_data) {
+      const headline = aiInsight.headline || prefill.title;
+      const reason = aiInsight.critical_reason || prefill.description;
+      const recs = aiInsight.recommendations && aiInsight.recommendations.length > 0
+        ? `\n\nRecommendations:\n- ${aiInsight.recommendations.join('\n- ')}`
+        : '';
+      const body = `${reason}${recs}\n\n—\nContext: Test Plan: ${plan.name}\nGenerated by Testably AI`;
+      setIssueModalPrefill({
+        title: headline,
+        description: body,
+        envName: prefill.envName,
+        tcTitle: prefill.tcTitle,
+        source: 'ai',
+      });
+    } else {
+      setIssueModalPrefill(prefill);
+    }
+  }, [aiInsight, plan.name]);
+
+  const handleHighlightEnv = useCallback((label: string) => {
+    setHighlightedEnv(prev => (prev === label ? null : label));
+  }, []);
+
+  const handleAssignRun = useCallback(() => {
+    const tcTitle = aiInsight?.coverage_gap_tc
+      || (matrix ? (() => {
+        // Find TC with most untested envs (fallback to rule-based)
+        return matrix.rows[0]?.tc.title ?? '';
+      })() : '')
+      || '—';
+    if (onRequestScrollToRuns) {
+      onRequestScrollToRuns(tcTitle);
+    } else {
+      const el = document.getElementById('plan-runs-section');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        showToast(t('projects:plan.env.ai.assignRunToast', { tc: tcTitle }), 'info');
+      } else {
+        showToast(t('projects:plan.env.ai.runsSectionNotFound'), 'error');
+      }
+    }
+  }, [aiInsight, matrix, onRequestScrollToRuns, showToast, t]);
 
   // Mobile viewport detection (Design Spec §2-5): <768px → 400px cap.
   const [isMobileViewport, setIsMobileViewport] = useState(() =>
@@ -1639,6 +1803,25 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
     padding: isMobileViewport ? '16px 12px' : '16px 24px',
   };
 
+  // Resolve AI trigger button props for EnvironmentAIInsights (shared across branches)
+  const aiProps = {
+    aiInsight,
+    isGenerating: envAiMutation.isPending,
+    onRegenerate: handleRegenerate,
+    canUseAi: aiFeature.available,
+    tierOk: aiFeature.tierOk,
+    creditCost: aiFeature.creditCost,
+    remainingCredits: aiFeature.loading ? null : aiFeature.remainingCredits,
+    monthlyLimit: aiFeature.monthlyLimit,
+    requiresTierName: aiFeature.requiresTierName,
+    currentPlanName: AI_TIER_NAMES[aiFeature.currentTier] ?? undefined,
+    aiError,
+    onHighlightEnv: handleHighlightEnv,
+    onCreateIssue: handleCreateIssue,
+    onAssignRun: handleAssignRun,
+    highlightedEnv,
+  } as const;
+
   if (loading) {
     return (
       <div style={wrapperStyle}>
@@ -1650,7 +1833,7 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
             ))}
           </div>
         </div>
-        <EnvironmentAIInsights matrix={null} />
+        <EnvironmentAIInsights matrix={null} {...aiProps} />
       </div>
     );
   }
@@ -1664,7 +1847,7 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
         }}>
           {t('heatmap.loadFailed')}
         </div>
-        <EnvironmentAIInsights matrix={null} />
+        <EnvironmentAIInsights matrix={null} {...aiProps} />
       </div>
     );
   }
@@ -1707,7 +1890,7 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
             </div>
           )}
         </div>
-        <EnvironmentAIInsights matrix={matrix} />
+        <EnvironmentAIInsights matrix={matrix} {...aiProps} />
       </div>
     );
   }
@@ -1715,11 +1898,18 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
   const groups = matrix.groups;
   const columns = matrix.columns;
 
+  // Per-column highlight resolver — AC-I3, I4, I7
+  const isHighlightedCol = (col: typeof columns[number]): boolean => {
+    if (!highlightedEnv) return false;
+    return col.env.name === highlightedEnv
+      || (col.env.browser_name ?? '') === highlightedEnv;
+  };
+
   return (
     <div style={wrapperStyle}>
       {/* Heatmap card */}
       <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 6 }}>
             <svg style={{ width: 14, height: 14, color: 'var(--primary)' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
@@ -1727,6 +1917,40 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
             </svg>
             {t('heatmap.title')}
           </div>
+          {highlightedEnv && (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '2px 10px',
+                background: '#EDE9FE',
+                border: '1px solid #C4B5FD',
+                color: '#5B21B6',
+                fontSize: 11,
+                fontWeight: 500,
+                borderRadius: 999,
+              }}
+            >
+              <span>{t('projects:plan.env.ai.filterActive', { env: highlightedEnv })}</span>
+              <button
+                type="button"
+                onClick={() => setHighlightedEnv(null)}
+                className="cursor-pointer"
+                style={{
+                  color: '#6D28D9',
+                  fontWeight: 600,
+                  textDecoration: 'underline',
+                  background: 'transparent',
+                  border: 'none',
+                  padding: 0,
+                  fontSize: 11,
+                }}
+              >
+                {t('projects:plan.env.ai.filterClear')}
+              </button>
+            </span>
+          )}
           <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>
             {plan.name} · {t('heatmap.tcsByEnvs', { tcs: matrix.rows.length, envs: columns.length })}
           </span>
@@ -1752,11 +1976,26 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
               </tr>
               <tr>
                 <th style={{ position: 'sticky', top: 38, left: 0, zIndex: 5, background: '#fff', padding: '8px 14px 10px 6px' }}></th>
-                {columns.map(col => (
-                  <th key={col.env.id} style={{ position: 'sticky', top: 38, zIndex: 3, background: '#fff', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', padding: '8px 4px 10px', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                    {col.browserLabel}
-                  </th>
-                ))}
+                {columns.map(col => {
+                  const hl = isHighlightedCol(col);
+                  const dim = !!highlightedEnv && !hl;
+                  return (
+                    <th
+                      key={col.env.id}
+                      style={{
+                        position: 'sticky', top: 38, zIndex: 3, background: '#fff',
+                        fontSize: 12, fontWeight: 600, color: 'var(--text-muted)',
+                        padding: '8px 4px 10px', textAlign: 'center', whiteSpace: 'nowrap',
+                        outline: hl ? '2px solid #7C3AED' : undefined,
+                        outlineOffset: hl ? '-2px' : undefined,
+                        opacity: dim ? 0.45 : 1,
+                        transition: 'opacity 200ms ease-in, outline 200ms ease-in',
+                      }}
+                    >
+                      {col.browserLabel}
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
@@ -1795,8 +2034,18 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
                       const isClickable = !isUntested && !isNA;
                       const envCol = columns[ci];
                       const envLabel = envCol ? `${envCol.env.os_name || ''}${envCol.env.os_version ? ' ' + envCol.env.os_version : ''} · ${envCol.browserLabel}`.trim() : '';
+                      const hl = envCol ? isHighlightedCol(envCol) : false;
+                      const dim = !!highlightedEnv && !hl;
                       return (
-                        <td key={ci}>
+                        <td
+                          key={ci}
+                          style={{
+                            outline: hl ? '2px solid #7C3AED' : undefined,
+                            outlineOffset: hl ? '-2px' : undefined,
+                            opacity: dim ? 0.45 : 1,
+                            transition: 'opacity 200ms ease-in, outline 200ms ease-in',
+                          }}
+                        >
                           <div
                             title={cell.tooltip}
                             onClick={isClickable && envCol ? () => setDrill({
@@ -1841,8 +2090,20 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
                   const hm = HEATMAP_COLORS[cell.status] ?? HEATMAP_COLORS.untested;
                   const isUntested = cell.executed === 0 && cell.status !== 'na';
                   const isNA = cell.status === 'na';
+                  const envCol = columns[ci];
+                  const hl = envCol ? isHighlightedCol(envCol) : false;
+                  const dim = !!highlightedEnv && !hl;
                   return (
-                    <td key={ci} style={{ paddingTop: 12 }}>
+                    <td
+                      key={ci}
+                      style={{
+                        paddingTop: 12,
+                        outline: hl ? '2px solid #7C3AED' : undefined,
+                        outlineOffset: hl ? '-2px' : undefined,
+                        opacity: dim ? 0.45 : 1,
+                        transition: 'opacity 200ms ease-in, outline 200ms ease-in',
+                      }}
+                    >
                       <div
                         title={cell.tooltip}
                         style={{
@@ -1880,7 +2141,7 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
         )}
       </div>
 
-      <EnvironmentAIInsights matrix={matrix} />
+      <EnvironmentAIInsights matrix={matrix} {...aiProps} />
 
       {/* Legend strip — full width (spans heatmap + sidebar). Pass rate 7 buckets + drill hint */}
       <div style={{ gridColumn: '1 / -1', background: '#fff', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 14, fontSize: 11, color: 'var(--text-muted)', flexWrap: 'wrap' }}>
@@ -1916,6 +2177,19 @@ function EnvironmentsTab({ plan, planTcs }: { plan: TestPlan; planTcs: PlanTestC
           selection={drill}
           entries={drillMap.get(`${drill.tcId}||${drill.envId}`) ?? []}
           onClose={() => setDrill(null)}
+        />
+      )}
+
+      {/* f002-a — inline Issue creation modal */}
+      {issueModalPrefill && (
+        <IssueCreateInlineModal
+          open={true}
+          onClose={() => setIssueModalPrefill(null)}
+          projectId={projectId}
+          defaultTitle={issueModalPrefill.title}
+          defaultBody={issueModalPrefill.description}
+          envName={issueModalPrefill.envName}
+          tcTitle={issueModalPrefill.tcTitle}
         />
       )}
     </div>
@@ -2480,7 +2754,7 @@ export default function PlanDetailPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
-  const { t, i18n } = useTranslation(['milestones', 'common']);
+  const { t, i18n } = useTranslation(['milestones', 'common', 'projects']);
 
   // Status / Priority / Tabs config — labels rebuilt on language change (AC-9/10).
   const STATUS_CONFIG = useMemo(() => ({
@@ -3279,13 +3553,15 @@ export default function PlanDetailPage() {
           />
         )}
         {activeTab === 'runs' && (
-          <RunsTab
-            runs={runs} projectId={projectId!} planId={planId!} planTcCount={totalTCs}
-            milestone={milestone} parentMilestone={parentMilestone} profiles={profiles} plan={plan}
-            driftCount={driftCount} onLock={handleLock} onUnlock={handleUnlockRequest} onRebase={handleRebase}
-            planTcs={planTcs} tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts}
-            currentUserProfile={currentUserProfile}
-          />
+          <div id="plan-runs-section">
+            <RunsTab
+              runs={runs} projectId={projectId!} planId={planId!} planTcCount={totalTCs}
+              milestone={milestone} parentMilestone={parentMilestone} profiles={profiles} plan={plan}
+              driftCount={driftCount} onLock={handleLock} onUnlock={handleUnlockRequest} onRebase={handleRebase}
+              planTcs={planTcs} tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts}
+              currentUserProfile={currentUserProfile}
+            />
+          </div>
         )}
         {activeTab === 'activity' && (
           <ActivityTab logs={activityLogs} profiles={profiles} plan={plan} milestone={milestone} parentMilestone={parentMilestone}
@@ -3298,7 +3574,25 @@ export default function PlanDetailPage() {
             tcResultMap={tcResultMap} dailyExecCounts={dailyExecCounts} currentUserProfile={currentUserProfile} onIssuesCount={setIssuesCount} />
         )}
         {activeTab === 'environments' && (
-          <EnvironmentsTab plan={plan} planTcs={planTcs} />
+          <EnvironmentsTab
+            plan={plan}
+            planTcs={planTcs}
+            onRequestScrollToRuns={(tcTitle: string) => {
+              // Switch to runs tab first, then scroll + toast (next frame)
+              setActiveTab('runs');
+              requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                  const el = document.getElementById('plan-runs-section');
+                  if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    showToast(t('projects:plan.env.ai.assignRunToast', { tc: tcTitle }), 'info');
+                  } else {
+                    showToast(t('projects:plan.env.ai.runsSectionNotFound'), 'error');
+                  }
+                });
+              });
+            }}
+          />
         )}
         {activeTab === 'settings' && (
           <SettingsTab plan={plan} milestones={milestones} profiles={profiles} memberProfiles={memberProfiles} onUpdate={handleUpdate} onDelete={()=>setShowDeleteConfirm(true)} onArchive={()=>setShowArchiveConfirm(true)} onUnarchive={()=>setShowUnarchiveConfirm(true)} onDuplicate={()=>setShowDuplicateConfirm(true)} entryPresets={entryPresets} exitPresets={exitPresets} onSavePreset={handleSavePreset} />
