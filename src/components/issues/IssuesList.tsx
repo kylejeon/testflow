@@ -230,7 +230,23 @@ export default function IssuesList({ runIds, onCountChange, allowRefresh = true 
       ]);
       const jiraOk = jiraRes.status === 'fulfilled' && !(jiraRes.value?.error);
       const ghOk = ghRes.status === 'fulfilled' && !(ghRes.value?.error);
-      if (!jiraOk && !ghOk) {
+
+      // f012 — Plan-aware rate limit 감지: 두 sync 함수 중 하나라도 429 쿼터
+      // 에러를 반환하면 quota 토스트로 안내. 두 함수는 같은 owner bucket 을
+      // 공유하므로 하나만 429 여도 (나머지는 같은 응답 예상) 의미 있는 시그널.
+      const jiraErrMsg = jiraRes.status === 'fulfilled'
+        ? jiraRes.value?.error?.message ?? ''
+        : (jiraRes.reason instanceof Error ? jiraRes.reason.message : String(jiraRes.reason ?? ''));
+      const ghErrMsg = ghRes.status === 'fulfilled'
+        ? ghRes.value?.error?.message ?? ''
+        : (ghRes.reason instanceof Error ? ghRes.reason.message : String(ghRes.reason ?? ''));
+      const isQuotaExceeded =
+        jiraErrMsg.includes('issues_refresh_rate_limit')
+        || ghErrMsg.includes('issues_refresh_rate_limit');
+
+      if (isQuotaExceeded) {
+        showToast(t('issues.quotaExceeded'), 'warning');
+      } else if (!jiraOk && !ghOk) {
         showToast(t('issues.refreshFailed'), 'error');
       } else {
         const jiraSyncedCount = jiraOk ? (jiraRes as any).value?.data?.synced_count ?? 0 : 0;

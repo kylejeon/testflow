@@ -877,3 +877,69 @@
 3. B 연속 — f012 (Issues Refresh 권한+제한) 또는 f014 (GitHub 실명 매핑) 진행
 4. 5/10 T-1 런칭 QA 체크리스트 실행
 5. 5/11 Playwright 런칭
+
+---
+
+2026-04-24 (추가): f012 Issues Refresh 권한 + 플랜별 쿼터
+
+## 뭘 했냐 (claude 브랜치)
+
+### 클라이언트 Tester+ 가드
+- src/pages/plan-detail/page.tsx (IssuesTab): usePermission(plan.project_id)
+  → canRefreshIssues = can('create_testcase') (Tester+)
+  → IssuesList allowRefresh={true} 고정값을 canRefreshIssues 로 교체
+- src/pages/milestone-detail/page.tsx (MilestoneDetail):
+  동일 패턴 적용 (projectId 기반 usePermission)
+
+### 서버 플랜별 토큰 버킷 rate limit
+- supabase/functions/_shared/issues-refresh-limit.ts (신규)
+  - ISSUES_REFRESH_SCOPE = 'issues_refresh' (rate_limit RPC scope 키)
+  - getIssuesRefreshConfig(tier) → { capacity, refillRate }
+    • Free  (1): 1 / 12h (capacity 1, refill 1/43200)
+    • Hobby (2): 3 / 24h (capacity 3, refill 3/86400)
+    • Starter (3): 10 / 1h (capacity 10, refill 10/3600)
+    • Pro+ (4+): 60 / 1h (effectively unlimited UX)
+  - checkIssuesRefreshLimit(supabase, ownerId, tier) → 기존 checkRateLimit
+    래핑 (scope=issues_refresh, cfg=tier별)
+  - issuesRefreshRateLimitBody(result, tier) → 표준 429 body
+    { error: 'issues_refresh_rate_limit', retry_after_seconds, tokens_remaining, tier }
+- sync-jira-metadata/index.ts + sync-github-metadata/index.ts
+  - import { getEffectiveTier } + { checkIssuesRefreshLimit,
+    issuesRefreshRateLimitBody } 추가
+  - caller.kind === 'user' 분기 안에서 scope='run_ids'|'project_id' 일 때만
+    rate limit check (cron path 영향 없음)
+  - getEffectiveTier 로 owner/tier 해석 (AI usage 패턴과 동일)
+  - allowed=false 시 429 + 표준 body 즉시 반환
+
+### 클라이언트 429 처리
+- src/components/issues/IssuesList.tsx handleRefresh:
+  - jiraErrMsg / ghErrMsg 추출 (Promise.allSettled fulfilled/rejected 양쪽)
+  - 'issues_refresh_rate_limit' 서브스트링 감지 → quotaExceeded 토스트
+    (refreshFailed 일반 에러와 분리)
+  - i18n en/ko common:
+    • issues.quotaExceeded (신규 키)
+    • "현재 플랜의 이슈 새로고침 쿼터를 모두 사용했습니다. 6시간마다 자동
+      동기화는 계속 동작합니다 — 더 자주 수동 새로고침하려면 플랜 업그레이드가
+      필요합니다." (EN/KO 양쪽)
+
+## 어디까지 됐냐
+
+### 검증 (전부 PASS)
+- npx tsc --noEmit: 0 errors
+- npm run test -- --run: 255/255 passed (회귀 없음)
+- npm run scan:i18n:parity: en ↔ ko 0 diff
+
+### 수동 검증 필요 (배포 후)
+- Viewer 계정 → 플랜 Issues 탭 refresh 버튼 disabled 확인
+- Free 계정으로 2회 연속 클릭 → 2번째 429 + quotaExceeded 토스트
+- Hobby 계정으로 4회 연속 클릭 → 4번째 429
+- Starter+ 계정 → 시간당 10+회 허용 확인
+- pg_cron scope=all 경로는 rate limit 영향 없음 확인 (cron secret auth)
+
+## 다음엔 뭘 해야 해
+1. Edge Function 배포 (sync-jira-metadata + sync-github-metadata 동시)
+   - supabase functions deploy sync-jira-metadata
+   - supabase functions deploy sync-github-metadata
+2. CEO main 머지
+3. B 연속 — f014 (GitHub assignee 실명 매핑 교체) 진행
+4. 5/10 T-1 런칭 QA 체크리스트 실행

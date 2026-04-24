@@ -10,6 +10,7 @@ import { supabase } from '../../lib/supabase';
 import ProjectHeader from '../../components/ProjectHeader';
 import OverviewTab from './OverviewTab';
 import IssuesList from '../../components/issues/IssuesList';
+import { usePermission } from '../../hooks/usePermission';
 import RollupBadge from './RollupBadge';
 import { formatShortDate } from '../../lib/dateFormat';
 
@@ -647,6 +648,9 @@ export default function MilestoneDetail() {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const { t, i18n } = useTranslation(['milestones', 'common']);
+  // f012 — Refresh 는 Tester+ 만 실행. Viewer 는 읽기 전용.
+  const { can } = usePermission(projectId);
+  const canRefreshIssues = can('create_testcase');
 
   // ── UI state (user-interactive) ─────────────────────────────────────────────
   const [searchParams, setSearchParams] = useSearchParams();
@@ -1175,7 +1179,7 @@ export default function MilestoneDetail() {
           <IssuesList
             runIds={runs.map(r => r.id)}
             onCountChange={setLiveIssuesCount}
-            allowRefresh={true}
+            allowRefresh={canRefreshIssues}
           />
         )}
 

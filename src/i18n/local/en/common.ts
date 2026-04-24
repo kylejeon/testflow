@@ -293,6 +293,7 @@ export const common = {
     refreshFailed: 'Failed to refresh issues. Retry later.',
     syncedCount: 'Synced {{count}} issues',
     debounceWait: 'Please wait before refreshing again',
+    quotaExceeded: 'Issues refresh quota exceeded for your plan. Automatic sync still runs every 6h — or upgrade for more manual refreshes.',
     metaUnavailable: 'Metadata unavailable',
     metadataUnavailable: 'Metadata unavailable',
     loading: 'Loading issues…',

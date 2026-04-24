@@ -25,6 +25,7 @@ import { aiFetch } from '../../lib/aiFetch';
 import { showAiCreditToast } from '../../lib/aiCreditToast';
 import { useEnvAiInsights } from '../../hooks/useEnvAiInsights';
 import { useAiFeature, TIER_NAMES as AI_TIER_NAMES } from '../../hooks/useAiFeature';
+import { usePermission } from '../../hooks/usePermission';
 import type { EnvAiInsightsResult, EnvAiInsightsError, IssueCreatePrefill } from '../../types/envAiInsights';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -1491,10 +1492,13 @@ function IssuesTab({ runs, plan, planTcs, milestone, parentMilestone, profiles, 
   onIssuesCount?: (count: number) => void;
 }) {
   const runIds = runs.map(r => r.id);
+  // f012 — Refresh 는 Tester+ 만 실행. Viewer 는 읽기 전용.
+  const { can } = usePermission(plan.project_id);
+  const canRefreshIssues = can('create_testcase');
   return (
     <div className="plan-layout">
       <div>
-        <IssuesList runIds={runIds} onCountChange={onIssuesCount} allowRefresh={true} />
+        <IssuesList runIds={runIds} onCountChange={onIssuesCount} allowRefresh={canRefreshIssues} />
       </div>
       <PlanSidebar plan={plan} milestone={milestone} parentMilestone={parentMilestone} profiles={profiles}
         driftCount={driftCount} onLock={onLock} onUnlock={onUnlock} onRebase={onRebase} planTcs={planTcs}

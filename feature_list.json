@@ -146,8 +146,8 @@
       "effort": "small",
       "source": "qa-report-milestone-overview-redesign | progress.txt",
       "dependencies": [],
-      "status": "backlog",
-      "notes": "AC-A6 follow-up, dev-spec §4-4"
+      "status": "done",
+      "notes": "구현 완료 2026-04-24. 클라이언트: usePermission('create_testcase') 가드 + plan/milestone-detail 양쪽 연결. 서버: _shared/issues-refresh-limit.ts + getEffectiveTier 기반 token-bucket (Free 1/12h, Hobby 3/day, Starter 10/h, Pro+ 60/h). 429 응답 시 IssuesList 에서 quotaExceeded 토스트."
     },
     {
       "id": "f013",

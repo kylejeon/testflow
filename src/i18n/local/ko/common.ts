@@ -292,6 +292,7 @@ export const common = {
     refreshFailed: '이슈 새로고침에 실패했습니다. 잠시 후 다시 시도해 주세요.',
     syncedCount: '이슈 {{count}}건 동기화됨',
     debounceWait: '잠시 후 다시 새로고침해 주세요',
+    quotaExceeded: '현재 플랜의 이슈 새로고침 쿼터를 모두 사용했습니다. 6시간마다 자동 동기화는 계속 동작합니다 — 더 자주 수동 새로고침하려면 플랜 업그레이드가 필요합니다.',
     metaUnavailable: '메타데이터 없음',
     metadataUnavailable: '메타데이터 없음',
     loading: '이슈 불러오는 중…',

@@ -20,6 +20,11 @@ import {
   AuthError,
   SYNC_ALLOWED_ROLES,
 } from '../_shared/auth.ts';
+import { getEffectiveTier } from '../_shared/ai-usage.ts';
+import {
+  checkIssuesRefreshLimit,
+  issuesRefreshRateLimitBody,
+} from '../_shared/issues-refresh-limit.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -73,6 +78,15 @@ serve(async (req) => {
       }
       if (scope === 'project_id' && body.project_id && !authorizedProjectIds.includes(body.project_id)) {
         return jsonResp({ success: false, error: 'Forbidden — project not accessible' }, 403);
+      }
+
+      // f012 — Plan-aware rate limit for manual refresh (scope=run_ids | project_id).
+      if (scope === 'run_ids' || scope === 'project_id') {
+        const { tier, ownerId } = await getEffectiveTier(admin, caller.userId);
+        const rate = await checkIssuesRefreshLimit(admin, ownerId, tier);
+        if (!rate.allowed) {
+          return jsonResp(issuesRefreshRateLimitBody(rate, tier), 429);
+        }
       }
     }
 
