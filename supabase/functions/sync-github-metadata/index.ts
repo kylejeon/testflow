@@ -25,6 +25,10 @@ import {
   checkIssuesRefreshLimit,
   issuesRefreshRateLimitBody,
 } from '../_shared/issues-refresh-limit.ts';
+import {
+  createGitHubUserNameCache,
+  resolveAssigneeDisplayName,
+} from '../_shared/github-user.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -172,6 +176,10 @@ serve(async (req) => {
         continue;
       }
 
+      // f014 — 실명(User.name) 조회 결과를 이 project 의 sync 전체에서 재사용.
+      // 여러 row 가 같은 assignee login 을 가리키는 케이스가 흔함.
+      const nameCache = createGitHubUserNameCache();
+
       for (const row of projRows) {
         const gi: any[] = Array.isArray(row.github_issues) ? row.github_issues : [];
         if (gi.length === 0) continue;
@@ -239,12 +247,20 @@ serve(async (req) => {
           }
 
           const { error: _omitErr, ...rest } = item as any;
+          // f014 — login (username) 대신 GitHub User.name (실명) 우선 사용.
+          // nameCache 로 같은 project 안 동일 login 반복 조회 방지. 실명 null 이면
+          // login fallback (미설정 유저 대응).
+          const assigneeDisplayName = await resolveAssigneeDisplayName(
+            assignee?.login ?? null,
+            settings.token,
+            nameCache,
+          );
           merged.push({
             ...rest,
             state: data.state || null,
             priority,
             assignee_login: assignee?.login || null,
-            assignee_display_name: assignee?.login || null,
+            assignee_display_name: assigneeDisplayName,
             assignee_avatar_url: assignee?.avatar_url || null,
             url: data.html_url || item.url || null,
             last_synced_at: nowIso,

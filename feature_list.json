@@ -172,8 +172,8 @@
       "effort": "small",
       "source": "qa-report-milestone-overview-redesign | progress.txt",
       "dependencies": [],
-      "status": "backlog",
-      "notes": "H-3, 개인정보 오표시 가능"
+      "status": "done",
+      "notes": "구현 완료 2026-04-24. _shared/github-user.ts 에 name 조회 + 캐시 helper. sync-github-metadata / create-github-issue 양쪽 적용. 기존 행 자동 마이그레이션: 6h cron 이 자연스럽게 갱신 (또는 사용자가 Tester+ 권한으로 수동 Refresh — f012 rate limit 적용). 별도 백필 SQL 불필요."
     },
     {
       "id": "f015",

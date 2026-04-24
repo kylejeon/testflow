@@ -16,6 +16,10 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import {
+  createGitHubUserNameCache,
+  resolveAssigneeDisplayName,
+} from '../_shared/github-user.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -146,6 +150,12 @@ Deno.serve(async (req) => {
         }
       }
       const assigneeObj = Array.isArray(data.assignees) && data.assignees.length > 0 ? data.assignees[0] : null;
+      // f014 — 실명(User.name) 우선, 없으면 login fallback.
+      const assigneeDisplayName = await resolveAssigneeDisplayName(
+        assigneeObj?.login ?? null,
+        ghToken,
+        createGitHubUserNameCache(),
+      );
       const metadata = {
         number: data.number,
         url: data.html_url,
@@ -153,7 +163,7 @@ Deno.serve(async (req) => {
         state: data.state || null,
         priority,
         assignee_login: assigneeObj?.login || null,
-        assignee_display_name: assigneeObj?.login || null,
+        assignee_display_name: assigneeDisplayName,
         assignee_avatar_url: assigneeObj?.avatar_url || null,
         last_synced_at: new Date().toISOString(),
       };
