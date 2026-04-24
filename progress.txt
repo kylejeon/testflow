@@ -1078,3 +1078,41 @@
 - 2026-05-11 Playwright PH 런칭 직전 체크리스트 (launch-plan-may11.md 참고)
 - 2026-05-13 Cypress sub-launch 전 Reply Thread 실제 게시
 - 향후 Jest reporter 공식 지원 시 위 9개 지점 역방향 업데이트 필요 ("Jest coming soon" → stable)
+
+---
+
+# 세션 2026-04-24 (후반) — 홈 히어로 이미지 제작
+
+## 요청
+"홈페이지 히어로 영역에 쓸 화면을 designer가 가장 적절한 이미지를 생성해줘.
+ 우리 제품에서 메인 화면이면서 매력적인 화면을 이미지로 만들어야해."
+
+## 수행
+1. @designer 에이전트 호출 → `docs/specs/design-spec-home-hero-image.md` 작성
+   - 선택 화면: Plan Detail / Environments 탭 (Coverage Matrix + AI Environment Insights)
+   - 플로팅 오버레이: AI Run Summary (6° 기울기, 인디고 글로우)
+   - 가상 데이터: Acme Checkout v2 / Sprint 42 Regression / 162 TCs × 6 envs
+   - Critical 셀 1개: CHK-005 Apple Pay × iOS Safari (시선 앵커)
+
+2. 이미지 생성 툴 부재 → SVG 벡터로 픽셀 단위 구현
+   - `public/hero-screenshot.svg` (35 KB, 기존 PNG 244 KB 대비 -86%)
+   - 명세 §2~§4 완전 반영 (히트맵 색상, 배지, 레이아웃, 수치)
+   - 벡터이므로 모든 DPI에서 선명
+
+3. `src/pages/home/page.tsx` L1217 `<img>` → `<picture>` 전환
+   - SVG 우선, PNG 폴백 (기존 .png는 호환성 차원에서 유지)
+   - alt 텍스트 새 내용으로 업데이트 + width/height + fetchPriority=high
+
+## 검증 결과
+- 내 변경 파일 타입 에러 0 (다른 파일의 사전 에러는 무관)
+- SVG XML 파싱 OK (python xml.etree 통과)
+- 커밋: 128ac84 — claude 브랜치 push 완료
+
+## 다음엔 뭘 해야 하나
+- CEO 시각 검토 필요 (dev 서버 띄워 /에서 새 히어로 확인)
+  → 만족 시 main 병합
+  → 피드백 있으면 SVG 재조정 (Edit 한 번이면 됨 — 벡터라 쉬움)
+- 실제 프로덕트 스크린샷으로 업그레이드 희망 시: 명세 §6 촬영 체크리스트 따라
+  로컬 시드 데이터 구성 → DevTools 풀페이지 캡처 → Figma 합성 → PNG export
+  (현재 SVG는 고충실도 목업 / 실제 UI와 동일한 정보와 컬러 토큰 사용)
+- 선택: og:image 1200×630 변형도 SVG 기반으로 제작 가능 (명세 §7)
