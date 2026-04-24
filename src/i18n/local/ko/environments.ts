@@ -119,7 +119,8 @@ export const environments = {
     drillHint: '셀 클릭 → TC × 환경 run 상세 보기',
     ai: {
       sectionTitle: 'Coverage Insights',
-      patternCount: '패턴 {{count}}개',
+      patternCount_one: '패턴 {{count}}개',
+      patternCount_other: '패턴 {{count}}개',
       critical: {
         tag: '심각 · 환경',
         envLowTitle: '{{env}} 환경 저성능',

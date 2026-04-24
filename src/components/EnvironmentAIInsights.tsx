@@ -825,58 +825,71 @@ export default function EnvironmentAIInsights({
       }}
       aria-busy={isGenerating || undefined}
     >
-      {/* Head */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          fontSize: 11,
-          fontWeight: 700,
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          color: '#7C3AED',
-        }}
-      >
-        <i className="ri-magic-line" aria-hidden="true" style={{ fontSize: 14 }} />
-        <span>{t('heatmap.ai.sectionTitle')}</span>
-        <span
+      {/* Head — title row + badge row (2-line layout for narrow sidebars) */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {/* Title row */}
+        <div
           style={{
-            marginLeft: 'auto',
-            fontSize: 9.5,
-            fontWeight: 500,
-            background: '#fff',
-            border: '1px solid #DDD6FE',
-            padding: '2px 6px',
-            borderRadius: 3,
-            textTransform: 'none',
-            letterSpacing: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            fontSize: 11,
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
             color: '#7C3AED',
           }}
         >
-          {t('heatmap.ai.patternCount', { count: derived.patternCount })}
-        </span>
-        {aiFromCache && aiValid && !isGenerating && (
+          <i className="ri-magic-line" aria-hidden="true" style={{ fontSize: 14 }} />
+          <span>{t('heatmap.ai.sectionTitle')}</span>
+        </div>
+
+        {/* Badge row — wraps as a group, badges themselves stay on one line */}
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: 6,
+          }}
+        >
           <span
             style={{
-              fontSize: 9.5,
+              fontSize: 10,
               fontWeight: 500,
               background: '#fff',
               border: '1px solid #DDD6FE',
-              padding: '2px 6px',
+              padding: '2px 8px',
               borderRadius: 999,
               color: '#7C3AED',
-              textTransform: 'none',
-              letterSpacing: 0,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 3,
+              whiteSpace: 'nowrap',
+              lineHeight: 1.4,
             }}
           >
-            <i className="ri-time-line" aria-hidden="true" style={{ fontSize: 10 }} />
-            {t('heatmap.ai.cacheBadge')}
+            {t('heatmap.ai.patternCount', { count: derived.patternCount })}
           </span>
-        )}
+          {aiFromCache && aiValid && !isGenerating && (
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 500,
+                background: '#fff',
+                border: '1px solid #DDD6FE',
+                padding: '2px 8px',
+                borderRadius: 999,
+                color: '#7C3AED',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                whiteSpace: 'nowrap',
+                lineHeight: 1.4,
+              }}
+            >
+              <i className="ri-time-line" aria-hidden="true" style={{ fontSize: 10 }} />
+              {t('heatmap.ai.cacheBadge')}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* AI Trigger row */}

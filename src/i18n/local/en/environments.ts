@@ -119,7 +119,8 @@ export const environments = {
     drillHint: 'click a cell → drill into TC × env runs',
     ai: {
       sectionTitle: 'Coverage Insights',
-      patternCount: '{{count}} patterns',
+      patternCount_one: '{{count}} pattern',
+      patternCount_other: '{{count}} patterns',
       critical: {
         tag: 'Critical · env',
         envLowTitle: '{{env}} underperforming',
