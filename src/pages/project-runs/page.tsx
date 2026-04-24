@@ -190,8 +190,8 @@ export default function ProjectRunsPage() {
       const planId = searchParams.get('plan_id');
       const milestoneId = searchParams.get('milestone_id');
       // f002 — Coverage-gap TC passed from plan-detail's "Assign run" chip.
-      // Used to render a highlight banner inside the Add Run modal so the user
-      // sees which TC the assign action was meant to cover.
+      // Used to render a highlight banner + narrow the TC selection to just
+      // the gap TC (close-the-gap focused run; adjust on step 2 if needed).
       const prefillTc = searchParams.get('prefill_tc');
       setFormData(prev => ({
         ...prev,
@@ -199,8 +199,16 @@ export default function ProjectRunsPage() {
         ...(milestoneId ? { milestone_id: milestoneId } : {}),
       } as any));
 
-      // When coming from a test plan, pre-select that plan's test cases and skip step 2
-      if (planId) {
+      if (prefillTc) {
+        // Coverage-gap path: select ONLY the gap TC (1 TC).
+        // Intentionally skip setFromPlanId + skip bulk plan-TC fetch so:
+        //   (a) step 2 is accessible (user can add more TCs),
+        //   (b) the run is focused on closing the gap by default.
+        setSelectedTestCases([prefillTc]);
+        setFormData(prev => ({ ...prev, include_all_cases: false } as any));
+        setCoverageGapTcId(prefillTc);
+      } else if (planId) {
+        // Legacy plan-driven path: pre-select ALL of the plan's TCs and skip step 2.
         setFromPlanId(planId);
         supabase
           .from('test_plan_test_cases')
@@ -213,8 +221,6 @@ export default function ProjectRunsPage() {
             }
           });
       }
-
-      if (prefillTc) setCoverageGapTcId(prefillTc);
 
       setRunAssignees([]);
       setEditingRunId(null);
@@ -2546,9 +2552,9 @@ export default function ProjectRunsPage() {
                           <i className="ri-focus-3-line text-violet-600 text-base" />
                         </div>
                         <div className="text-[0.8125rem] leading-relaxed text-violet-900">
-                          <div className="font-semibold mb-0.5">Addressing coverage gap</div>
+                          <div className="font-semibold mb-0.5">Closing coverage gap · 1 TC pre-selected</div>
                           <div className="text-violet-700">
-                            This run will include the highlighted test case along with the rest of the plan.
+                            Focused run targeting the gap TC. Need full regression? Add more on <b>Select Cases</b>.
                           </div>
                           <div className="inline-flex items-center gap-1.5 mt-1.5 px-2 py-0.5 rounded-md bg-white border border-violet-200 text-[0.75rem] font-medium text-violet-700">
                             <i className="ri-flashlight-line" />
