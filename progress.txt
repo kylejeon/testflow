@@ -805,3 +805,75 @@
 4. CI 환경에 Claude stub 구축 후 AC-L1-{a,h,i,j,k,l} 실행 (real-path 검증)
 5. P2-01 Toast duration 시그니처 확장은 별도 이슈로 백로그
 
+
+---
+
+2026-04-24 (추가): SDK 1.0.1 publish 성공 + 스모크 + f007 보안 강화
+
+## 뭘 했냐 (claude 브랜치)
+
+### SDK 1.0.1 publish 파이프라인
+- sdk-core-v1.0.1 태그 푸시 → workflow 첫 실행 EOTP 실패 (npm 2FA)
+  → CEO NPM Automation token 재발급 + GitHub Secret 업데이트
+  → "Re-run failed jobs" 로 성공
+- sdk-playwright-v1.0.1 태그 푸시 → DTS build 실패
+  (Cannot find module '@testably.kr/reporter-core' + cascading TS errors)
+  → publish-sdk.yml 에 "Build dependency (reporter-core)" 스텝 추가 (0c156f9)
+  → workflow_dispatch on claude branch 로 재실행 → 성공
+- npm dist-tags 확인:
+  - @testably.kr/reporter-core: latest 1.0.1
+  - @testably.kr/playwright-reporter: latest 1.0.1
+  - @testably.kr/cypress-reporter: latest 1.0.0 (대기, 5/13 런칭)
+
+### A — 스모크 테스트 (로컬)
+- /tmp/testably-smoke 에 빈 프로젝트 생성
+- npm install --save-dev @testably.kr/playwright-reporter @playwright/test
+  → 1.0.1 + core 1.0.1 peer 자동 설치 확인
+- tsc --noEmit: 0 errors (TestablyConfig 상속 필드 resolve OK)
+- tag 기반 TC ID 추출 확인: "1 mapped, 1 skipped"
+- dryRun + dummy URL → "Upload failed: fetch failed" + exit 0
+  (failOnUploadError=false 기본값 검증)
+- 발견한 cosmetic 이슈 1건 (런칭 차단 아님):
+  dryRun 모드에서 fetch 실패 시 "Upload failed:" prefix (원래 "Dry run failed:"
+  이 정확). 런칭 후 polish 처리 예정.
+
+### B — f007 Environment Deactivate Admin+ (보안)
+- supabase/migrations/20260424_f007_environments_deactivate_admin_only.sql
+  - 배경: 기존 RLS UPDATE 는 Tester+ 허용 → Tester 가 supabase-js
+    직접 호출로 is_active=false 우회 가능 (클라이언트 가드만 존재)
+  - 수정: BEFORE UPDATE 트리거 신규
+    - WHEN (NEW.is_active IS DISTINCT FROM OLD.is_active)
+    - SECURITY DEFINER, SET search_path=public
+    - auth.uid() + project_members/organization_members 조회 → 역할 판정
+    - Admin+ 아니면 RAISE EXCEPTION ERRCODE 42501 (insufficient_privilege)
+    - v_role 결정 로직은 기존 RLS 와 동일 (role_override > org role > viewer)
+  - 일반 필드 (name / os_name / browser_name / 설명 등) 업데이트는 불변
+    (WHEN 조건에서 trigger 자체 skip)
+  - Rollback SQL 주석 + NOTIFY pgrst 마무리
+- supabase/tests/f007_env_deactivate_admin.test.sql (pgTAP, 4 케이스)
+  1. Admin 이 is_active=false → lives_ok
+  2. Tester 가 name 변경 → lives_ok (일반 필드 영향 없음 확인)
+  3. Tester 가 is_active=false → throws 42501
+  4. Tester 가 is_active+name 동시 변경 → throws 42501 (bundle 우회 차단)
+  - BEGIN/ROLLBACK 으로 DB 상태 변경 없음
+- 클라이언트 가드 (canDeactivate=Admin+) 는 변경 없음 — 유저 경험 일관 + 심층 방어
+
+## 어디까지 됐냐
+
+### publish 상태
+- reporter-core 1.0.1 stable LIVE (npm latest)
+- playwright-reporter 1.0.1 stable LIVE (npm latest) — 5/11 PH 런칭 대기
+- cypress-reporter 1.0.1 workflow 검증 완료 — 5/13 sub-launch 태그 푸시 예정
+
+### 수동 검증 필요 항목
+- **CEO 수동 SQL**: Supabase Dashboard SQL Editor 에서
+  20260424_f007_environments_deactivate_admin_only.sql 실행
+- Tester 계정으로 Environments 탭 접근 → 토글 클릭 시 500/42501 에러 확인
+  (UI 가드가 기본 막아야 하므로 정상 경로에선 안 보여야 함)
+
+## 다음엔 뭘 해야 해
+1. CEO 가 main 머지 — claude 브랜치의 f007 + workflow fix 반영
+2. f007 마이그레이션 Dashboard 수동 적용
+3. B 연속 — f012 (Issues Refresh 권한+제한) 또는 f014 (GitHub 실명 매핑) 진행
+4. 5/10 T-1 런칭 QA 체크리스트 실행
+5. 5/11 Playwright 런칭

@@ -95,8 +95,8 @@
       "effort": "small",
       "source": "qa-report-environment-workflow | progress.txt",
       "dependencies": [],
-      "status": "backlog",
-      "notes": "M-1 수정 시 클라이언트 가드만 적용됨. DB 우회 방지 후속."
+      "status": "done",
+      "notes": "구현 완료 2026-04-24. BEFORE UPDATE 트리거 (WHEN is_active 변경) + SECURITY DEFINER + 42501 예외. pgTAP 4 케이스. 마이그레이션: 20260424_f007_environments_deactivate_admin_only.sql (CEO 수동 적용 필요)."
     },
     {
       "id": "f008",
