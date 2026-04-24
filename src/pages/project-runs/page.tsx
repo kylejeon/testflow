@@ -154,6 +154,9 @@ export default function ProjectRunsPage() {
   // ─── Add Run 2-step wizard ──────────────────────────────────────
   const [addRunStep, setAddRunStep] = useState<1 | 2>(1);
   const [fromPlanId, setFromPlanId] = useState<string | null>(null);
+  // f002 — Coverage-gap TC id highlighted from plan-detail "Assign run" chip.
+  // Resolved title is computed on-demand in the modal render.
+  const [coverageGapTcId, setCoverageGapTcId] = useState<string | null>(null);
   const [runAssignees, setRunAssignees] = useState<string[]>([]);
   const [includeDraftTCs, setIncludeDraftTCs] = useState(false);
   const [showDraftWarningDismissed, setShowDraftWarningDismissed] = useState(false);
@@ -186,6 +189,10 @@ export default function ProjectRunsPage() {
     if (searchParams.get('action') === 'create') {
       const planId = searchParams.get('plan_id');
       const milestoneId = searchParams.get('milestone_id');
+      // f002 — Coverage-gap TC passed from plan-detail's "Assign run" chip.
+      // Used to render a highlight banner inside the Add Run modal so the user
+      // sees which TC the assign action was meant to cover.
+      const prefillTc = searchParams.get('prefill_tc');
       setFormData(prev => ({
         ...prev,
         ...(planId      ? { test_plan_id: planId }      : {}),
@@ -206,6 +213,8 @@ export default function ProjectRunsPage() {
             }
           });
       }
+
+      if (prefillTc) setCoverageGapTcId(prefillTc);
 
       setRunAssignees([]);
       setEditingRunId(null);
@@ -2471,7 +2480,13 @@ export default function ProjectRunsPage() {
           setSelectedCaseFolder('');
           setRunNameError('');
           setFromPlanId(null);
+          setCoverageGapTcId(null);
         };
+
+        // f002 — Resolve the coverage-gap TC title for banner rendering.
+        const coverageGapTc = coverageGapTcId
+          ? testCases.find((tc: TestCase) => tc.id === coverageGapTcId) ?? null
+          : null;
 
         return (
           <div className="fixed inset-0 bg-black/45 backdrop-blur-sm flex items-start justify-center z-50 py-[3vh] overflow-y-auto">
@@ -2524,6 +2539,25 @@ export default function ProjectRunsPage() {
               {addRunStep === 1 && (
                 <>
                   <div className="p-6 space-y-4 max-h-[65vh] overflow-y-auto">
+                    {/* f002 — Coverage-gap TC highlight banner (from plan-detail "Assign run") */}
+                    {coverageGapTc && (
+                      <div className="flex items-start gap-2.5 rounded-xl border border-violet-200 bg-violet-50 px-3.5 py-2.5">
+                        <div className="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
+                          <i className="ri-focus-3-line text-violet-600 text-base" />
+                        </div>
+                        <div className="text-[0.8125rem] leading-relaxed text-violet-900">
+                          <div className="font-semibold mb-0.5">Addressing coverage gap</div>
+                          <div className="text-violet-700">
+                            This run will include the highlighted test case along with the rest of the plan.
+                          </div>
+                          <div className="inline-flex items-center gap-1.5 mt-1.5 px-2 py-0.5 rounded-md bg-white border border-violet-200 text-[0.75rem] font-medium text-violet-700">
+                            <i className="ri-flashlight-line" />
+                            {coverageGapTc.title}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Name */}
                     <div>
                       <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">

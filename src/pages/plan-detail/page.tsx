@@ -1532,6 +1532,7 @@ function EnvironmentsTab({
 }) {
   const { t } = useTranslation(['environments', 'projects']);
   const { showToast } = useToast();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [matrix, setMatrix] = useState<HeatmapMatrix | null>(null);
@@ -1681,24 +1682,49 @@ function EnvironmentsTab({
   }, []);
 
   const handleAssignRun = useCallback(() => {
-    const tcTitle = aiInsight?.coverage_gap_tc
-      || (matrix ? (() => {
-        // Find TC with most untested envs (fallback to rule-based)
-        return matrix.rows[0]?.tc.title ?? '';
-      })() : '')
-      || '—';
+    // Resolve coverage-gap TC: prefer AI insight title, else highest-gap row from
+    // the matrix (first row is already sorted by untested ratio).
+    const gapTitle = aiInsight?.coverage_gap_tc
+      || (matrix?.rows[0]?.tc.title ?? '')
+      || '';
+    const gapTcId = matrix
+      ? (
+          matrix.rows.find(r => r.tc.title === gapTitle)?.tc.id
+          ?? matrix.rows[0]?.tc.id
+          ?? ''
+        )
+      : '';
+
+    // Primary path: navigate to /projects/{id}/runs with query params that
+    // (a) auto-open the Add Run modal (action=create), (b) pre-fill the Test Plan
+    // dropdown which pre-selects the plan's TCs (plan_id=...), (c) focus the
+    // specific coverage-gap TC so the user can visually confirm it's included
+    // (prefill_tc=...). Runs page reads these in its existing useEffect.
+    if (projectId) {
+      const params = new URLSearchParams();
+      params.set('action', 'create');
+      params.set('plan_id', plan.id);
+      if (gapTcId) params.set('prefill_tc', gapTcId);
+      if (gapTitle) {
+        showToast(t('projects:plan.env.ai.assignRunToast', { tc: gapTitle }), 'info');
+      }
+      navigate(`/projects/${projectId}/runs?${params.toString()}`);
+      return;
+    }
+
+    // Fallback (projectId missing — should not happen in practice):
     if (onRequestScrollToRuns) {
-      onRequestScrollToRuns(tcTitle);
+      onRequestScrollToRuns(gapTitle || '—');
     } else {
       const el = document.getElementById('plan-runs-section');
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        showToast(t('projects:plan.env.ai.assignRunToast', { tc: tcTitle }), 'info');
+        showToast(t('projects:plan.env.ai.assignRunToast', { tc: gapTitle || '—' }), 'info');
       } else {
         showToast(t('projects:plan.env.ai.runsSectionNotFound'), 'error');
       }
     }
-  }, [aiInsight, matrix, onRequestScrollToRuns, showToast, t]);
+  }, [aiInsight, matrix, plan.id, projectId, navigate, onRequestScrollToRuns, showToast, t]);
 
   // Mobile viewport detection (Design Spec §2-5): <768px → 400px cap.
   const [isMobileViewport, setIsMobileViewport] = useState(() =>
