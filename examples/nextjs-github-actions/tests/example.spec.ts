@@ -30,3 +30,13 @@ test('receipt renders after purchase', { tag: '@TC-104' }, async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('a')).toHaveCount(1);
 });
+
+/**
+ * This test has NO `@TC-…` tag — the reporter logs
+ * `1 skipped (no TC ID)` for it. Useful to demonstrate partial coverage
+ * when migrating a test suite to Testably gradually.
+ */
+test('non-mapped utility check', async ({ page }) => {
+  await page.goto('/');
+  await expect(page).toHaveURL(/example/i);
+});

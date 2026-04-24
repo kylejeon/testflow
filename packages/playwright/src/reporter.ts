@@ -89,7 +89,7 @@ class PlaywrightReporter implements Reporter {
         const tier = resp.tier != null ? `tier: ${resp.tier}` : 'tier: ?';
         console.log(`[Testably] Dry run passed. (Run: ${runName}, ${tier})`);
       } catch (err) {
-        this.handleUploadError(err);
+        this.handleUploadError(err, { contextLabel: 'Dry run' });
       }
       return;
     }
@@ -116,8 +116,15 @@ class PlaywrightReporter implements Reporter {
    * 업로드 실패 처리 — 기본은 CI 를 죽이지 않는다 (exit 0).
    * failOnUploadError=true 일 때만 throw.
    * 플랜 거부(403) 는 업그레이드 안내 메시지만 1회 출력.
+   *
+   * `contextLabel` — dry-run 에서 호출될 때 "Dry run" 으로 전달되어
+   * 최종 fetch-fail 로그 prefix 를 "Upload failed:" 대신 "Dry run failed:" 로
+   * 구분. default 'Upload' 는 기존 동작과 호환.
    */
-  private handleUploadError(err: unknown): void {
+  private handleUploadError(
+    err: unknown,
+    { contextLabel = 'Upload' }: { contextLabel?: string } = {},
+  ): void {
     if (err instanceof NonRetryableUploadError) {
       if (err.status === 403) {
         console.warn(
@@ -146,7 +153,7 @@ class PlaywrightReporter implements Reporter {
       return;
     }
 
-    const msg = `[Testably] Upload failed: ${(err as Error).message}`;
+    const msg = `[Testably] ${contextLabel} failed: ${(err as Error).message}`;
     if (this.options.failOnUploadError) {
       throw new Error(msg);
     }

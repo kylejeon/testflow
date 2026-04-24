@@ -26,21 +26,26 @@
 ## 1. Golden Path — Playwright SDK Integration (25 min)
 
 ### 1.1 Install + local dry-run
-- [ ] Fresh `npm install --save-dev @testably.kr/playwright-reporter` in a blank repo
+- [ ] Fresh `npm install --save-dev @testably.kr/playwright-reporter @playwright/test` in a blank repo
 - [ ] Verify installed version is **`1.0.1`** (not 1.0.0 and not 0.1.0-alpha.0)
-- [ ] Version ping: `npx playwright-reporter --version` OR inspect
-      `node_modules/@testably.kr/playwright-reporter/package.json` → `"version": "1.0.1"`
+- [ ] Version ping:
+      `cat node_modules/@testably.kr/playwright-reporter/package.json | grep '"version"'` → `"1.0.1"`
+      (there is no `bin`, so `npx playwright-reporter --version` is unsupported)
 - [ ] Copy `examples/nextjs-github-actions/playwright.config.ts` + `tests/` into repo
-- [ ] `TESTABLY_DRY_RUN=true npx playwright test` → exit 0 + prints
-      `Testably dry run successful` OR `401/404` (credentials-related, not a code bug)
+- [ ] `TESTABLY_DRY_RUN=true npx playwright test` →
+      - exit 0 (ignoring the intentionally-failing sample test)
+      - log `[Testably] Dry run passed. (Run: "...", tier: N)` **when** token+run_id point to a real workspace/run
+      - OR `[Testably] Run not found (404).` / `401 Invalid API token.` — credentials-related, not a code bug
+      - OR `[Testably] Dry run failed: fetch failed` — URL unreachable (rare)
 
 ### 1.2 End-to-end real upload
 - [ ] Create a fresh run in Testably (Owner account): **Runs → New Run → paste UUID**
 - [ ] Export real env vars: `TESTABLY_URL` / `TESTABLY_TOKEN` / `TESTABLY_RUN_ID`
-- [ ] `npx playwright test` with the 4 sample tests (3 should map, 1 unmapped)
-- [ ] Final log line reads `3 results uploaded to Testably (run: <uuid>)`
-- [ ] Open the run in Testably → 3 test cases show `passed / failed` status
-      matching the local run
+- [ ] `npx playwright test` with the 5 sample tests (4 tagged `@TC-101`~`@TC-104`,
+      1 intentionally unmapped to demonstrate partial-coverage migration)
+- [ ] Summary log reads `[Testably] 5 tests run, 4 mapped to Testably, 1 skipped (no TC ID)`
+- [ ] Open the run in Testably → 4 test cases show `passed / failed` status
+      matching the local run (TC-103 fails intentionally)
 - [ ] Failed test's `note` column contains the Playwright error message
       (timeout string, locator assertion, etc.)
 
@@ -163,13 +168,21 @@ Known acceptable quirks:
       (Status line reads "**1.0.1** — stable", not alpha)
 
 ### 5.2 GitHub repo
-- [ ] `main` branch tip = same SHA as the `sdk-playwright-v1.0.1` tag
+- [ ] `sdk-playwright-v1.0.1` tag exists and points to a commit that passed
+      the `publish-sdk.yml` workflow (tag SHA may predate current `main` HEAD
+      if a post-tag hotfix landed — verify via npm tarball integrity + Actions
+      log, not `main == tag`)
 - [ ] Repo root README features the "SDK Packages" section prominently
 - [ ] `examples/` directory contains all 3 example sub-dirs + top-level README
 - [ ] `CODEOWNERS` + `FUNDING.yml` present under `.github/`
 - [ ] Latest Actions run on `main` is green (CI + smoke tests)
 
 ### 5.3 Landing page + docs
+
+> **Note**: testably.app is a client-rendered SPA. `curl` returns the shell
+> HTML with no visible content — use a real browser to verify the rendered
+> copy/links below.
+
 - [ ] `testably.app/pricing` — Professional plan lists "Playwright CI reporter" under features
 - [ ] `testably.app/blog/playwright-reporter-stable` — blog post is live, correct date
 - [ ] All links in the blog → 200 (no broken npm/github/docs links)
@@ -180,8 +193,11 @@ Known acceptable quirks:
 
 - [ ] Product Hunt page draft has all 3 hero images attached (sizes correct)
 - [ ] Twitter thread scheduled in Typefully/Buffer with correct launch time
-- [ ] `.github/workflows/publish-sdk.yml` has not been modified since the
-      successful 1.0.1 publish (no pending changes that could break hotfix path)
+- [ ] `.github/workflows/publish-sdk.yml` changes since the successful 1.0.1
+      publish are **non-regressive** for the hotfix publish path — skim the
+      diff; any change must still run `npm ci → tsc → tests → build → publish`
+      with `--provenance` intact. (Net-positive fixes like the dependency
+      pre-build are fine.)
 
 ---
 
