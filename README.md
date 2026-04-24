@@ -24,8 +24,8 @@ automatically, no manual uploads.
 | Package | npm | Status |
 |---------|-----|--------|
 | [`@testably.kr/playwright-reporter`](./packages/playwright) | [npm](https://www.npmjs.com/package/@testably.kr/playwright-reporter) | **Stable (1.0.1)** |
+| [`@testably.kr/cypress-reporter`](./packages/cypress) | [npm](https://www.npmjs.com/package/@testably.kr/cypress-reporter) | **Stable (1.0.1)** |
 | [`@testably.kr/reporter-core`](./packages/core) | [npm](https://www.npmjs.com/package/@testably.kr/reporter-core) | Stable (1.0.1) — shared HTTP client |
-| `@testably.kr/cypress-reporter` | — | Planned |
 | `@testably.kr/jest-reporter` | — | Planned |
 
 ```bash

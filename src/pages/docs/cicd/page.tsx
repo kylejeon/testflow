@@ -549,6 +549,15 @@ export default function CICDPage() {
               Jest Reporter
             </h2>
 
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <div className="flex items-start gap-2">
+                <i className="ri-information-line text-amber-500 mt-0.5" />
+                <p className="text-sm text-amber-800">
+                  <strong>Jest reporter is in preview.</strong> The npm package (<code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-xs">@testably.kr/jest-reporter@1.0.0</code>) exists but is not officially supported yet. Playwright and Cypress are the recommended paths for now.
+                </p>
+              </div>
+            </div>
+
             <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
               <div className="flex items-start gap-2">
                 <i className="ri-information-line text-indigo-500 mt-0.5" />

@@ -106,4 +106,4 @@ Then follow the 5-minute quick start in the [npm README](https://www.npmjs.com/p
 
 **Requires:** Testably Professional plan or higher. [See pricing](https://testably.app/pricing).
 
-**Coming soon:** Cypress Reporter (`@testably.kr/cypress-reporter`) and Jest Reporter are in progress as part of the same SDK family.
+**Also available now:** Cypress Reporter (`@testably.kr/cypress-reporter`) 1.0.1 stable — same install flow, hooks into Cypress's `after:run` event. **Coming soon:** Jest Reporter.

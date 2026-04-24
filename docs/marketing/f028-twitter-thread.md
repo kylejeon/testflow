@@ -99,7 +99,7 @@ Full docs + troubleshooting: npmjs.com/package/@testably.kr/playwright-reporter
 
 Requires Testably Professional plan. Start free at testably.app
 
-Cypress and Jest reporters are coming next.
+Cypress reporter ships May 13. Jest coming after.
 
 ---
 
@@ -146,3 +146,42 @@ Happy to answer questions in the comments. If you're already using Testably and 
 ---
 
 #QA #TestAutomation #Playwright #CI #DevTools #SoftwareTesting #SaaS
+
+---
+
+## 2026-05-13 Cypress Sub-Launch — Reply Thread Draft
+
+> Posted as a reply to the 5/11 Playwright thread (Tweet 1) to keep conversation threaded.
+> Aligned with `launch-plan-may11.md` §9.
+
+**Tweet A — Announcement**
+
+Cypress reporter is now live on npm: `@testably.kr/cypress-reporter@1.0.1`
+
+Same family as the Playwright reporter we shipped 5/11 — one install, CI results auto-sync to Testably.
+
+---
+
+**Tweet B — How it works**
+
+5-min setup mirror of Playwright: tag specs with `[TC-101]` in `describe()` / `it()`, and the `after:run` event uploads results to Testably automatically.
+
+No custom scripts. No manual uploads.
+
+---
+
+**Tweet C — Install + CTA**
+
+Install:
+
+```
+npm install --save-dev @testably.kr/cypress-reporter
+```
+
+Full docs: npmjs.com/package/@testably.kr/cypress-reporter
+
+Requires Testably Professional plan. Jest reporter coming after.
+
+---
+
+**Hashtags:** `#Cypress` `#QA` `#TestAutomation` `#CI` `#DevTools` `#SoftwareTesting`

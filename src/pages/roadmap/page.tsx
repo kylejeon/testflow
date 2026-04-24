@@ -12,6 +12,14 @@ const columns = [
     dotColor: 'bg-indigo-500',
     items: [
       {
+        title: 'Test Automation SDK (Playwright + Cypress)',
+        date: 'Q2 2026',
+        desc: 'Native npm reporters for Playwright and Cypress. One install connects CI runs to Testably automatically.',
+        icon: 'ri-terminal-box-line',
+        iconBg: 'bg-indigo-50',
+        iconColor: 'text-indigo-600',
+      },
+      {
         title: 'Dashboard Analytics & Activity Feed',
         date: 'Q2 2026',
         desc: 'Real-time dashboard with 8 analytics widgets, activity feed, and AI insights.',
@@ -145,6 +153,14 @@ const columns = [
         iconBg: 'bg-amber-50',
         iconColor: 'text-amber-600',
       },
+      {
+        title: 'Jest Reporter',
+        date: 'TBD',
+        desc: 'Jest reporter coming after Playwright/Cypress stabilize.',
+        icon: 'ri-javascript-line',
+        iconBg: 'bg-amber-50',
+        iconColor: 'text-amber-600',
+      },
     ],
   },
   {
@@ -169,14 +185,6 @@ const columns = [
         date: 'TBD',
         desc: 'Full public API with webhook support for custom integrations.',
         icon: 'ri-code-line',
-        iconBg: 'bg-gray-100',
-        iconColor: 'text-gray-500',
-      },
-      {
-        title: 'Test Automation SDK',
-        date: 'TBD',
-        desc: 'Open-source SDK for Playwright, Cypress, Selenium.',
-        icon: 'ri-robot-line',
         iconBg: 'bg-gray-100',
         iconColor: 'text-gray-500',
       },

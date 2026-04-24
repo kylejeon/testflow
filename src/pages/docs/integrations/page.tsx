@@ -278,21 +278,29 @@ export default function IntegrationsPage() {
                 name: 'Playwright',
                 pkg: '@testably.kr/playwright-reporter',
                 desc: 'Auto-uploads results after playwright test completes.',
+                comingSoon: false,
               },
               {
                 icon: 'ri-test-tube-line',
                 name: 'Cypress',
                 pkg: '@testably.kr/cypress-reporter',
                 desc: 'Hooks into after:run to push results at the end of your Cypress suite.',
+                comingSoon: false,
               },
               {
                 icon: 'ri-javascript-line',
                 name: 'Jest',
                 pkg: '@testably.kr/jest-reporter',
                 desc: 'Implements onRunComplete to bulk upload Jest results.',
+                comingSoon: true,
               },
             ].map((sdk) => (
-              <div key={sdk.name} className="bg-gray-50 border border-gray-100 rounded-xl p-5">
+              <div key={sdk.name} className="bg-gray-50 border border-gray-100 rounded-xl p-5 relative">
+                {sdk.comingSoon && (
+                  <span className="absolute top-3 right-3 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-100 text-violet-700 border border-violet-200">
+                    Coming Soon
+                  </span>
+                )}
                 <div className="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center mb-3">
                   <i className={`${sdk.icon} text-indigo-600 text-lg`} />
                 </div>
@@ -314,8 +322,8 @@ npm install --save-dev @testably.kr/playwright-reporter
 # Cypress
 npm install --save-dev @testably.kr/cypress-reporter
 
-# Jest
-npm install --save-dev @testably.kr/jest-reporter`}</pre>
+# Jest (coming soon)
+# npm install --save-dev @testably.kr/jest-reporter`}</pre>
           </div>
 
           <Link

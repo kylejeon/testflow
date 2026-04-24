@@ -1019,3 +1019,62 @@
 2. Edge Function 배포 (sync-jira/github + create-github-issue)
 3. 5/10 T-1 런칭 QA
 4. B 연속 — f008 (Heatmap summary 실값 치환) 또는 Cypress 런칭 예열
+
+
+---
+
+2026-04-24: SDK 1.0.1 (reporter-core + playwright + cypress) stable LIVE 반영 — 사이트 콘텐츠 9건 + P2 2건 일괄 업데이트
+
+## 뭘 했냐 (claude 브랜치)
+
+### P0 (런칭 전 필수, 5건)
+1. src/pages/roadmap/page.tsx
+   - "Test Automation SDK (Playwright + Cypress)" 카드를 Completed / Q2 2026 컬럼으로 신규 추가
+   - Considering 컬럼의 기존 "Test Automation SDK" 카드 (Selenium 포함) 제거
+   - Planned 컬럼에 "Jest Reporter" 카드 신규 (TBD)
+2. src/pages/changelog/page.tsx
+   - April 2026 "Test Automation Framework SDK" entry 수정: bullets 에서 Jest 동급 표현 제거, description 재작성 ("Jest reporter coming soon.")
+   - 2026-05-11 Playwright Reporter 1.0.1 — Stable entry 신규 (version: 'SDK 1.0.1')
+   - 2026-05-13 Cypress Reporter 1.0.1 — Stable entry 신규
+3. docs/marketing/f028-blog-ship-results-3-lines.md
+   - "Cypress and Jest reporter support is coming soon..." → "Cypress reporter 1.0.1 is also available today. Jest reporter is coming soon."
+4. docs/marketing/f028-changelog.md
+   - "Coming soon: Cypress Reporter and Jest Reporter..." → "Also available now: Cypress Reporter 1.0.1 stable. Coming soon: Jest Reporter."
+5. README.md (5/13 플립 — 오늘 npm LIVE 이므로 바로 반영)
+   - SDK Packages 테이블 Cypress 행: Planned → Stable (1.0.1) + npm 링크
+
+### P1 (런칭 후 1주, 4건)
+6. src/pages/home/page.tsx
+   - EN (line 165): "Playwright, Cypress, and Jest" → "Playwright and Cypress... Jest coming soon"
+   - KO (line 585): 동일 의미로 EN 과 쌍 맞춰 수정
+7. src/pages/docs/integrations/page.tsx
+   - Jest 카드에 violet "Coming Soon" 배지 추가 (comingSoon prop)
+   - Quick Install 코드블록 Jest 행 주석 처리
+8. src/pages/docs/cicd/page.tsx
+   - Jest 탭 상단 amber info 배너 신규 ("Jest reporter is in preview. Not officially supported yet.")
+   - 기존 indigo 배너는 유지
+9. docs/marketing/f028-twitter-thread.md
+   - 5/11 Tweet 7: "Cypress and Jest reporters are coming next" → "Cypress reporter ships May 13. Jest coming after."
+   - 하단에 "2026-05-13 Cypress Sub-Launch — Reply Thread Draft" 섹션 신규 (Tweet A/B/C)
+
+### P2 (optional, 2건)
+10. src/pages/pricing/page.tsx
+    - Professional features + Comparison matrix: "Test Automation Framework SDK" → "Test Automation SDK (Playwright & Cypress)"
+11. docs/prd.md
+    - 자사 SDK 테이블 확장: reporter-core 1.0.1, cypress-reporter 1.0.1 추가, jest-reporter "Planned" 명시
+
+## 검증 결과
+- `npx tsc --noEmit` → 0 errors
+- `npm run test -- --run` → 255/255 pass (기존 그대로)
+- `npm run scan:i18n:check` → clean (0 hardcoded matches / 29 files)
+- `npm run scan:i18n:parity` → 0 diff (en ↔ ko)
+- `npm run build` → 성공 (7.77s)
+
+## 수정 파일 수
+- 코드: 7개 (roadmap, changelog, home, integrations, cicd, pricing pages)
+- 문서: 4개 (README, f028-blog, f028-changelog, f028-twitter-thread, prd.md) — 총 11개 파일
+
+## 다음엔 뭘 해야 하나
+- 2026-05-11 Playwright PH 런칭 직전 체크리스트 (launch-plan-may11.md 참고)
+- 2026-05-13 Cypress sub-launch 전 Reply Thread 실제 게시
+- 향후 Jest reporter 공식 지원 시 위 9개 지점 역방향 업데이트 필요 ("Jest coming soon" → stable)

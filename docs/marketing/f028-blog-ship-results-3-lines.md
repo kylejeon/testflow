@@ -183,4 +183,4 @@ If you see `Upload skipped: this feature requires a Professional plan (current: 
 - **Full options reference:** [npm README](https://www.npmjs.com/package/@testably.kr/playwright-reporter)
 - **Don't have a Testably account?** [Start free](https://testably.app) — no credit card required. CI/CD integration requires the Professional plan ($99/month flat-rate, up to 20 members).
 
-Cypress and Jest reporter support is coming soon as part of the same SDK family (`@testably.kr/cypress-reporter`, `@testably.kr/jest-reporter`). If your team uses multiple frameworks, watch the changelog.
+Cypress reporter (`@testably.kr/cypress-reporter`) 1.0.1 is also available today — same install flow, same auto-upload behavior, hooked into Cypress's `after:run`. Jest reporter is coming soon. If your team uses multiple frameworks, watch the changelog.
