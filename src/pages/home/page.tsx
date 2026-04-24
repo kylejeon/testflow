@@ -1214,12 +1214,18 @@ export default function HomePage() {
                       </div>
                     </div>
                     {/* Screenshot */}
-                    <img
-                      src="/hero-screenshot.png"
-                      alt="Testably project dashboard showing test cases, runs, and milestones"
-                      className="w-full h-auto"
-                      loading="eager"
-                    />
+                    <picture>
+                      <source type="image/svg+xml" srcSet="/hero-screenshot.svg" />
+                      <img
+                        src="/hero-screenshot.png"
+                        alt="Testably — Coverage Matrix with AI insights, showing OS × browser test coverage, AI-detected gaps, and a LOW RISK AI Run Summary for a checkout release plan"
+                        width={1440}
+                        height={900}
+                        className="w-full h-auto block"
+                        loading="eager"
+                        fetchPriority="high"
+                      />
+                    </picture>
                   </div>
                 </div>
 

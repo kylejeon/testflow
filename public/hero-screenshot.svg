@@ -1,0 +1,565 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" role="img" aria-label="Testably — Coverage Matrix with AI insights, showing OS x browser test coverage and AI-detected gaps">
+  <defs>
+    <linearGradient id="runGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#312E81"/>
+      <stop offset="1" stop-color="#1E1B4B"/>
+    </linearGradient>
+    <linearGradient id="aiHeadGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#8B5CF6" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#6366F1" stop-opacity="0.04"/>
+    </linearGradient>
+    <radialGradient id="indigoGlow" cx="0.5" cy="0.5" r="0.7">
+      <stop offset="0" stop-color="#6366F1" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#6366F1" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="14" in="SourceAlpha"/>
+      <feOffset dy="18"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.55"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="dash" width="4" height="4" patternUnits="userSpaceOnUse">
+      <path d="M0 2 L4 2" stroke="#475569" stroke-width="1"/>
+    </pattern>
+    <style>
+      .s  { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+      .m  { font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; }
+      .logo { font-family: "Pacifico", cursive, -apple-system, sans-serif; }
+    </style>
+  </defs>
+
+  <!-- Canvas -->
+  <rect width="1440" height="900" fill="#0F172A"/>
+
+  <!-- ============================================================
+       APP HEADER (ProjectHeader) — y: 0..56
+       ============================================================ -->
+  <g class="s">
+    <rect width="1440" height="56" fill="#0F172A"/>
+    <rect y="55" width="1440" height="1" fill="#FFFFFF" fill-opacity="0.06"/>
+
+    <!-- Logo mark -->
+    <rect x="20" y="12" width="32" height="32" rx="8" fill="#6366F1"/>
+    <text x="36" y="34" text-anchor="middle" font-size="15" font-weight="800" fill="#FFFFFF">T</text>
+    <text x="62" y="35" class="logo" font-size="20" fill="#FFFFFF">Testably</text>
+
+    <!-- Workspace switcher -->
+    <rect x="190" y="14" width="210" height="28" rx="6" fill="#FFFFFF" fill-opacity="0.04"/>
+    <circle cx="204" cy="28" r="7" fill="#6366F1"/>
+    <text x="204" y="31" text-anchor="middle" font-size="8" font-weight="800" fill="#FFFFFF">A</text>
+    <text x="218" y="32" font-size="13" font-weight="600" fill="#FFFFFF">Acme Checkout v2</text>
+    <text x="388" y="33" font-size="12" fill="#FFFFFF" fill-opacity="0.4">▾</text>
+
+    <!-- Search -->
+    <rect x="540" y="14" width="360" height="28" rx="6" fill="#FFFFFF" fill-opacity="0.05"/>
+    <text x="558" y="31" font-size="12" fill="#FFFFFF" fill-opacity="0.45">Search everything</text>
+    <rect x="850" y="18" width="40" height="20" rx="4" fill="#FFFFFF" fill-opacity="0.08"/>
+    <text x="870" y="32" text-anchor="middle" font-size="10" font-weight="700" fill="#FFFFFF" fill-opacity="0.55">⌘K</text>
+
+    <!-- Right side -->
+    <circle cx="1340" cy="28" r="12" fill="#FFFFFF" fill-opacity="0.04"/>
+    <text x="1340" y="32" text-anchor="middle" font-size="11" fill="#FFFFFF" fill-opacity="0.55">🔔</text>
+    <circle cx="1380" cy="28" r="14" fill="#8B5CF6"/>
+    <text x="1380" y="32" text-anchor="middle" font-size="11" font-weight="800" fill="#FFFFFF">KM</text>
+  </g>
+
+  <!-- ============================================================
+       PROJECT / PLAN CONTEXT — y: 56..196
+       ============================================================ -->
+  <g class="s">
+    <!-- Breadcrumb -->
+    <text x="20" y="84" font-size="12" fill="#FFFFFF" fill-opacity="0.45">
+      Projects
+      <tspan fill="#FFFFFF" fill-opacity="0.25"> › </tspan>
+      <tspan fill="#FFFFFF" fill-opacity="0.55">Acme Checkout v2</tspan>
+      <tspan fill="#FFFFFF" fill-opacity="0.25"> › </tspan>
+      Milestones
+      <tspan fill="#FFFFFF" fill-opacity="0.25"> › </tspan>
+      <tspan fill="#FFFFFF" fill-opacity="0.55">Q2 Release</tspan>
+      <tspan fill="#FFFFFF" fill-opacity="0.25"> › </tspan>
+      Plans
+    </text>
+
+    <!-- Plan H1 + badges -->
+    <text x="20" y="122" font-size="26" font-weight="800" fill="#FFFFFF" letter-spacing="-0.5">Sprint 42 Regression</text>
+
+    <!-- Active badge -->
+    <rect x="336" y="102" width="62" height="22" rx="11" fill="#F59E0B" fill-opacity="0.15" stroke="#F59E0B" stroke-opacity="0.25"/>
+    <circle cx="349" cy="113" r="3" fill="#FCD34D"/>
+    <text x="357" y="117" font-size="11" font-weight="700" fill="#FCD34D">Active</text>
+
+    <!-- P1 priority -->
+    <rect x="408" y="102" width="32" height="22" rx="6" fill="#DC2626" fill-opacity="0.12" stroke="#DC2626" stroke-opacity="0.25"/>
+    <text x="424" y="117" text-anchor="middle" font-size="11" font-weight="700" fill="#FCA5A5">P1</text>
+
+    <!-- Owner -->
+    <text x="1260" y="117" font-size="12" fill="#FFFFFF" fill-opacity="0.45">Owner</text>
+    <circle cx="1310" cy="113" r="11" fill="#8B5CF6"/>
+    <text x="1310" y="117" text-anchor="middle" font-size="10" font-weight="800" fill="#FFFFFF">KM</text>
+    <text x="1326" y="117" font-size="12" font-weight="600" fill="#FFFFFF" fill-opacity="0.85">Kai M.</text>
+
+    <!-- Stats row -->
+    <g transform="translate(20,146)">
+      <circle cx="5" cy="8" r="4" fill="#10B981"/>
+      <text x="14" y="12" font-size="12" fill="#FFFFFF" fill-opacity="0.85">Passed <tspan font-weight="700" fill="#FFFFFF">142</tspan></text>
+
+      <circle cx="106" cy="8" r="4" fill="#F87171"/>
+      <text x="115" y="12" font-size="12" fill="#FFFFFF" fill-opacity="0.85">Failed <tspan font-weight="700" fill="#FFFFFF">8</tspan></text>
+
+      <circle cx="188" cy="8" r="4" fill="#FBBF24"/>
+      <text x="197" y="12" font-size="12" fill="#FFFFFF" fill-opacity="0.85">Blocked <tspan font-weight="700" fill="#FFFFFF">3</tspan></text>
+
+      <circle cx="280" cy="8" r="4" fill="#64748B"/>
+      <text x="289" y="12" font-size="12" fill="#FFFFFF" fill-opacity="0.85">Untested <tspan font-weight="700" fill="#FFFFFF">9</tspan></text>
+
+      <rect x="378" y="-1" width="1" height="16" fill="#FFFFFF" fill-opacity="0.12"/>
+
+      <text x="394" y="12" font-size="12" fill="#FFFFFF" fill-opacity="0.55">153/162 executed · <tspan fill="#FFFFFF" font-weight="700">94%</tspan></text>
+
+      <rect x="568" y="-1" width="1" height="16" fill="#FFFFFF" fill-opacity="0.12"/>
+
+      <text x="584" y="12" font-size="12" fill="#FFFFFF" fill-opacity="0.55">Pass rate <tspan fill="#10B981" font-weight="700">88%</tspan></text>
+    </g>
+
+    <!-- Tabs bar -->
+    <g transform="translate(0,190)">
+      <rect width="1440" height="36" fill="#0F172A"/>
+      <rect y="35" width="1440" height="1" fill="#FFFFFF" fill-opacity="0.06"/>
+
+      <text x="22" y="22" font-size="12" fill="#FFFFFF" fill-opacity="0.55">Test Cases <tspan fill="#FFFFFF" fill-opacity="0.35">162</tspan></text>
+      <text x="135" y="22" font-size="12" fill="#FFFFFF" fill-opacity="0.55">Runs <tspan fill="#FFFFFF" fill-opacity="0.35">6</tspan></text>
+      <text x="200" y="22" font-size="12" fill="#FFFFFF" fill-opacity="0.55">Activity <tspan fill="#FFFFFF" fill-opacity="0.35">47</tspan></text>
+      <text x="285" y="22" font-size="12" fill="#FFFFFF" fill-opacity="0.55">Issues <tspan fill="#FFFFFF" fill-opacity="0.35">4</tspan></text>
+
+      <!-- Active: Environments -->
+      <text x="360" y="22" font-size="12" font-weight="700" fill="#FFFFFF">Environments</text>
+      <rect x="358" y="34" width="92" height="2" fill="#6366F1"/>
+
+      <text x="470" y="22" font-size="12" fill="#FFFFFF" fill-opacity="0.55">Settings</text>
+    </g>
+  </g>
+
+  <!-- ============================================================
+       COVERAGE MATRIX — x:20..1010, y:250..830
+       ============================================================ -->
+  <g class="s" transform="translate(20,250)">
+    <!-- Card -->
+    <rect width="990" height="580" rx="14" fill="#FFFFFF" fill-opacity="0.03" stroke="#FFFFFF" stroke-opacity="0.06"/>
+
+    <!-- Card header -->
+    <text x="20" y="30" font-size="13" font-weight="700" fill="#FFFFFF" letter-spacing="0.8">▦  COVERAGE MATRIX</text>
+    <text x="970" y="30" text-anchor="end" font-size="12" fill="#FFFFFF" fill-opacity="0.45">Sprint 42 Regression · 162 TCs × 6 envs</text>
+
+    <!-- OS group headers -->
+    <g transform="translate(20,54)">
+      <rect x="0" y="0" width="300" height="24" fill="#1E293B"/>
+      <text x="150" y="16" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF" fill-opacity="0.75" letter-spacing="1">TEST CASE</text>
+
+      <rect x="302" y="0" width="220" height="24" fill="#1E293B"/>
+      <text x="412" y="16" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF" fill-opacity="0.85" letter-spacing="1">macOS</text>
+
+      <rect x="524" y="0" width="330" height="24" fill="#1E293B"/>
+      <text x="689" y="16" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF" fill-opacity="0.85" letter-spacing="1">Windows</text>
+
+      <rect x="856" y="0" width="110" height="24" fill="#1E293B"/>
+      <text x="911" y="16" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF" fill-opacity="0.85" letter-spacing="1">iOS</text>
+    </g>
+
+    <!-- Env column headers -->
+    <g transform="translate(20,80)">
+      <rect x="0" y="0" width="300" height="28" fill="#0F172A"/>
+      <text x="12" y="18" font-size="11" fill="#FFFFFF" fill-opacity="0.4">162 test cases · P0/P1/P2</text>
+
+      <!-- 6 columns -->
+      <g font-size="10" font-weight="600" fill="#FFFFFF" fill-opacity="0.7">
+        <rect x="302" y="0" width="109" height="28" fill="#0F172A"/>
+        <text x="356" y="12" text-anchor="middle">Chrome</text>
+        <text x="356" y="23" text-anchor="middle" fill-opacity="0.5">124</text>
+
+        <rect x="413" y="0" width="109" height="28" fill="#0F172A"/>
+        <text x="467" y="12" text-anchor="middle">Safari</text>
+        <text x="467" y="23" text-anchor="middle" fill-opacity="0.5">17</text>
+
+        <rect x="524" y="0" width="109" height="28" fill="#0F172A"/>
+        <text x="578" y="12" text-anchor="middle">Chrome</text>
+        <text x="578" y="23" text-anchor="middle" fill-opacity="0.5">124</text>
+
+        <rect x="635" y="0" width="109" height="28" fill="#0F172A"/>
+        <text x="689" y="12" text-anchor="middle">Edge</text>
+        <text x="689" y="23" text-anchor="middle" fill-opacity="0.5">124</text>
+
+        <rect x="746" y="0" width="108" height="28" fill="#0F172A"/>
+        <text x="800" y="12" text-anchor="middle">Firefox</text>
+        <text x="800" y="23" text-anchor="middle" fill-opacity="0.5">125</text>
+
+        <rect x="856" y="0" width="110" height="28" fill="#0F172A"/>
+        <text x="911" y="12" text-anchor="middle">Safari</text>
+        <text x="911" y="23" text-anchor="middle" fill-opacity="0.5">iPhone 15</text>
+      </g>
+    </g>
+
+    <!-- Heatmap rows (8 rows x 6 cols). Row height 52.
+         Cell widths: col0=300, c1..c5=110, c6=110 ish -->
+    <!-- Each cell: rect bg + text val -->
+    <!-- Row template (via <g transform="translate(0, y)"> ) -->
+
+    <!-- Row 1 — CHK-001 P0 -->
+    <g transform="translate(20,114)">
+      <rect width="990" height="50" fill="#FFFFFF" fill-opacity="0.01"/>
+      <text x="12" y="22" class="m" font-size="11" font-weight="700" fill="#FFFFFF" fill-opacity="0.85">CHK-001</text>
+      <rect x="68" y="14" width="20" height="16" rx="3" fill="#DC2626" fill-opacity="0.15"/>
+      <text x="78" y="26" text-anchor="middle" font-size="9" font-weight="800" fill="#FCA5A5">P0</text>
+      <text x="94" y="30" font-size="12" fill="#FFFFFF" fill-opacity="0.85">Guest checkout — credit card</text>
+
+      <!-- 6 cells (perfect, perfect, perfect, pass, mixed, pass) -->
+      <rect x="302" y="4" width="107" height="42" rx="4" fill="#047857"/>
+      <text x="356" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">6/6</text>
+
+      <rect x="413" y="4" width="107" height="42" rx="4" fill="#047857"/>
+      <text x="467" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">6/6</text>
+
+      <rect x="524" y="4" width="107" height="42" rx="4" fill="#047857"/>
+      <text x="578" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">6/6</text>
+
+      <rect x="635" y="4" width="107" height="42" rx="4" fill="#10B981"/>
+      <text x="689" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">5/6</text>
+
+      <rect x="746" y="4" width="106" height="42" rx="4" fill="#F59E0B"/>
+      <text x="800" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">4/6</text>
+
+      <rect x="856" y="4" width="108" height="42" rx="4" fill="#10B981"/>
+      <text x="911" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">5/6</text>
+    </g>
+
+    <!-- Row 2 — CHK-002 P0 -->
+    <g transform="translate(20,166)">
+      <text x="12" y="22" class="m" font-size="11" font-weight="700" fill="#FFFFFF" fill-opacity="0.85">CHK-002</text>
+      <rect x="68" y="14" width="20" height="16" rx="3" fill="#DC2626" fill-opacity="0.15"/>
+      <text x="78" y="26" text-anchor="middle" font-size="9" font-weight="800" fill="#FCA5A5">P0</text>
+      <text x="94" y="30" font-size="12" fill="#FFFFFF" fill-opacity="0.85">Registered user — one-click buy</text>
+
+      <rect x="302" y="4" width="107" height="42" rx="4" fill="#047857"/>
+      <text x="356" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">6/6</text>
+      <rect x="413" y="4" width="107" height="42" rx="4" fill="#047857"/>
+      <text x="467" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">6/6</text>
+      <rect x="524" y="4" width="107" height="42" rx="4" fill="#047857"/>
+      <text x="578" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">6/6</text>
+      <rect x="635" y="4" width="107" height="42" rx="4" fill="#047857"/>
+      <text x="689" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">6/6</text>
+      <rect x="746" y="4" width="106" height="42" rx="4" fill="#EA580C"/>
+      <text x="800" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">3/6</text>
+      <rect x="856" y="4" width="108" height="42" rx="4" fill="#10B981"/>
+      <text x="911" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">5/6</text>
+    </g>
+
+    <!-- Row 3 — CHK-003 P1 -->
+    <g transform="translate(20,218)">
+      <rect width="990" height="50" fill="#FFFFFF" fill-opacity="0.01"/>
+      <text x="12" y="22" class="m" font-size="11" font-weight="700" fill="#FFFFFF" fill-opacity="0.85">CHK-003</text>
+      <rect x="68" y="14" width="20" height="16" rx="3" fill="#F59E0B" fill-opacity="0.15"/>
+      <text x="78" y="26" text-anchor="middle" font-size="9" font-weight="800" fill="#FCD34D">P1</text>
+      <text x="94" y="30" font-size="12" fill="#FFFFFF" fill-opacity="0.85">Apply promo code at checkout</text>
+
+      <rect x="302" y="4" width="107" height="42" rx="4" fill="#10B981"/>
+      <text x="356" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">5/6</text>
+      <rect x="413" y="4" width="107" height="42" rx="4" fill="#F59E0B"/>
+      <text x="467" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">4/6</text>
+      <rect x="524" y="4" width="107" height="42" rx="4" fill="#10B981"/>
+      <text x="578" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">5/6</text>
+      <rect x="635" y="4" width="107" height="42" rx="4" fill="#F59E0B"/>
+      <text x="689" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">4/6</text>
+      <rect x="746" y="4" width="106" height="42" rx="4" fill="#DC2626"/>
+      <text x="800" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">2/6</text>
+      <rect x="856" y="4" width="108" height="42" rx="4" fill="#EA580C"/>
+      <text x="911" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">3/6</text>
+    </g>
+
+    <!-- Row 4 — CHK-004 P1 -->
+    <g transform="translate(20,270)">
+      <text x="12" y="22" class="m" font-size="11" font-weight="700" fill="#FFFFFF" fill-opacity="0.85">CHK-004</text>
+      <rect x="68" y="14" width="20" height="16" rx="3" fill="#F59E0B" fill-opacity="0.15"/>
+      <text x="78" y="26" text-anchor="middle" font-size="9" font-weight="800" fill="#FCD34D">P1</text>
+      <text x="94" y="30" font-size="12" fill="#FFFFFF" fill-opacity="0.85">Address validation — international</text>
+
+      <rect x="302" y="4" width="107" height="42" rx="4" fill="#047857"/>
+      <text x="356" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">6/6</text>
+      <rect x="413" y="4" width="107" height="42" rx="4" fill="#047857"/>
+      <text x="467" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">6/6</text>
+      <rect x="524" y="4" width="107" height="42" rx="4" fill="#047857"/>
+      <text x="578" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">6/6</text>
+      <rect x="635" y="4" width="107" height="42" rx="4" fill="#10B981"/>
+      <text x="689" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">5/6</text>
+      <rect x="746" y="4" width="106" height="42" rx="4" fill="#EA580C"/>
+      <text x="800" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">3/6</text>
+      <rect x="856" y="4" width="108" height="42" rx="4" fill="#F59E0B"/>
+      <text x="911" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">4/6</text>
+    </g>
+
+    <!-- Row 5 — CHK-005 P1 (Apple Pay — CRITICAL ROW) -->
+    <g transform="translate(20,322)">
+      <rect width="990" height="50" fill="#7F1D1D" fill-opacity="0.06"/>
+      <text x="12" y="22" class="m" font-size="11" font-weight="700" fill="#FCA5A5">CHK-005</text>
+      <rect x="68" y="14" width="20" height="16" rx="3" fill="#F59E0B" fill-opacity="0.15"/>
+      <text x="78" y="26" text-anchor="middle" font-size="9" font-weight="800" fill="#FCD34D">P1</text>
+      <text x="94" y="30" font-size="12" font-weight="600" fill="#FCA5A5">Apple Pay express checkout</text>
+
+      <rect x="302" y="4" width="107" height="42" rx="4" fill="#F59E0B"/>
+      <text x="356" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">4/6</text>
+      <rect x="413" y="4" width="107" height="42" rx="4" fill="#EA580C"/>
+      <text x="467" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">3/6</text>
+      <rect x="524" y="4" width="107" height="42" rx="4" fill="#F59E0B"/>
+      <text x="578" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">4/6</text>
+      <rect x="635" y="4" width="107" height="42" rx="4" fill="#EA580C"/>
+      <text x="689" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">3/6</text>
+      <rect x="746" y="4" width="106" height="42" rx="4" fill="#DC2626"/>
+      <text x="800" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">1/6</text>
+
+      <!-- Critical cell with glow -->
+      <rect x="850" y="0" width="120" height="50" fill="#6366F1" fill-opacity="0" />
+      <circle cx="911" cy="25" r="42" fill="url(#indigoGlow)" opacity="0.55"/>
+      <rect x="856" y="4" width="108" height="42" rx="4" fill="#7F1D1D" stroke="#FCA5A5" stroke-opacity="0.5" stroke-width="1.5"/>
+      <text x="911" y="30" text-anchor="middle" font-size="13" font-weight="800" fill="#FCA5A5">0/4</text>
+    </g>
+
+    <!-- Row 6 — CHK-006 P2 -->
+    <g transform="translate(20,374)">
+      <text x="12" y="22" class="m" font-size="11" font-weight="700" fill="#FFFFFF" fill-opacity="0.85">CHK-006</text>
+      <rect x="68" y="14" width="20" height="16" rx="3" fill="#64748B" fill-opacity="0.2"/>
+      <text x="78" y="26" text-anchor="middle" font-size="9" font-weight="800" fill="#94A3B8">P2</text>
+      <text x="94" y="30" font-size="12" fill="#FFFFFF" fill-opacity="0.85">Abandoned cart recovery email</text>
+
+      <rect x="302" y="4" width="107" height="42" rx="4" fill="#047857"/>
+      <text x="356" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">6/6</text>
+      <rect x="413" y="4" width="107" height="42" rx="4" fill="#047857"/>
+      <text x="467" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">6/6</text>
+      <rect x="524" y="4" width="107" height="42" rx="4" fill="#10B981"/>
+      <text x="578" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">5/6</text>
+      <rect x="635" y="4" width="107" height="42" rx="4" fill="url(#dash)" stroke="#475569" stroke-dasharray="3 3"/>
+      <text x="689" y="30" text-anchor="middle" font-size="13" font-weight="600" fill="#64748B">—</text>
+      <rect x="746" y="4" width="106" height="42" rx="4" fill="#EA580C"/>
+      <text x="800" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">3/6</text>
+      <rect x="856" y="4" width="108" height="42" rx="4" fill="url(#dash)" stroke="#475569" stroke-dasharray="3 3"/>
+      <text x="911" y="30" text-anchor="middle" font-size="13" font-weight="600" fill="#64748B">—</text>
+    </g>
+
+    <!-- Row 7 — CHK-007 P1 -->
+    <g transform="translate(20,426)">
+      <rect width="990" height="50" fill="#FFFFFF" fill-opacity="0.01"/>
+      <text x="12" y="22" class="m" font-size="11" font-weight="700" fill="#FFFFFF" fill-opacity="0.85">CHK-007</text>
+      <rect x="68" y="14" width="20" height="16" rx="3" fill="#F59E0B" fill-opacity="0.15"/>
+      <text x="78" y="26" text-anchor="middle" font-size="9" font-weight="800" fill="#FCD34D">P1</text>
+      <text x="94" y="30" font-size="12" fill="#FFFFFF" fill-opacity="0.85">Tax calculation — EU VAT</text>
+
+      <rect x="302" y="4" width="107" height="42" rx="4" fill="#047857"/>
+      <text x="356" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">6/6</text>
+      <rect x="413" y="4" width="107" height="42" rx="4" fill="#10B981"/>
+      <text x="467" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">5/6</text>
+      <rect x="524" y="4" width="107" height="42" rx="4" fill="#047857"/>
+      <text x="578" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">6/6</text>
+      <rect x="635" y="4" width="107" height="42" rx="4" fill="#F59E0B"/>
+      <text x="689" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">4/6</text>
+      <rect x="746" y="4" width="106" height="42" rx="4" fill="#EA580C"/>
+      <text x="800" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">3/6</text>
+      <rect x="856" y="4" width="108" height="42" rx="4" fill="#F59E0B"/>
+      <text x="911" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">4/6</text>
+    </g>
+
+    <!-- Row 8 — CHK-008 P2 -->
+    <g transform="translate(20,478)">
+      <text x="12" y="22" class="m" font-size="11" font-weight="700" fill="#FFFFFF" fill-opacity="0.85">CHK-008</text>
+      <rect x="68" y="14" width="20" height="16" rx="3" fill="#64748B" fill-opacity="0.2"/>
+      <text x="78" y="26" text-anchor="middle" font-size="9" font-weight="800" fill="#94A3B8">P2</text>
+      <text x="94" y="30" font-size="12" fill="#FFFFFF" fill-opacity="0.85">Order confirmation — receipt PDF</text>
+
+      <rect x="302" y="4" width="107" height="42" rx="4" fill="#047857"/>
+      <text x="356" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">6/6</text>
+      <rect x="413" y="4" width="107" height="42" rx="4" fill="#047857"/>
+      <text x="467" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">6/6</text>
+      <rect x="524" y="4" width="107" height="42" rx="4" fill="#10B981"/>
+      <text x="578" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">5/6</text>
+      <rect x="635" y="4" width="107" height="42" rx="4" fill="url(#dash)" stroke="#475569" stroke-dasharray="3 3"/>
+      <text x="689" y="30" text-anchor="middle" font-size="13" font-weight="600" fill="#64748B">—</text>
+      <rect x="746" y="4" width="106" height="42" rx="4" fill="#DC2626"/>
+      <text x="800" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">2/6</text>
+      <rect x="856" y="4" width="108" height="42" rx="4" fill="#F59E0B"/>
+      <text x="911" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">4/6</text>
+    </g>
+
+    <!-- Summary row -->
+    <g transform="translate(20,534)">
+      <rect width="966" height="28" fill="#F9FAFB" fill-opacity="0.04"/>
+      <text x="12" y="18" font-size="11" font-weight="700" fill="#FFFFFF" fill-opacity="0.7" letter-spacing="1">Σ  ENV PASS RATE</text>
+
+      <rect x="302" y="4" width="107" height="20" rx="3" fill="#047857"/>
+      <text x="356" y="18" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">98%</text>
+      <rect x="413" y="4" width="107" height="20" rx="3" fill="#10B981"/>
+      <text x="467" y="18" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">92%</text>
+      <rect x="524" y="4" width="107" height="20" rx="3" fill="#047857"/>
+      <text x="578" y="18" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">94%</text>
+      <rect x="635" y="4" width="107" height="20" rx="3" fill="#10B981"/>
+      <text x="689" y="18" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">81%</text>
+      <rect x="746" y="4" width="106" height="20" rx="3" fill="#EA580C"/>
+      <text x="800" y="18" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">47%</text>
+      <rect x="856" y="4" width="108" height="20" rx="3" fill="#F59E0B"/>
+      <text x="911" y="18" text-anchor="middle" font-size="11" font-weight="700" fill="#0F172A">63%</text>
+    </g>
+  </g>
+
+  <!-- ============================================================
+       AI ENVIRONMENT INSIGHTS PANEL — x:1030..1420, y:250..830
+       ============================================================ -->
+  <g class="s" transform="translate(1030,250)">
+    <!-- Panel card -->
+    <rect width="390" height="580" rx="14" fill="url(#aiHeadGrad)" stroke="#8B5CF6" stroke-opacity="0.20"/>
+
+    <!-- Header -->
+    <g transform="translate(16,18)">
+      <!-- Sparkle -->
+      <path d="M6 0 L7.5 4.5 L12 6 L7.5 7.5 L6 12 L4.5 7.5 L0 6 L4.5 4.5 Z" fill="#8B5CF6" transform="translate(0,2)"/>
+
+      <text x="18" y="12" font-size="11" font-weight="800" fill="#C4B5FD" letter-spacing="1.5">AI-GENERATED</text>
+      <rect x="118" y="0" width="56" height="16" rx="4" fill="#10B981" fill-opacity="0.18"/>
+      <text x="146" y="12" text-anchor="middle" font-size="10" font-weight="800" fill="#6EE7B7">92%</text>
+
+      <text x="182" y="12" font-size="10" fill="#FFFFFF" fill-opacity="0.45">Confidence</text>
+
+      <text x="0" y="32" font-size="11" fill="#FFFFFF" fill-opacity="0.55">Updated 4m ago</text>
+      <text x="0" y="50" font-size="11" fill="#FFFFFF" fill-opacity="0.55">
+        <tspan fill="#C4B5FD" font-weight="700">1 credit</tspan> used · 29 left · Starter
+      </text>
+    </g>
+
+    <!-- Divider -->
+    <rect x="16" y="88" width="358" height="1" fill="#FFFFFF" fill-opacity="0.08"/>
+
+    <!-- Card 1 — CRITICAL -->
+    <g transform="translate(16,104)">
+      <rect width="358" height="164" rx="10" fill="#DC2626" fill-opacity="0.08" stroke="#DC2626" stroke-opacity="0.25"/>
+      <!-- Header -->
+      <g transform="translate(14,14)">
+        <rect width="72" height="20" rx="4" fill="#DC2626" fill-opacity="0.20" stroke="#DC2626" stroke-opacity="0.35"/>
+        <text x="36" y="14" text-anchor="middle" font-size="10" font-weight="800" fill="#FCA5A5" letter-spacing="1">⚠ CRITICAL</text>
+
+        <rect x="250" y="0" width="80" height="20" rx="4" fill="#8B5CF6" fill-opacity="0.12" stroke="#8B5CF6" stroke-opacity="0.25"/>
+        <text x="290" y="14" text-anchor="middle" font-size="10" font-weight="700" fill="#C4B5FD">1 credit</text>
+      </g>
+      <!-- Title -->
+      <text x="14" y="60" font-size="14" font-weight="700" fill="#FFFFFF">Apple Pay broken on iOS Safari</text>
+      <!-- Body -->
+      <text x="14" y="84" font-size="12" fill="#FFFFFF" fill-opacity="0.72">CHK-005 failed 4/4 runs on iPhone 15.</text>
+      <text x="14" y="102" font-size="12" fill="#FFFFFF" fill-opacity="0.72">No passes recorded in last 2 sprints.</text>
+      <!-- Actions -->
+      <g transform="translate(14,118)">
+        <rect width="108" height="28" rx="6" fill="#8B5CF6" fill-opacity="0.12" stroke="#8B5CF6" stroke-opacity="0.30"/>
+        <text x="54" y="18" text-anchor="middle" font-size="11" font-weight="700" fill="#C4B5FD">Highlight env</text>
+
+        <rect x="118" width="96" height="28" rx="6" fill="#DC2626" fill-opacity="0.15" stroke="#DC2626" stroke-opacity="0.30"/>
+        <text x="166" y="18" text-anchor="middle" font-size="11" font-weight="700" fill="#FCA5A5">Create issue</text>
+      </g>
+    </g>
+
+    <!-- Card 2 — GAP -->
+    <g transform="translate(16,280)">
+      <rect width="358" height="140" rx="10" fill="#F59E0B" fill-opacity="0.08" stroke="#F59E0B" stroke-opacity="0.25"/>
+      <g transform="translate(14,14)">
+        <rect width="52" height="20" rx="4" fill="#F59E0B" fill-opacity="0.20" stroke="#F59E0B" stroke-opacity="0.35"/>
+        <text x="26" y="14" text-anchor="middle" font-size="10" font-weight="800" fill="#FCD34D" letter-spacing="1">⚠ GAP</text>
+      </g>
+      <text x="14" y="60" font-size="14" font-weight="700" fill="#FFFFFF">Firefox 125 under-tested</text>
+      <text x="14" y="84" font-size="12" fill="#FFFFFF" fill-opacity="0.72">47% coverage on Windows Firefox —</text>
+      <text x="14" y="102" font-size="12" fill="#FFFFFF" fill-opacity="0.72">41% below macOS Chrome baseline.</text>
+      <g transform="translate(14,114)">
+        <rect width="92" height="22" rx="6" fill="#8B5CF6" fill-opacity="0.12" stroke="#8B5CF6" stroke-opacity="0.30"/>
+        <text x="46" y="15" text-anchor="middle" font-size="11" font-weight="700" fill="#C4B5FD">Assign run</text>
+
+        <rect x="102" width="108" height="22" rx="6" fill="#8B5CF6" fill-opacity="0.12" stroke="#8B5CF6" stroke-opacity="0.30"/>
+        <text x="156" y="15" text-anchor="middle" font-size="11" font-weight="700" fill="#C4B5FD">Highlight env</text>
+      </g>
+    </g>
+
+    <!-- Card 3 — BASELINE -->
+    <g transform="translate(16,432)">
+      <rect width="358" height="96" rx="10" fill="#10B981" fill-opacity="0.06" stroke="#10B981" stroke-opacity="0.25"/>
+      <g transform="translate(14,14)">
+        <rect width="76" height="20" rx="4" fill="#10B981" fill-opacity="0.20" stroke="#10B981" stroke-opacity="0.35"/>
+        <text x="38" y="14" text-anchor="middle" font-size="10" font-weight="800" fill="#6EE7B7" letter-spacing="1">✓ BASELINE</text>
+      </g>
+      <text x="14" y="60" font-size="14" font-weight="700" fill="#FFFFFF">macOS Chrome production-ready</text>
+      <text x="14" y="82" font-size="12" fill="#FFFFFF" fill-opacity="0.72">6/6 critical TCs at 100% pass rate.</text>
+    </g>
+
+    <!-- Footer hint -->
+    <text x="16" y="568" font-size="10" fill="#FFFFFF" fill-opacity="0.35">✦ Regenerate in 24h · Claude Haiku</text>
+  </g>
+
+  <!-- ============================================================
+       FLOATING AI RUN SUMMARY — bottom-right, rotated 6deg
+       ============================================================ -->
+  <g transform="translate(770,540) rotate(6)">
+    <!-- Ambient glow -->
+    <ellipse cx="300" cy="170" rx="340" ry="200" fill="url(#indigoGlow)" opacity="0.55"/>
+
+    <!-- Card -->
+    <g filter="url(#cardShadow)">
+      <rect x="0" y="0" width="600" height="320" rx="16" fill="#0F172A" stroke="#4338CA" stroke-opacity="0.55" stroke-width="1.5"/>
+
+      <!-- Header -->
+      <rect x="0" y="0" width="600" height="56" rx="16" fill="url(#runGrad)"/>
+      <rect x="0" y="40" width="600" height="16" fill="url(#runGrad)"/>
+
+      <!-- Sparkle -->
+      <path d="M22 18 L24 26 L32 28 L24 30 L22 38 L20 30 L12 28 L20 26 Z" fill="#8B5CF6"/>
+      <text x="40" y="33" font-size="14" font-weight="800" fill="#C7D2FE">AI Run Summary</text>
+      <text x="560" y="33" font-size="12" fill="#FFFFFF" fill-opacity="0.35">×</text>
+
+      <!-- Body -->
+      <text x="20" y="84" font-size="13" font-weight="700" fill="#FFFFFF">Sprint 42 — Nightly #128</text>
+
+      <!-- Risk chip -->
+      <rect x="20" y="98" width="100" height="26" rx="6" fill="#14532D" stroke="#166534"/>
+      <circle cx="34" cy="111" r="4" fill="#86EFAC"/>
+      <text x="45" y="115" font-size="11" font-weight="800" fill="#86EFAC" letter-spacing="1">LOW RISK</text>
+
+      <text x="140" y="115" font-size="11" fill="#94A3B8">1 credit used</text>
+
+      <!-- Key metrics 3x2 grid -->
+      <g transform="translate(20,138)">
+        <!-- Row 1 -->
+        <g>
+          <rect width="180" height="62" rx="8" fill="#1E293B"/>
+          <text x="14" y="26" font-size="10" font-weight="700" fill="#94A3B8" letter-spacing="1">TOTAL</text>
+          <text x="14" y="50" font-size="22" font-weight="800" fill="#FFFFFF">162</text>
+
+          <rect x="188" width="180" height="62" rx="8" fill="#1E293B"/>
+          <text x="202" y="26" font-size="10" font-weight="700" fill="#94A3B8" letter-spacing="1">PASSED</text>
+          <text x="202" y="50" font-size="22" font-weight="800" fill="#4ADE80">142</text>
+
+          <rect x="376" width="180" height="62" rx="8" fill="#1E293B"/>
+          <text x="390" y="26" font-size="10" font-weight="700" fill="#94A3B8" letter-spacing="1">FAILED</text>
+          <text x="390" y="50" font-size="22" font-weight="800" fill="#F87171">8</text>
+        </g>
+        <!-- Row 2 -->
+        <g transform="translate(0,72)">
+          <rect width="180" height="62" rx="8" fill="#1E293B"/>
+          <text x="14" y="26" font-size="10" font-weight="700" fill="#94A3B8" letter-spacing="1">BLOCKED</text>
+          <text x="14" y="50" font-size="22" font-weight="800" fill="#FBBF24">3</text>
+
+          <rect x="188" width="180" height="62" rx="8" fill="#1E293B"/>
+          <text x="202" y="26" font-size="10" font-weight="700" fill="#94A3B8" letter-spacing="1">PASS RATE</text>
+          <text x="202" y="50" font-size="22" font-weight="800" fill="#FCD34D">88%</text>
+
+          <rect x="376" width="180" height="62" rx="8" fill="#1E293B"/>
+          <text x="390" y="26" font-size="10" font-weight="700" fill="#94A3B8" letter-spacing="1">SKIPPED</text>
+          <text x="390" y="50" font-size="22" font-weight="800" fill="#94A3B8">9</text>
+        </g>
+      </g>
+
+      <!-- Executive summary peek -->
+      <text x="20" y="296" font-size="11" fill="#CBD5E1">
+        Run is healthy overall — 88% pass rate with failures isolated to Apple Pay on iOS…
+      </text>
+      <!-- Fade gradient at bottom to suggest "more below" -->
+      <rect x="0" y="300" width="600" height="20" fill="#0F172A" fill-opacity="0.8"/>
+    </g>
+  </g>
+</svg>
