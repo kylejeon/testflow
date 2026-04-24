@@ -99,6 +99,8 @@ Full docs + troubleshooting: npmjs.com/package/@testably.kr/playwright-reporter
 
 Requires Testably Professional plan. Start free at testably.app
 
+`1.0.1` = stable API, SemVer-followed. Safe to pin in CI.
+
 Cypress reporter ships May 13. Jest coming after.
 
 ---
@@ -156,9 +158,9 @@ Happy to answer questions in the comments. If you're already using Testably and 
 
 **Tweet A — Announcement**
 
-Cypress reporter is now live on npm: `@testably.kr/cypress-reporter@1.0.1`
+48 hours after Playwright, here's the Cypress side of the family.
 
-Same family as the Playwright reporter we shipped 5/11 — one install, CI results auto-sync to Testably.
+`@testably.kr/cypress-reporter@1.0.1` — stable on npm. One install, CI results auto-sync to Testably.
 
 ---
 

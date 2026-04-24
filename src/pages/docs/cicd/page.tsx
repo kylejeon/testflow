@@ -283,7 +283,7 @@ export default function CICDPage() {
         </div>
         <h1 className="text-3xl font-bold text-gray-900 mb-3">CI/CD Integration Guide</h1>
         <p className="text-gray-500 text-lg leading-relaxed">
-          Automatically upload test results from your CI/CD pipeline to Testably. Use our SDK reporters for Playwright, Cypress, and Jest, or integrate manually via GitHub Actions, GitLab CI, and Python.
+          Automatically upload test results from your CI/CD pipeline to Testably. Use our SDK reporters for Playwright and Cypress (Jest coming soon), or integrate manually via GitHub Actions, GitLab CI, and Python.
         </p>
       </div>
 
@@ -553,7 +553,7 @@ export default function CICDPage() {
               <div className="flex items-start gap-2">
                 <i className="ri-information-line text-amber-500 mt-0.5" />
                 <p className="text-sm text-amber-800">
-                  <strong>Jest reporter is in preview.</strong> The npm package (<code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-xs">@testably.kr/jest-reporter@1.0.0</code>) exists but is not officially supported yet. Playwright and Cypress are the recommended paths for now.
+                  <strong>Jest reporter — coming soon.</strong> An early <code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-xs">@testably.kr/jest-reporter@1.0.0</code> build is on npm but not officially supported yet. Playwright and Cypress are the stable paths today.
                 </p>
               </div>
             </div>

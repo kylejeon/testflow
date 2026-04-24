@@ -184,3 +184,5 @@ If you see `Upload skipped: this feature requires a Professional plan (current: 
 - **Don't have a Testably account?** [Start free](https://testably.app) — no credit card required. CI/CD integration requires the Professional plan ($99/month flat-rate, up to 20 members).
 
 Cypress reporter (`@testably.kr/cypress-reporter`) 1.0.1 is also available today — same install flow, same auto-upload behavior, hooked into Cypress's `after:run`. Jest reporter is coming soon. If your team uses multiple frameworks, watch the changelog.
+
+**About `1.0.1`:** stable API, SemVer-followed. No breaking changes without a major version bump — safe to pin in your CI.

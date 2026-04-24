@@ -122,7 +122,7 @@ const TIER_INFO = {
     annualPrice: 1009,
     priceDesc: '/ mo',
     basePlan: 'Starter',
-    features: ['Unlimited projects · up to 20 members', 'RTM: Audit Trail + AI Coverage Gap', 'Steps Library (Unlimited)', 'CI/CD Integration', 'Test Automation Framework SDK', 'Advanced reporting · priority support', '150 AI generations / month'],
+    features: ['Unlimited projects · up to 20 members', 'RTM: Audit Trail + AI Coverage Gap', 'Steps Library (Unlimited)', 'CI/CD Integration', 'Test Automation SDK (Playwright & Cypress)', 'Advanced reporting · priority support', '150 AI generations / month'],
   },
   5: {
     name: 'Enterprise S',

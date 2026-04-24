@@ -50,7 +50,7 @@ const entries = [
     title: 'Cypress Reporter 1.0.1 — Stable',
     category: 'New Feature',
     categoryColor: 'bg-sky-100 text-sky-700',
-    description: '`@testably.kr/cypress-reporter@1.0.1` is now stable on npm. Hook into Cypress `after:run` and stream results to Testably automatically.',
+    description: 'Stable on npm since late April 2026 — official launch announcement today. `@testably.kr/cypress-reporter@1.0.1` hooks into Cypress `after:run` and streams results to Testably automatically.',
     bullets: [
       'npm install --save-dev @testably.kr/cypress-reporter',
       'Tag specs with `[TC-101]` in `describe()` / `it()` — reporter matches automatically',
@@ -74,7 +74,7 @@ const entries = [
   },
   {
     date: 'April 2026',
-    title: 'Test Automation Framework SDK',
+    title: 'Test Automation SDK',
     category: 'New Feature',
     categoryColor: 'bg-sky-100 text-sky-700',
     description: 'Native reporters for Playwright and Cypress. Connect your automation suite to Testably in one `npm install`. Jest reporter coming soon.',
