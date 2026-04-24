@@ -1116,3 +1116,11 @@
   로컬 시드 데이터 구성 → DevTools 풀페이지 캡처 → Figma 합성 → PNG export
   (현재 SVG는 고충실도 목업 / 실제 UI와 동일한 정보와 컬러 토큰 사용)
 - 선택: og:image 1200×630 변형도 SVG 기반으로 제작 가능 (명세 §7)
+
+## 2026-04-24 추가 작업 — 히어로 라이트 테마 전환
+- CEO 지적: "우리 제품은 라이트 테마인데 히어로가 다크라 괴리가 있음"
+- 확인: plan-detail/page.tsx L1951 bg:#fff, HEATMAP_COLORS 모두 라이트 팔레트
+- 다크 버전 폐기, 라이트 버전으로 덮어쓰기 (public/hero-screenshot.svg)
+- HEATMAP_COLORS 코드값과 1:1 일치
+- 플로팅 Run Summary 헤더만 브랜드 액센트로 인디고 그라데이션 유지
+- 커밋 a4f5f35 push 완료
