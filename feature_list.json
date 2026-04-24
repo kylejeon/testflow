@@ -1,36 +1,8 @@
 {
   "generated_at": "2026-04-20",
-  "updated_at": "2026-04-21",
-  "total_count": 25,
+  "updated_at": "2026-04-24",
+  "total_count": 17,
   "features": [
-    {
-      "id": "f001",
-      "title": "AI Insights 실제 Claude API 호출 (Environment Coverage)",
-      "category": "ai",
-      "description": "Environment Heatmap의 AI Insights 사이드바가 현재 rule-based 클라이언트 계산만 제공. Claude Haiku 기반 'Regenerate with AI' 버튼으로 milestone-risk-predictor와 유사한 하이브리드 구조(rule-based → AI)를 도입해 패턴 분석 품질을 높인다.",
-      "priority": "P2",
-      "impact": "medium",
-      "effort": "medium",
-      "source": "dev-spec-environment-v2",
-      "dependencies": [],
-      "status": "done",
-      "notes": "구현 완료 2026-04-24 (c4ccbee + 03ac477). Dev Spec: dev-spec-f001-f002-env-ai-insights.md. QA: Ship with fixes (P1 수정 완료)."
-    },
-    {
-      "id": "f002",
-      "title": "Environment AI Insights 'Create issue / Filter / Assign run' 액션 구현",
-      "category": "workflow",
-      "description": "Heatmap AI 카드의 chip 버튼들이 현재 'Coming soon' 토스트만 표시. Critical env/TC에서 바로 이슈 생성 모달 열기, Run Assign 등 실제 워크플로우 진입점으로 연결한다.",
-      "priority": "P2",
-      "impact": "medium",
-      "effort": "small",
-      "source": "dev-spec-environment-v2",
-      "dependencies": [
-        "f001"
-      ],
-      "status": "done",
-      "notes": "구현 완료 2026-04-24 (c4ccbee). f001 과 번들. Create Issue inline modal + Filter column highlight + Assign Run scrollIntoView 전부 구현."
-    },
     {
       "id": "f003",
       "title": "Legacy freeform environment text → 구조화 환경 1회성 마이그레이션 툴",
@@ -86,70 +58,6 @@
       "notes": "OOS §9. 설계 결정 선행 필요"
     },
     {
-      "id": "f007",
-      "title": "Environment 관리 RLS 고도화 (Deactivate = Admin+ DB 레벨)",
-      "category": "security",
-      "description": "현재는 클라이언트 레벨에서만 canDeactivate(Admin+) 가드. DB RLS는 Tester+ UPDATE 허용. is_active=false 변경만 Admin+로 제한하는 WITH CHECK 정책 추가.",
-      "priority": "P2",
-      "impact": "medium",
-      "effort": "small",
-      "source": "qa-report-environment-workflow | progress.txt",
-      "dependencies": [],
-      "status": "done",
-      "notes": "구현 완료 2026-04-24. BEFORE UPDATE 트리거 (WHEN is_active 변경) + SECURITY DEFINER + 42501 예외. pgTAP 4 케이스. 마이그레이션: 20260424_f007_environments_deactivate_admin_only.sql (CEO 수동 적용 필요)."
-    },
-    {
-      "id": "f008",
-      "title": "Environment Heatmap Summary 정확값 치환",
-      "category": "data",
-      "description": "현재 src/lib/environments.ts summaryStatus가 proxy 값(pass=85, mixed=60 등)으로 평균 계산. 실제 누적 passed/executed 합산으로 정확도 개선. summary row와 tooltip 숫자 일관성 확보.",
-      "priority": "P3",
-      "impact": "low",
-      "effort": "small",
-      "source": "qa-report-environment-workflow | progress.txt",
-      "dependencies": [],
-      "status": "done",
-      "notes": "이전 Heatmap v2 커밋 (6fc219d) 에서 이미 해결됨. summaryStatus(passed, executed) 시그니처로 교체 + buildEnvironmentHeatmap 에서 각 column 의 row 별 passed/executed 실 누적 합산 (src/lib/environments.ts:287-299). environments.test.ts 도 새 시그니처 반영 완료 (28 cases PASS). 확인 완료 2026-04-24."
-    },
-    {
-      "id": "f011",
-      "title": "AI 토큰 예산 모니터링 대시보드",
-      "category": "observability",
-      "description": "현재 Dashboard aiUsageCount는 단일 숫자만 표시. 팀/멤버별 기여도, 모드별(tc_generation / risk / coverage-gap) 분해, 일별 시계열, 한도 대비 burn rate 등 owner가 비용 모니터링할 수 있는 상세 뷰.",
-      "priority": "P2",
-      "impact": "high",
-      "effort": "medium",
-      "source": "dev-spec-ai-usage-shared-pool",
-      "dependencies": [],
-      "status": "done",
-      "notes": "OOS 'Dashboard UI에 팀 전체 usage 중 본인 기여도 분해' 명시",
-      "completed_at": "2026-04-23",
-      "completed_refs": {
-        "commits": [
-          "194832e",
-          "5e1f9b4",
-          "4a76e20",
-          "1aa42ec"
-        ],
-        "dev_spec": "docs/specs/dev-spec-f011-ai-token-budget-dashboard.md",
-        "design_spec": "docs/specs/design-spec-f011-ai-token-budget-dashboard.md",
-        "qa_report": "docs/qa/qa-report-f011-ai-token-budget-dashboard.md"
-      }
-    },
-    {
-      "id": "f012",
-      "title": "Jira/GitHub Issues Refresh — 플랜별 제한 + 권한 분기",
-      "category": "integration",
-      "description": "IssuesList의 Refresh 버튼이 현재 canRefresh={true} 고정. Viewer도 노출됨. (1) Tester+ 권한 조건 추가 (2) Free 12h / Hobby 일 3회 debounce + quota 배너.",
-      "priority": "P2",
-      "impact": "medium",
-      "effort": "small",
-      "source": "qa-report-milestone-overview-redesign | progress.txt",
-      "dependencies": [],
-      "status": "done",
-      "notes": "구현 완료 2026-04-24. 클라이언트: usePermission('create_testcase') 가드 + plan/milestone-detail 양쪽 연결. 서버: _shared/issues-refresh-limit.ts + getEffectiveTier 기반 token-bucket (Free 1/12h, Hobby 3/day, Starter 10/h, Pro+ 60/h). 429 응답 시 IssuesList 에서 quotaExceeded 토스트."
-    },
-    {
       "id": "f013",
       "title": "Sync 함수 DLQ — 실패 key 자동 재시도 큐",
       "category": "integration",
@@ -161,19 +69,6 @@
       "dependencies": [],
       "status": "backlog",
       "notes": "AC-A5. 현재는 6h 주기에서 자연 재시도"
-    },
-    {
-      "id": "f014",
-      "title": "GitHub assignee 실명(name) 매핑 교체",
-      "category": "integration",
-      "description": "github_issues JSONB의 assignee_display_name에 login(username)이 저장되고 있음. GitHub User API의 .name(실명) 필드 사용으로 변경. 기존 행 백필 SQL 포함.",
-      "priority": "P2",
-      "impact": "low",
-      "effort": "small",
-      "source": "qa-report-milestone-overview-redesign | progress.txt",
-      "dependencies": [],
-      "status": "done",
-      "notes": "구현 완료 2026-04-24. _shared/github-user.ts 에 name 조회 + 캐시 helper. sync-github-metadata / create-github-issue 양쪽 적용. 기존 행 자동 마이그레이션: 6h cron 이 자연스럽게 갱신 (또는 사용자가 Tester+ 권한으로 수동 Refresh — f012 rate limit 적용). 별도 백필 SQL 불필요."
     },
     {
       "id": "f015",
@@ -200,29 +95,6 @@
       "dependencies": [],
       "status": "backlog",
       "notes": "OOS"
-    },
-    {
-      "id": "f018",
-      "title": "AI Credit 소비 — Race Condition 방어 (advisory lock)",
-      "category": "security",
-      "description": "usedCredits 조회와 credits_used insert 사이에 원자성 없음. 동시 2요청 시 credit 2배 차감 가능. PostgreSQL advisory lock 또는 UNIQUE 제약으로 직렬화.",
-      "priority": "P2",
-      "impact": "medium",
-      "effort": "small",
-      "source": "qa-report-milestone-overview-v2",
-      "dependencies": [],
-      "status": "done",
-      "notes": "SEC-H-2. Hobby 한도(15)에서 실질적 영향",
-      "completed_at": "2026-04-23",
-      "completed_refs": {
-        "commits": [
-          "f99591f",
-          "6940b53"
-        ],
-        "dev_spec": "docs/specs/dev-spec-f018-ai-credit-race-condition.md",
-        "qa_report": "docs/qa/qa-report-f018-ai-credit-race-condition.md",
-        "migration": "supabase/migrations/20260424_f018_ai_credit_atomic_consume_rpc.sql"
-      }
     },
     {
       "id": "f019",
