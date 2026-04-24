@@ -108,8 +108,8 @@
       "effort": "small",
       "source": "qa-report-environment-workflow | progress.txt",
       "dependencies": [],
-      "status": "backlog",
-      "notes": "N-3. 이미 progress 노트에 follow-up 기록됨"
+      "status": "done",
+      "notes": "이전 Heatmap v2 커밋 (6fc219d) 에서 이미 해결됨. summaryStatus(passed, executed) 시그니처로 교체 + buildEnvironmentHeatmap 에서 각 column 의 row 별 passed/executed 실 누적 합산 (src/lib/environments.ts:287-299). environments.test.ts 도 새 시그니처 반영 완료 (28 cases PASS). 확인 완료 2026-04-24."
     },
     {
       "id": "f011",
