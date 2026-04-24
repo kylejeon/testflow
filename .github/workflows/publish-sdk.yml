@@ -112,6 +112,16 @@ jobs:
       - name: Unit tests (root)
         run: npm run test -- --run
 
+      # reporter-core 는 playwright/cypress 의 타입 의존성이다.
+      # npm workspaces 는 packages/core 를 node_modules/@testably.kr/reporter-core
+      # 로 심볼릭 링크하지만, 해당 디렉토리의 dist/*.d.ts 가 사전 생성되어
+      # 있지 않으면 tsup DTS 빌드가 `Cannot find module` 로 실패한다.
+      # target 이 core 가 아닐 때만 미리 빌드.
+      - name: Build dependency (reporter-core)
+        if: steps.target.outputs.package != 'core'
+        working-directory: packages/core
+        run: npm run build
+
       - name: Build SDK package
         working-directory: packages/${{ steps.target.outputs.package }}
         run: npm run build
