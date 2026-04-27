@@ -53,4 +53,30 @@ test('test case creation saves successfully', async ({ page }) => {
   // Modal should close and the new TC title should appear in the list
   await expect(modal).not.toBeVisible({ timeout: 5_000 });
   await expect(page.getByText(SMOKE_TC_TITLE)).toBeVisible({ timeout: 10_000 });
+
+  // ── Cleanup: delete the just-created TC so smoke runs don't accumulate
+  //    DB rows toward the Free-tier 100 TC/project limit (which silently
+  //    blocks future submissions). Verifies create+delete lifecycle.
+  try {
+    // Auto-accept the native confirm() that TestCaseList uses for delete
+    page.once('dialog', (dialog) => dialog.accept());
+
+    // Click the row title to open the details panel (where Delete button lives)
+    await page.getByText(SMOKE_TC_TITLE).first().click();
+
+    // Delete button in the details panel — icon-only, rose-colored
+    const deleteBtn = page
+      .locator('button.text-rose-500')
+      .filter({ has: page.locator('i.ri-delete-bin-line') })
+      .first();
+    await deleteBtn.click();
+
+    // Verify removed from the list
+    await expect(page.getByText(SMOKE_TC_TITLE)).not.toBeVisible({ timeout: 10_000 });
+  } catch (err) {
+    // Cleanup is best-effort. The create assertion above is the load-bearing
+    // smoke signal — if cleanup fails, we accept slight DB pollution rather
+    // than a false-negative CI failure on a flaky delete UI.
+    console.warn(`[smoke] TC cleanup failed for ${SMOKE_TC_TITLE}:`, err);
+  }
 });
