@@ -1919,7 +1919,7 @@ export default function HomePage() {
                 <ul className="space-y-2.5">
                   {t.footer.useCaseLinks.map((item, i) => (
                     <li key={item}>
-                      <Link to={['/use-cases/test-case-management', '/use-cases/test-management-tool', '/blog/choosing-test-management-tool'][i]} className="text-gray-500 text-sm hover:text-gray-300 transition-colors">{item}</Link>
+                      <Link to={['/use-cases/test-case-management', '/use-cases/test-management-tool', '/blog'][i]} className="text-gray-500 text-sm hover:text-gray-300 transition-colors">{item}</Link>
                     </li>
                   ))}
                 </ul>
