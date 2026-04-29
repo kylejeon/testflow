@@ -10,8 +10,8 @@ const structuredData = {
   description:
     '@testably.kr/cypress-reporter — every Cypress run auto-syncs to Testably. One npm install, one setupNodeEvents line, three env vars.',
   url: 'https://testably.app/blog/cypress-reporter-ci-integration',
-  datePublished: '2026-05-13',
-  dateModified: '2026-05-13',
+  datePublished: '2026-04-27',
+  dateModified: '2026-04-27',
   author: { '@type': 'Organization', name: 'Testably' },
   publisher: {
     '@type': 'Organization',
@@ -162,7 +162,7 @@ export default function BlogCypressReporterCiIntegrationPage() {
             </p>
             <div className="flex items-center gap-4 text-sm text-slate-500">
               <span className="flex items-center gap-1.5"><i className="ri-time-line"></i> 6 min read</span>
-              <span className="flex items-center gap-1.5"><i className="ri-calendar-line"></i> May 13, 2026</span>
+              <span className="flex items-center gap-1.5"><i className="ri-calendar-line"></i> April 27, 2026</span>
               <span className="flex items-center gap-1.5"><i className="ri-user-line"></i> Testably Team</span>
             </div>
           </div>

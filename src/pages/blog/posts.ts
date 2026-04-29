@@ -20,7 +20,7 @@ export const BLOG_POSTS: BlogPost[] = [
     title: 'Ship Your Cypress Test Results to Testably in 3 Lines',
     description:
       '@testably.kr/cypress-reporter — every Cypress run auto-syncs to Testably. One npm install, one setupNodeEvents line, three env vars.',
-    publishDate: '2026-05-13',
+    publishDate: '2026-04-27',
     readTime: '6 min read',
     category: 'QA Engineering',
     icon: 'ri-test-tube-line',
@@ -30,7 +30,7 @@ export const BLOG_POSTS: BlogPost[] = [
     title: 'Ship Your Playwright Test Results to Testably in 3 Lines',
     description:
       '@testably.kr/playwright-reporter — sync every Playwright CI run to your QA dashboard automatically. One install, one config line, three env vars.',
-    publishDate: '2026-05-11',
+    publishDate: '2026-04-27',
     readTime: '6 min read',
     category: 'QA Engineering',
     icon: 'ri-flashlight-line',
