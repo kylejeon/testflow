@@ -83,6 +83,7 @@ const CompareIndexPage = lazy(() => import('../pages/compare/index'));
 const ContactPage = lazy(() => import('../pages/contact/page'));
 const TestCaseManagementPage = lazyWithRetry(() => import('../pages/use-cases/test-case-management/page'));
 const TestManagementToolPage = lazyWithRetry(() => import('../pages/use-cases/test-management-tool/page'));
+const BlogIndexPage = lazyWithRetry(() => import('../pages/blog/page'));
 const BlogChoosingToolPage = lazyWithRetry(() => import('../pages/blog/choosing-test-management-tool/page'));
 const BlogPlaywrightReporterPage = lazyWithRetry(() => import('../pages/blog/playwright-reporter-ci-integration/page'));
 const BlogCypressReporterPage = lazyWithRetry(() => import('../pages/blog/cypress-reporter-ci-integration/page'));
@@ -283,6 +284,10 @@ const routes: RouteObject[] = [
   {
     path: '/use-cases/test-management-tool',
     element: <TestManagementToolPage />,
+  },
+  {
+    path: '/blog',
+    element: <BlogIndexPage />,
   },
   {
     path: '/blog/choosing-test-management-tool',

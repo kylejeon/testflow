@@ -11,7 +11,7 @@ const footerLinks = {
   'Use Cases': [
     { label: 'Test Case Management', to: '/use-cases/test-case-management' },
     { label: 'Test Management Tool', to: '/use-cases/test-management-tool' },
-    { label: 'Blog', to: '/blog/choosing-test-management-tool' },
+    { label: 'Blog', to: '/blog' },
   ],
   Compare: [
     { label: 'vs TestRail', to: '/compare/testrail' },

@@ -176,7 +176,7 @@ export default function BlogChoosingTestManagementToolPage() {
             <div className="flex items-center gap-2 mb-6">
               <Link to="/" className="text-slate-500 hover:text-slate-300 text-sm transition-colors">Home</Link>
               <i className="ri-arrow-right-s-line text-slate-600 text-sm"></i>
-              <span className="text-slate-400 text-sm">Blog</span>
+              <Link to="/blog" className="text-slate-500 hover:text-slate-300 text-sm transition-colors">Blog</Link>
             </div>
             <div className="inline-flex items-center gap-2 mb-6 px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full">
               <i className="ri-article-line text-indigo-400 text-sm"></i>
