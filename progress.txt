@@ -1168,3 +1168,17 @@
 
 ## 다음
 - claude → main 머지 (CEO 수동) → 30분 cron 자동 운영 복귀
+
+## 2026-04-27 후반 — 블로그 페이지 사전 제작 (Option A)
+
+### T-14 dry-run §4 미해결 항목 해소
+- 5/11 publish 대상: src/pages/blog/playwright-reporter-ci-integration/ (534 lines, draft 기존)
+- 5/13 publish 대상: src/pages/blog/cypress-reporter-ci-integration/ (565 lines, 오늘 marketer agent 가 새 draft 작성)
+- router/config.tsx 에 두 라우트 등록
+- npm run build 성공
+
+### 다음
+- launch plan §4 Phase 5 (5/11) / §9 Phase 5/13 — CEO 가 외부 채널에서
+  canonical URL 노출만 시작하면 publish 처리됨
+- 5/6 회귀 테스트 (Claude — examples/* 3종에서 reporter 통합 실제 실행)
+- 5/10 T-1 체크리스트
