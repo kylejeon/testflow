@@ -1,3 +1,26 @@
+2026-04-28: f028 Playwright Reporter — 블로그 포스트 React 페이지 변환 완료
+
+## 뭘 했냐 (claude 브랜치)
+- src/pages/blog/playwright-reporter-ci-integration/page.tsx (534 lines) — draft 마크다운을 choosing-test-management-tool 미러 패턴으로 React 변환
+  - SEOHead (canonical/ogUrl/structuredData BlogPosting 2026-05-11)
+  - Hero(slate-900 + 인디고 그라데이션 H1 "Ship Your Playwright Test Results to Testably in 3 Lines")
+  - 7개 섹션 TOC + 7개 본문 섹션 (blackhole / workarounds / fix / mapping / dashboard / dry-run / next-steps)
+  - 코드 블록 9개 (install / config / env / title / annotation / tag / customMapper / skipSummary / dryRun / dryRunOutput)
+    - CodeBlock 컴포넌트 (slate-900 dark, language label 헤더)
+  - dashboardItems 4개 카드 (pass/fail / failure notes / AI summary / flaky+trend)
+  - Cypress 1.0.1 + SemVer 메시지 모두 포함
+  - Related resources: /docs/cicd, /blog/choosing-test-management-tool, /pricing
+  - CTA(slate-900) Get Started Free / View Pricing
+- src/router/config.tsx
+  - lazyWithRetry import 추가 (BlogPlaywrightReporterPage)
+  - /blog/playwright-reporter-ci-integration 라우트 등록
+
+## 검증
+- npx tsc --noEmit -p tsconfig.app.json — 본인 파일(playwright-reporter-ci-integration) 에러 0
+- router/config.tsx 의 verbatimModuleSyntax 에러 2건은 사전 존재(pre-existing) 에러로 본 작업과 무관 (git stash 로 확인)
+
+---
+
 2026-04-23: f011 AI Token Budget Monitoring Dashboard — Phase 4 구현 완료 (22 ACs)
 
 ## 뭘 했냐 (claude 브랜치)
