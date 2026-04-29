@@ -264,7 +264,7 @@ Upgrade Playwright: `npm install --save-dev @playwright/test@latest`. The report
 
 ## Contributing
 
-This package is part of the Testably SDK monorepo. Issues and pull requests are welcome on [GitHub](https://github.com/testably/testably).
+This package is part of the Testably SDK monorepo. Issues and pull requests are welcome on [GitHub](https://github.com/kylejeon/testflow).
 
 ---
 

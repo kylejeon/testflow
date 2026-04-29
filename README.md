@@ -207,36 +207,10 @@ SMOKE_BASE_URL=https://staging.testably.app npm run test:smoke
 
 ## Test Automation SDK
 
-Testably ships an official Playwright reporter so Pro+ customers can
-automatically sync CI test results to a Testably run. The SDK lives in
-`packages/` and is developed as a standalone open-source package.
-
-| Package | Location | Publish status |
-|---------|----------|----------------|
-| [`@testably.kr/playwright-reporter`](./packages/playwright/README.md) | `packages/playwright/` | MIT — pending publish to npm (alpha) |
-| `@testably.kr/reporter-core` | `packages/core/` | Internal HTTP client used by the reporter |
-
-### Quick start (Playwright)
-
-```bash
-npm install --save-dev @testably.kr/playwright-reporter
-```
-
-```ts
-// playwright.config.ts
-import { defineConfig } from '@playwright/test';
-
-export default defineConfig({
-  reporter: [
-    ['list'],
-    ['@testably.kr/playwright-reporter', { testCaseIdSource: 'title' }],
-  ],
-});
-```
-
-Set `TESTABLY_URL`, `TESTABLY_TOKEN`, and `TESTABLY_RUN_ID` in your CI
-environment. See [`packages/playwright/README.md`](./packages/playwright/README.md)
-for configuration, TC-matching strategies, and troubleshooting.
+Detailed configuration, TC-matching strategies, and troubleshooting live in
+each package's README — see [`packages/playwright/README.md`](./packages/playwright/README.md)
+and [`packages/cypress/README.md`](./packages/cypress/README.md). The SDK
+status table is in [§ SDK Packages](#sdk-packages) above.
 
 Requires a Testably **Professional** plan or higher on the server side.
 

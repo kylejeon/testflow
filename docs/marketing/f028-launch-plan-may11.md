@@ -121,7 +121,7 @@
 
 - [ ] Product Hunt (`testably.app/playwright-reporter` 페이지)
 - [ ] 트위터 (@testably_app 계정 — 11-tweet thread)
-- [ ] Testably 블로그 (`testably.app/blog/playwright-reporter-stable`)
+- [ ] Testably 블로그 (`testably.app/blog/playwright-reporter-ci-integration`)
 - [ ] ~~Loops 이메일~~ → Day 1 성과 보고 재결정 (보류)
 - [ ] Dev.to 크로스포스트
 - [ ] Hacker News `Show HN`
@@ -171,8 +171,8 @@
 
 ### 블로그 crosspost 절차
 
-1. **Primary**: `testably.app/blog/playwright-reporter-stable` 먼저 publish (5/11 09:05 KST)
-2. **Dev.to crosspost**: `canonical_url: https://testably.app/blog/playwright-reporter-stable` 메타 설정 (SEO 중복 방지)
+1. **Primary**: `testably.app/blog/playwright-reporter-ci-integration` 먼저 publish (5/11 09:05 KST)
+2. **Dev.to crosspost**: `canonical_url: https://testably.app/blog/playwright-reporter-ci-integration` 메타 설정 (SEO 중복 방지)
 3. dev.to 태그: `#playwright`, `#qa`, `#testing`, `#ci`, `#devops`
 4. Medium 은 Phase 6 까지 보류 (반응 보고 선택적으로 crosspost)
 
@@ -227,7 +227,7 @@ npm view @testably.kr/playwright-reporter dist-tags
 | 11:10 | `npm view @testably.kr/cypress-reporter dist-tags.latest` → `1.0.1` 확인 | CEO |
 | 11:30 | PH 코멘트 업데이트 ("Cypress Reporter is live as of today") | CEO |
 | 12:00 | 트위터 **5-tweet thread** (Cypress 전용, Playwright thread 에 reply) | CEO |
-| 13:00 | 블로그 포스트 게시 (`testably.app/blog/cypress-reporter-stable`) | CEO |
+| 13:00 | 블로그 포스트 게시 (`testably.app/blog/cypress-reporter-ci-integration`) | CEO |
 | 14:00 | Dev.to 크로스포스트 | @marketer |
 | 15:00 | LinkedIn 포스팅 | CEO |
 | 15:30 | Hacker News `Show HN` (또는 skip — Playwright 때 썼으면 중복) | CEO |

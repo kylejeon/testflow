@@ -75,7 +75,7 @@ First stable public release.
 - Testably Professional plan or higher for live uploads
 - Three environment variables: `TESTABLY_URL`, `TESTABLY_TOKEN`, `TESTABLY_RUN_ID`
 
-[1.0.1]: https://github.com/kylejeon/testflow/releases/tag/playwright-reporter-v1.0.1
+[1.0.1]: https://github.com/kylejeon/testflow/releases/tag/sdk-playwright-v1.0.1
 ```
 
 ---
