@@ -1,3 +1,26 @@
+2026-05-07: Paddle 정기결제 이슈 대응 — 코드 변경 없음
+
+## 뭘 했냐
+- 사용자 문의: "[TEST]-Testably" Paddle 영수증 이메일이 계속 옴
+- 최근 커밋(claude 브랜치) 조사 → Paddle 코드는 한참 전(`e333b28 switch Paddle to production` 이전)에 마무리됐고 최근 작업과 무관함을 확인
+- 현재 환경 설정 검증:
+  - src/lib/paddle.ts:21 → `environment = 'production'` 하드코딩
+  - .env → VITE_PADDLE_CLIENT_TOKEN=live_*, PADDLE_API_KEY=pdl_live_* (둘 다 라이브 키)
+- 사용자가 kylejeon83@gmail.com (테스트 계정)에 Hobby 정기결제가 등록돼 있던 것을 발견
+- Paddle Dashboard 에서 직접 취소하도록 단계 안내 → 사용자가 vendors.paddle.com 에서 구독 취소 완료
+
+## 어디까지 됐냐
+- 정기결제 취소 완료 (사용자가 Paddle Dashboard 에서 수동 처리)
+- subscription.cancelled webhook → DB subscription_ends_at 업데이트는 자동으로 처리됨 (확인 미실시)
+
+## 다음엔 뭘 해야 해
+- (옵션) Settings → Billing 에서 종료일 안내가 정상 표시되는지 사용자가 확인
+- (미해결) "[TEST]" prefix 원인 미상. 영수증 본문에 'Sandbox' 단어 있는지 확인 필요
+  - 있으면 sandbox 거래 (production 환경과 별개 sandbox 계정 활동 의심)
+  - 없으면 Paddle vendors.paddle.com → Settings → Checkout → Brand 의 Seller name 이 "[TEST]-Testably" 로 잘못 설정돼 있을 가능성 → 실 고객 영수증에도 영향 가니 우선순위 ↑
+
+---
+
 2026-04-28: f028 Playwright Reporter — 블로그 포스트 React 페이지 변환 완료
 
 ## 뭘 했냐 (claude 브랜치)
