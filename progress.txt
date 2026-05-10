@@ -1,3 +1,31 @@
+2026-05-10 (오후): SEO 경쟁사 풀-커버리지 전략 (Option C) 착수 결정 — 브리핑만 작성
+
+## 뭘 했냐
+- 사용자 질문: 구글 경쟁사 검색에 Testably 도 노출시키려면? → SEO 경쟁사 페이지 전략 논의
+- 현재 상태 점검: /compare/{testrail,zephyr,qase} 3개만 운영. "X alternative" 키워드 미캐치.
+- 3가지 옵션(A/B/C) 제시 → CEO 결정: C (풀 SEO 전략)
+- 스코프 확정 (CEO 결정):
+  - 경쟁사 10개 (TestRail, Zephyr, Qase, Xray, PractiTest, TestPad, Kiwi TCMS, TestMonitor, BrowserStack TM, Testiny)
+  - 페이지 패턴: /compare/{slug} + /alternatives/{slug} + 상위 6개 vs-매트릭스 + 블로그 11편 = ~45 페이지
+  - 타이밍: 5/12 부터 (5/11 런칭 안정화 후) — 런칭 D-1 코드 변경 회귀 리스크 회피
+- 오늘 작업: 코드 변경 0. 5/12 researcher 착수가 막히지 않도록 브리핑 문서만 깔아둠.
+
+## 변경 파일 (claude 브랜치)
+- docs/research/seo-competitor-strategy-brief.md (신규) — 풀 파이프라인 계획 + 5/12 researcher 프롬프트 드래프트 + 리스크 + Phase별 산출물 정의
+
+## 어디까지 됐냐
+- 브리핑 문서 ready. 5/12 아침 @researcher 호출 시 §3 프롬프트 드래프트 그대로 입력하면 즉시 시작 가능
+- 코드 변경 0 — 런칭에 영향 없음
+
+## 다음엔 뭘 해야 해
+1. **5/11 (내일):** f028 런칭 모니터링 (이전 항목 참조) — SEO 작업은 손대지 말 것
+2. **5/12 아침:** docs/research/seo-competitor-strategy-brief.md 의 §3 프롬프트로 @researcher 백그라운드 호출
+3. **5/12~5/13:** Phase 1 산출 검토, 누락 경쟁사/키워드 추가 결정
+4. **5/14~:** @planner → @designer → @marketer + @developer 병렬 → @qa → 런칭 (총 ~12~14일 예상, 5/24 발사 타깃)
+5. **트래킹:** docs/research/seo-competitor-strategy-brief.md §5 체크박스 활용
+
+---
+
 2026-05-10: f028 5/11 런칭 T-1 점검 + publishDate 정렬
 
 ## 뭘 했냐
