@@ -1205,3 +1205,24 @@
   canonical URL 노출만 시작하면 publish 처리됨
 - 5/6 회귀 테스트 (Claude — examples/* 3종에서 reporter 통합 실제 실행)
 - 5/10 T-1 체크리스트
+
+---
+
+2026-05-10: 5/11 런칭 인프라 점검 — LAUNCH_READINESS_0511.md 작성
+
+## 뭘 했냐
+- 8개 항목 인프라 점검 (배포/Edge functions/env/migration/branch/모니터링/SSL/rate limit)
+- LAUNCH_READINESS_0511.md 레포 루트에 작성, claude 브랜치에 푸시 (ba249e8)
+
+## 핵심 발견
+- ✅ testably.app HTTP 200, SSL 정상 (Cloudflare 앞단)
+- ✅ main과 origin/claude 동일 commit (79792a4) — 머지 대기 코드 0건
+- ✅ DB migration 실제 적용됨 (f011 RPC 호출 200 확인)
+- ⚠️ /functions/v1/health 가 503 반환 — Paddle API 403 때문 (Lemon Squeezy 마이그레이션 중이므로 health에서 Paddle 체크 빼는 게 적절)
+- ⚠️ supabase migration list 추적 불일치 (70개 중 2개만 등록) — supabase migration repair 필요
+- ⚠️ Edge function 로컬 sync-jira-status 미배포, 옛 check-overdue-milestones 잔존
+- ⚠️ Vercel 환경변수 (VITE_SENTRY_DSN, LOOPS_API_KEY 등) Vercel/Supabase Secrets 직접 확인 필요
+
+## 다음엔 뭘 해야 해
+- 런칭 30분 전 P1 2건 처리: (a) health 함수에서 Paddle 체크 optional (b) Vercel env 직접 확인
+- 런칭 후 P2: supabase migration repair, sync-jira-status 배포/삭제 결정, Rate limit 재점검
