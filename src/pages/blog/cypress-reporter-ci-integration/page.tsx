@@ -10,8 +10,8 @@ const structuredData = {
   description:
     '@testably.kr/cypress-reporter — every Cypress run auto-syncs to Testably. One npm install, one setupNodeEvents line, three env vars.',
   url: 'https://testably.app/blog/cypress-reporter-ci-integration',
-  datePublished: '2026-04-27',
-  dateModified: '2026-04-27',
+  datePublished: '2026-05-13',
+  dateModified: '2026-05-13',
   author: { '@type': 'Organization', name: 'Testably' },
   publisher: {
     '@type': 'Organization',

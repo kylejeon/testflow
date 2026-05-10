@@ -10,8 +10,8 @@ const structuredData = {
   description:
     'Stop losing CI test data. @testably.kr/playwright-reporter syncs every Playwright run to Testably automatically — one npm install, one config line, three env vars.',
   url: 'https://testably.app/blog/playwright-reporter-ci-integration',
-  datePublished: '2026-04-27',
-  dateModified: '2026-04-27',
+  datePublished: '2026-05-11',
+  dateModified: '2026-05-11',
   author: { '@type': 'Organization', name: 'Testably' },
   publisher: {
     '@type': 'Organization',

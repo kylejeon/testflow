@@ -184,7 +184,7 @@ Known acceptable quirks:
 > copy/links below.
 
 - [ ] `testably.app/pricing` — Professional plan lists "Playwright CI reporter" under features
-- [ ] `testably.app/blog/playwright-reporter-stable` — blog post is live, correct date
+- [ ] `testably.app/blog/playwright-reporter-ci-integration` — blog post is live, correct date
 - [ ] All links in the blog → 200 (no broken npm/github/docs links)
 
 ---
