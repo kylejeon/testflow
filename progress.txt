@@ -1,3 +1,35 @@
+2026-05-10: f028 5/11 런칭 T-1 점검 + publishDate 정렬
+
+## 뭘 했냐
+- Explore 에이전트로 런칭 readiness 종합 점검 (블로그/라우팅/마케팅/QA 정합성)
+- 발견된 블로커: posts.ts + 두 page.tsx 의 publishDate/structuredData 가 4/27 로 박혀 있음 (런칭 일자와 불일치)
+- CEO 결정: 5/11 (Playwright) + 5/13 (Cypress) 로 정렬, 사전 노출은 그대로 유지
+
+## 변경 파일 (claude 브랜치)
+- src/pages/blog/posts.ts — playwright publishDate 2026-04-27 → 2026-05-11, cypress 2026-04-27 → 2026-05-13
+- src/pages/blog/playwright-reporter-ci-integration/page.tsx — structuredData datePublished/dateModified → 2026-05-11
+- src/pages/blog/cypress-reporter-ci-integration/page.tsx — structuredData datePublished/dateModified → 2026-05-13
+- docs/qa/qa-checklist-f028-launch.md — 옛 슬러그 `playwright-reporter-stable` → `playwright-reporter-ci-integration` (line 187)
+
+## 검증
+- npx tsc --noEmit -p tsconfig.app.json: 블로그 관련 에러 0 (settings/page.tsx 등 사전 존재 에러는 본 작업과 무관)
+- npm run build: ✅ 성공 (8.00s)
+
+## 어디까지 됐냐 (런칭 readiness)
+- 블로그 페이지/라우팅/SEO/구조화데이터 ✅
+- 마케팅 자산 (docs/marketing/f028-launch-plan-may11.md + PH/트위터/체인지로그/README) ✅
+- /pricing 에 SDK 항목 노출 ✅
+- 빌드/타입체크 ✅
+- 과거 dry-run 리포트의 `*-stable` 잔존 4건은 의도적으로 보존 (감사 로그)
+
+## 다음엔 뭘 해야 해 (5/11 런칭 당일 수동 확인)
+- OG 이미지 https://testably.app/brand/og-dark-1200x630.png 실제 파일/사이즈(1200x630)
+- Dev.to 크로스포스트 시 canonical_url=https://testably.app/blog/playwright-reporter-ci-integration 설정
+- Product Hunt 제출 시 랜딩 URL slug 확인 (-stable 옛 표기 잔존 여부)
+- 런칭 후 첫 결제 시 Paddle 영수증 [TEST] prefix 재현 여부 확인 (5/7 미해결 항목 추적)
+
+---
+
 2026-05-07: Paddle 정기결제 이슈 대응 — 코드 변경 없음
 
 ## 뭘 했냐
