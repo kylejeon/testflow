@@ -1,3 +1,29 @@
+2026-05-13 (심야): D-Day 런칭 콘텐츠 풀패키지 작성 완료
+
+## 뭘 했냐
+- docs/marketing/f028-launch-content-pack-may19.md 신규 작성 (1개 파일)
+- 5/19 PH 런칭 기준 전 채널 카피 통합 (묶음 톤 — Testably 플랫폼 + 두 reporter 내장)
+- 섹션 구성:
+  - §1 Pre-launch teasers (D-3 Twitter, D-1 Twitter, D-1 LinkedIn)
+  - §2 D-Day 발사 카피 (Twitter 7트윗, LinkedIn, Email 3 subject options, Dev.to x2, Show HN, Reddit)
+  - §3 PH FAQ 응답 템플릿 10개 (paste-ready, 각 60-100 words)
+  - §4 D-Day 타임라인 체크리스트 (KST 기준 8개 액션)
+  - §5 Placeholder 목록 5개 (검색-치환용)
+- f028-product-hunt-launch.md 톤/포지셔닝 계승 확인
+- 과장 표현 0, 실제 작동 코드 스니펫만 사용, PH/HN/Reddit 룰 준수
+
+## 어디까지 됐냐
+- f028-launch-content-pack-may19.md 완성 및 claude 브랜치 커밋 완료
+- 5/19 D-day 전 CEO가 채워야 할 placeholder 5개: [PH_LAUNCH_URL], [PH_COMING_SOON_URL], [LOOM_DEMO_URL], [CEO_TWITTER_HANDLE], [GETTESTABLY_TWITTER]
+
+## 다음엔 뭘 해야 해
+- D-5~D-3 (5/14~5/16): Loom 데모 녹화 → [LOOM_DEMO_URL] 채움
+- D-3 (5/16 토): PH Coming Soon 페이지 생성 → [PH_COMING_SOON_URL] 채움 → Twitter D-3 티저 발사
+- D-1 (5/18 월): Twitter D-1 + LinkedIn D-1 발사
+- D-day (5/19 화 KST 16:00): §4 체크리스트 순서대로 실행
+
+---
+
 2026-05-13 (밤): SEO 풀-커버리지 프로젝트 종합 완료 — 라이브 검증 통과
 
 ## 종합 결과 — 5/13 하루에 Phase 1~6 전부 완료 (원래 5/24~25 타깃 → 11일 단축)
