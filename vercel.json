@@ -1,24 +1,10 @@
 {
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/auth", "destination": "/index.html" },
-    { "source": "/auth/:path*", "destination": "/index.html" },
-    { "source": "/projects", "destination": "/index.html" },
-    { "source": "/projects/:path*", "destination": "/index.html" },
-    { "source": "/testcases", "destination": "/index.html" },
-    { "source": "/testcases/:path*", "destination": "/index.html" },
-    { "source": "/testcases-overview", "destination": "/index.html" },
-    { "source": "/active-runs", "destination": "/index.html" },
-    { "source": "/passrate-report", "destination": "/index.html" },
-    { "source": "/team-activity", "destination": "/index.html" },
-    { "source": "/settings", "destination": "/index.html" },
-    { "source": "/settings/:path*", "destination": "/index.html" },
-    { "source": "/accept-invitation", "destination": "/index.html" },
-    { "source": "/admin", "destination": "/index.html" },
-    { "source": "/admin/:path*", "destination": "/index.html" },
-    { "source": "/contact", "destination": "/index.html" },
-
-    { "source": "/:path*", "destination": "/index.html" }
+    { "source": "/:path*", "destination": "/" }
   ]
 }
