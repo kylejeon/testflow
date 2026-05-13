@@ -25,7 +25,7 @@ export default function SEOHead({
   keywords = 'test management, QA platform, test cases, test runs, milestones, Jira integration',
   ogTitle,
   ogDescription,
-  ogImage = '/brand/og-dark-1200x630.png',
+  ogImage = 'https://testably.app/brand/og-dark-1200x630.png',
   ogUrl,
   ogType = 'website',
   twitterCard = 'summary_large_image',
