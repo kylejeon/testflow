@@ -80,6 +80,7 @@ const RoadmapPage = lazy(() => import('../pages/roadmap/page'));
 const AboutPage = lazy(() => import('../pages/about/page'));
 const ComparePage = lazy(() => import('../pages/compare/page'));
 const CompareIndexPage = lazy(() => import('../pages/compare/index'));
+const AlternativePage = lazyWithRetry(() => import('../pages/alternatives/page'));
 const ContactPage = lazy(() => import('../pages/contact/page'));
 const TestCaseManagementPage = lazyWithRetry(() => import('../pages/use-cases/test-case-management/page'));
 const TestManagementToolPage = lazyWithRetry(() => import('../pages/use-cases/test-management-tool/page'));
@@ -272,6 +273,10 @@ const routes: RouteObject[] = [
   {
     path: '/compare/:competitor',
     element: <ComparePage />,
+  },
+  {
+    path: '/alternatives/:competitor',
+    element: <AlternativePage />,
   },
   {
     path: '/contact',

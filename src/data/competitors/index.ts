@@ -10,19 +10,18 @@
 
 import type { CompetitorData } from './types';
 
-const modules = import.meta.glob<{ default: CompetitorData }>('./*.ts', {
+// Eager glob without `import: 'default'` — Rollup statically resolves the
+// glob and the previous `import: 'default'` form bailed on `types.ts`
+// (which has no default export). With the module-wrapper form we just
+// optional-chain through `.default` and skip non-data files at runtime.
+const modules = import.meta.glob<{ default?: CompetitorData }>('./*.ts', {
   eager: true,
-  import: 'default',
 });
 
-// Filter out non-data modules (types.ts, index.ts) and any module whose
-// default export does not look like a CompetitorData (e.g., utility files).
 const entries: Array<[string, CompetitorData]> = [];
 for (const [path, mod] of Object.entries(modules)) {
   if (path.endsWith('/index.ts') || path.endsWith('/types.ts')) continue;
-  // import: 'default' makes `mod` the value itself (or undefined for files
-  // that lack a default export). Skip files that don't expose one.
-  const data = mod as unknown as CompetitorData | undefined;
+  const data = mod?.default;
   if (!data || typeof data !== 'object' || typeof data.slug !== 'string') continue;
   entries.push([data.slug, data]);
 }

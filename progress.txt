@@ -1427,3 +1427,58 @@
 - claude push → CEO 가 main 머지 → Vercel 자동 배포
 - 배포 후 `curl -A "facebookexternalhit/1.1" https://testably.app/blog/cypress-reporter-ci-integration` 등으로 og:title 박혀 있는지 외부 검증 (Twitter Card Validator / LinkedIn Post Inspector)
 - 새 마케팅 라우트 추가 시 `scripts/prerender.mjs` 의 `ROUTES` 배열 + `public/sitemap.xml` 동시 업데이트 필요 (둘 다 수동 enum)
+
+---
+
+## 2026-05-13 — SEO 경쟁사 풀-커버리지 M2 (/alternatives 10개)
+
+### 뭘 했나
+M1 (데이터 모델 + 10개 경쟁사 데이터, alternativePageData/migrationGuide 채움) 위에서 M2 구현:
+
+1. 신규 컴포넌트 6개 (`src/components/seo/`):
+   - `AlternativeHero.tsx` — slate-900 캔버스, 인디고 글로우 CTA, savings callout
+   - `KeyDifferenceCard.tsx` — light/dark variant (Why Leave / Why Switch)
+   - `ComparisonTable.tsx` — two-col variant (3-col은 M3 예약), `renderCell` prop으로 pricing 셀 커스터마이즈
+   - `MigrationGuide.tsx` — step cards 3-col + 접이식 field mapping table
+   - `FaqSection.tsx` — JSON-LD FAQPage 자동 주입 (`faq-structured-data` id)
+   - `BottomCTASection.tsx` — slate-900 마무리 CTA
+
+2. 페이지: `src/pages/alternatives/page.tsx` — 8섹션 (Hero / Intro paragraph / Why Leave / Why Switch / Feature Table / Pricing Table / Migration / FAQ / Bottom CTA)
+   - 슬러그 미등록 / alternativePageData 미정의 시 NotFound + noindex
+   - SEOHead로 canonical/og:url/og:title/twitter card/JSON-LD (@graph: FAQPage + SoftwareApplication) 주입
+   - `aggregateRating` 의도적 제외 (dev spec §8-2 권고)
+
+3. 라우트 등록: `src/router/config.tsx`에 `lazyWithRetry`로 `/alternatives/:competitor` 추가
+
+4. prerender ROUTES 확장: `scripts/prerender.mjs`에 10개 경로 추가 (총 46 → 56)
+
+5. sitemap.xml에 10개 URL 추가 (priority 0.8, changefreq monthly, lastmod 2026-05-13)
+
+6. `src/data/competitors/index.ts`의 `import.meta.glob` 패턴 픽스
+   - 기존 `import: 'default'` 옵션 → Rollup이 types.ts에서 default 없다고 빌드 fail
+   - `eager: true`만 두고 mod.default 옵셔널 체이닝으로 변경
+
+### 검증
+- `npx tsc --noEmit -p tsconfig.app.json` — 내 변경 파일 에러 0 (기존 432개 그대로, 새 에러 0)
+- `npm run build` — 7.08s vite build + prerender 56/56 라우트 성공
+- pageerror 0건
+- dist/alternatives/{slug}/index.html 10개 생성 확인 (각 43-47KB)
+- 모든 페이지의 H1 / `<title>` / canonical / og:url 슬러그별 고유 확인
+- JSON-LD FAQPage + SoftwareApplication 모두 직렬화됨
+
+### 변경 파일
+- 신규: src/components/seo/{AlternativeHero,KeyDifferenceCard,ComparisonTable,MigrationGuide,FaqSection,BottomCTASection}.tsx
+- 신규: src/pages/alternatives/page.tsx
+- 수정: src/router/config.tsx, src/data/competitors/index.ts, scripts/prerender.mjs, public/sitemap.xml
+
+### M2 차폐 (NOT in scope, 손대지 않음)
+- /compare/{slug} 페이지 — 시각 변경 없음 (기존 인라인 JSX 그대로)
+- /compare 인덱스 — 카드 3→10 확장 보류 (cross-link grid는 M3 vs-매트릭스 데이터 의존 → M3에서 함께)
+- vs-매트릭스 (M3), 블로그 11편 (M4), sitemap 자동화 (M5)
+- 기존 `/compare/page.tsx` 내 ComparisonTable 등 컴포넌트화 (시각 변경 0 리팩토링 권장이지만 M2 범위 외, 추후 정리)
+
+### 다음에 뭘 해야 해
+- CEO 시각 확인 (dev 서버에서 /alternatives/testrail 등 둘러보기)
+- main 머지 → Vercel 자동 배포 → 외부 검증 (curl + Twitter Card Validator)
+- M3 — vs-매트릭스 15개 데이터 + 페이지 + 분기 라우팅 + /compare 인덱스 cross-link 그리드
+- 향후 M5에서 sitemap.xml 자동화될 때, 현재 수동 추가한 10개 URL은 generator로 교체될 예정
