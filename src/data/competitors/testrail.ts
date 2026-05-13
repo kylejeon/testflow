@@ -129,4 +129,128 @@ export const testrailData: CompetitorData = {
   ],
   ctaText: 'Try Testably Free',
   ctaSubtext: 'No credit card required · Free forever plan · 14-day Starter trial available',
+
+  // ─── M1 신규 옵셔널 필드 ───
+  // Sources (as of 2026-05): https://www.testrail.com, G2 / Capterra / Reddit reviews.
+  // See docs/research/competitor-testrail.md for full citations.
+
+  lastReviewed: '2026-05-13',
+  relatedCompetitors: ['zephyr', 'qase', 'xray'],
+
+  alternativePageData: {
+    h1: 'The TestRail Alternative That Actually Has a Free Plan',
+    subhead:
+      "TestRail charges $38–$71 per user per month with no free tier, and gates CI/CD, RTM, and version control behind Enterprise. Testably gives you AI, Shared Steps versioning, and flat-rate team pricing — starting at $0.",
+    introBody:
+      'TestRail has been the default enterprise test management tool for over a decade, and it shows: a deep feature set, broad integrations, and many large customers. It also has the pricing of a 2014 enterprise SaaS — $38 per user per month on Professional Cloud, $71 per user per month on Enterprise Cloud, with the most important features (CI/CD, Requirements Traceability, test case version control) locked into the Enterprise tier. A 20-person QA team on Professional pays roughly $760 per month before any Enterprise add-ons; on Enterprise, that becomes $1,420 per month. Testably is built for teams that want the same outcome — structured test cases, traceability, run management, Jira sync — without the per-seat math. The free plan is permanent, not a trial. AI test case generation ships on every paid plan starting at $19 per month. Shared Steps version pinning, run-level snapshots, and unlimited Requirements Traceability come on the Hobby plan and above. Migration from TestRail is a CSV export and a field map; most teams complete it in under an hour. Many run both tools side-by-side for a regression cycle before switching the team over.',
+    whyLeave: [
+      {
+        title: 'No free tier — only a 14-day trial',
+        body: 'TestRail offers a 14-day trial. After that, the minimum is Professional Cloud at ~$38 per user per month. There is no permanent free fallback.',
+      },
+      {
+        title: 'Per-user pricing scales linearly',
+        body: 'A 20-person team pays $760–$1,420/mo. Testably Professional is $99/mo flat for the same headcount.',
+      },
+      {
+        title: 'Key features locked to Enterprise',
+        body: 'Requirements Traceability, CI/CD integration, and test case version control are all Enterprise-only — roughly doubling the per-seat cost.',
+      },
+      {
+        title: 'Shared Steps use always-latest only',
+        body: 'TestRail Shared Steps have no version pinning. Step edits propagate to every test case instantly.',
+      },
+      {
+        title: 'No native AI',
+        body: 'TestRail does not ship AI test case generation, deduplication, or failure summarization.',
+      },
+    ],
+    whySwitch: [
+      {
+        title: 'Free forever plan',
+        body: '1 project, 2 members, 100 TCs, 10 runs/month, 3 AI generations/month — permanent. No trial countdown.',
+      },
+      {
+        title: 'Flat-rate team pricing',
+        body: '$99/mo Professional covers up to 20 testers. Save up to $17,000/year vs TestRail Enterprise for a 20-person team.',
+      },
+      {
+        title: 'AI on every paid plan from $19/mo',
+        body: 'Generate test cases from text, Jira issues, or exploratory sessions starting on Hobby.',
+      },
+      {
+        title: 'Shared Steps with version pinning + run snapshots',
+        body: 'Pin Shared Step versions per test case. Side-by-side diffs. Bulk updates. Frozen snapshots for in-flight runs.',
+      },
+      {
+        title: 'Jira sync, RTM, and CI/CD without Enterprise',
+        body: 'Native Jira two-way sync on Free. Unlimited RTM on Hobby. CI/CD on Professional.',
+      },
+    ],
+    metaTitle: 'Best TestRail Alternative in 2026 — Testably',
+    metaDescription:
+      'Looking for a TestRail alternative without per-seat pricing? Testably is free to start, $19/mo for small teams, and $99/mo for up to 20 testers — AI included.',
+    faqs: [
+      {
+        question: 'Can I really save $17,000 a year by switching from TestRail?',
+        answer:
+          'For a 20-person team on TestRail Enterprise ($71/user/mo × 20 × 12 = $17,040/year), yes — Testably Professional is $99/mo flat ($1,188/year). The exact savings depend on your tier and discount terms, but the order of magnitude holds across most team sizes 10 and above.',
+      },
+      {
+        question: 'How long does a TestRail migration take?',
+        answer:
+          'For most teams: under one hour for 1,000 test cases. Export CSV from TestRail, map fields, import into Testably, and verify on a sample run.',
+      },
+      {
+        question: 'Do I lose Requirements Traceability when I leave TestRail?',
+        answer:
+          'No. Testably ships unlimited Requirements Traceability on the Hobby plan and above. RTM is not gated to Enterprise.',
+      },
+    ],
+  },
+
+  migrationGuide: {
+    title: 'Move from TestRail to Testably in under an hour',
+    steps: [
+      {
+        num: 1,
+        title: 'Export TestRail test cases',
+        body: 'In TestRail, use the built-in CSV export at the suite level. Include custom fields, attachments references, and linked Jira issue keys.',
+      },
+      {
+        num: 2,
+        title: 'Map TestRail fields to Testably fields',
+        body: 'Use the field mapping table below. Sections become test suites, milestones become run cycles.',
+      },
+      {
+        num: 3,
+        title: 'Import into Testably',
+        body: 'Open the target project in Testably, choose "Import → CSV", upload the file, and confirm the mapping. Imports of 1,000 cases typically complete in under a minute.',
+      },
+      {
+        num: 4,
+        title: 'Reconnect Jira',
+        body: 'Add the Jira Cloud integration in Testably (all plans, including Free). Existing Jira keys re-link automatically.',
+      },
+      {
+        num: 5,
+        title: 'Run one regression cycle in parallel',
+        body: 'Run a representative regression suite in both tools. Once results and coverage agree, switch the team over and decommission the TestRail subscription on the renewal date.',
+      },
+    ],
+    importFormats: ['CSV (UTF-8)', 'Excel (.xlsx)', 'Testably API'],
+    fieldMapping: [
+      { from: 'Case ID', to: 'Test Case ID', note: 'Original TestRail ID preserved as external reference.' },
+      { from: 'Title', to: 'Title' },
+      { from: 'Preconditions / Steps / Expected Result', to: 'Steps' },
+      { from: 'Section', to: 'Test Suite (folder)' },
+      { from: 'Priority', to: 'Priority' },
+      { from: 'Type', to: 'Type (Manual / Automated)' },
+      { from: 'References (Jira)', to: 'Linked Issues (via Jira integration)' },
+      { from: 'Milestone', to: 'Test Run cycle' },
+      { from: 'Run / Test', to: 'Test Run' },
+    ],
+  },
 };
+
+export default testrailData;

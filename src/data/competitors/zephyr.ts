@@ -122,4 +122,127 @@ export const zephyrData: CompetitorData = {
   ],
   ctaText: 'Start Free — No Jira Required',
   ctaSubtext: 'Free forever · Standalone platform · 14-day Starter trial available',
+
+  // ─── M1 신규 옵셔널 필드 ───
+  // Sources (as of 2026-05): https://smartbear.com/test-management/zephyr-scale/, Atlassian Marketplace, G2 reviews.
+  // See docs/research/competitor-zephyr.md for full citations.
+
+  lastReviewed: '2026-05-13',
+  relatedCompetitors: ['testrail', 'xray', 'qase'],
+
+  alternativePageData: {
+    h1: 'The Zephyr Scale Alternative That Doesn\'t Charge for Every Jira User',
+    subhead:
+      'Zephyr Scale bills against your total Jira Cloud user count — including developers, designers, PMs, and finance — not just testers. Testably is a standalone platform with optional two-way Jira sync, flat-rate pricing, and AI built in.',
+    introBody:
+      'Zephyr Scale is one of the most established test management tools on Jira, with a deep feature set and tight Atlassian integration. The pricing model is the problem: as an Atlassian Marketplace app, Zephyr Scale is billed on the underlying Jira Cloud user tier. If your company has 100 Jira users but only 10 testers, you still pay the 100-user Zephyr Scale tier. The free tier exists only for Jira instances with 10 or fewer users — so the moment your organization crosses that threshold, even for non-QA reasons, Zephyr Scale becomes a paid line item indexed to total Jira headcount. Testably approaches this differently: a standalone test management platform with a permanent free tier for one project and two members, a $19 Hobby plan for small teams, and flat-rate Starter, Professional, and Enterprise plans. Jira integration is optional and two-way — link issues, auto-create bugs, sync statuses — without locking your QA history inside Atlassian. Migration is a CSV export, a field map, and a sample run; most teams complete it in under an hour and keep Jira issue traceability intact through the native integration.',
+    whyLeave: [
+      {
+        title: 'Per-Jira-user billing — not per-tester',
+        body: 'Zephyr Scale bills on your total Jira Cloud user tier. Developers, PMs, designers, and finance users all count, even though they never touch the test management tool.',
+      },
+      {
+        title: 'Free tier vanishes at 11+ Jira users',
+        body: 'The free tier requires fewer than 10 Jira users total — for any role. Cross that threshold and you pay on every seat.',
+      },
+      {
+        title: 'Atlassian lock-in',
+        body: 'Your QA data lives inside the Jira instance. Leaving Jira means losing test history without a migration project.',
+      },
+      {
+        title: 'Limited Shared Steps versioning',
+        body: 'Zephyr Scale\'s shared step model does not pin versions per test case, so step edits propagate without diff or bulk update flow.',
+      },
+      {
+        title: 'No native AI test generation',
+        body: 'Zephyr Scale does not ship AI test case generation, deduplication, or summarization features.',
+      },
+    ],
+    whySwitch: [
+      {
+        title: 'Standalone platform — Jira is optional',
+        body: 'Testably keeps test cases in a dedicated data model. Integrate with Jira on day one and migrate freely later.',
+      },
+      {
+        title: 'Pay for testers only',
+        body: 'Flat-rate plans tied to QA team size, not Jira headcount. $99/mo Professional supports up to 20 testers regardless of company size.',
+      },
+      {
+        title: 'Real free tier — not gated by Jira headcount',
+        body: '1 project, 2 members, 100 TCs, 10 runs/month, 3 AI generations/month. Permanent, independent of Jira.',
+      },
+      {
+        title: 'AI test case generation on every paid plan',
+        body: 'Generate from text, Jira issues, or exploratory sessions starting on the $19 Hobby plan.',
+      },
+      {
+        title: 'Shared Steps version pinning + run snapshots',
+        body: 'Pin Shared Step versions per test case. Side-by-side diffs. Bulk updates. Frozen snapshots for in-flight runs.',
+      },
+    ],
+    metaTitle: 'Best Zephyr Scale Alternative in 2026 — Testably',
+    metaDescription:
+      'Stop paying for every Jira user. Testably is a standalone test management alternative to Zephyr Scale — free forever, $99/mo for up to 20 testers, AI included.',
+    faqs: [
+      {
+        question: 'Can I keep using Jira after leaving Zephyr Scale?',
+        answer:
+          'Yes. Testably integrates with Jira Cloud via native two-way sync — link test cases to Jira issues, auto-create bugs from test failures, and sync statuses. Developers keep working in Jira; QA gets a dedicated tool.',
+      },
+      {
+        question: 'How do I migrate from Zephyr Scale?',
+        answer:
+          'Export Zephyr Scale test cases as CSV from the Jira UI (or use the Zephyr Scale API), map fields, import into Testably, and verify on a sample regression run. Most teams complete migration in under an hour.',
+      },
+      {
+        question: 'Will my Jira issue links still work?',
+        answer:
+          'Yes. Add the Jira Cloud integration in Testably after import. Original Jira keys re-link automatically and continue to round-trip through the integration.',
+      },
+    ],
+  },
+
+  migrationGuide: {
+    title: 'Move from Zephyr Scale to Testably in under an hour',
+    steps: [
+      {
+        num: 1,
+        title: 'Export Zephyr Scale test cases',
+        body: 'In Jira, use the Zephyr Scale CSV export at the project level (or the Zephyr Scale REST API). Include custom fields, linked Jira issue keys, and execution history.',
+      },
+      {
+        num: 2,
+        title: 'Map Zephyr fields to Testably fields',
+        body: 'Use the field mapping table below. Zephyr "Folders" become Testably Test Suites; "Cycles" become Test Runs.',
+      },
+      {
+        num: 3,
+        title: 'Import into Testably',
+        body: 'Open the target project in Testably, choose "Import → CSV", upload, and confirm the mapping.',
+      },
+      {
+        num: 4,
+        title: 'Reconnect Jira',
+        body: 'Add the Jira Cloud integration in Testably (all plans, including Free). Existing Jira keys re-link automatically.',
+      },
+      {
+        num: 5,
+        title: 'Verify and decommission Zephyr',
+        body: 'Run one regression cycle in Testably, confirm coverage and Jira links agree, then unsubscribe from Zephyr Scale on your Atlassian renewal date.',
+      },
+    ],
+    importFormats: ['CSV (UTF-8)', 'Excel (.xlsx)', 'Testably API'],
+    fieldMapping: [
+      { from: 'Test Case Key', to: 'Test Case ID', note: 'Original Zephyr key preserved as external reference.' },
+      { from: 'Name', to: 'Title' },
+      { from: 'Steps (Action / Test Data / Expected Result)', to: 'Steps' },
+      { from: 'Folder', to: 'Test Suite (folder)' },
+      { from: 'Priority', to: 'Priority' },
+      { from: 'Labels', to: 'Tags' },
+      { from: 'Linked Jira Issues', to: 'Linked Issues (via Jira integration)' },
+      { from: 'Cycle / Plan', to: 'Test Run' },
+    ],
+  },
 };
+
+export default zephyrData;

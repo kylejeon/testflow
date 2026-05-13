@@ -128,4 +128,128 @@ export const qaseData: CompetitorData = {
   ],
   ctaText: 'Start Free — No Credit Card Required',
   ctaSubtext: 'Free forever plan · AI included on paid plans · 14-day Starter trial available',
+
+  // ─── M1 신규 옵셔널 필드 ───
+  // Sources (as of 2026-05): https://qase.io/pricing, G2 / Capterra reviews.
+  // See docs/research/competitor-qase.md for full citations.
+
+  lastReviewed: '2026-05-13',
+  relatedCompetitors: ['testrail', 'testiny', 'zephyr'],
+
+  alternativePageData: {
+    h1: 'The Qase Alternative with Shared Steps Versioning and AI Without the Add-On',
+    subhead:
+      'Qase nails the modern TCM look but charges per user, ships AI as a paid add-on, and uses always-latest Shared Steps. Testably matches the UX and fixes all three.',
+    introBody:
+      'Qase has rightly earned a strong reputation for modern UX in test management — clean information architecture, fast keyboard navigation, polished test case editing. Two limits show up as teams grow. First, the pricing model is per-user, starting at roughly $25 per seat on the Startup plan. A 20-person QA team pays around $500 per month on Qase Startup before adding AI. Second, Qase AI is sold as a paid add-on, not bundled with the base subscription. Third, Qase Shared Steps use an always-latest model: editing a shared step propagates to every test case instantly, with no version pinning, diff, or bulk update preview. For teams running mature regression suites, that lack of version control is the highest-risk gap. Testably keeps Qase\'s modern UX bet and addresses the three structural limits. Pricing is flat-rate ($19 / $49 / $99 / Enterprise). AI test case generation is included on every paid plan starting at $19 per month. Shared Steps version pinning, side-by-side diffs, bulk updates, and run-level snapshots are part of the base offering — the same is true for unlimited Requirements Traceability and Jira two-way sync. Migration is a CSV export and a field map; most teams complete it in under an hour.',
+    whyLeave: [
+      {
+        title: 'Per-user pricing scales linearly',
+        body: 'At 10 testers, ~$250/mo on Startup. At 20, ~$500/mo — before adding the AI add-on or upgrading to Business.',
+      },
+      {
+        title: 'AI is a paid add-on, not bundled',
+        body: 'Qase AI ships as a separate paid add-on. Total cost includes both the base subscription and the AI line item.',
+      },
+      {
+        title: 'Always-latest Shared Steps',
+        body: 'Editing a shared step changes every test case instantly. No version pinning, no diff preview, no bulk update flow.',
+      },
+      {
+        title: 'No run-level step snapshots',
+        body: 'If a Shared Step is edited mid-run, executed cases become disconnected from the steps that produced their results.',
+      },
+      {
+        title: 'Key integrations gated by plan',
+        body: 'Slack notifications, CI/CD integration, and RTM are gated to Business and above.',
+      },
+    ],
+    whySwitch: [
+      {
+        title: 'Flat-rate team pricing',
+        body: '$99/mo Professional supports up to 20 testers. ~5× cheaper than Qase Startup at the same headcount.',
+      },
+      {
+        title: 'AI on every paid plan — no add-on',
+        body: 'Generate test cases from text, Jira issues, or exploratory sessions. Included starting at $19/mo Hobby.',
+      },
+      {
+        title: 'Shared Steps with version pinning',
+        body: 'Pin Shared Step versions per test case. See side-by-side diffs. Bulk update when newer versions are published.',
+      },
+      {
+        title: 'Run-level step snapshots',
+        body: 'Executed cases freeze their step snapshot. Un-executed cases pull the latest. Run integrity preserved.',
+      },
+      {
+        title: 'Jira sync and RTM on all plans (and Hobby)',
+        body: 'Native Jira two-way sync ships on Free. Unlimited RTM on Hobby and above.',
+      },
+    ],
+    metaTitle: 'Best Qase Alternative in 2026 — Testably',
+    metaDescription:
+      'A Qase alternative with Shared Steps versioning, AI included on paid plans, and flat-rate team pricing. Free forever plan, $19/mo Hobby, $99/mo for up to 20 testers.',
+    faqs: [
+      {
+        question: 'I like Qase\'s UX. Will Testably feel like a regression?',
+        answer:
+          'No. Testably optimizes for the same modern UX bet — fast keyboard navigation, clean test case editing, minimal chrome. The difference is the structural features below: flat-rate pricing, AI bundled with every paid plan, and Shared Steps version pinning.',
+      },
+      {
+        question: 'How do I migrate from Qase?',
+        answer:
+          'Export your Qase test cases as CSV (Qase Startup and above support CSV export), map fields, import into Testably, and verify on a sample regression run. Most teams complete migration in under an hour.',
+      },
+      {
+        question: 'Do I really get AI without an add-on?',
+        answer:
+          'Yes. AI test case generation is included on every Testably paid plan starting at $19/mo Hobby. There is no separate AI line item.',
+      },
+    ],
+  },
+
+  migrationGuide: {
+    title: 'Move from Qase to Testably in under an hour',
+    steps: [
+      {
+        num: 1,
+        title: 'Export Qase test cases',
+        body: 'In Qase (Startup plan and above), export test cases as CSV. Include custom fields, tags, and Jira issue links.',
+      },
+      {
+        num: 2,
+        title: 'Map Qase fields to Testably fields',
+        body: 'Use the field mapping table below. Qase Suites become Testably Test Suites; Qase Runs become Test Runs.',
+      },
+      {
+        num: 3,
+        title: 'Import into Testably',
+        body: 'Open the target project in Testably, choose "Import → CSV", upload, and confirm the mapping.',
+      },
+      {
+        num: 4,
+        title: 'Reconnect Jira',
+        body: 'Add the Jira Cloud integration in Testably (all plans, including Free). Original Jira keys re-link automatically.',
+      },
+      {
+        num: 5,
+        title: 'Drop the AI add-on',
+        body: 'Once your team is on Testably, you no longer need the Qase AI add-on subscription. Cancel on the renewal date.',
+      },
+    ],
+    importFormats: ['CSV (UTF-8)', 'Excel (.xlsx)', 'Testably API'],
+    fieldMapping: [
+      { from: 'Case ID', to: 'Test Case ID', note: 'Original Qase ID preserved as external reference.' },
+      { from: 'Title', to: 'Title' },
+      { from: 'Steps (Action / Expected)', to: 'Steps' },
+      { from: 'Suite', to: 'Test Suite (folder)' },
+      { from: 'Priority', to: 'Priority' },
+      { from: 'Severity', to: 'Severity (Tag)' },
+      { from: 'Tags', to: 'Tags' },
+      { from: 'Jira / Linear / GitHub issue', to: 'Linked Issues (via integration)' },
+      { from: 'Run', to: 'Test Run' },
+    ],
+  },
 };
+
+export default qaseData;

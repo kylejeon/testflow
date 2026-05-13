@@ -5,7 +5,7 @@
 // - https://testomat.io/blog/top-exploratory-testing-tools-to-watch/
 // See docs/research/competitor-testpad.md for full citations.
 
-import { CompetitorData } from './types';
+import type { CompetitorData } from './types';
 
 export const testpadData: CompetitorData = {
   slug: 'testpad',

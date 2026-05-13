@@ -6,7 +6,7 @@
 // - https://thectoclub.com/tools/practitest-review/
 // See docs/research/competitor-practitest.md for full citations.
 
-import { CompetitorData } from './types';
+import type { CompetitorData } from './types';
 
 export const practitestData: CompetitorData = {
   slug: 'practitest',

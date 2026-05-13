@@ -6,7 +6,7 @@
 // - https://www.automation-consultants.com/jira-test-case-management/
 // See docs/research/competitor-xray.md for full citations.
 
-import { CompetitorData } from './types';
+import type { CompetitorData } from './types';
 
 export const xrayData: CompetitorData = {
   slug: 'xray',
