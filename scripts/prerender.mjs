@@ -202,6 +202,17 @@ async function main() {
   const shellBackupPath = join(DIST, 'index.shell.html');
   await copyFile(shellPath, shellBackupPath);
 
+  // Persist a copy of the pristine SPA shell at dist/_spa/index.html. This is
+  // the file vercel.json's rewrite targets for SPA fallback — keeping it
+  // separate from dist/index.html (which gets overwritten with the homepage
+  // prerender below) avoids the "homepage flash" flicker when an authenticated
+  // route is loaded directly: an empty shell hydrates and React Router
+  // immediately renders the right page, without showing homepage content first.
+  const spaShellDir = join(DIST, '_spa');
+  await mkdir(spaShellDir, { recursive: true });
+  await copyFile(shellPath, join(spaShellDir, 'index.html'));
+  console.log(`[prerender] SPA shell persisted to dist/_spa/index.html (vercel rewrite target)\n`);
+
   const server = await startServer(DIST);
   console.log(`[prerender] sirv listening on http://127.0.0.1:${PORT}\n`);
 
