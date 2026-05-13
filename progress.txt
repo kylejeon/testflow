@@ -1604,3 +1604,57 @@ M1+M2+M3 위에서 M4 구현: 11편의 /blog/{slug}-alternatives-2026 페이지 
 - @qa 코드 검수 (Phase 5) — `docs/qa/qa-report-seo-competitor-pages.md` 산출
 - @marketer 블로그 카피 11편 (`docs/marketing/blog-*-alternatives-2026.md`) 산출 시 본 페이지 콘텐츠 교체/보강
 - 새 경쟁사 / 새 vs-매트릭스 추가 시: 데이터 파일 1개만 추가하면 sitemap + prerender 자동 동기화 (BR-1, BR-2 충족)
+
+---
+
+## [2026-05-13] @developer — QA P0 픽스 (main merge 차폐 항목 2건)
+
+### 뭘 했어
+QA 리포트(`docs/qa/qa-report-seo-competitor-pages.md`)의 P0 2건 픽스. P1 / P2 별도 사이클 (이번 범위 아님).
+
+**P0-1: 빌드 시간 단축 (237s → 57s)**
+- `scripts/prerender.mjs` — 89(현재 90) 라우트 직렬 처리를 worker-queue 패턴으로 변경.
+- `PRERENDER_CONCURRENCY` 상수 (env 오버라이드 가능, 기본 5).
+- 5 worker 가 shared cursor 에서 다음 라우트 pop → puppeteer page 독립 처리 → `pendingWrites.push` (race-safe).
+- batch-Promise.all 대신 worker-queue 채택 — slow tail-of-batch wait 없음.
+
+**P0-2: `/alternatives` 인덱스 페이지 신규**
+- `src/pages/alternatives/index.tsx` 신규 — design spec §1.5 "Switch Made Easy" 톤.
+  - Hero: slate-900 + indigo glow, H1 "Looking for an Alternative to Your QA Tool?"
+  - Pill: "Switch Made Easy"
+  - 10개 카드 ("Switch from {Competitor} → Testably" 패턴, /compare 인덱스 카드와 동일한 hover/색상 톤)
+  - Migration callout (gray-50, "Migration in 30 minutes — not weeks")
+  - Bottom CTA (slate-900)
+  - SEOHead: title/description/canonical/og:url 모두 `https://testably.app/alternatives` 절대 URL.
+  - `alternativePageData` 없는 슬러그는 카드에서 자동 필터 (broken link 방지).
+- `src/router/config.tsx` — `AlternativesIndexPage` lazyWithRetry import + `/alternatives` 라우트 등록 (dynamic `/alternatives/:competitor` 보다 위에).
+- `scripts/seo-routes-scanner.mjs` — STATIC_ROUTES 에 `/alternatives` (priority 0.9, changefreq monthly) 추가 → sitemap + prerender 자동 동기화.
+
+### 검증
+- `node scripts/seo-routes-scanner.mjs` → 90 routes (이전 89 + `/alternatives`).
+- `npx tsc --noEmit -p tsconfig.app.json` — 내 변경 파일 신규 에러 0 (router/config.tsx 기존 pre-existing 2건 그대로).
+- `npm run build` — **57.0s total** (vs baseline 236.9s = 4.15x 단축, 120s 목표 대비 47% 마진).
+  - 빌드 로그: `[prerender] concurrency: 5`, `[prerender] done — 90 routes written`.
+  - pageerror 0건 (90/90 모두 ✓).
+  - `dist/alternatives/index.html` 25,327 bytes 생성 확인.
+  - 10개 `/alternatives/{slug}` 링크 모두 카드에 렌더 (`grep -o '/alternatives/[a-z-]*"'` 10건).
+  - `dist/sitemap.xml` 에 `<loc>https://testably.app/alternatives</loc>` + 10개 슬러그 URL 모두 포함.
+  - canonical / og:url / og:title 정상 (`<link rel="canonical" href="https://testably.app/alternatives">`).
+  - 기존 89개 라우트 회귀 0.
+
+### 변경 파일
+- 신규: src/pages/alternatives/index.tsx
+- 수정: src/router/config.tsx (AlternativesIndexPage import + 라우트)
+- 수정: scripts/prerender.mjs (worker-queue concurrency=5)
+- 수정: scripts/seo-routes-scanner.mjs (`/alternatives` STATIC_ROUTES 추가)
+- 갱신: public/sitemap.xml (자동 생성, 89 → 90 URLs)
+
+### 차폐 (NOT in scope, 손대지 않음)
+- QA 리포트 P1 / P2 — 별도 사이클.
+- `/alternatives` 인덱스에 6-col feature matrix — design spec §1.5 권고 "동일 또는 생략" 중 생략 선택 (인덱스 페이지는 entry point 역할, /compare 에 매트릭스 이미 있음).
+- 다국어 (i18n) — `/alternatives` 는 마케팅 영문 전용 페이지 (다른 마케팅 페이지와 동일 패턴).
+
+### 다음에 뭘 해야 해
+- claude push → CEO main 머지 → Vercel 자동 배포.
+- 배포 후 외부 검증: `curl https://testably.app/alternatives` canonical/og 박혀 있는지, sitemap.xml 에 90 URLs 인지.
+- QA P1 / P2 별도 사이클 (이번 작업 NOT in scope).

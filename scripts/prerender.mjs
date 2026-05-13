@@ -82,6 +82,13 @@ const ROUTES = await getAllSeoRoutePaths(ROOT);
 const WAIT_FOR_MS = 1500;
 const PORT = 45123;
 
+// How many puppeteer pages we drive in parallel. N=5 balances wall-clock
+// improvement (~5x on the prerender phase) against memory headroom on the
+// Vercel build container (256-512 MB Lambda-style envs are common). Each
+// page is fully independent — no shared state — so the only shared resource
+// is `pendingWrites`, which is push-only and order-insensitive.
+const PRERENDER_CONCURRENCY = Number(process.env.PRERENDER_CONCURRENCY) || 5;
+
 // Pages that don't pass an explicit `canonical` prop to SEOHead fall back to
 // `window.location.href`, which during prerender resolves to the local
 // puppeteer URL (http://127.0.0.1:<port>/...). Rewrite those occurrences to
@@ -179,16 +186,32 @@ async function main() {
   try {
     const launchOpts = await getLaunchOptions();
     console.log(`[prerender] chromium: ${launchOpts.executablePath}`);
+    console.log(`[prerender] concurrency: ${PRERENDER_CONCURRENCY}`);
     browser = await puppeteer.launch(launchOpts);
 
-    for (const route of ROUTES) {
-      try {
-        await prerenderRoute(browser, route, pendingWrites);
-      } catch (err) {
-        console.error(`  ✗ ${route} — ${err.message}`);
-        throw err;
+    // Worker-queue pattern: PRERENDER_CONCURRENCY workers each pop the next
+    // route off a shared cursor and render it. This gives true concurrency
+    // (no slow tail-of-batch wait), unlike a fixed-batch Promise.all.
+    let cursor = 0;
+    const next = () => (cursor < ROUTES.length ? ROUTES[cursor++] : null);
+
+    async function worker(workerId) {
+      for (;;) {
+        const route = next();
+        if (route === null) return;
+        try {
+          await prerenderRoute(browser, route, pendingWrites);
+        } catch (err) {
+          console.error(`  ✗ [w${workerId}] ${route} — ${err.message}`);
+          throw err;
+        }
       }
     }
+
+    const workerCount = Math.min(PRERENDER_CONCURRENCY, ROUTES.length);
+    await Promise.all(
+      Array.from({ length: workerCount }, (_, i) => worker(i + 1)),
+    );
   } finally {
     if (browser) await browser.close();
     await new Promise((res) => server.close(res));
