@@ -1849,3 +1849,66 @@ QA P1 4건을 5/19 PH 런칭 전에 처리. 모두 회귀 0건, build 시간 영
 ### 다음에 뭘 해야 해
 - claude push → CEO main 머지 → Vercel 자동 배포.
 - 5/19 D-day까지 dev 측 다음 사이클: PH 뱃지 컴포넌트 사전 작업 (D+1에 PH "Today's #N" 결과 보고 자동 표시).
+
+---
+
+## [2026-05-13] @developer — 5/19 PH 런칭 D-6 추가 준비 4건 (스모크/뱃지/Lighthouse/회고)
+
+### 뭘 했어
+
+**1. Production 스모크 테스트** (D-day 사고 사전 차단)
+- 핵심 URL 7개 모두 HTTP 200, canonical/og:image/og:url 절대 URL 정확.
+- robots meta 모두 noindex 없음 (색인 가능).
+- sitemap.xml 90 URLs live, robots.txt sitemap 명시.
+- Pricing 체크아웃: `getPaymentProvider()` → 신규 PH 가입자 모두 Paddle 라우트 → PRODUCTHUNT 적용 가능 확인.
+- Lemon Squeezy 스크립트는 legacy 유저 grandfathering용 dual-provider 로직 (오작동 아님).
+
+**2. PH 뱃지 컴포넌트 사전 작업**
+- 신규 `src/components/marketing/ProductHuntBadge.tsx`
+- ENV 3개로 D+1 활성화: `VITE_PRODUCT_HUNT_POST_ID`, `VITE_PRODUCT_HUNT_URL`, `VITE_PRODUCT_HUNT_RANK` (옵션, 1~5).
+- ENV 없으면 `null` 반환 (현재 prerender HTML에 PH 흔적 0건 확인됨).
+- "featured" vs "top-post-badge" 자동 선택 (RANK 설정 시 후자).
+- 홈 hero에 통합 — `src/pages/home/page.tsx` 기존 badge 위 (dark theme).
+- D+1 활성화 절차: Vercel ENV 3개 입력 → Redeploy → 즉시 노출.
+
+**3. Lighthouse 점수 측정**
+| URL | Performance | A11y | SEO | Best Practices |
+|---|---|---|---|---|
+| / (홈) | 53 | 92 | **100** | 96 |
+| /alternatives | — | 92 | **100** | 96 |
+| /alternatives/testrail | — | **96** | **100** | 96 |
+| /compare/testrail | — | **96** | **100** | 96 |
+- SEO 100점 4페이지 만점.
+- /compare /alternatives/{slug} a11y 96점 (P1-3 th scope 픽스 효과).
+- /alternatives 인덱스 92점 — 헤로 CTA `bg-indigo-500 + text-white` 가 4.49:1 (4.5:1 미만 아슬). 픽스: `bg-indigo-600` 한 단계만 조정. P2 backlog (D-day blocking 아님).
+- 홈 Performance 53 — 외부 스크립트 다수 (Lemon Squeezy 잔존, Paddle, GA, fonts) + hero 이미지 무거움. Lighthouse 시뮬 3G 기준이라 실유저 체감과 다름. D-day blocking 아님.
+
+**4. D+1 회고 블로그 골격**
+- 신규 `docs/marketing/blog-ph-launch-retrospective-may20.md`
+- 구조: TL;DR / 무엇을 런칭했나 / 숫자 / 무엇이 효과적 / 다르게 했을 것 / Promo code 스토리 / 비용 / 다음 / 감사.
+- KPI placeholder 모두 `{TBD...}` 검색-치환용.
+- CEO 발행 체크리스트 + KPI 수집 가이드 (GA4, PH, Paddle, Supabase SQL) + 톤 가이드 포함.
+- D+1 (5/20) 발행 흐름: KPI 채움 → React page 생성 (BlogArticleLayout 재활용) → posts.ts 엔트리 추가 → router 등록 → build (91 라우트로 자동 갱신).
+
+### 검증
+- `npx tsc --noEmit -p tsconfig.app.json` — 내 변경 파일 신규 에러 0.
+- `npm run build` — 90 라우트 prerender 성공, ProductHuntBadge ENV 미설정 → HTML에 PH 흔적 0건.
+- Production smoke 7 URLs 모두 정상 200.
+
+### 변경 파일
+- 신규: `src/components/marketing/ProductHuntBadge.tsx`
+- 신규: `docs/marketing/blog-ph-launch-retrospective-may20.md`
+- 수정: `src/pages/home/page.tsx` (ProductHuntBadge import + hero 통합)
+
+### 차폐 (NOT in scope)
+- /alternatives 인덱스 헤로 CTA bg-indigo-500 → bg-indigo-600 (a11y 100점 달성용) — P2 한 줄 픽스, 다음 사이클.
+- 홈 performance 개선 (Lemon Squeezy 스크립트 조건부 로드, hero 이미지 압축) — 별도 사이클.
+- 회고 블로그를 React page로 통합 — D+1 작업 (KPI 채운 후).
+
+### 다음에 뭘 해야 해
+- claude push → CEO main 머지 → Vercel 자동 배포.
+- D-day (5/19) PH 런칭 — content-pack §4 타임라인 그대로.
+- D+1 (5/20):
+  1. Vercel ENV 3개 (VITE_PRODUCT_HUNT_*) 설정 → redeploy → PH 뱃지 노출
+  2. 회고 블로그 KPI 채움 → React page 만들어 발행
+  3. 사이트에 PH "Today's #N" 결과 반영

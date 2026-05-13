@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import SEOHead from '../../components/SEOHead';
 import Logo from '../../components/Logo';
+import ProductHuntBadge from '../../components/marketing/ProductHuntBadge';
 import { useLanguage } from '../../hooks/useLanguage';
 import { registerPaddleErrorHandler } from '../../lib/paddle';
 import { useToast } from '../../components/Toast';
@@ -1133,6 +1134,9 @@ export default function HomePage() {
 
               {/* LEFT: Text (6 columns) */}
               <div className="lg:col-span-6 text-center lg:text-left">
+
+                {/* Product Hunt Badge (renders null until VITE_PRODUCT_HUNT_* env is set) */}
+                <ProductHuntBadge theme="dark" className="inline-block mb-6 mx-auto lg:mx-0" />
 
                 {/* Badge */}
                 <div className="inline-flex items-center gap-2 mb-6">
