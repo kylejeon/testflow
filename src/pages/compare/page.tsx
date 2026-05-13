@@ -1,16 +1,9 @@
 import { useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, Navigate } from 'react-router-dom';
 import MarketingLayout from '../../components/marketing/MarketingLayout';
-import { testrailData } from '../../data/competitors/testrail';
-import { zephyrData } from '../../data/competitors/zephyr';
-import { qaseData } from '../../data/competitors/qase';
-import { CompetitorData } from '../../data/competitors/types';
-
-const COMPETITORS: Record<string, CompetitorData> = {
-  testrail: testrailData,
-  zephyr: zephyrData,
-  qase: qaseData,
-};
+import { COMPETITORS } from '../../data/competitors';
+import { VS_MATRIX } from '../../data/vs-matrix';
+import VsMatrixPage from './vs-matrix';
 
 function CheckIcon({ className }: { className?: string }) {
   return (
@@ -34,9 +27,100 @@ function FeatureCell({ value }: { value: boolean | string }) {
   return <span className="text-sm text-gray-600">{value}</span>;
 }
 
+/**
+ * NotFound view for invalid /compare/{slug}. Renders inline (not the global
+ * 404 page) so we control the noindex meta and the helpful CTA links to
+ * sibling marketing pages.
+ */
+function ComparisonNotFound() {
+  useEffect(() => {
+    const meta = document.createElement('meta');
+    meta.name = 'robots';
+    meta.content = 'noindex';
+    meta.id = 'compare-noindex';
+    document.head.appendChild(meta);
+    return () => {
+      const el = document.getElementById('compare-noindex');
+      if (el) el.remove();
+    };
+  }, []);
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="text-center max-w-md px-6">
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">Page not found</h1>
+        <p className="text-gray-500 mb-8">
+          This comparison page doesn&apos;t exist yet.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Link to="/" className="text-indigo-600 hover:underline font-semibold">
+            Back to home
+          </Link>
+          <Link to="/compare" className="text-indigo-600 hover:underline font-semibold">
+            See all comparisons
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Page router for /compare/:competitor.
+ *
+ * Slug branching (dev spec §4-1-1):
+ *   - "-vs-" not in slug → single-competitor Testably-vs-X page (existing behavior)
+ *   - "-vs-" in slug, in alphabetical order, registered → vs-matrix page
+ *   - "-vs-" in slug, wrong alphabetical order → 301-equivalent redirect
+ *     to the canonical ordering
+ *   - "-vs-" in slug, registered but matchup unknown → NotFound + noindex
+ */
 export default function ComparePage() {
   const { competitor } = useParams<{ competitor: string }>();
-  const data = competitor ? COMPETITORS[competitor] : undefined;
+
+  // vs-matrix branch
+  if (competitor && competitor.includes('-vs-')) {
+    return <VsMatrixRoute slug={competitor} />;
+  }
+
+  return <TestablyVsCompetitor slug={competitor} />;
+}
+
+function VsMatrixRoute({ slug }: { slug: string }) {
+  // Parse and validate the "<a>-vs-<b>" structure.
+  const parts = slug.split('-vs-');
+  if (parts.length !== 2 || !parts[0] || !parts[1]) {
+    return <ComparisonNotFound />;
+  }
+  const [rawA, rawB] = parts;
+
+  // a !== b
+  if (rawA === rawB) {
+    return <ComparisonNotFound />;
+  }
+
+  // Both sides must be registered competitors.
+  const competitorA = COMPETITORS[rawA];
+  const competitorB = COMPETITORS[rawB];
+  if (!competitorA || !competitorB) {
+    return <ComparisonNotFound />;
+  }
+
+  // Enforce alphabetical ordering — redirect wrong-order URLs to canonical.
+  if (rawA > rawB) {
+    return <Navigate to={`/compare/${rawB}-vs-${rawA}`} replace />;
+  }
+
+  // Look up the registered vs-matrix data.
+  const data = VS_MATRIX[slug];
+  if (!data) {
+    return <ComparisonNotFound />;
+  }
+
+  return <VsMatrixPage data={data} competitorA={competitorA} competitorB={competitorB} />;
+}
+
+function TestablyVsCompetitor({ slug }: { slug: string | undefined }) {
+  const data = slug ? COMPETITORS[slug] : undefined;
 
   useEffect(() => {
     if (!data) return;
@@ -63,15 +147,7 @@ export default function ComparePage() {
   }, [data]);
 
   if (!data) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Page not found</h1>
-          <p className="text-gray-500 mb-8">This comparison page doesn't exist.</p>
-          <Link to="/" className="text-indigo-600 hover:underline">Back to home</Link>
-        </div>
-      </div>
-    );
+    return <ComparisonNotFound />;
   }
 
   return (

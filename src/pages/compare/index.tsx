@@ -1,7 +1,18 @@
 import { Link } from 'react-router-dom';
 import MarketingLayout from '../../components/marketing/MarketingLayout';
+import MatrixLinkGrid from '../../components/seo/MatrixLinkGrid';
 
-const competitors = [
+interface CompetitorCard {
+  slug: string;
+  name: string;
+  icon: string;
+  iconBg: string;
+  iconColor: string;
+  tagline: string;
+  highlights: string[];
+}
+
+const competitors: CompetitorCard[] = [
   {
     slug: 'testrail',
     name: 'TestRail',
@@ -44,9 +55,107 @@ const competitors = [
       'Dedicated enterprise support',
     ],
   },
+  {
+    slug: 'xray',
+    name: 'Xray',
+    icon: 'ri-bug-line',
+    iconBg: 'bg-emerald-100',
+    iconColor: 'text-emerald-600',
+    tagline: 'Standalone option that doesn’t bill on Jira users',
+    highlights: [
+      'Billed on QA testers only',
+      'Runs with or without Jira',
+      'Native two-way Jira sync on every plan',
+      'AI test generation included',
+    ],
+  },
+  {
+    slug: 'practitest',
+    name: 'PractiTest',
+    icon: 'ri-shield-check-line',
+    iconBg: 'bg-amber-100',
+    iconColor: 'text-amber-600',
+    tagline: 'Same depth without the 10-seat annual minimum',
+    highlights: [
+      'No annual commitment',
+      'Free forever plan',
+      'AI on every paid plan from $19/month',
+      'Sign up and import a CSV in under 5 minutes',
+    ],
+  },
+  {
+    slug: 'testpad',
+    name: 'TestPad',
+    icon: 'ri-list-check-2',
+    iconBg: 'bg-pink-100',
+    iconColor: 'text-pink-600',
+    tagline: 'Lightweight feel with structured Test Cases',
+    highlights: [
+      'Free forever — no trial countdown',
+      'Shared Steps with version pinning',
+      'Native Jira two-way sync on every plan',
+      'AI test generation included',
+    ],
+  },
+  {
+    slug: 'kiwi-tcms',
+    name: 'Kiwi TCMS',
+    icon: 'ri-leaf-line',
+    iconBg: 'bg-lime-100',
+    iconColor: 'text-lime-600',
+    tagline: 'Open source benefits without the self-hosting burden',
+    highlights: [
+      'No server to maintain',
+      'Modern UI vs Django legacy',
+      'AI test generation built in',
+      'Free plan forever',
+    ],
+  },
+  {
+    slug: 'testmonitor',
+    name: 'TestMonitor',
+    icon: 'ri-line-chart-line',
+    iconBg: 'bg-cyan-100',
+    iconColor: 'text-cyan-600',
+    tagline: 'Same reporting depth, lower per-seat cost',
+    highlights: [
+      'Flat-rate, no per-tester math',
+      'Built-in Jira two-way sync',
+      'AI test case generation included',
+      'Free forever plan',
+    ],
+  },
+  {
+    slug: 'browserstack-tm',
+    name: 'BrowserStack TM',
+    icon: 'ri-stack-line',
+    iconBg: 'bg-orange-100',
+    iconColor: 'text-orange-600',
+    tagline: 'Test management without the BrowserStack bundle lock-in',
+    highlights: [
+      'Standalone — not bundled with browser cloud',
+      'Flat-rate pricing',
+      'AI test generation on every paid plan',
+      'Native Jira two-way sync on Free',
+    ],
+  },
+  {
+    slug: 'testiny',
+    name: 'Testiny',
+    icon: 'ri-sparkling-2-line',
+    iconBg: 'bg-rose-100',
+    iconColor: 'text-rose-600',
+    tagline: 'Same modern UX with deeper features',
+    highlights: [
+      'AI on every paid plan from $19/month',
+      'Shared Steps version pinning',
+      'Unlimited Requirements Traceability on Hobby',
+      'Flat-rate team plans',
+    ],
+  },
 ];
 
-type ToolKey = 'testably' | 'testrail' | 'zephyr' | 'qase';
+type ToolKey = 'testably' | 'testrail' | 'zephyr' | 'qase' | 'xray' | 'practitest';
 
 interface FeatureRow {
   feature: string;
@@ -54,29 +163,122 @@ interface FeatureRow {
   testrail: boolean | string;
   zephyr: boolean | string;
   qase: boolean | string;
+  xray: boolean | string;
+  practitest: boolean | string;
 }
 
 const featureMatrix: FeatureRow[] = [
-  { feature: 'Free plan', testably: true, testrail: false, zephyr: false, qase: true },
-  { feature: 'Test case management', testably: true, testrail: true, zephyr: true, qase: true },
-  { feature: 'Test runs & reporting', testably: true, testrail: true, zephyr: true, qase: true },
-  { feature: 'Jira two-way sync', testably: true, testrail: 'Paid add-on', zephyr: 'Native (requires Jira)', qase: true },
-  { feature: 'CI/CD integration', testably: true, testrail: true, zephyr: true, qase: true },
-  { feature: 'Milestone tracking', testably: true, testrail: true, zephyr: false, qase: true },
-  { feature: 'Exploratory testing', testably: true, testrail: false, zephyr: true, qase: true },
-  { feature: 'PDF report export', testably: true, testrail: true, zephyr: false, qase: 'Paid' },
-  { feature: 'SSO & audit logs', testably: 'Enterprise', testrail: 'Enterprise', zephyr: 'Enterprise', qase: 'Enterprise' },
-  { feature: 'Setup time', testably: '< 5 min', testrail: '1–2 hours', zephyr: '30+ min', qase: '10–15 min' },
+  {
+    feature: 'Free plan',
+    testably: true,
+    testrail: false,
+    zephyr: 'If Jira ≤10 users',
+    qase: true,
+    xray: false,
+    practitest: false,
+  },
+  {
+    feature: 'Flat-rate pricing',
+    testably: true,
+    testrail: false,
+    zephyr: false,
+    qase: false,
+    xray: false,
+    practitest: false,
+  },
+  {
+    feature: 'AI test generation',
+    testably: true,
+    testrail: false,
+    zephyr: false,
+    qase: 'Add-on',
+    xray: false,
+    practitest: 'Beta',
+  },
+  {
+    feature: 'Shared Steps version pinning',
+    testably: true,
+    testrail: 'Always-latest',
+    zephyr: 'Always-latest',
+    qase: 'Always-latest',
+    xray: 'Limited',
+    practitest: 'Limited',
+  },
+  {
+    feature: 'Jira two-way sync',
+    testably: true,
+    testrail: 'Paid plans',
+    zephyr: 'Native',
+    qase: true,
+    xray: 'Native (Jira required)',
+    practitest: true,
+  },
+  {
+    feature: 'CI/CD integration',
+    testably: 'Professional+',
+    testrail: 'Enterprise only',
+    zephyr: true,
+    qase: true,
+    xray: true,
+    practitest: true,
+  },
+  {
+    feature: 'Requirements Traceability',
+    testably: 'Hobby+',
+    testrail: 'Enterprise only',
+    zephyr: 'Via Jira',
+    qase: 'Business+',
+    xray: 'Built-in (Jira)',
+    practitest: 'Built-in',
+  },
+  {
+    feature: 'Standalone (no Jira required)',
+    testably: true,
+    testrail: true,
+    zephyr: false,
+    qase: true,
+    xray: false,
+    practitest: true,
+  },
+  {
+    feature: 'Setup time',
+    testably: '< 5 min',
+    testrail: '30+ min',
+    zephyr: '30+ min',
+    qase: '15 min',
+    xray: '30+ min',
+    practitest: '1+ hour',
+  },
 ];
 
-const toolKeys: ToolKey[] = ['testably', 'testrail', 'zephyr', 'qase'];
+const toolKeys: ToolKey[] = ['testably', 'testrail', 'zephyr', 'qase', 'xray', 'practitest'];
+
+// 15 cross-comparison links (C(6,2) alphabetical). Kept in lockstep with
+// src/data/vs-matrix/*.ts — these are the registered matchups.
+const matchups = [
+  { slug: 'practitest-vs-qase', aName: 'PractiTest', bName: 'Qase' },
+  { slug: 'practitest-vs-testpad', aName: 'PractiTest', bName: 'TestPad' },
+  { slug: 'practitest-vs-testrail', aName: 'PractiTest', bName: 'TestRail' },
+  { slug: 'practitest-vs-xray', aName: 'PractiTest', bName: 'Xray' },
+  { slug: 'practitest-vs-zephyr', aName: 'PractiTest', bName: 'Zephyr Scale' },
+  { slug: 'qase-vs-testpad', aName: 'Qase', bName: 'TestPad' },
+  { slug: 'qase-vs-testrail', aName: 'Qase', bName: 'TestRail' },
+  { slug: 'qase-vs-xray', aName: 'Qase', bName: 'Xray' },
+  { slug: 'qase-vs-zephyr', aName: 'Qase', bName: 'Zephyr Scale' },
+  { slug: 'testpad-vs-testrail', aName: 'TestPad', bName: 'TestRail' },
+  { slug: 'testpad-vs-xray', aName: 'TestPad', bName: 'Xray' },
+  { slug: 'testpad-vs-zephyr', aName: 'TestPad', bName: 'Zephyr Scale' },
+  { slug: 'testrail-vs-xray', aName: 'TestRail', bName: 'Xray' },
+  { slug: 'testrail-vs-zephyr', aName: 'TestRail', bName: 'Zephyr Scale' },
+  { slug: 'xray-vs-zephyr', aName: 'Xray', bName: 'Zephyr Scale' },
+];
 
 export default function CompareIndexPage() {
   return (
     <MarketingLayout
       title="Compare Testably vs Competitors | Testably"
-      description="See how Testably compares to competitors. Feature comparison, pricing, and migration guide."
-      keywords="testably alternatives, testrail alternative, zephyr scale alternative, qase alternative, test management comparison"
+      description="See how Testably compares to TestRail, Zephyr, Qase, Xray, PractiTest, TestPad, and more. Feature comparison, pricing, and head-to-head matchups."
+      keywords="testably alternatives, testrail alternative, zephyr scale alternative, qase alternative, xray alternative, practitest alternative, test management comparison"
     >
       <div>
 
@@ -98,7 +300,7 @@ export default function CompareIndexPage() {
             </h1>
 
             <p className="text-lg md:text-xl text-white/50 leading-relaxed max-w-2xl mx-auto mb-10">
-              See how Testably compares to other test management tools.
+              See how Testably compares to 10 of the most-used test management tools.
               Better experience, modern workflow, free to start.
             </p>
 
@@ -130,7 +332,7 @@ export default function CompareIndexPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {competitors.map((comp) => (
                 <Link
                   key={comp.slug}
@@ -168,6 +370,24 @@ export default function CompareIndexPage() {
           </div>
         </section>
 
+        {/* Cross-comparison link grid (vs-matrix) */}
+        <section className="py-24 bg-white">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="text-center mb-12">
+              <span className="inline-block bg-indigo-50 text-indigo-700 text-sm font-medium px-3 py-1 rounded-full mb-4">
+                Head to Head
+              </span>
+              <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                Compare any two tools head-to-head
+              </h2>
+              <p className="text-gray-500 text-lg max-w-2xl mx-auto">
+                Stuck between two options? See the full matrix of how the six top tools stack up against each other — and where Testably fits in.
+              </p>
+            </div>
+            <MatrixLinkGrid matchups={matchups} />
+          </div>
+        </section>
+
         {/* Feature Matrix */}
         <section className="py-24 bg-gray-50">
           <div className="max-w-6xl mx-auto px-6">
@@ -179,16 +399,16 @@ export default function CompareIndexPage() {
                 Quick feature comparison
               </h2>
               <p className="text-gray-500 text-lg max-w-2xl mx-auto">
-                At a glance, see which features matter most and where Testably leads.
+                At a glance, see how Testably and the top 5 alternatives stack up.
               </p>
             </div>
 
             <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-sm">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm min-w-[860px]">
                 <thead>
                   <tr className="border-b border-gray-100">
-                    <th className="text-left py-4 px-5 font-semibold text-gray-500 w-1/5">Feature</th>
-                    <th className="text-center py-4 px-4 font-bold text-indigo-700 bg-indigo-50/50 w-1/5">
+                    <th className="text-left py-4 px-5 font-semibold text-gray-500">Feature</th>
+                    <th className="text-center py-4 px-4 font-bold text-indigo-700 bg-indigo-50/50">
                       <div className="flex items-center justify-center gap-2">
                         <div className="w-6 h-6 rounded-lg bg-indigo-500 flex items-center justify-center">
                           <i className="ri-check-line text-white text-xs"></i>
@@ -196,9 +416,11 @@ export default function CompareIndexPage() {
                         Testably
                       </div>
                     </th>
-                    <th className="text-center py-4 px-4 font-semibold text-gray-600 w-1/5">TestRail</th>
-                    <th className="text-center py-4 px-4 font-semibold text-gray-600 w-1/5">Zephyr Scale</th>
-                    <th className="text-center py-4 px-4 font-semibold text-gray-600 w-1/5">Qase</th>
+                    <th className="text-center py-4 px-4 font-semibold text-gray-600">TestRail</th>
+                    <th className="text-center py-4 px-4 font-semibold text-gray-600">Zephyr Scale</th>
+                    <th className="text-center py-4 px-4 font-semibold text-gray-600">Qase</th>
+                    <th className="text-center py-4 px-4 font-semibold text-gray-600">Xray</th>
+                    <th className="text-center py-4 px-4 font-semibold text-gray-600">PractiTest</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -215,7 +437,7 @@ export default function CompareIndexPage() {
                           ) : row[tool] === false ? (
                             <i className="ri-close-line text-base text-gray-300"></i>
                           ) : (
-                            <span className={`text-xs font-medium ${tool === 'testably' ? 'text-indigo-600' : 'text-gray-400'}`}>
+                            <span className={`text-xs font-medium ${tool === 'testably' ? 'text-indigo-600' : 'text-gray-500'}`}>
                               {row[tool]}
                             </span>
                           )}
@@ -228,7 +450,7 @@ export default function CompareIndexPage() {
             </div>
 
             <p className="text-center text-gray-400 text-xs mt-4">
-              Last updated: March 2026. Feature availability may vary by plan.
+              Last updated: May 2026. Feature availability may vary by plan. See each vendor's official site for the latest details.
             </p>
           </div>
         </section>
