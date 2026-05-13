@@ -58,9 +58,11 @@
     "packages/*"
   ],
   "scripts": {
+    "prebuild": "node scripts/generate-sitemap.mjs",
     "build": "vite build",
     "postbuild": "node scripts/prerender.mjs",
     "prerender": "node scripts/prerender.mjs",
+    "sitemap": "node scripts/generate-sitemap.mjs",
     "dev": "vite",
     "preview": "vite preview",
     "test": "vitest run",

@@ -27,6 +27,7 @@ import { fileURLToPath } from 'node:url';
 import http from 'node:http';
 import sirv from 'sirv';
 import puppeteer from 'puppeteer-core';
+import { getAllSeoRoutePaths } from './seo-routes-scanner.mjs';
 
 // Vercel/AWS Lambda's serverless Linux image is missing the system libs
 // (libnspr4, etc.) that puppeteer's bundled Chromium needs. @sparticuz/chromium
@@ -72,92 +73,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 const DIST = join(ROOT, 'dist');
 
-const ROUTES = [
-  '/',
-  '/pricing',
-  '/features',
-  '/docs',
-  '/changelog',
-  '/roadmap',
-  '/about',
-  '/use-cases/test-case-management',
-  '/use-cases/test-management-tool',
-  '/blog',
-  '/blog/choosing-test-management-tool',
-  '/blog/playwright-reporter-ci-integration',
-  '/blog/cypress-reporter-ci-integration',
-  // 11 alternative-blog posts (M4)
-  '/blog/best-test-management-tools-2026',
-  '/blog/testrail-alternatives-2026',
-  '/blog/zephyr-alternatives-2026',
-  '/blog/qase-alternatives-2026',
-  '/blog/xray-alternatives-2026',
-  '/blog/practitest-alternatives-2026',
-  '/blog/testpad-alternatives-2026',
-  '/blog/kiwi-tcms-alternatives-2026',
-  '/blog/testmonitor-alternatives-2026',
-  '/blog/browserstack-tm-alternatives-2026',
-  '/blog/testiny-alternatives-2026',
-  '/compare',
-  '/compare/testrail',
-  '/compare/zephyr',
-  '/compare/qase',
-  '/alternatives/testrail',
-  '/alternatives/zephyr',
-  '/alternatives/qase',
-  '/alternatives/xray',
-  '/alternatives/practitest',
-  '/alternatives/testpad',
-  '/alternatives/kiwi-tcms',
-  '/alternatives/testmonitor',
-  '/alternatives/browserstack-tm',
-  '/alternatives/testiny',
-  // 15 vs-matrix pages — C(6,2) for {practitest, qase, testpad, testrail, xray, zephyr}
-  '/compare/practitest-vs-qase',
-  '/compare/practitest-vs-testpad',
-  '/compare/practitest-vs-testrail',
-  '/compare/practitest-vs-xray',
-  '/compare/practitest-vs-zephyr',
-  '/compare/qase-vs-testpad',
-  '/compare/qase-vs-testrail',
-  '/compare/qase-vs-xray',
-  '/compare/qase-vs-zephyr',
-  '/compare/testpad-vs-testrail',
-  '/compare/testpad-vs-xray',
-  '/compare/testpad-vs-zephyr',
-  '/compare/testrail-vs-xray',
-  '/compare/testrail-vs-zephyr',
-  '/compare/xray-vs-zephyr',
-  '/docs/getting-started',
-  '/docs/cicd',
-  '/docs/import-export',
-  '/docs/webhooks',
-  '/docs/integrations',
-  '/docs/test-cases',
-  '/docs/test-runs',
-  '/docs/milestones',
-  '/docs/discovery-logs',
-  '/docs/requirements-traceability',
-  '/docs/shared-steps',
-  '/docs/team-permissions',
-  '/docs/account-billing',
-  '/docs/keyboard-shortcuts',
-  '/docs/faq',
-  '/docs/api',
-  '/docs/api/authentication',
-  '/docs/api/projects',
-  '/docs/api/test-cases',
-  '/docs/api/test-runs',
-  '/docs/api/test-results',
-  '/docs/api/ci-upload',
-  '/docs/api/milestones',
-  '/docs/api/discovery-logs',
-  '/docs/api/members',
-  '/privacy',
-  '/terms',
-  '/cookies',
-  '/refund',
-];
+// Single source of truth for the prerender route list. The same scanner is
+// used by `scripts/generate-sitemap.mjs` so prerender output and sitemap.xml
+// are guaranteed to cover the same URL set (dev spec §10 AC: M5).
+// Top-level await is safe in this ESM module.
+const ROUTES = await getAllSeoRoutePaths(ROOT);
 
 const WAIT_FOR_MS = 1500;
 const PORT = 45123;

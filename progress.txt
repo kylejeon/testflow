@@ -1562,5 +1562,45 @@ M1+M2+M3 위에서 M4 구현: 11편의 /blog/{slug}-alternatives-2026 페이지 
 ### 다음에 뭘 해야 해
 - CEO 시각 확인 (dev 서버에서 /blog/best-test-management-tools-2026 등 둘러보기)
 - main 머지 → Vercel 자동 배포 → 외부 검증 (curl + Twitter Card Validator)
-- M5 — sitemap.xml 자동 생성 + prerender ROUTES 자동화 (현재 수동 11개 추가한 URL은 generator로 교체될 예정)
 - @marketer의 docs/marketing/blog-*-alternatives-2026.md 11편 산출이 완료되면 본 페이지 콘텐츠 교체/보강 가능 (별도 사이클)
+
+---
+
+## [2026-05-13] @developer — SEO 경쟁사 풀-커버리지 M5 (sitemap 자동화 + prerender ROUTES single source of truth)
+
+### 뭘 했어
+- `scripts/seo-routes-scanner.mjs` 신규 — 정적 마케팅 라우트 + 데이터 파일 스캔(competitors / vs-matrix / blog posts) → `{ path, lastmod, changefreq, priority }[]` 반환 (89 라우트). ESM Node 스크립트, fs 기반.
+- `scripts/generate-sitemap.mjs` 신규 — scanner 결과 → `public/sitemap.xml` 자동 생성. dev spec §5-5의 priority/changefreq 매핑 (/ 1.0 weekly, /compare/{slug} 0.8 monthly, /compare/{a}-vs-{b} 0.7 monthly, /alternatives/{slug} 0.8 monthly, /docs/* 0.7 monthly, legal 0.3~0.4 yearly 등).
+- `scripts/prerender.mjs` — 하드코딩된 ROUTES 배열 제거 → `getAllSeoRoutePaths()` 호출 (top-level await). 한 줄 변경.
+- `package.json` — `prebuild: node scripts/generate-sitemap.mjs` 추가 (vite build 전에 sitemap 갱신). 별도 `sitemap` 스크립트도 추가.
+- 빌드 타임 검증: vs-matrix 슬러그 알파벳 순서 위반 시 throw (zzz-vs-aaa.ts 같은 파일이 들어오면 빌드 실패). 동일 슬러그 (a===b) 도 throw.
+- `lastmod`: competitor/vs-matrix는 데이터 파일의 `lastReviewed` 필드 regex 추출, blog는 `posts.ts`의 `publishDate`, 정적 라우트는 빌드 날짜.
+
+### 검증
+- `npx tsc --noEmit -p tsconfig.app.json` — 내 신규/수정 파일 0건 신규 에러 (기존 pre-existing 434건 그대로). .mjs 파일은 tsconfig에 포함 안 됨.
+- `npm run build` — prebuild가 89 URLs sitemap 작성 → vite build 성공 → postbuild가 89 라우트 prerender 성공 (모두 ✓, pageerror 0건).
+- `dist/sitemap.xml` 과 `public/sitemap.xml` byte-for-byte 동일 (vite가 public/ → dist/ 복사).
+- 89 라우트 분해: 40 정적 (homepage + pricing + features + docs 26개 + use-cases 2개 + 기타 4개 + legal 4개 + blog/compare/changelog/roadmap/about) + 10 /compare/{slug} + 10 /alternatives/{slug} + 15 /compare/{a}-vs-{b} + 14 /blog/{slug} = 89.
+- 회귀 제로: 이전 sitemap.xml의 56 URL 모두 새 sitemap에 포함, 추가로 33개 URL이 (이전엔 prerender엔 있었지만 sitemap 누락이었던 26개 docs + 7개 신규 competitor compare) 자동 채워짐.
+- 자동 동기화 데모: `src/data/competitors/__test-tmp.ts` (slug=__test-tmp) 추가 → `node scripts/generate-sitemap.mjs` → 89 → 91 URLs (/compare/__test-tmp + /alternatives/__test-tmp 자동 등장). 파일 삭제 → 89로 복귀.
+- 검증 throw 데모: `src/data/vs-matrix/zzz-vs-aaa.ts` 추가 → generate-sitemap 실행 → `Error: vs-matrix slug "zzz-vs-aaa" violates alphabetical order — expected "aaa-vs-zzz"` + exit 1. 빌드 실패 보장.
+- 모든 prerendered HTML의 canonical이 `https://testably.app/...` 절대 URL (4개 샘플 확인: /docs/getting-started, /blog/best-test-management-tools-2026, /alternatives/xray, /compare/practitest-vs-qase).
+
+### 변경 파일 요약
+- 신규: scripts/seo-routes-scanner.mjs (single source of truth)
+- 신규: scripts/generate-sitemap.mjs (public/sitemap.xml 자동 생성)
+- 수정: scripts/prerender.mjs (ROUTES 하드코딩 제거 → scanner 호출)
+- 수정: package.json (prebuild, sitemap 스크립트 추가)
+- 갱신: public/sitemap.xml (자동 생성됨, 89 URLs)
+
+### M5 차폐 (NOT in scope)
+- Phase 5 (@qa) — 검수는 별도 사이클
+- Phase 6 (@marketer) 런칭 자산 — 별도 사이클
+- /alternatives 인덱스 페이지 — 현재 router에 라우트 없음 (dev spec §10 M2의 옵션이었지만 이번 작업 범위 아님)
+- 콘텐츠 5-gram 중복 검증 — dev spec §8-3에 옵션으로만 명시 (필수 아님)
+- Lighthouse CI 가드 — QA 단계 수동 측정
+
+### 다음에 뭘 해야 해
+- @qa 코드 검수 (Phase 5) — `docs/qa/qa-report-seo-competitor-pages.md` 산출
+- @marketer 블로그 카피 11편 (`docs/marketing/blog-*-alternatives-2026.md`) 산출 시 본 페이지 콘텐츠 교체/보강
+- 새 경쟁사 / 새 vs-매트릭스 추가 시: 데이터 파일 1개만 추가하면 sitemap + prerender 자동 동기화 (BR-1, BR-2 충족)
