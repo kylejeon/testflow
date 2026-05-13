@@ -1,3 +1,30 @@
+2026-05-13: 5/11 런칭 검증 + SEO Phase 1 착수 (하루 늦게 시작)
+
+## 현재 상태
+- 5/10 이후 레포 활동 0 — 운영 작업이 git 외부에서 일어났을 것으로 추정
+- 사용자 컨펌:
+  - 5/11 Playwright 런칭: "잘 끝났는지 모르겠어, 확인해줘" → 외부 검증 필요
+  - 5/13 Cypress 서브 런칭: 오늘 예정대로 진행
+  - SEO Phase 1: 5/12 → 5/13 으로 하루 밀어서 즉시 시작
+
+## 뭘 했냐 (2026-05-13)
+- 백그라운드 에이전트 2개 병렬 가동:
+  1. **general-purpose** — 5/11 Playwright 런칭 라이브 검증 + 5/13 Cypress 잔여 액션 punch list (WebFetch/WebSearch)
+     - testably.app/blog/playwright-reporter-ci-integration / cypress-reporter-ci-integration 라이브 확인
+     - OG 이미지 실존, Product Hunt 노출, Dev.to 크로스포스트 canonical 점검
+  2. **@researcher** — SEO Phase 1: 10개 경쟁사 + 키워드 맵 (docs/research/competitor-*.md × 10 + seo-keyword-map.md)
+
+## 어디까지 됐냐
+- 두 에이전트 진행 중. 완료 알림 대기.
+- 일정 조정: SEO 발사 목표 5/24 → 5/25 (하루 밀림)
+
+## 다음엔 뭘 해야 해
+1. 두 에이전트 산출 검토
+2. 5/11 런칭 검증 결과에 따라 픽스/follow-up
+3. SEO Phase 1 산출 검토 후 Phase 2 (@planner) 착수 결정
+
+---
+
 2026-05-10 (오후): SEO 경쟁사 풀-커버리지 전략 (Option C) 착수 결정 — 브리핑만 작성
 
 ## 뭘 했냐
