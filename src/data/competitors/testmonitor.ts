@@ -5,7 +5,7 @@
 // - https://www.capterra.com/p/161759/TestMonitor/reviews/
 // See docs/research/competitor-testmonitor.md for full citations.
 
-import { CompetitorData } from './types';
+import type { CompetitorData } from './types';
 
 export const testmonitorData: CompetitorData = {
   slug: 'testmonitor',

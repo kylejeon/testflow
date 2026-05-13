@@ -1,4 +1,4 @@
-import { CompetitorData } from './types';
+import type { CompetitorData } from './types';
 
 export const testrailData: CompetitorData = {
   slug: 'testrail',

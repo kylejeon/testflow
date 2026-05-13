@@ -1,3 +1,50 @@
+2026-05-13 (저녁): SEO Phase 4 — M1 데이터 모델 + 신규 경쟁사 7개 데이터
+
+## 뭘 했냐
+- @developer 호출: dev-spec-seo-competitor-pages.md §10 M1 만 구현 (M2~M5 미터치)
+- src/data/competitors/types.ts 확장:
+  - 신규 인터페이스 5종: AlternativePageData, MigrationGuide, VsMatrixData, ThreeWayFeatureRow, ThreeWayPricingRow
+  - CompetitorData 옵셔널 4개 추가: alternativePageData, relatedCompetitors, migrationGuide, lastReviewed
+- 신규 7개 경쟁사 데이터 파일 (Phase 1 리서치 docs/research/competitor-*.md 인용):
+  - src/data/competitors/xray.ts
+  - src/data/competitors/practitest.ts
+  - src/data/competitors/testpad.ts
+  - src/data/competitors/kiwi-tcms.ts
+  - src/data/competitors/testmonitor.ts
+  - src/data/competitors/browserstack-tm.ts
+  - src/data/competitors/testiny.ts
+  - 각 파일: 필수 필드 + alternativePageData (whyLeave 4~5, whySwitch 4~5) + migrationGuide (5~6 steps + fieldMapping) + lastReviewed '2026-05-13' + relatedCompetitors + 출처 코멘트 헤더
+- 기존 3개 데이터 보강 (alternativePageData, migrationGuide, lastReviewed, relatedCompetitors, export default 만 추가; 기존 features/keyDifferences/pricingRows/faqs 무수정):
+  - src/data/competitors/testrail.ts
+  - src/data/competitors/zephyr.ts
+  - src/data/competitors/qase.ts
+- 신규: src/data/competitors/index.ts (Vite import.meta.glob 기반 자동 export, COMPETITORS + COMPETITOR_SLUGS)
+- 법적 안전성: 모든 가격/기능 명세에 "as of 2026-05" 명시, 출처 URL 파일 헤더 코멘트 보존, 부정적 비교는 사실 기반만
+
+## 검증
+- npm run build 통과 (vite 7.5s + prerender 25s, 46/46 라우트 성공)
+- 기존 /compare/{testrail,zephyr,qase} HTML 사이즈 회귀 없음 (±4 bytes)
+- canonical absolute URL (https://testably.app/...) 유지
+- 슬러그 유니크 (10개), 모든 데이터 파일에 lastReviewed='2026-05-13'
+- typecheck: src/data/competitors/ 내 에러 1건 (import.meta.glob — 프로젝트 전반 import.meta.env 와 동일한 vite augmentation 이슈, build 성공)
+
+## 안 한 것 (M2~M5 범위)
+- src/router/config.tsx (라우트 등록은 M2)
+- src/pages/compare/page.tsx (-vs- 분기 + COMPETITORS 교체는 M3/M2)
+- /alternatives/* 페이지 컴포넌트 (M2)
+- vs-매트릭스 15개 데이터 파일 (M3)
+- 블로그 11편 (M4)
+- sitemap 자동화 / prerender 통합 (M5)
+
+## 다음엔 뭘 해야 해
+1. **디자인 명세 (@designer) 가 5/14~15 에 design-spec-seo-competitor-pages.md 산출**
+2. **M2 (@developer): /alternatives/:competitor + /alternatives 인덱스 페이지 구현** — 디자인 명세 Approved 후
+3. **M3 (@developer): /compare/:a-vs-:b 분기 + 15개 vs-매트릭스 데이터** — M2 와 병렬 가능
+4. **M4 (@developer + @marketer): 블로그 11편** — 마케터 카피 의존
+5. **M5 (@developer): sitemap + prerender 자동화** — M1~M4 완료 후
+
+---
+
 2026-05-13: 런칭 SSR 픽스 + Cypress 5/13 발사 콘텐츠 + SEO Phase 1 산출 — 종합
 
 ## 핵심 발견 (5/13 시작 시점)

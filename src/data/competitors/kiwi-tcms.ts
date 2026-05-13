@@ -5,7 +5,7 @@
 // - https://www.softwaresuggest.com/kiwi-tcms
 // See docs/research/competitor-kiwi-tcms.md for full citations.
 
-import { CompetitorData } from './types';
+import type { CompetitorData } from './types';
 
 export const kiwiTcmsData: CompetitorData = {
   slug: 'kiwi-tcms',

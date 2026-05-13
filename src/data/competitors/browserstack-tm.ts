@@ -6,7 +6,7 @@
 // - https://testdino.com/reviews/browserstack-test-reporting-review/
 // See docs/research/competitor-browserstack-tm.md for full citations.
 
-import { CompetitorData } from './types';
+import type { CompetitorData } from './types';
 
 export const browserstackTmData: CompetitorData = {
   slug: 'browserstack-tm',

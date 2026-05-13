@@ -6,7 +6,7 @@
 // - https://thectoclub.com/tools/testiny-review/
 // See docs/research/competitor-testiny.md for full citations.
 
-import { CompetitorData } from './types';
+import type { CompetitorData } from './types';
 
 export const testinyData: CompetitorData = {
   slug: 'testiny',
