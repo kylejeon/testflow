@@ -15,6 +15,7 @@ dist
 dist-ssr
 build
 *.local
+/testflow
 
 # Environment variables
 .env
