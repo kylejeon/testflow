@@ -1482,3 +1482,85 @@ M1 (데이터 모델 + 10개 경쟁사 데이터, alternativePageData/migrationG
 - main 머지 → Vercel 자동 배포 → 외부 검증 (curl + Twitter Card Validator)
 - M3 — vs-매트릭스 15개 데이터 + 페이지 + 분기 라우팅 + /compare 인덱스 cross-link 그리드
 - 향후 M5에서 sitemap.xml 자동화될 때, 현재 수동 추가한 10개 URL은 generator로 교체될 예정
+
+---
+
+## 2026-05-13 — SEO 경쟁사 풀-커버리지 M4 (블로그 11편 + RankedToolCard)
+
+### 뭘 했나
+M1+M2+M3 위에서 M4 구현: 11편의 /blog/{slug}-alternatives-2026 페이지 + RankedToolCard 컴포넌트 + 라우팅/메타/prerender/sitemap.
+
+1. 신규 컴포넌트:
+   - `src/components/seo/RankedToolCard.tsx` — 블로그 랭킹 카드 (Pros/Cons + Testably Editor's Pick 강조 variant)
+
+2. 공용 블로그 레이아웃 (DRY):
+   - `src/pages/blog/_shared/AlternativesArticleLayout.tsx` — 8섹션 표준 레이아웃 (Hero / TOC / Intro / Why alternatives / Ranking / Summary table / Testably advantages / Migration / FAQ + JSON-LD / Bottom CTA)
+   - `src/pages/blog/_shared/testably-preset.ts` — Testably 랭킹/요약 프리셋 (가격 1곳에서 관리)
+
+3. 11편 블로그 페이지 신규:
+   - `src/pages/blog/testrail-alternatives-2026/page.tsx`
+   - `src/pages/blog/zephyr-alternatives-2026/page.tsx`
+   - `src/pages/blog/qase-alternatives-2026/page.tsx`
+   - `src/pages/blog/xray-alternatives-2026/page.tsx`
+   - `src/pages/blog/practitest-alternatives-2026/page.tsx`
+   - `src/pages/blog/testpad-alternatives-2026/page.tsx`
+   - `src/pages/blog/kiwi-tcms-alternatives-2026/page.tsx`
+   - `src/pages/blog/testmonitor-alternatives-2026/page.tsx`
+   - `src/pages/blog/browserstack-tm-alternatives-2026/page.tsx`
+   - `src/pages/blog/testiny-alternatives-2026/page.tsx`
+   - `src/pages/blog/best-test-management-tools-2026/page.tsx` (종합 랭킹, 11편 모두 다룸)
+
+4. 라우트 등록: `src/router/config.tsx` — 11개 lazyWithRetry import + path
+
+5. 블로그 메타: `src/pages/blog/posts.ts` BLOG_POSTS 에 11편 추가 (publishDate 2026-05-14)
+
+6. prerender: `scripts/prerender.mjs` ROUTES 71 → 82
+
+7. sitemap.xml: 11개 URL 추가 (priority 0.8, changefreq monthly, lastmod 2026-05-14)
+
+### 콘텐츠 작성 결정
+- Phase 1 리서치(`docs/research/competitor-*.md`)의 실제 G2/Capterra/TrustRadius 인용을 직접 사용
+- "as of May 2026" 표기 일관
+- H1 11편 모두 패턴 다름 (design spec §8 준수)
+  - "The Best TestRail Alternatives for 2026"
+  - "Zephyr Too Expensive? 6 Alternatives Worth Trying"
+  - "Why Teams Switch from Qase..."
+  - "Top 6 Xray Alternatives Compared (2026)"
+  - "Looking for a PractiTest Alternative?..."
+  - "6 TestPad Alternatives in 2026: More Than Checklists"
+  - "Kiwi TCMS Alternatives: 6 SaaS Options Without the Self-Hosting"
+  - "6 TestMonitor Alternatives for QA Teams"
+  - "6 BrowserStack Test Management Alternatives"
+  - "6 Testiny Alternatives for Growing QA Teams"
+  - "Best Test Management Tools in 2026: 11 Tools Ranked"
+- Builder 톤, 영문, 단어 수 800~2,500
+- 비교 사실 기반만 (가격/기능은 리서치 인용)
+- Testably 항상 랭킹 1위 + Editor's Pick badge
+
+### 검증
+- `npx tsc --noEmit -p tsconfig.app.json` — 내 신규 파일 에러 0 (기존 pre-existing 그대로)
+- `npm run build` — 7.60s vite build + prerender 82/82 라우트 성공 (pageerror 0건)
+- 11개 블로그 dist HTML 생성 확인 (50-71KB each)
+- 11개 모두 canonical / og:url / og:title / og:type=article / og:image 슬러그별 고유
+- 11개 모두 BlogPosting JSON-LD + FAQPage JSON-LD 직렬화 확인
+- /blog 인덱스에 11개 모두 노출 확인 (publishDate 2026-05-14 sort)
+- 기존 3편 블로그 (choosing-test-management-tool, playwright/cypress reporter) 회귀 없음
+
+### 변경 파일 요약
+- 신규: src/components/seo/RankedToolCard.tsx
+- 신규: src/pages/blog/_shared/{AlternativesArticleLayout.tsx, testably-preset.ts}
+- 신규: src/pages/blog/{testrail,zephyr,qase,xray,practitest,testpad,kiwi-tcms,testmonitor,browserstack-tm,testiny}-alternatives-2026/page.tsx (10개)
+- 신규: src/pages/blog/best-test-management-tools-2026/page.tsx
+- 수정: src/router/config.tsx, src/pages/blog/posts.ts, scripts/prerender.mjs, public/sitemap.xml
+
+### M4 차폐 (NOT in scope)
+- sitemap 자동화 / prerender 통합 (M5)
+- 도구 비교 매트릭스 페이지 추가 (M3 끝났음)
+- /alternatives 페이지 변경 (M2 끝났음)
+- @marketer가 docs/marketing/blog-* 11편 작성 중 — 별도 통합 사이클 가능 (이번 범위 X)
+
+### 다음에 뭘 해야 해
+- CEO 시각 확인 (dev 서버에서 /blog/best-test-management-tools-2026 등 둘러보기)
+- main 머지 → Vercel 자동 배포 → 외부 검증 (curl + Twitter Card Validator)
+- M5 — sitemap.xml 자동 생성 + prerender ROUTES 자동화 (현재 수동 11개 추가한 URL은 generator로 교체될 예정)
+- @marketer의 docs/marketing/blog-*-alternatives-2026.md 11편 산출이 완료되면 본 페이지 콘텐츠 교체/보강 가능 (별도 사이클)
