@@ -296,7 +296,7 @@ export default function AlternativePage() {
           {/* G. FAQ */}
           {faqs.length > 0 && (
             <section className="py-20 px-4 bg-white">
-              <FaqSection faqs={faqs} />
+              <FaqSection faqs={faqs} injectStructuredData={false} />
             </section>
           )}
 

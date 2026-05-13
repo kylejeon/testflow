@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import MarketingLayout from '../../components/marketing/MarketingLayout';
+import SEOHead from '../../components/SEOHead';
 import { COMPETITORS } from '../../data/competitors';
 import { VS_MATRIX } from '../../data/vs-matrix';
 import VsMatrixPage from './vs-matrix';
@@ -33,34 +34,26 @@ function FeatureCell({ value }: { value: boolean | string }) {
  * sibling marketing pages.
  */
 function ComparisonNotFound() {
-  useEffect(() => {
-    const meta = document.createElement('meta');
-    meta.name = 'robots';
-    meta.content = 'noindex';
-    meta.id = 'compare-noindex';
-    document.head.appendChild(meta);
-    return () => {
-      const el = document.getElementById('compare-noindex');
-      if (el) el.remove();
-    };
-  }, []);
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center max-w-md px-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Page not found</h1>
-        <p className="text-gray-500 mb-8">
-          This comparison page doesn&apos;t exist yet.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link to="/" className="text-indigo-600 hover:underline font-semibold">
-            Back to home
-          </Link>
-          <Link to="/compare" className="text-indigo-600 hover:underline font-semibold">
-            See all comparisons
-          </Link>
+    <>
+      <SEOHead title="Page not found — Testably" description="This comparison page doesn't exist yet." noindex />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center max-w-md px-6">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Page not found</h1>
+          <p className="text-gray-500 mb-8">
+            This comparison page doesn&apos;t exist yet.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link to="/" className="text-indigo-600 hover:underline font-semibold">
+              Back to home
+            </Link>
+            <Link to="/compare" className="text-indigo-600 hover:underline font-semibold">
+              See all comparisons
+            </Link>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -194,15 +187,15 @@ function TestablyVsCompetitor({ slug }: { slug: string | undefined }) {
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-gray-500 uppercase tracking-wide w-1/2">Feature</th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold text-indigo-700 uppercase tracking-wide">Testably</th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-500 uppercase tracking-wide">{data.name}</th>
+                  <th scope="col" className="text-left px-6 py-4 text-sm font-semibold text-gray-500 uppercase tracking-wide w-1/2">Feature</th>
+                  <th scope="col" className="px-6 py-4 text-center text-sm font-semibold text-indigo-700 uppercase tracking-wide">Testably</th>
+                  <th scope="col" className="px-6 py-4 text-center text-sm font-semibold text-gray-500 uppercase tracking-wide">{data.name}</th>
                 </tr>
               </thead>
               <tbody>
                 {data.features.map((row, i) => (
                   <tr key={row.feature} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
-                    <td className="px-6 py-4 text-sm text-gray-700 font-medium">{row.feature}</td>
+                    <th scope="row" className="text-left px-6 py-4 text-sm text-gray-700 font-medium">{row.feature}</th>
                     <td className="px-6 py-4 text-center">
                       <div className="flex justify-center"><FeatureCell value={row.testably} /></div>
                     </td>
@@ -242,15 +235,15 @@ function TestablyVsCompetitor({ slug }: { slug: string | undefined }) {
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-gray-500 uppercase tracking-wide">Plan</th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold text-indigo-700 uppercase tracking-wide">Testably</th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-500 uppercase tracking-wide">{data.name}</th>
+                  <th scope="col" className="text-left px-6 py-4 text-sm font-semibold text-gray-500 uppercase tracking-wide">Plan</th>
+                  <th scope="col" className="px-6 py-4 text-center text-sm font-semibold text-indigo-700 uppercase tracking-wide">Testably</th>
+                  <th scope="col" className="px-6 py-4 text-center text-sm font-semibold text-gray-500 uppercase tracking-wide">{data.name}</th>
                 </tr>
               </thead>
               <tbody>
                 {data.pricingRows.map((row, i) => (
                   <tr key={row.plan} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-700">{row.plan}</td>
+                    <th scope="row" className="text-left px-6 py-4 text-sm font-medium text-gray-700">{row.plan}</th>
                     <td className="px-6 py-4 text-center">
                       <p className="text-sm font-bold text-indigo-700">{row.testably.price}</p>
                       {row.testably.detail && <p className="text-xs text-gray-500 mt-0.5">{row.testably.detail}</p>}
