@@ -26,7 +26,47 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import http from 'node:http';
 import sirv from 'sirv';
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-core';
+
+// Vercel/AWS Lambda's serverless Linux image is missing the system libs
+// (libnspr4, etc.) that puppeteer's bundled Chromium needs. @sparticuz/chromium
+// ships a self-contained Lambda-compatible Chromium binary that does work
+// there. Locally we fall back to a system Chrome install.
+async function getLaunchOptions() {
+  const isServerless = !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+
+  if (isServerless) {
+    const chromium = (await import('@sparticuz/chromium')).default;
+    return {
+      executablePath: await chromium.executablePath(),
+      args: chromium.args,
+      headless: chromium.headless,
+    };
+  }
+
+  const localCandidates = [
+    process.env.PUPPETEER_EXECUTABLE_PATH,
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    '/Applications/Chromium.app/Contents/MacOS/Chromium',
+    '/usr/bin/google-chrome',
+    '/usr/bin/chromium-browser',
+    '/usr/bin/chromium',
+  ].filter(Boolean);
+
+  const executablePath = localCandidates.find((p) => existsSync(p));
+  if (!executablePath) {
+    fail(
+      `No local Chrome/Chromium found. Tried: ${localCandidates.join(', ')}.\n` +
+      `Install Chrome or set PUPPETEER_EXECUTABLE_PATH=/path/to/chrome.`,
+    );
+  }
+
+  return {
+    executablePath,
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    headless: true,
+  };
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
@@ -168,10 +208,9 @@ async function main() {
   const pendingWrites = [];
   let browser;
   try {
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+    const launchOpts = await getLaunchOptions();
+    console.log(`[prerender] chromium: ${launchOpts.executablePath}`);
+    browser = await puppeteer.launch(launchOpts);
 
     for (const route of ROUTES) {
       try {
