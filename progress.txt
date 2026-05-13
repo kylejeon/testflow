@@ -1,27 +1,62 @@
-2026-05-13: 5/11 런칭 검증 + SEO Phase 1 착수 (하루 늦게 시작)
+2026-05-13: 런칭 SSR 픽스 + Cypress 5/13 발사 콘텐츠 + SEO Phase 1 산출 — 종합
 
-## 현재 상태
-- 5/10 이후 레포 활동 0 — 운영 작업이 git 외부에서 일어났을 것으로 추정
-- 사용자 컨펌:
-  - 5/11 Playwright 런칭: "잘 끝났는지 모르겠어, 확인해줘" → 외부 검증 필요
-  - 5/13 Cypress 서브 런칭: 오늘 예정대로 진행
-  - SEO Phase 1: 5/12 → 5/13 으로 하루 밀어서 즉시 시작
+## 핵심 발견 (5/13 시작 시점)
+- 5/11 Playwright 런칭이 사실상 SEO/공유 측면에서 실패:
+  - Vite SPA + SSR 부재 → 모든 URL의 HTML 응답이 homepage 메타로만 떨어짐
+  - 트위터/LinkedIn/Dev.to/PH 미리보기 카드가 generic homepage 로 떴음 (블로그 카드 X)
+  - Google 크롤러가 article body 못 가져감 → indexing 0
+- 외부 액션 검증: Product Hunt / Dev.to / Hacker News 모두 발사 흔적 0 (검색 결과 0건). npm publish 만 정상.
+- sitemap.xml 의 blog lastmod 가 4-27 stale
 
-## 뭘 했냐 (2026-05-13)
-- 백그라운드 에이전트 2개 병렬 가동:
-  1. **general-purpose** — 5/11 Playwright 런칭 라이브 검증 + 5/13 Cypress 잔여 액션 punch list (WebFetch/WebSearch)
-     - testably.app/blog/playwright-reporter-ci-integration / cypress-reporter-ci-integration 라이브 확인
-     - OG 이미지 실존, Product Hunt 노출, Dev.to 크로스포스트 canonical 점검
-  2. **@researcher** — SEO Phase 1: 10개 경쟁사 + 키워드 맵 (docs/research/competitor-*.md × 10 + seo-keyword-map.md)
+## 뭘 했냐 (병렬 에이전트 + 인라인)
 
-## 어디까지 됐냐
-- 두 에이전트 진행 중. 완료 알림 대기.
-- 일정 조정: SEO 발사 목표 5/24 → 5/25 (하루 밀림)
+### A. 인라인 픽스
+- public/sitemap.xml lastmod 갱신 — /blog 5/13, Playwright 5/11, Cypress 5/13 (3건)
+- scripts/prerender.mjs 의 ROUTES 에 누락된 docs 서브 라우트 26개 추가 — /docs/cicd 등이 prerender 안 되면 블로그 글의 "Related resources" 링크 깨질 위험 회피
+
+### B. @developer (백그라운드)
+- react-snap 검토 → 번들 puppeteer 1.x 가 modern JS 못 파싱해서 빈 shell 캡처 — 자체 스크립트로 대체
+- 신규: scripts/prerender.mjs (sirv + 최신 puppeteer 로 마케팅 라우트 정적 prerender)
+- 변경: package.json (puppeteer + sirv + react-snap devDeps, postbuild/prerender 스크립트)
+- 변경: vercel.json (catch-all 제거 → 인증/대시보드 라우트 11개에만 SPA fallback rewrite + cleanUrls)
+- 변경: src/main.tsx (hydrateRoot/createRoot 분기)
+- 결과: 46개 라우트 prerender (홈/마케팅/블로그/compare/docs/legal), 17~67KB, canonical/og:url/og:title 다 production 도메인으로 정상, localhost 누수 0
+
+### C. @marketer (백그라운드)
+- 신규: docs/marketing/f028-launch-actions-bundle.md (29KB) — PH/Dev.to/Twitter/HN/LinkedIn 채널별 발사 카피 + 발사 순서/타임라인
+  - 권장: PH 는 Playwright + Cypress 묶음 단일 런칭 (5/11 외부 발사가 없었으므로 중복 우려 없고 묶음 스토리가 강함)
+  - HN 발사 권장 시점: 오늘 22:00 KST (= 5/14 06:00 PT)
+- 신규: docs/marketing/f028-day1-kpi-template.md (5.2KB) — 채널별 24h/1주/1개월 메트릭 캡처 템플릿
+
+### D. SEO Phase 1 (@researcher — 5/13 오전 완료)
+- 신규 11개 파일 in docs/research/:
+  - competitor-{testrail,zephyr,qase,xray,practitest,testpad,kiwi-tcms,testmonitor,browserstack-tm,testiny}.md
+  - seo-keyword-map.md
+- 핵심 인사이트:
+  - TestRail $380~740/mo (10명 팀) vs 우리 $99/mo flat — 3~10배 저렴
+  - "testrail alternative" 단일 키워드가 ROI 최고 (very-high 검색량 >10K/mo)
+  - Testably 우위 3개: Shared Steps 버전 고정(경쟁사 0), AI 내장 무료, flat-rate
+
+## 검증
+- npm run build 통과 (vite 7.5s + prerender ~25s, 46/46 라우트 성공)
+- grep 검증: Playwright/Cypress 블로그 canonical/og/structured data datePublished 5/11/5/13 정상
+- localhost URL 누수 0
 
 ## 다음엔 뭘 해야 해
-1. 두 에이전트 산출 검토
-2. 5/11 런칭 검증 결과에 따라 픽스/follow-up
-3. SEO Phase 1 산출 검토 후 Phase 2 (@planner) 착수 결정
+1. **claude → main 머지 (CEO 수동)** → Vercel 자동 배포
+2. **배포 후 외부 검증:**
+   - Twitter Card Validator / LinkedIn Post Inspector 로 블로그 URL 미리보기 카드 확인
+   - `curl -A "facebookexternalhit/1.1" https://testably.app/blog/cypress-reporter-ci-integration` 로 og 메타 확인
+3. **Cypress 5/13 발사 (오늘):**
+   - docs/marketing/f028-launch-actions-bundle.md 참조 — Section A~F 그대로 복붙 가능
+   - 발사 순서: SSR 배포 즉시 → Dev.to (Playwright+Cypress 둘 다 재발사) → Twitter → LinkedIn → HN 22:00 KST → PH 다음날 01:00 KST
+4. **5/14~ SEO Phase 2 (@planner):**
+   - docs/research/seo-competitor-strategy-brief.md §2 Phase 2 참조
+   - Phase 1 산출 11개 파일 기반 → dev-spec-seo-competitor-pages.md 작성
+5. **미해결 follow-up:**
+   - Paddle vendors.paddle.com → Settings → Checkout → Brand seller name 에 [TEST] 박혀 있는지 사용자 수동 확인
+   - sitemap.xml 에 docs 서브 26개 라우트 추가 (지금은 /docs 인덱스만 등록)
+   - 새 마케팅 라우트 추가 시 scripts/prerender.mjs ROUTES + public/sitemap.xml 둘 다 수동 동기화 필요
 
 ---
 
@@ -1313,3 +1348,35 @@
 ## 다음엔 뭘 해야 해
 - 런칭 30분 전 P1 2건 처리: (a) health 함수에서 Paddle 체크 optional (b) Vercel env 직접 확인
 - 런칭 후 P2: supabase migration repair, sync-jira-status 배포/삭제 결정, Rate limit 재점검
+
+---
+
+## 2026-05-13 — 마케팅 라우트 정적 prerender 셋업 (P0 SEO/공유 카드 픽스)
+
+### 배경
+- Vite SPA 라 모든 페이지 HTML 응답이 homepage 메타로만 떨어져서 트위터/LinkedIn/Slack 미리보기가 generic으로 깨지고, Google이 article body 못 가져감
+- 5/13 Cypress reporter 런칭 당일 픽스로 처리
+
+### 뭘 했냐
+- `puppeteer` (최신) + `sirv` devDeps 설치 (`react-snap` 도 함께 설치했으나 번들된 옛 puppeteer 1.20 이 modern JS 못 파싱해서 사용 안 함)
+- `scripts/prerender.mjs` 신규 — sirv로 dist 서빙 + 최신 puppeteer로 21개 마케팅 라우트 prerender → `dist/<route>/index.html`
+- `package.json` `postbuild` 훅에 prerender 스크립트 연결, `npm run prerender` 도 별도 노출
+- `src/main.tsx` 를 `hydrateRoot`/`createRoot` 분기로 변경 (prerender HTML 위에서 hydrate)
+- `vercel.json` 을 catch-all rewrite에서 인증/대시보드 라우트만 SPA fallback (auth, projects, testcases, settings, admin, accept-invitation, active-runs, passrate-report, team-activity, testcases-overview, contact)
+- prerender 결과 HTML 내 `http://127.0.0.1:45123` → `https://testably.app` 후처리 치환 (SEOHead 가 canonical prop 안 받았을 때 `window.location.href` 폴백으로 localhost가 박히는 케이스 보정)
+
+### 결과
+- `npm run build` 통과, dist에 21개 prerender HTML 생성
+  - /, /pricing(68KB), /features(33KB), /docs(22KB), /changelog(51KB), /roadmap, /about
+  - /use-cases/{test-case-management, test-management-tool}
+  - /blog (인덱스), /blog/{choosing-test-management-tool, playwright-reporter-ci-integration, cypress-reporter-ci-integration}
+  - /compare 인덱스 + /compare/{testrail, zephyr, qase}
+  - /privacy /terms /cookies /refund
+- 모든 canonical / og:url / og:title / description 메타가 production 도메인으로 정상 박힘
+- 인증/대시보드 라우트는 dist에 prerender 안 됨 — Vercel rewrites SPA fallback에 의존 (라우트 enum 으로 명시 한정)
+- tsc --noEmit 통과
+
+### 다음엔 뭘 해야 해
+- claude push → CEO 가 main 머지 → Vercel 자동 배포
+- 배포 후 `curl -A "facebookexternalhit/1.1" https://testably.app/blog/cypress-reporter-ci-integration` 등으로 og:title 박혀 있는지 외부 검증 (Twitter Card Validator / LinkedIn Post Inspector)
+- 새 마케팅 라우트 추가 시 `scripts/prerender.mjs` 의 `ROUTES` 배열 + `public/sitemap.xml` 동시 업데이트 필요 (둘 다 수동 enum)

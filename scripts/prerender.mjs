@@ -50,6 +50,31 @@ const ROUTES = [
   '/compare/testrail',
   '/compare/zephyr',
   '/compare/qase',
+  '/docs/getting-started',
+  '/docs/cicd',
+  '/docs/import-export',
+  '/docs/webhooks',
+  '/docs/integrations',
+  '/docs/test-cases',
+  '/docs/test-runs',
+  '/docs/milestones',
+  '/docs/discovery-logs',
+  '/docs/requirements-traceability',
+  '/docs/shared-steps',
+  '/docs/team-permissions',
+  '/docs/account-billing',
+  '/docs/keyboard-shortcuts',
+  '/docs/faq',
+  '/docs/api',
+  '/docs/api/authentication',
+  '/docs/api/projects',
+  '/docs/api/test-cases',
+  '/docs/api/test-runs',
+  '/docs/api/test-results',
+  '/docs/api/ci-upload',
+  '/docs/api/milestones',
+  '/docs/api/discovery-logs',
+  '/docs/api/members',
   '/privacy',
   '/terms',
   '/cookies',
@@ -59,18 +84,25 @@ const ROUTES = [
 const WAIT_FOR_MS = 1500;
 const PORT = 45123;
 
+// Pages that don't pass an explicit `canonical` prop to SEOHead fall back to
+// `window.location.href`, which during prerender resolves to the local
+// puppeteer URL (http://127.0.0.1:<port>/...). Rewrite those occurrences to
+// the production origin so canonical/og:url tags ship correctly.
+const PROD_ORIGIN = process.env.PRERENDER_ORIGIN || 'https://testably.app';
+const LOCAL_ORIGIN = `http://127.0.0.1:${PORT}`;
+
 function fail(msg, err) {
   console.error(`\n[prerender] ${msg}`);
   if (err) console.error(err);
   process.exit(1);
 }
 
-async function startServer() {
-  if (!existsSync(DIST)) fail('dist/ does not exist — run `vite build` first.');
+async function startServer(serveRoot) {
+  if (!existsSync(serveRoot)) fail(`serve root ${serveRoot} does not exist`);
 
-  // sirv serves SPA-style: any unknown path falls back to dist/index.html,
+  // sirv serves SPA-style: any unknown path falls back to index.html,
   // which is exactly what the browser would receive before we prerender.
-  const serve = sirv(DIST, { single: true, dev: false, etag: false });
+  const serve = sirv(serveRoot, { single: true, dev: false, etag: false });
   const server = http.createServer((req, res) => serve(req, res, () => {
     res.statusCode = 404;
     res.end('not found');
@@ -83,13 +115,11 @@ async function startServer() {
   return server;
 }
 
-async function prerenderRoute(browser, route) {
+async function prerenderRoute(browser, route, pendingWrites) {
   const page = await browser.newPage();
   await page.setViewport({ width: 1280, height: 800 });
   page.setDefaultNavigationTimeout(60_000);
 
-  // Suppress noisy 3rd-party network failures (fonts/analytics) — they're
-  // expected in a headless prerender environment and would clutter logs.
   page.on('pageerror', (err) => {
     console.warn(`  [pageerror @ ${route}] ${err.message}`);
   });
@@ -106,12 +136,14 @@ async function prerenderRoute(browser, route) {
 
   await page.close();
 
-  // Write to dist/<route>/index.html (root → dist/index.html).
+  // Queue the write — we deliberately don't write yet because for `/`
+  // the target is dist/index.html, which is also the SPA shell sirv is
+  // serving as fallback. Overwriting it mid-run would poison subsequent
+  // route renders.
   const outPath = route === '/'
     ? join(DIST, 'index.html')
     : join(DIST, route.replace(/^\//, ''), 'index.html');
-  await mkdir(dirname(outPath), { recursive: true });
-  await writeFile(outPath, html, 'utf8');
+  pendingWrites.push({ route, outPath, html });
 
   const size = Buffer.byteLength(html, 'utf8');
   console.log(`  ✓ ${route.padEnd(50)} ${size.toString().padStart(7)} bytes  →  ${outPath.replace(ROOT + '/', '')}`);
@@ -123,12 +155,17 @@ async function main() {
   // Sanity: dist/index.html (the SPA shell) must exist before we start.
   const shellPath = join(DIST, 'index.html');
   if (!existsSync(shellPath)) fail('dist/index.html missing — was vite build successful?');
-  const shellSize = (await readFile(shellPath, 'utf8')).length;
-  console.log(`[prerender] SPA shell: ${shellPath} (${shellSize} bytes)\n`);
+  const shellHtml = await readFile(shellPath, 'utf8');
+  console.log(`[prerender] SPA shell: ${shellPath} (${shellHtml.length} bytes)\n`);
 
-  const server = await startServer();
+  // Back up the pristine shell so we can always restore it if the run fails.
+  const shellBackupPath = join(DIST, 'index.shell.html');
+  await copyFile(shellPath, shellBackupPath);
+
+  const server = await startServer(DIST);
   console.log(`[prerender] sirv listening on http://127.0.0.1:${PORT}\n`);
 
+  const pendingWrites = [];
   let browser;
   try {
     browser = await puppeteer.launch({
@@ -138,7 +175,7 @@ async function main() {
 
     for (const route of ROUTES) {
       try {
-        await prerenderRoute(browser, route);
+        await prerenderRoute(browser, route, pendingWrites);
       } catch (err) {
         console.error(`  ✗ ${route} — ${err.message}`);
         throw err;
@@ -148,6 +185,19 @@ async function main() {
     if (browser) await browser.close();
     await new Promise((res) => server.close(res));
   }
+
+  // Now that the server is down and no more sirv fallbacks happen, commit
+  // all the prerendered HTML to disk. The `/` write overwrites the shell.
+  // Rewrite the local prerender origin to the production origin so
+  // canonical/og:url end up pointing at testably.app, not 127.0.0.1.
+  for (const { outPath, html } of pendingWrites) {
+    await mkdir(dirname(outPath), { recursive: true });
+    const rewritten = html.split(LOCAL_ORIGIN).join(PROD_ORIGIN);
+    await writeFile(outPath, rewritten, 'utf8');
+  }
+
+  // Remove the shell backup — vercel doesn't need it shipped.
+  await rm(shellBackupPath, { force: true });
 
   console.log(`\n[prerender] done — ${ROUTES.length} routes written`);
 }
