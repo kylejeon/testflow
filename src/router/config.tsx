@@ -88,6 +88,17 @@ const BlogIndexPage = lazyWithRetry(() => import('../pages/blog/page'));
 const BlogChoosingToolPage = lazyWithRetry(() => import('../pages/blog/choosing-test-management-tool/page'));
 const BlogPlaywrightReporterPage = lazyWithRetry(() => import('../pages/blog/playwright-reporter-ci-integration/page'));
 const BlogCypressReporterPage = lazyWithRetry(() => import('../pages/blog/cypress-reporter-ci-integration/page'));
+const BlogTestrailAlternativesPage = lazyWithRetry(() => import('../pages/blog/testrail-alternatives-2026/page'));
+const BlogZephyrAlternativesPage = lazyWithRetry(() => import('../pages/blog/zephyr-alternatives-2026/page'));
+const BlogQaseAlternativesPage = lazyWithRetry(() => import('../pages/blog/qase-alternatives-2026/page'));
+const BlogXrayAlternativesPage = lazyWithRetry(() => import('../pages/blog/xray-alternatives-2026/page'));
+const BlogPractitestAlternativesPage = lazyWithRetry(() => import('../pages/blog/practitest-alternatives-2026/page'));
+const BlogTestpadAlternativesPage = lazyWithRetry(() => import('../pages/blog/testpad-alternatives-2026/page'));
+const BlogKiwiTcmsAlternativesPage = lazyWithRetry(() => import('../pages/blog/kiwi-tcms-alternatives-2026/page'));
+const BlogTestmonitorAlternativesPage = lazyWithRetry(() => import('../pages/blog/testmonitor-alternatives-2026/page'));
+const BlogBrowserstackTmAlternativesPage = lazyWithRetry(() => import('../pages/blog/browserstack-tm-alternatives-2026/page'));
+const BlogTestinyAlternativesPage = lazyWithRetry(() => import('../pages/blog/testiny-alternatives-2026/page'));
+const BlogBestTestManagementToolsPage = lazyWithRetry(() => import('../pages/blog/best-test-management-tools-2026/page'));
 const DocsPage = lazy(() => import('../pages/docs/page'));
 const ApiReferencePage = lazy(() => import('../pages/docs/api/page'));
 const DocsGettingStartedPage = lazy(() => import('../pages/docs/getting-started/page'));
@@ -305,6 +316,50 @@ const routes: RouteObject[] = [
   {
     path: '/blog/cypress-reporter-ci-integration',
     element: <BlogCypressReporterPage />,
+  },
+  {
+    path: '/blog/testrail-alternatives-2026',
+    element: <BlogTestrailAlternativesPage />,
+  },
+  {
+    path: '/blog/zephyr-alternatives-2026',
+    element: <BlogZephyrAlternativesPage />,
+  },
+  {
+    path: '/blog/qase-alternatives-2026',
+    element: <BlogQaseAlternativesPage />,
+  },
+  {
+    path: '/blog/xray-alternatives-2026',
+    element: <BlogXrayAlternativesPage />,
+  },
+  {
+    path: '/blog/practitest-alternatives-2026',
+    element: <BlogPractitestAlternativesPage />,
+  },
+  {
+    path: '/blog/testpad-alternatives-2026',
+    element: <BlogTestpadAlternativesPage />,
+  },
+  {
+    path: '/blog/kiwi-tcms-alternatives-2026',
+    element: <BlogKiwiTcmsAlternativesPage />,
+  },
+  {
+    path: '/blog/testmonitor-alternatives-2026',
+    element: <BlogTestmonitorAlternativesPage />,
+  },
+  {
+    path: '/blog/browserstack-tm-alternatives-2026',
+    element: <BlogBrowserstackTmAlternativesPage />,
+  },
+  {
+    path: '/blog/testiny-alternatives-2026',
+    element: <BlogTestinyAlternativesPage />,
+  },
+  {
+    path: '/blog/best-test-management-tools-2026',
+    element: <BlogBestTestManagementToolsPage />,
   },
   {
     path: '/docs',
