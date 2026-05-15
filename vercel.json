@@ -4,6 +4,24 @@
   "outputDirectory": "dist",
   "cleanUrls": true,
   "trailingSlash": false,
+  "redirects": [
+    { "source": "/", "destination": "/auth", "permanent": false },
+    { "source": "/pricing", "destination": "/auth", "permanent": false },
+    { "source": "/features", "destination": "/auth", "permanent": false },
+    { "source": "/about", "destination": "/auth", "permanent": false },
+    { "source": "/changelog", "destination": "/auth", "permanent": false },
+    { "source": "/roadmap", "destination": "/auth", "permanent": false },
+    { "source": "/blog", "destination": "/auth", "permanent": false },
+    { "source": "/blog/:slug*", "destination": "/auth", "permanent": false },
+    { "source": "/compare", "destination": "/auth", "permanent": false },
+    { "source": "/compare/:slug*", "destination": "/auth", "permanent": false },
+    { "source": "/alternatives", "destination": "/auth", "permanent": false },
+    { "source": "/alternatives/:slug*", "destination": "/auth", "permanent": false },
+    { "source": "/use-cases", "destination": "/auth", "permanent": false },
+    { "source": "/use-cases/:slug*", "destination": "/auth", "permanent": false },
+    { "source": "/docs", "destination": "/auth", "permanent": false },
+    { "source": "/docs/:slug*", "destination": "/auth", "permanent": false }
+  ],
   "rewrites": [
     { "source": "/:path*", "destination": "/_spa" }
   ]

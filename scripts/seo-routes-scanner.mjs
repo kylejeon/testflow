@@ -40,53 +40,13 @@ const STATIC_DEFAULT_LASTMOD = new Date().toISOString().slice(0, 10);
 // public, prerender-friendly subset; authenticated routes are excluded).
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Full stealth mode: marketing routes redirected to /auth at vercel layer
+// (see vercel.json). Sitemap intentionally limited to legal pages — these
+// must remain crawlable per legal/compliance requirements but carry the
+// lowest priority. All previously listed marketing/docs/use-cases/compare
+// /alternatives/blog paths are intentionally excluded.
 const STATIC_ROUTES = [
-  // Top-level marketing
-  { path: '/', changefreq: 'weekly', priority: 1.0 },
-  { path: '/pricing', changefreq: 'monthly', priority: 0.9 },
-  { path: '/features', changefreq: 'monthly', priority: 0.9 },
-  { path: '/blog', changefreq: 'weekly', priority: 0.9 },
-  { path: '/docs', changefreq: 'weekly', priority: 0.8 },
-  { path: '/compare', changefreq: 'monthly', priority: 0.8 },
-  { path: '/alternatives', changefreq: 'monthly', priority: 0.9 },
-  { path: '/changelog', changefreq: 'weekly', priority: 0.7 },
-  { path: '/roadmap', changefreq: 'monthly', priority: 0.7 },
-  { path: '/about', changefreq: 'monthly', priority: 0.6 },
-
-  // Use-cases
-  { path: '/use-cases/test-case-management', changefreq: 'monthly', priority: 0.9 },
-  { path: '/use-cases/test-management-tool', changefreq: 'monthly', priority: 0.9 },
-
-  // Docs (functional)
-  { path: '/docs/getting-started', changefreq: 'monthly', priority: 0.7 },
-  { path: '/docs/cicd', changefreq: 'monthly', priority: 0.7 },
-  { path: '/docs/import-export', changefreq: 'monthly', priority: 0.7 },
-  { path: '/docs/webhooks', changefreq: 'monthly', priority: 0.7 },
-  { path: '/docs/integrations', changefreq: 'monthly', priority: 0.7 },
-  { path: '/docs/test-cases', changefreq: 'monthly', priority: 0.7 },
-  { path: '/docs/test-runs', changefreq: 'monthly', priority: 0.7 },
-  { path: '/docs/milestones', changefreq: 'monthly', priority: 0.7 },
-  { path: '/docs/discovery-logs', changefreq: 'monthly', priority: 0.7 },
-  { path: '/docs/requirements-traceability', changefreq: 'monthly', priority: 0.7 },
-  { path: '/docs/shared-steps', changefreq: 'monthly', priority: 0.7 },
-  { path: '/docs/team-permissions', changefreq: 'monthly', priority: 0.7 },
-  { path: '/docs/account-billing', changefreq: 'monthly', priority: 0.7 },
-  { path: '/docs/keyboard-shortcuts', changefreq: 'monthly', priority: 0.7 },
-  { path: '/docs/faq', changefreq: 'monthly', priority: 0.7 },
-
-  // Docs/API
-  { path: '/docs/api', changefreq: 'monthly', priority: 0.7 },
-  { path: '/docs/api/authentication', changefreq: 'monthly', priority: 0.7 },
-  { path: '/docs/api/projects', changefreq: 'monthly', priority: 0.7 },
-  { path: '/docs/api/test-cases', changefreq: 'monthly', priority: 0.7 },
-  { path: '/docs/api/test-runs', changefreq: 'monthly', priority: 0.7 },
-  { path: '/docs/api/test-results', changefreq: 'monthly', priority: 0.7 },
-  { path: '/docs/api/ci-upload', changefreq: 'monthly', priority: 0.7 },
-  { path: '/docs/api/milestones', changefreq: 'monthly', priority: 0.7 },
-  { path: '/docs/api/discovery-logs', changefreq: 'monthly', priority: 0.7 },
-  { path: '/docs/api/members', changefreq: 'monthly', priority: 0.7 },
-
-  // Legal
+  // Legal (only routes that remain publicly indexable)
   { path: '/privacy', changefreq: 'yearly', priority: 0.4 },
   { path: '/terms', changefreq: 'yearly', priority: 0.4 },
   { path: '/cookies', changefreq: 'yearly', priority: 0.3 },
@@ -192,79 +152,17 @@ function readBlogPosts(rootDir) {
  *
  * Throws if any vs-matrix slug violates the alphabetical ordering rule.
  */
-export async function getAllSeoRoutes(rootDir = ROOT) {
-  const competitorsDir = join(rootDir, 'src/data/competitors');
-  const vsMatrixDir = join(rootDir, 'src/data/vs-matrix');
-
-  const competitorSlugs = listDataSlugs(competitorsDir);
-  const vsMatrixSlugs = listDataSlugs(vsMatrixDir);
-  const blogPosts = readBlogPosts(rootDir);
-
-  // Validate vs-matrix slugs first — fail fast.
-  for (const slug of vsMatrixSlugs) validateVsMatrixSlug(slug);
-
-  const routes = [];
-
-  // 1. Static routes (homepage / pricing / docs / legal / …)
-  for (const r of STATIC_ROUTES) {
-    routes.push({
-      path: r.path,
-      lastmod: STATIC_DEFAULT_LASTMOD,
-      changefreq: r.changefreq,
-      priority: r.priority,
-    });
-  }
-
-  // 2. /compare/{slug} — single competitor compare pages
-  for (const slug of competitorSlugs) {
-    const lastReviewed =
-      extractLastReviewed(join(competitorsDir, `${slug}.ts`)) ||
-      STATIC_DEFAULT_LASTMOD;
-    routes.push({
-      path: `/compare/${slug}`,
-      lastmod: lastReviewed,
-      changefreq: 'monthly',
-      priority: 0.8,
-    });
-  }
-
-  // 3. /alternatives/{slug}
-  for (const slug of competitorSlugs) {
-    const lastReviewed =
-      extractLastReviewed(join(competitorsDir, `${slug}.ts`)) ||
-      STATIC_DEFAULT_LASTMOD;
-    routes.push({
-      path: `/alternatives/${slug}`,
-      lastmod: lastReviewed,
-      changefreq: 'monthly',
-      priority: 0.8,
-    });
-  }
-
-  // 4. /compare/{a}-vs-{b}
-  for (const slug of vsMatrixSlugs) {
-    const lastReviewed =
-      extractLastReviewed(join(vsMatrixDir, `${slug}.ts`)) ||
-      STATIC_DEFAULT_LASTMOD;
-    routes.push({
-      path: `/compare/${slug}`,
-      lastmod: lastReviewed,
-      changefreq: 'monthly',
-      priority: 0.7,
-    });
-  }
-
-  // 5. /blog/{slug}
-  for (const post of blogPosts) {
-    routes.push({
-      path: `/blog/${post.slug}`,
-      lastmod: post.publishDate,
-      changefreq: 'monthly',
-      priority: 0.8,
-    });
-  }
-
-  return routes;
+export async function getAllSeoRoutes(_rootDir = ROOT) {
+  // Stealth mode: dynamic marketing scans (competitor / vs-matrix / blog)
+  // intentionally disabled. Only STATIC_ROUTES (legal pages) are returned.
+  // Source code for marketing pages remains in src/pages/* but is unreachable
+  // — vercel.json redirects all marketing URLs to /auth before the SPA loads.
+  return STATIC_ROUTES.map((r) => ({
+    path: r.path,
+    lastmod: STATIC_DEFAULT_LASTMOD,
+    changefreq: r.changefreq,
+    priority: r.priority,
+  }));
 }
 
 /**
