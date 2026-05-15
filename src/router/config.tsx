@@ -43,7 +43,6 @@ function SessionDetailRedirect() {
   return <Navigate to={`/projects/${projectId}/discovery-logs/${sessionId}`} replace />;
 }
 
-const HomePage = lazy(() => import('../pages/home/page'));
 const AuthPage = lazy(() => import('../pages/auth/page'));
 const Projects = lazy(() => import('../pages/projects/page'));
 const ProjectDetail = lazy(() => import('../pages/project-detail/page'));
@@ -130,7 +129,7 @@ const DocsFaqPage = lazy(() => import('../pages/docs/faq'));
 const routes: RouteObject[] = [
   {
     path: '/',
-    element: <HomePage />,
+    element: <Navigate to="/auth" replace />,
   },
   {
     path: '/auth',
