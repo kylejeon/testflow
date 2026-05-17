@@ -1980,3 +1980,29 @@ CEO 결정: 5/19 PH 런칭 취소. 옵션 X (Full stealth) 선택 — 모든 마
   - curl https://testably.app/sitemap.xml → 4 legal URLs only
   - curl https://testably.app/robots.txt → Disallow / + legal Allow
 - (선택) Google/Bing 색인 제거 요청
+
+---
+
+## [2026-05-17] @developer — SNS 스케줄 확인 + Paddle PRODUCTHUNT 비활성
+
+### 뭘 했어
+
+**1. SNS 포스팅 스케줄 확인 (삭제 대상 0건)**
+- `RemoteTrigger list` 호출 → `data: []` 확인. /schedule routine 0개 (이전 3개 제안만 했고 create 실행 안 됨).
+- 외부 스케줄링 도구 (Buffer/Hootsuite/Twitter Scheduler 등): 본 세션 접근 권한 없음. CEO가 직접 설정한 게 있다면 본인이 삭제.
+- docs/marketing/ 의 SNS 카피 파일 4종 (f028-launch-content-pack-may19.md, f028-product-hunt-launch.md, f028-twitter-thread.md, twitter-f001-f002.md) 은 draft text 파일이며 스케줄 아님. 보존/삭제는 별도 결정 (현재 보존).
+
+**2. Paddle PRODUCTHUNT discount code 비활성화**
+- API: `PATCH /discounts/dsc_01krgb5cadqhh8pp6z2vpb9af2` with `{"status": "archived"}`
+- 결과: status `active` → `archived`, updated_at `2026-05-17T02:04:11.744Z`.
+- 재확인: `GET /discounts?status=active` → 0개 (이전 1개).
+- 신규 redemption 차단. 이미 redeem 한 구독자(있다면)는 Paddle 기본 동작에 따라 남은 사이클 동안 할인 유지.
+
+### 변경 파일
+- 수정: progress.txt (이 기록만)
+- 코드 변경 없음 (Paddle 변경은 server-side API 호출)
+
+### 다음에 뭘 해야 해 (CEO 액션)
+- Product Hunt 5/19 schedule 그대로 두면 발사됨. PH UI 에서 unschedule 또는 launch delete 필요.
+- 외부 SNS 도구에 예약된 포스트 있다면 본인이 삭제.
+- docs/marketing/ 의 PH/SNS 카피 파일들 archive 폴더로 이동 또는 삭제 — CEO 결정 시 알려주면 처리.
