@@ -85,99 +85,19 @@ describe('startOfUtcMonth', () => {
 
 // ─── getEffectiveOwnerId ────────────────────────────────────────────────────
 
-describe('getEffectiveOwnerId', () => {
+describe('getEffectiveOwnerId (internal-only mode)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('returns self when own tier > 1 (AC-3a)', async () => {
-    vi.mocked(supabase.from).mockImplementation(((table: string) => {
-      if (table === 'profiles') {
-        return selectEqMaybeSingle({
-          subscription_tier: 3,
-          is_trial: false,
-          trial_ends_at: null,
-        });
-      }
-      return selectEqList([]);
-    }) as never);
-
+  it('always returns { tier: 7, ownerId: <userId> } regardless of profile data', async () => {
     const result = await getEffectiveOwnerId('user-1');
-    expect(result).toEqual({ tier: 3, ownerId: 'user-1' });
+    expect(result).toEqual({ tier: 7, ownerId: 'user-1' });
   });
 
-  it('treats expired trial as tier 1 even if subscription_tier is higher', async () => {
-    const past = new Date(Date.now() - 86_400_000).toISOString();
-    vi.mocked(supabase.from).mockImplementation(((table: string) => {
-      if (table === 'profiles') {
-        return selectEqMaybeSingle({
-          subscription_tier: 4,
-          is_trial: true,
-          trial_ends_at: past,
-        });
-      }
-      // No memberships → self fallback
-      return selectEqList([]);
-    }) as never);
-
-    const result = await getEffectiveOwnerId('user-1');
-    expect(result.tier).toBe(1);
-    expect(result.ownerId).toBe('user-1');
-  });
-
-  it('returns owner from membership project when self tier=1 and owner tier=4 (AC-3b)', async () => {
-    let profilesCall = 0;
-    vi.mocked(supabase.from).mockImplementation(((table: string) => {
-      if (table === 'profiles') {
-        profilesCall += 1;
-        if (profilesCall === 1) {
-          // Self profile — tier 1
-          return selectEqMaybeSingle({
-            subscription_tier: 1,
-            is_trial: false,
-            trial_ends_at: null,
-          });
-        }
-        // Owner profiles .in([...])
-        return selectInList([
-          {
-            id: 'owner-A',
-            subscription_tier: 4,
-            is_trial: false,
-            trial_ends_at: null,
-          },
-        ]);
-      }
-      if (table === 'project_members') {
-        return selectEqList([{ project_id: 'proj-1' }]);
-      }
-      if (table === 'projects') {
-        return selectInList([{ id: 'proj-1', owner_id: 'owner-A' }]);
-      }
-      return selectEqList([]);
-    }) as never);
-
-    const result = await getEffectiveOwnerId('user-1');
-    expect(result).toEqual({ tier: 4, ownerId: 'owner-A' });
-  });
-
-  it('returns self when no project memberships exist', async () => {
-    vi.mocked(supabase.from).mockImplementation(((table: string) => {
-      if (table === 'profiles') {
-        return selectEqMaybeSingle({
-          subscription_tier: 1,
-          is_trial: false,
-          trial_ends_at: null,
-        });
-      }
-      if (table === 'project_members') {
-        return selectEqList([]); // no memberships
-      }
-      return selectEqList([]);
-    }) as never);
-
-    const result = await getEffectiveOwnerId('user-1');
-    expect(result).toEqual({ tier: 1, ownerId: 'user-1' });
+  it('does not touch supabase.from — billing aggregation removed', async () => {
+    await getEffectiveOwnerId('user-2');
+    expect(supabase.from).not.toHaveBeenCalled();
   });
 });
 

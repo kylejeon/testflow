@@ -1,26 +1,35 @@
-/** 플랜별 최대 멤버 수 (organization_members 기준) */
+/**
+ * RBAC — Internal-only configuration.
+ *
+ * Subscription tiers are no longer enforced. All authenticated users have
+ * unlimited member counts and access to every role label. Role-based access
+ * (owner/admin/manager/tester/viewer/guest) still applies for permission
+ * separation within the team.
+ */
+
+/** Member limit per organization — unlimited for internal use */
 export const TIER_MAX_MEMBERS: Record<number, number> = {
-  1: 2,        // Free
-  2: 5,        // Hobby
-  3: 5,        // Starter
-  4: 20,       // Professional
-  5: 50,       // Enterprise S
-  6: 100,      // Enterprise M
-  7: Infinity, // Enterprise L
+  1: Infinity,
+  2: Infinity,
+  3: Infinity,
+  4: Infinity,
+  5: Infinity,
+  6: Infinity,
+  7: Infinity,
 };
 
-/** 플랜 이름 */
+/** Plan name labels — retained for legacy display only (unused in gating) */
 export const TIER_NAME: Record<number, string> = {
-  1: 'Free',
-  2: 'Hobby',
-  3: 'Starter',
-  4: 'Professional',
-  5: 'Enterprise S',
-  6: 'Enterprise M',
-  7: 'Enterprise L',
+  1: 'Internal',
+  2: 'Internal',
+  3: 'Internal',
+  4: 'Internal',
+  5: 'Internal',
+  6: 'Internal',
+  7: 'Internal',
 };
 
-/** 역할 계층: 숫자가 클수록 높은 권한 */
+/** Role hierarchy: higher number = higher privilege */
 export const ROLE_LEVEL: Record<string, number> = {
   owner:   6,
   admin:   5,
@@ -30,7 +39,7 @@ export const ROLE_LEVEL: Record<string, number> = {
   guest:   1,
 };
 
-/** 역할별 뱃지 스타일 */
+/** Role badge styling */
 export const ROLE_BADGE: Record<string, { label: string; className: string }> = {
   owner:   { label: 'Owner',   className: 'bg-violet-50 text-violet-600' },
   admin:   { label: 'Admin',   className: 'bg-orange-50 text-orange-700' },
@@ -40,9 +49,9 @@ export const ROLE_BADGE: Record<string, { label: string; className: string }> = 
   guest:   { label: 'Guest',   className: 'bg-gray-50 text-gray-400' },
 };
 
-/** 역할별 설명 */
+/** Role descriptions */
 export const ROLE_DESCRIPTIONS: Record<string, string> = {
-  owner:   'Full control including billing and org settings',
+  owner:   'Full control including org settings',
   admin:   'Full access — manage members and all settings',
   manager: 'Manage projects and runs within the org',
   tester:  'Create and execute test cases and runs',
@@ -50,29 +59,12 @@ export const ROLE_DESCRIPTIONS: Record<string, string> = {
   guest:   'View assigned projects only (read-only)',
 };
 
-/**
- * 역할 표시명 반환 (플랜별)
- * - Starter(tier=3): 'tester' → 'Member'
- * - Pro+(tier≥4): 역할명 그대로 Title-case
- * - Free/Hobby(tier≤2): 역할 구분 없음 (모두 Admin으로 동작)
- */
-export function getRoleLabel(role: string, subscriptionTier: number): string {
-  if (subscriptionTier === 3 && role === 'tester') return 'Member';
+/** Role display name — Title-cased role */
+export function getRoleLabel(role: string, _subscriptionTier: number): string {
   return role.charAt(0).toUpperCase() + role.slice(1);
 }
 
-/**
- * 플랜별 사용 가능한 역할 목록
- * - Free/Hobby(≤2): owner, admin
- * - Starter(3):     owner, admin, tester
- * - Professional+(≥4): 전체 6가지
- */
-export function getAvailableRoles(subscriptionTier: number): string[] {
-  if (subscriptionTier >= 4) {
-    return ['owner', 'admin', 'manager', 'tester', 'viewer', 'guest'];
-  }
-  if (subscriptionTier === 3) {
-    return ['owner', 'admin', 'tester'];
-  }
-  return ['owner', 'admin'];
+/** Available roles for selection — full set for all users in internal mode */
+export function getAvailableRoles(_subscriptionTier: number): string[] {
+  return ['owner', 'admin', 'manager', 'tester', 'viewer', 'guest'];
 }

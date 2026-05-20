@@ -1,17 +1,14 @@
 /**
- * AI Usage Shared Pool — 프론트 공통 헬퍼
+ * AI Usage Shared Pool — Internal-only configuration.
  *
- * 관련 스펙: pm/specs/dev-spec-ai-usage-shared-pool.md §4-1 / §6-1
+ * Subscription tiers and cross-org billing aggregation are no longer enforced.
+ * Every authenticated user acts as their own billing entity with the highest
+ * tier value (7). The monthly cap is centralized in
+ * `src/hooks/useAiFeature.ts` (`INTERNAL_MONTHLY_AI_LIMIT`).
  *
- * 정책:
- *   Billing entity  = projects.owner_id (owner)
- *   Usage scope     = owner ∪ owner 소유 프로젝트 멤버 전원
- *   Aggregate       = SUM(COALESCE(credits_used, 1)) WHERE step=1 AND created_at >= startOfUtcMonth
- *   Tier            = 본인 tier > 1 이면 self, 아니면 소속 프로젝트 owner 중 최고 tier
- *
- * ⚠ 백엔드 supabase/functions/_shared/ai-usage.ts 와 로직 동기화 필수.
- * ⚠ owner 팀 전체 합계는 RLS를 우회해야 하므로 SECURITY DEFINER RPC
- *    `get_ai_shared_pool_usage` 를 호출한다.
+ * The `get_ai_shared_pool_usage` RPC is still called to surface actual
+ * consumption per user — admins can watch this via Supabase dashboards or
+ * the in-app AI Usage panel.
  */
 
 import { supabase } from './supabase';
@@ -28,73 +25,16 @@ export function startOfUtcMonth(): Date {
 }
 
 /**
- * 유효 구독 tier + billing entity owner 식별.
- *
- * 우선순위:
- *   1) 본인 tier > 1 이면 self (본인이 billing entity)
- *   2) 그렇지 않으면 소속 프로젝트의 owner_id 중 최고 tier owner
- *   3) 모두 실패하면 self
+ * Effective billing entity = the user themselves. Tier is constant 7 so
+ * any `tier >= minTier` check downstream passes trivially.
  */
 export async function getEffectiveOwnerId(userId: string): Promise<EffectiveTierInfo> {
-  // 1. 본인 tier
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('subscription_tier, is_trial, trial_ends_at')
-    .eq('id', userId)
-    .maybeSingle();
-
-  let ownTier = (profile as any)?.subscription_tier || 1;
-  if ((profile as any)?.is_trial && (profile as any)?.trial_ends_at) {
-    if (new Date() > new Date((profile as any).trial_ends_at)) ownTier = 1;
-  }
-
-  if (ownTier > 1) return { tier: ownTier, ownerId: userId };
-
-  // 2. 소속 프로젝트 owner 조회
-  const { data: memberships } = await supabase
-    .from('project_members')
-    .select('project_id')
-    .eq('user_id', userId);
-
-  if (!memberships?.length) return { tier: ownTier, ownerId: userId };
-
-  const projectIds = (memberships as any[]).map((m: any) => m.project_id);
-
-  const { data: projects } = await supabase
-    .from('projects')
-    .select('id, owner_id')
-    .in('id', projectIds);
-
-  if (!projects?.length) return { tier: ownTier, ownerId: userId };
-
-  const ownerIds = [...new Set(
-    (projects as any[]).map((p: any) => p.owner_id).filter(Boolean),
-  )];
-
-  if (ownerIds.length === 0) return { tier: ownTier, ownerId: userId };
-
-  const { data: ownerProfiles } = await supabase
-    .from('profiles')
-    .select('id, subscription_tier, is_trial, trial_ends_at')
-    .in('id', ownerIds);
-
-  let bestTier = ownTier;
-  let bestOwnerId = userId;
-  for (const p of (ownerProfiles as any[] ?? [])) {
-    let t = p.subscription_tier || 1;
-    if (p.is_trial && p.trial_ends_at && new Date() > new Date(p.trial_ends_at)) t = 1;
-    if (t > bestTier) {
-      bestTier = t;
-      bestOwnerId = p.id;
-    }
-  }
-  return { tier: bestTier, ownerId: bestOwnerId };
+  return { tier: 7, ownerId: userId };
 }
 
 /**
- * owner의 이번 달 shared pool 사용량 (credits SUM).
- * RLS 통과를 위해 SECURITY DEFINER RPC `get_ai_shared_pool_usage` 호출.
- * 실패 시 0 반환 (UX 블로킹 회피 — quota 검증은 서버 측에서 재수행됨).
+ * Per-user monthly credit usage. RPC may fail; we return 0 on error to avoid
+ * blocking UX — server-side enforcement is the source of truth.
  */
 export async function getSharedPoolUsage(
   ownerId: string,
@@ -111,14 +51,10 @@ export async function getSharedPoolUsage(
     return 0;
   }
   const n = Number(data ?? 0);
-  console.log('[aiUsage] getSharedPoolUsage returned', n, 'for ownerId=', ownerId);
   return Number.isFinite(n) ? n : 0;
 }
 
-/**
- * 현재 로그인 사용자 기준 effective owner의 이번 달 shared pool 사용량.
- * getEffectiveOwnerId + getSharedPoolUsage를 결합한 편의 함수.
- */
+/** Current user's monthly AI credit usage. */
 export async function getMySharedPoolUsage(): Promise<number> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return 0;

@@ -2006,3 +2006,74 @@ CEO 결정: 5/19 PH 런칭 취소. 옵션 X (Full stealth) 선택 — 모든 마
 - Product Hunt 5/19 schedule 그대로 두면 발사됨. PH UI 에서 unschedule 또는 launch delete 필요.
 - 외부 SNS 도구에 예약된 포스트 있다면 본인이 삭제.
 - docs/marketing/ 의 PH/SNS 카피 파일들 archive 폴더로 이동 또는 삭제 — CEO 결정 시 알려주면 처리.
+
+---
+
+## [2026-05-20] @developer — 내부용 전환 Phase 1: 티어 가드 bypass + AI quota 단일화 + 결제 no-op
+
+### 컨텍스트
+CEO 결정: 사내 전용으로 전환. 등급/결제 모두 제거, 모든 기능을 모든 인증 유저에게 개방.
+4가지 결정사항:
+- Data: fresh start (사내 테스트 데이터만, wipe OK)
+- Code: gate-bypass (파일 보존 + 가드만 true 반환)
+- AI quota: 업무용 고정 limit (5000/월) + 감시
+- 가입: admin invite only
+
+### Phase 1 — 핵심 가드 5개 파일 (이번 사이클)
+
+**1. src/lib/rbac.ts (전체 재작성)**
+- `TIER_MAX_MEMBERS`: 모든 tier(1~7) → `Infinity`
+- `TIER_NAME`: 모든 tier → `'Internal'`
+- `getAvailableRoles(tier)`: 항상 6개 role 전체 반환 (owner/admin/manager/tester/viewer/guest)
+- `getRoleLabel(role, tier)`: tier 무시, Title-case만
+
+**2. src/hooks/useAiFeature.ts**
+- `INTERNAL_MONTHLY_AI_LIMIT = 5000` 상수 추가 (admin이 한 곳에서 조정)
+- `PLAN_LIMITS[1~7]` → 모두 5000
+- `TIER_NAMES[1~7]` → 모두 'Internal'
+- `AI_FEATURES`: 15개 기능의 `minTier` 모두 1로 통일 (tier 조건 자동 통과)
+
+**3. src/lib/aiUsage.ts (전체 재작성)**
+- `getEffectiveOwnerId(userId)`: 항상 `{ tier: 7, ownerId: userId }` 반환 (self가 billing entity)
+- DB profile/membership/project owner 조회 로직 제거
+- `getSharedPoolUsage(ownerId)`: 그대로 유지 (admin 감시용 — 실사용량 RPC 호출)
+- `startOfUtcMonth()`, `getMySharedPoolUsage()`: 그대로
+
+**4. src/lib/payment.ts (stub 변환)**
+- `openCheckout(...)`: console.warn 후 `return false` (no-op)
+- `getPaymentProvider(...)`: 항상 'paddle' 반환 (legacy 호출처 보존용)
+- Paddle/Lemon import 제거
+
+**5. src/lib/aiUsage.test.ts (4 → 2 테스트 재작성)**
+- 옛 tier 분기 로직 테스트 4개 제거
+- 새 단순화 로직 검증 테스트 2개 (`tier:7, ownerId:userId` 일관 반환 + supabase.from 미호출)
+
+### 검증
+- `npx vitest run src/lib/aiUsage.test.ts`: 10/10 pass.
+- `npx tsc --noEmit -p tsconfig.app.json`: 내 변경 파일 신규 에러 0건 (기존 settings/page.tsx, router/config.tsx 등 pre-existing 에러 그대로).
+- `npm run build`: 4 routes prerender (legal만, stealth 상태 유지).
+
+### Phase 2 (다음 사이클, NOT in this commit)
+잔존 UI/UX 결제·티어 흔적 정리:
+- `src/pages/settings/page.tsx` (4000+ lines) — Billing 탭, plan badge, upgrade CTA, trial countdown 배너 모두 제거 또는 숨김
+- `src/components/DetailPanel.tsx` — `isProfessionalOrHigher` UI 가드 제거
+- `src/components/EnvironmentAIInsights.tsx` — `tier_too_low` 에러 메시지 제거 (이제 발생 안 함)
+- `src/pages/project-detail/components/InviteMemberModal.tsx` — 멤버 limit 안내 메시지 제거
+- `src/pages/project-detail/components/AddMembersToProjectModal.tsx` — 동일
+- `src/pages/settings/components/OrgMembersPanel.tsx` — 멤버 limit 표시 제거
+- `src/pages/settings/components/AiUsagePanel.tsx` — quota UI 단순화 (5000 단일값)
+
+### Phase 3 (선택, 다음 사이클)
+- /auth invite-only 전환 (현재 email/password sign-up 가능 → admin invite 흐름으로만)
+- Vercel ENV PADDLE/LEMON 키 삭제 (선택)
+- supabase/migrations 신규: subscription_tier / is_trial / trial_*_at / payment_provider 컬럼 drop (선택, fresh start 결정에 따라)
+
+### 변경 파일 요약 (Phase 1만)
+- 전체 재작성: src/lib/rbac.ts, src/lib/aiUsage.ts, src/lib/payment.ts
+- 부분 수정: src/hooks/useAiFeature.ts (PLAN_LIMITS / TIER_NAMES / AI_FEATURES)
+- 부분 수정: src/lib/aiUsage.test.ts (4 → 2 테스트)
+
+### 다음에 뭘 해야 해
+- claude push (이번)
+- main merge — CEO 명시 시 진행 (현재 명시 X, claude만 push)
+- Phase 2 (UI 정리) — CEO 진행 지시 받으면 실행

@@ -11,29 +11,34 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { getEffectiveOwnerId, getSharedPoolUsage } from '../lib/aiUsage';
 
-// ─── Plan Limits (백엔드와 동일) ──────────────────────────────────────────────
-// 모든 AI 기능은 1 credit/call + mode 무관 shared pool 합산
+// ─── Plan Limits (internal-only mode) ────────────────────────────────────────
+// Subscription tiers are no longer enforced. Every authenticated user shares
+// a generous monthly AI credit pool (5000) regardless of profile tier value.
+// This still caps real Anthropic/OpenAI spend; admins can raise the constant
+// if needed.
+export const INTERNAL_MONTHLY_AI_LIMIT = 5000;
+
 export const PLAN_LIMITS: Record<number, number> = {
-  1: 3,    // Free
-  2: 15,   // Hobby
-  3: 30,   // Starter
-  4: 150,  // Professional
-  5: -1,   // Enterprise S (무제한)
-  6: -1,   // Enterprise M (무제한)
-  7: -1,   // Enterprise L (무제한)
+  1: INTERNAL_MONTHLY_AI_LIMIT,
+  2: INTERNAL_MONTHLY_AI_LIMIT,
+  3: INTERNAL_MONTHLY_AI_LIMIT,
+  4: INTERNAL_MONTHLY_AI_LIMIT,
+  5: INTERNAL_MONTHLY_AI_LIMIT,
+  6: INTERNAL_MONTHLY_AI_LIMIT,
+  7: INTERNAL_MONTHLY_AI_LIMIT,
 };
 
 export const TIER_NAMES: Record<number, string> = {
-  1: 'Free',
-  2: 'Hobby',
-  3: 'Starter',
-  4: 'Professional',
-  5: 'Enterprise',
-  6: 'Enterprise',
-  7: 'Enterprise',
+  1: 'Internal',
+  2: 'Internal',
+  3: 'Internal',
+  4: 'Internal',
+  5: 'Internal',
+  6: 'Internal',
+  7: 'Internal',
 };
 
-// ─── AI Feature Config (백엔드 AI_FEATURES와 동기화) ─────────────────────────
+// ─── AI Feature Config — all features unlocked at minTier=1 ──────────────────
 export interface AiFeatureConfig {
   minTier: number;
   creditCost: number;
@@ -41,24 +46,22 @@ export interface AiFeatureConfig {
 }
 
 export const AI_FEATURES = {
-  // ── 기존 기능 ────────────────────────────────────────────────────────────
   tc_generation_text:    { minTier: 1, creditCost: 1, label: 'AI TC Generation (Text)' },
-  tc_generation_jira:    { minTier: 2, creditCost: 1, label: 'AI TC Generation (Jira)' },
-  tc_generation_session: { minTier: 4, creditCost: 1, label: 'AI TC Generation (Session)' },
-  run_summary:           { minTier: 2, creditCost: 1, label: 'AI Run Summary' },
-  coverage_gap:          { minTier: 3, creditCost: 1, label: 'Coverage Gap Analysis' },
-  flaky_analysis:        { minTier: 3, creditCost: 1, label: 'Flaky Test Analysis' },
-  requirement_suggest:   { minTier: 2, creditCost: 1, label: 'Requirement TC Suggestion' },
+  tc_generation_jira:    { minTier: 1, creditCost: 1, label: 'AI TC Generation (Jira)' },
+  tc_generation_session: { minTier: 1, creditCost: 1, label: 'AI TC Generation (Session)' },
+  run_summary:           { minTier: 1, creditCost: 1, label: 'AI Run Summary' },
+  coverage_gap:          { minTier: 1, creditCost: 1, label: 'Coverage Gap Analysis' },
+  flaky_analysis:        { minTier: 1, creditCost: 1, label: 'Flaky Test Analysis' },
+  requirement_suggest:   { minTier: 1, creditCost: 1, label: 'Requirement TC Suggestion' },
 
-  // ── 신규 기능 — Test Plans & Milestones 구현 시 활성화 ────────────────────
   plan_assistant:        { minTier: 1, creditCost: 1, label: 'AI Plan Assistant' },
-  activity_summary:      { minTier: 2, creditCost: 1, label: 'AI Activity Summary' },
-  risk_predictor:        { minTier: 3, creditCost: 1, label: 'AI Risk Predictor' },
-  milestone_risk:        { minTier: 2, creditCost: 1, label: 'AI Milestone Risk' },
-  burndown_insight:      { minTier: 3, creditCost: 1, label: 'AI Burndown Insight' },
-  issues_analysis:       { minTier: 4, creditCost: 1, label: 'AI Issues Analysis' },
-  tag_heatmap_insight:   { minTier: 4, creditCost: 1, label: 'AI Tag Heatmap Insight' },
-  environment_ai_insights: { minTier: 3, creditCost: 1, label: 'AI Environment Insights' },
+  activity_summary:      { minTier: 1, creditCost: 1, label: 'AI Activity Summary' },
+  risk_predictor:        { minTier: 1, creditCost: 1, label: 'AI Risk Predictor' },
+  milestone_risk:        { minTier: 1, creditCost: 1, label: 'AI Milestone Risk' },
+  burndown_insight:      { minTier: 1, creditCost: 1, label: 'AI Burndown Insight' },
+  issues_analysis:       { minTier: 1, creditCost: 1, label: 'AI Issues Analysis' },
+  tag_heatmap_insight:   { minTier: 1, creditCost: 1, label: 'AI Tag Heatmap Insight' },
+  environment_ai_insights: { minTier: 1, creditCost: 1, label: 'AI Environment Insights' },
 } as const satisfies Record<string, AiFeatureConfig>;
 
 export type AiFeatureKey = keyof typeof AI_FEATURES;
