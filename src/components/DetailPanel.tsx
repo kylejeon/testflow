@@ -269,7 +269,7 @@ export function DetailPanel({
   testResults = [],
   onResultClick,
   jiraDomain,
-  isProfessionalOrHigher = false,
+  isProfessionalOrHigher = true,
   onAddIssue,
   onLinkExistingIssue,
   projectMembers = [],

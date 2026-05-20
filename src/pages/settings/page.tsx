@@ -14,10 +14,8 @@ import OrgMembersPanel from './components/OrgMembersPanel';
 import ProjectMembersPanel from '../project-detail/components/ProjectMembersPanel';
 import InviteMemberModal from '../project-detail/components/InviteMemberModal';
 import AddMembersToProjectModal from '../project-detail/components/AddMembersToProjectModal';
-import { getPaymentProvider, openCheckout } from '../../lib/payment';
 import { Skeleton } from '../../components/Skeleton';
 import { sendLoopsEvent } from '../../lib/loops';
-import { registerPaddleErrorHandler, registerPaddleSuccessHandler } from '../../lib/paddle';
 import { useToast, getApiErrorMessage } from '../../components/Toast';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
 import useLanguage from '../../hooks/useLanguage';
@@ -343,17 +341,7 @@ export default function SettingsPage() {
   const { changeLanguage, currentLanguage } = useLanguage();
   const { t } = useTranslation('settings');
 
-  useEffect(() => {
-    registerPaddleErrorHandler((msg) => showToast(msg, 'error'));
-    registerPaddleSuccessHandler(() => {
-      setShowAllPlansModal(false);
-      showToast('Your subscription is now active. Welcome to your new plan!', 'success');
-      // Reload after 2s to give webhook time to update tier in DB
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
-    });
-  }, [showToast]);
+  // Paddle handlers removed — internal-only mode
 
   const [activeTab, setActiveTab] = useState<'profile' | 'billing' | 'preferences' | 'members' | 'integrations' | 'api' | 'notifications' | 'ai-usage'>('profile');
   const [userProjects, setUserProjects] = useState<{ id: string; name: string }[]>([]);
@@ -1747,18 +1735,18 @@ def pytest_sessionfinish(session, exitstatus):
     }
   };
 
-  const currentTier = userProfile?.subscription_tier || 1;
+  // Internal-only mode: all users have full access. Tier-derived constants are
+  // pinned so existing JSX guards (`!isProfessionalOrHigher && <banner>`) skip
+  // every upgrade prompt without further surgery. handleUpgrade kept as no-op
+  // until the Billing tab JSX itself is removed.
+  const currentTier = 7;
   const tierInfo = TIER_INFO[currentTier as keyof typeof TIER_INFO] || TIER_INFO[1];
-  const isAnnualBilling = !!(userProfile?.subscription_ends_at && currentTier > 1 &&
-    (new Date(userProfile.subscription_ends_at).getTime() - Date.now()) > 60 * 24 * 60 * 60 * 1000);
-  // Tier thresholds after adding Hobby (2): Hobby=2, Starter=3, Professional=4, Enterprise=5+
-  const isProfessionalOrHigher = currentTier >= 4;
-  const isHobbyOrHigher = currentTier >= 2; // Jira full access, CSV export, RTM, Shared Steps
+  const isAnnualBilling = false;
+  const isProfessionalOrHigher = true;
+  const isHobbyOrHigher = true;
 
-  const handleUpgrade = async (planName: string, period: 'monthly' | 'annual' = 'monthly') => {
-    if (!userProfile) return;
-    const provider = getPaymentProvider(userProfile);
-    await openCheckout(planName, period, provider, userProfile.email, userProfile.id);
+  const handleUpgrade = async (_planName: string, _period: 'monthly' | 'annual' = 'monthly') => {
+    // no-op in internal-only mode
   };
 
   const [startingStarterTrial, setStartingStarterTrial] = useState(false);
@@ -1899,7 +1887,6 @@ def pytest_sessionfinish(session, exitstatus):
             <div className="flex items-center gap-0 border-t border-slate-200 overflow-x-auto" style={{ height: '2.625rem' }}>
               {([
                 { key: 'profile',       label: 'Profile',       icon: 'ri-user-settings-fill',  iconColor: '#8B5CF6' },
-                { key: 'billing',       label: 'Billing',       icon: 'ri-bank-card-fill',       iconColor: '#6366F1' },
                 { key: 'preferences',   label: 'Preferences',   icon: 'ri-equalizer-fill',       iconColor: '#3B82F6' },
                 { key: 'members',       label: 'Members',       icon: 'ri-team-fill',            iconColor: '#22C55E' },
                 { key: 'integrations',  label: 'Integrations',  icon: 'ri-plug-fill',            iconColor: '#F59E0B' },

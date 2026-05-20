@@ -16,12 +16,14 @@ interface InviteMemberModalProps {
   subscriptionTier?: number;
 }
 
+// Internal-only mode: tier-based limits removed. All tiers grant unlimited
+// projects and members. Banner/limit UI auto-hides via isFinite() checks.
 const TIER_LIMITS = {
-  1: { maxProjects: 1,        maxMembers: 2        }, // Free
-  2: { maxProjects: 3,        maxMembers: 5        }, // Hobby
-  3: { maxProjects: 10,       maxMembers: 5        }, // Starter
-  4: { maxProjects: Infinity, maxMembers: 20       }, // Professional
-  5: { maxProjects: Infinity, maxMembers: Infinity }, // Enterprise
+  1: { maxProjects: Infinity, maxMembers: Infinity },
+  2: { maxProjects: Infinity, maxMembers: Infinity },
+  3: { maxProjects: Infinity, maxMembers: Infinity },
+  4: { maxProjects: Infinity, maxMembers: Infinity },
+  5: { maxProjects: Infinity, maxMembers: Infinity },
 };
 
 export default function InviteMemberModal({

@@ -353,6 +353,12 @@ export default function AuthPage() {
     setLoading(true);
     setError('');
     setSuccess('');
+    // Invite-only mode: sign-up requires a valid invitation token.
+    if (!invitation?.token) {
+      setError('Sign-up is invite-only. Please ask an admin for an invitation link.');
+      setLoading(false);
+      return;
+    }
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
       setLoading(false);
@@ -723,36 +729,38 @@ export default function AuthPage() {
             {/* Login / Sign Up */}
             {(mode === 'login' || mode === 'signup') && (
               <div>
-                {/* Tab Switcher */}
-                <div className="flex bg-gray-100 rounded-full p-1 mb-6">
-                  <button
-                    onClick={() => {
-                      setMode('login');
-                      setError('');
-                      setSuccess('');
-                      const lastEmail = localStorage.getItem('testably_last_email');
-                      if (lastEmail) setEmail(lastEmail);
-                    }}
-                    className={`flex-1 py-2.5 text-sm font-semibold rounded-full transition-all cursor-pointer whitespace-nowrap ${
-                      mode === 'login' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Log in
-                  </button>
-                  <button
-                    onClick={() => {
-                      setMode('signup');
-                      setError('');
-                      setSuccess('');
-                      if (!invitation) setEmail('');
-                    }}
-                    className={`flex-1 py-2.5 text-sm font-semibold rounded-full transition-all cursor-pointer whitespace-nowrap ${
-                      mode === 'signup' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Sign up
-                  </button>
-                </div>
+                {/* Tab Switcher — invite-only mode: signup tab hidden unless
+                    the visitor arrived through an invitation link. */}
+                {invitation && (
+                  <div className="flex bg-gray-100 rounded-full p-1 mb-6">
+                    <button
+                      onClick={() => {
+                        setMode('login');
+                        setError('');
+                        setSuccess('');
+                        const lastEmail = localStorage.getItem('testably_last_email');
+                        if (lastEmail) setEmail(lastEmail);
+                      }}
+                      className={`flex-1 py-2.5 text-sm font-semibold rounded-full transition-all cursor-pointer whitespace-nowrap ${
+                        mode === 'login' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Log in
+                    </button>
+                    <button
+                      onClick={() => {
+                        setMode('signup');
+                        setError('');
+                        setSuccess('');
+                      }}
+                      className={`flex-1 py-2.5 text-sm font-semibold rounded-full transition-all cursor-pointer whitespace-nowrap ${
+                        mode === 'signup' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Sign up
+                    </button>
+                  </div>
+                )}
 
                 {error && (
                   <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-center gap-2">

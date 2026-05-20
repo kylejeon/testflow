@@ -2461,13 +2461,7 @@ export default function RunDetail() {
   };
 
   const handleAddIssueClick = () => {
-    const isProfessionalOrHigher = (userProfile?.subscription_tier || 1) >= 2;
-    
-    if (!isProfessionalOrHigher) {
-      setShowUpgradeModal(true);
-      return;
-    }
-
+    // internal-only mode: tier gate removed
     if (!jiraSettings || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.api_token) {
       setShowJiraSetupModal(true);
       return;
@@ -2769,9 +2763,10 @@ export default function RunDetail() {
     }
   };
 
-  const currentTier = userProfile?.subscription_tier || 1;
+  // internal-only mode — tier gates removed
+  const currentTier = 7;
   const tierInfo = TIER_INFO[currentTier as keyof typeof TIER_INFO];
-  const isProfessionalOrHigher = currentTier >= 2;
+  const isProfessionalOrHigher = true;
 
   // Focus Mode handler
   const handleFocusStatusChange = useCallback(
