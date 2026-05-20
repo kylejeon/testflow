@@ -18,9 +18,7 @@
     { "source": "/alternatives", "destination": "/auth", "permanent": false },
     { "source": "/alternatives/:slug*", "destination": "/auth", "permanent": false },
     { "source": "/use-cases", "destination": "/auth", "permanent": false },
-    { "source": "/use-cases/:slug*", "destination": "/auth", "permanent": false },
-    { "source": "/docs", "destination": "/auth", "permanent": false },
-    { "source": "/docs/:slug*", "destination": "/auth", "permanent": false }
+    { "source": "/use-cases/:slug*", "destination": "/auth", "permanent": false }
   ],
   "rewrites": [
     { "source": "/:path*", "destination": "/_spa" }
