@@ -12,7 +12,8 @@
 -- application queries still SELECT them (e.g. settings/page.tsx). Dropping
 -- them would cause runtime errors. Instead:
 --   1. ALTER DEFAULT — new rows automatically get tier 7
---   2. UPDATE existing rows to tier 7 with trial fields cleared
+--   2. UPDATE existing rows column-by-column with existence checks
+--      (handles DBs that never ran 20260408_trial_loops_columns.sql)
 --   3. Replace handle_new_user() trigger to insert tier 7 on signup
 --   4. DROP trial_history table (no longer relevant to internal flow)
 --
@@ -26,17 +27,45 @@ ALTER TABLE public.profiles
 ALTER TABLE public.profiles
   ALTER COLUMN is_trial SET DEFAULT FALSE;
 
--- ─── 2. Update existing rows ────────────────────────────────────────────────
+-- ─── 2. Update existing rows — column-by-column with existence checks ───────
 
-UPDATE public.profiles
-SET
-  subscription_tier      = 7,
-  is_trial               = FALSE,
-  trial_started_at       = NULL,
-  trial_ends_at          = NULL,
-  subscription_ends_at   = NULL,
-  trial_ending_soon_sent = FALSE,
-  trial_expired_sent     = FALSE;
+DO $$
+DECLARE
+  v_col TEXT;
+BEGIN
+  -- Required core columns (always present per profiles table baseline)
+  UPDATE public.profiles SET subscription_tier = 7 WHERE subscription_tier IS DISTINCT FROM 7;
+  UPDATE public.profiles SET is_trial          = FALSE WHERE is_trial IS DISTINCT FROM FALSE;
+
+  -- Optional columns — only update if present in this database
+  FOREACH v_col IN ARRAY ARRAY[
+    'trial_started_at',
+    'trial_ends_at',
+    'subscription_ends_at'
+  ]
+  LOOP
+    IF EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'profiles' AND column_name = v_col
+    ) THEN
+      EXECUTE format('UPDATE public.profiles SET %I = NULL WHERE %I IS NOT NULL', v_col, v_col);
+    END IF;
+  END LOOP;
+
+  FOREACH v_col IN ARRAY ARRAY[
+    'trial_ending_soon_sent',
+    'trial_expired_sent'
+  ]
+  LOOP
+    IF EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'profiles' AND column_name = v_col
+    ) THEN
+      EXECUTE format('UPDATE public.profiles SET %I = FALSE WHERE %I IS DISTINCT FROM FALSE', v_col, v_col);
+    END IF;
+  END LOOP;
+END
+$$;
 
 -- ─── 3. Update handle_new_user trigger — new accounts default to tier 7 ─────
 
@@ -96,11 +125,11 @@ DROP TABLE IF EXISTS public.trial_history;
 -- Columns retained for backward compatibility with application code:
 --   profiles.subscription_tier    (pinned to 7)
 --   profiles.is_trial             (pinned to false)
---   profiles.trial_started_at     (always null)
---   profiles.trial_ends_at        (always null)
---   profiles.subscription_ends_at (always null)
---   profiles.payment_provider     (unused)
---   profiles.provider_customer_id (unused)
---   profiles.provider_subscription_id (unused)
+--   profiles.trial_started_at     (always null, if exists)
+--   profiles.trial_ends_at        (always null, if exists)
+--   profiles.subscription_ends_at (always null, if exists)
+--   profiles.payment_provider     (unused, if exists)
+--   profiles.provider_customer_id (unused, if exists)
+--   profiles.provider_subscription_id (unused, if exists)
 -- A future migration may drop these columns once all SELECT clauses are
 -- removed from the source tree.
