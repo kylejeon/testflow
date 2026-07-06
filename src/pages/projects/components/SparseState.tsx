@@ -442,7 +442,7 @@ export default function SparseState({
         <TipsBanner
           count={count}
           onDismiss={handleDismiss}
-          onPrimary={count === 1 ? onTipCreateTC : undefined}
+          onPrimary={count === 1 ? onTipCreateTC : () => navigate('/settings?tab=members')}
           onSecondary={count === 1 ? onTipExploreSample : undefined}
           isSecondaryLoading={count === 1 ? isTipsSampleLoading : false}
         />
