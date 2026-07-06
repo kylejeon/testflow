@@ -2299,4 +2299,43 @@ CEO가 사내 팀원(connecteve.com) 온보딩 시도 중 발견한 문제들. P
   실행 쿼리: UPDATE public.profiles SET subscription_tier=7 WHERE email='yhjeon@connecteve.com';
   (단, tier값은 기능상 무의미 — 표시 정합성 목적)
 - (미결정) org 초대 모달에 신규유저 초대링크 기능 추가할지 — 신규 기능(스펙+개발) 규모
+  → 2026-07-06 후속 세션에서 스펙+구현 완료 (아래).
 - **배포**: 위 3개 커밋 모두 프론트 변경 → main merge + 배포되어야 효과 (CEO 수동 merge)
+
+---
+
+## 2026-07-06 세션 (후속) — 조직 이메일 초대링크 기능 (신규)
+
+### 뭘 했나
+CEO 요청: 설정→멤버의 조직 초대가 "기존 계정만" 되던 걸, 미가입자도 이메일
+초대링크로 초대 가능하게. A(개발지시서)→B(구현) 순으로 진행.
+
+1. **개발지시서**: docs/specs/dev-spec-org-email-invite.md (@planner). DDL/RLS/엣지분기/
+   AC/배포순서/오픈이슈까지 착수가능 수준.
+2. **구현 (커밋 75e4df9, claude 브랜치):**
+   - DB: supabase/migrations/20260706_organization_invitations.sql — org 초대 pending
+     테이블(organization_members.user_id NOT NULL이라 미가입자 저장소 필요) + RLS(admin/owner).
+   - send-invitation: organizationId 분기 (발급자 admin 재검증 → org 초대 upsert → 링크).
+   - accept-invitation: 토큰 project→org 폴백 조회, verify/accept org 분기
+     (organization_members insert + accepted_at).
+   - send-notification: org_invited 이벤트 (email_project_invited pref 재사용,
+     LOOPS_TEMPLATE_ORG_INVITED env).
+   - OrgInviteModal(OrgMembersPanel.tsx): 미가입자→초대링크 발급+복사 UI, 문구 수정.
+   - auth/page.tsx: checkInvitation org verify 폴백, acceptInvitation org 리다이렉트.
+   - accept-invitation/page.tsx: org verify/라벨/리다이렉트 분기.
+   - 오픈이슈 기본값: 기존유저 직접추가 유지 / 토큰 폴백조회 / org알림 생략 /
+     템플릿 미설정 시 링크복사 폴백 / 발급자 권한 엣지 재검증.
+
+### 검증 상태
+- 프론트 tsc: 0 errors. get_user_admin_org_ids() 존재 확인.
+- 엣지함수(Deno): 미배포라 e2e 미검증 — 배포 후 실제 초대→가입→org합류 확인 필요.
+
+### 배포 필요 (운영/CEO 수동 — 순서 중요)
+1. 마이그레이션 push: supabase db push (또는 대시보드에서 20260706_organization_invitations.sql)
+2. 엣지함수 deploy: supabase functions deploy send-invitation accept-invitation send-notification
+3. (선택) Loops LOOPS_TEMPLATE_ORG_INVITED 템플릿+env
+4. claude → main 머지 → 프론트 배포
+   ※ 프론트(4)보다 엣지/마이그레이션(1,2)을 먼저. 안 그러면 org 초대 실패.
+
+### 여전히 미결
+- yhjeon@connecteve.com tier 7 UPDATE — 프로덕션 DB 승인 대기 (기능상 무의미, 표시용).
