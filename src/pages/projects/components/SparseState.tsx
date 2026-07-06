@@ -443,7 +443,7 @@ export default function SparseState({
           count={count}
           onDismiss={handleDismiss}
           onPrimary={count === 1 ? onTipCreateTC : () => navigate('/settings?tab=members')}
-          onSecondary={count === 1 ? onTipExploreSample : undefined}
+          onSecondary={count === 1 ? onTipExploreSample : (projects[0] ? () => navigate(`/projects/${projects[0].id}/milestones`) : undefined)}
           isSecondaryLoading={count === 1 ? isTipsSampleLoading : false}
         />
       )}
