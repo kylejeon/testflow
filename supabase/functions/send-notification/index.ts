@@ -12,6 +12,7 @@ const PREF_COLUMN: Record<string, string> = {
   run_completed:   'email_run_completed',
   test_failed:     'email_test_failed',
   project_invited: 'email_project_invited',
+  org_invited:     'email_project_invited', // org 초대도 동일 초대 알림 선호도 재사용
   tc_assigned:     'email_tc_assigned',
 };
 
@@ -21,6 +22,7 @@ const TEMPLATE_ENV: Record<string, string> = {
   run_completed:   'LOOPS_TEMPLATE_RUN_COMPLETED',
   test_failed:     'LOOPS_TEMPLATE_TEST_FAILED',
   project_invited: 'LOOPS_TEMPLATE_PROJECT_INVITED',
+  org_invited:     'LOOPS_TEMPLATE_ORG_INVITED',
   tc_assigned:     'LOOPS_TEMPLATE_TC_ASSIGNED',
 };
 

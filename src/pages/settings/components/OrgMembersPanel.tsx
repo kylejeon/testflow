@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { edgeFetch, invokeEdge } from '../../../lib/aiFetch';
 import { ROLE_LEVEL, ROLE_BADGE, ROLE_DESCRIPTIONS, getRoleLabel, getAvailableRoles, TIER_MAX_MEMBERS, TIER_NAME } from '../../../lib/rbac';
 import { Link } from 'react-router-dom';
 
@@ -450,6 +451,7 @@ function OrgInviteModal({ orgId, subscriptionTier, availableRoles, currentLevel,
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
 
   // 초대 가능한 역할만 표시 (자신보다 낮은 역할 + owner 제외)
   const invitableRoles = availableRoles.filter(
@@ -461,6 +463,7 @@ function OrgInviteModal({ orgId, subscriptionTier, availableRoles, currentLevel,
     setLoading(true);
     setError('');
     setSuccess('');
+    setInviteLink(null);
     try {
       // 기존 사용자 확인
       const { data: profile } = await supabase
@@ -469,8 +472,35 @@ function OrgInviteModal({ orgId, subscriptionTier, availableRoles, currentLevel,
         .eq('email', email.trim())
         .maybeSingle();
 
+      // 미가입자 → 이메일 초대링크 발급 (organization_invitations)
       if (!profile) {
-        setError('User not found. Ask them to sign up first, then invite them.');
+        const response = await edgeFetch('send-invitation', {
+          email: email.trim(),
+          organizationId: orgId,
+          role,
+          baseUrl: window.location.origin,
+        });
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to create invitation.');
+        }
+
+        // 초대 이메일 발송 (템플릿 미설정 시 무시됨 — 링크 복사로 폴백)
+        void invokeEdge('send-notification', {
+          body: {
+            event_type: 'org_invited',
+            payload: {
+              organization_name: result.organizationName ?? '',
+              role,
+              inviter_name: result.inviterName ?? 'Someone',
+              cta_url: result.inviteUrl,
+            },
+            recipients: [{ user_id: null, email: email.trim() }],
+          },
+        }).catch((err) => console.warn('org_invited email notification error:', err));
+
+        setInviteLink(result.inviteUrl);
+        setSuccess('Invitation created! An email was sent. You can also copy the link below to share it directly.');
         return;
       }
 
@@ -503,6 +533,12 @@ function OrgInviteModal({ orgId, subscriptionTier, availableRoles, currentLevel,
     }
   };
 
+  const copyInviteLink = () => {
+    if (!inviteLink) return;
+    navigator.clipboard.writeText(inviteLink);
+    setSuccess('Invite link copied to clipboard! Share it with your teammate.');
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(15,23,42,0.45)' }}>
       <div className="bg-white rounded-xl w-full max-w-md shadow-2xl mx-4">
@@ -513,7 +549,7 @@ function OrgInviteModal({ orgId, subscriptionTier, availableRoles, currentLevel,
             </div>
             <div>
               <h2 className="text-lg font-bold text-gray-900">Invite to Organization</h2>
-              <p className="text-sm text-gray-500">Add an existing Testably user to your org</p>
+              <p className="text-sm text-gray-500">Add teammates by email — no account required</p>
             </div>
           </div>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
@@ -533,6 +569,34 @@ function OrgInviteModal({ orgId, subscriptionTier, availableRoles, currentLevel,
             </div>
           )}
 
+          {inviteLink && (
+            <div className="mb-2">
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Invite link</label>
+              <div className="flex gap-2">
+                <input
+                  readOnly
+                  value={inviteLink}
+                  onFocus={(e) => e.currentTarget.select()}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-xs bg-gray-50 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <button
+                  type="button"
+                  onClick={copyInviteLink}
+                  className="px-3 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition-all cursor-pointer whitespace-nowrap flex items-center gap-1"
+                >
+                  <i className="ri-file-copy-line" />Copy
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="mt-3 w-full py-2.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-200 transition-all cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+          )}
+
           {!success && (
             <form onSubmit={(e) => { e.preventDefault(); handleInvite(); }}>
               <div className="mb-4">
@@ -549,7 +613,7 @@ function OrgInviteModal({ orgId, subscriptionTier, availableRoles, currentLevel,
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   <i className="ri-information-line mr-1" />
-                  Only existing Testably accounts can be added directly
+                  New users get an invite link to sign up and join
                 </p>
               </div>
 

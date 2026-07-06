@@ -54,7 +54,110 @@ serve(async (req) => {
       throw new Error("인증에 실패했습니다");
     }
 
-    const { email, fullName, projectId, role, baseUrl } = await req.json();
+    const { email, fullName, projectId, organizationId, role, baseUrl } = await req.json();
+
+    // ── Organization invite branch ──────────────────────────────
+    // organizationId 가 있으면 org 초대(organization_invitations), 없으면 기존 project 초대.
+    if (organizationId) {
+      if (!email || !role || !baseUrl) {
+        throw new Error("필수 정보가 누락되었습니다");
+      }
+
+      // 발급자가 해당 org 의 owner/admin 인지 재검증 (프론트 필터에만 의존하지 않음)
+      const { data: inviterMembership } = await supabase
+        .from("organization_members")
+        .select("role")
+        .eq("organization_id", organizationId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!inviterMembership || !["owner", "admin"].includes(inviterMembership.role)) {
+        throw new Error("멤버를 초대할 권한이 없습니다");
+      }
+
+      const { data: org, error: orgError } = await supabase
+        .from("organizations")
+        .select("name")
+        .eq("id", organizationId)
+        .maybeSingle();
+      if (orgError || !org) {
+        throw new Error("조직을 찾을 수 없습니다");
+      }
+
+      const { data: orgInviter } = await supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const token = crypto.randomUUID() + "-" + Date.now().toString(36);
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+      const normalizedEmail = String(email).trim().toLowerCase();
+
+      // 동일 org + email 미수락 초대가 있으면 갱신(재발급), 없으면 신규 생성
+      const { data: existingOrgInvitation } = await supabase
+        .from("organization_invitations")
+        .select("id")
+        .eq("organization_id", organizationId)
+        .eq("email", normalizedEmail)
+        .is("accepted_at", null)
+        .gt("expires_at", new Date().toISOString())
+        .maybeSingle();
+
+      if (existingOrgInvitation) {
+        const { error: updateError } = await supabase
+          .from("organization_invitations")
+          .update({
+            token,
+            role,
+            full_name: fullName || null,
+            expires_at: expiresAt.toISOString(),
+            invited_by: user.id,
+          })
+          .eq("id", existingOrgInvitation.id);
+        if (updateError) {
+          console.error("Org invitation update error:", updateError);
+          throw new Error("초대 정보 업데이트에 실패했습니다");
+        }
+      } else {
+        const { error: insertError } = await supabase
+          .from("organization_invitations")
+          .insert({
+            organization_id: organizationId,
+            email: normalizedEmail,
+            role,
+            full_name: fullName || null,
+            token,
+            invited_by: user.id,
+            expires_at: expiresAt.toISOString(),
+          });
+        if (insertError) {
+          console.error("Org invitation insert error:", insertError);
+          throw new Error("초대 생성에 실패했습니다");
+        }
+      }
+
+      const orgInviteUrl = `${baseUrl}/accept-invitation?token=${token}`;
+      const orgInviterName = orgInviter?.full_name || orgInviter?.email || "Someone";
+
+      console.log(`Org invitation created for ${normalizedEmail}. Share this link: ${orgInviteUrl}`);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "초대 링크가 생성되었습니다. 아래 링크를 팀원에게 전달해주세요.",
+          inviteUrl: orgInviteUrl,
+          organizationName: org.name,
+          inviterName: orgInviterName,
+          type: "organization",
+          emailSent: false,
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        }
+      );
+    }
 
     if (!email || !projectId || !role || !baseUrl) {
       throw new Error("필수 정보가 누락되었습니다");

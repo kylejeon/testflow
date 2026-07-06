@@ -28,8 +28,9 @@ serve(async (req) => {
     // Use service role client for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get invitation
-    const { data: invitation, error: invitationError } = await supabase
+    // Get invitation — project 초대를 먼저 조회하고, 없으면 org 초대로 폴백.
+    // (토큰은 UUID 기반이라 project/org 충돌은 사실상 없음)
+    const { data: projectInvitation, error: projectInvErr } = await supabase
       .from("project_invitations")
       .select(`
         *,
@@ -43,10 +44,33 @@ serve(async (req) => {
       .gt("expires_at", new Date().toISOString())
       .maybeSingle();
 
-    if (invitationError) {
-      console.error("Invitation error:", invitationError);
-      throw new Error("초대 정보를 찾을 수 없습니다");
+    if (projectInvErr) {
+      console.error("Project invitation error:", projectInvErr);
     }
+
+    let orgInvitation: any = null;
+    if (!projectInvitation) {
+      const { data: orgInv, error: orgInvErr } = await supabase
+        .from("organization_invitations")
+        .select(`
+          *,
+          organizations:organization_id (
+            id,
+            name
+          )
+        `)
+        .eq("token", token)
+        .is("accepted_at", null)
+        .gt("expires_at", new Date().toISOString())
+        .maybeSingle();
+      if (orgInvErr) {
+        console.error("Org invitation error:", orgInvErr);
+      }
+      orgInvitation = orgInv;
+    }
+
+    const isOrg = !projectInvitation && !!orgInvitation;
+    const invitation: any = projectInvitation ?? orgInvitation;
 
     if (!invitation) {
       throw new Error("유효하지 않거나 만료된 초대입니다");
@@ -55,15 +79,29 @@ serve(async (req) => {
     // If action is 'verify', just return invitation info
     if (action === 'verify') {
       return new Response(
-        JSON.stringify({
-          success: true,
-          invitation: {
-            email: invitation.email,
-            role: invitation.role,
-            projectName: invitation.projects?.name || '알 수 없는 프로젝트',
-            projectId: invitation.project_id,
-          }
-        }),
+        JSON.stringify(
+          isOrg
+            ? {
+                success: true,
+                type: "organization",
+                invitation: {
+                  email: invitation.email,
+                  role: invitation.role,
+                  organizationName: invitation.organizations?.name || '알 수 없는 조직',
+                  organizationId: invitation.organization_id,
+                },
+              }
+            : {
+                success: true,
+                type: "project",
+                invitation: {
+                  email: invitation.email,
+                  role: invitation.role,
+                  projectName: invitation.projects?.name || '알 수 없는 프로젝트',
+                  projectId: invitation.project_id,
+                },
+              }
+        ),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 200,
@@ -122,6 +160,48 @@ serve(async (req) => {
           .update({ full_name: invitation.full_name })
           .eq("id", user.id);
       }
+    }
+
+    // ── Organization invite accept ──────────────────────────────
+    if (isOrg) {
+      const { data: existingOrgMember } = await supabase
+        .from("organization_members")
+        .select("id")
+        .eq("organization_id", invitation.organization_id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!existingOrgMember) {
+        const { error: orgMemberError } = await supabase
+          .from("organization_members")
+          .insert({
+            organization_id: invitation.organization_id,
+            user_id: user.id,
+            role: invitation.role,
+          });
+        if (orgMemberError) {
+          console.error("Org member error:", orgMemberError);
+          throw new Error("조직 멤버 추가에 실패했습니다");
+        }
+      }
+
+      await supabase
+        .from("organization_invitations")
+        .update({ accepted_at: new Date().toISOString() })
+        .eq("id", invitation.id);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          type: "organization",
+          message: existingOrgMember ? "이미 조직 멤버입니다" : "조직에 참여했습니다",
+          organizationId: invitation.organization_id,
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        }
+      );
     }
 
     // Check if already a member

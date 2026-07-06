@@ -8,8 +8,11 @@ import { getApiErrorMessage } from '../../components/Toast';
 interface InvitationInfo {
   email: string;
   role: string;
-  projectName: string;
-  projectId: string;
+  projectName?: string;
+  projectId?: string;
+  organizationName?: string;
+  organizationId?: string;
+  type?: 'project' | 'organization';
 }
 
 export default function AcceptInvitationPage() {
@@ -43,7 +46,7 @@ export default function AcceptInvitationPage() {
         throw new Error(verifyResult.error || '초대 정보를 확인할 수 없습니다.');
       }
 
-      setInvitationInfo(verifyResult.invitation);
+      setInvitationInfo({ ...verifyResult.invitation, type: verifyResult.type });
 
       // 로그인 상태 확인
       const { data: { user } } = await supabase.auth.getUser();
@@ -114,7 +117,9 @@ export default function AcceptInvitationPage() {
       
       // 2초 후 프로젝트 상세 페이지로 이동
       setTimeout(() => {
-        if (result.projectId) {
+        if (result.organizationId) {
+          navigate('/settings?tab=members');
+        } else if (result.projectId) {
           navigate(`/projects/${result.projectId}`);
         } else {
           navigate('/projects');
@@ -150,12 +155,18 @@ export default function AcceptInvitationPage() {
             <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <i className="ri-mail-open-fill text-4xl text-indigo-600"></i>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">프로젝트 초대</h2>
-            
+            <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">
+              {invitationInfo.type === 'organization' ? '조직 초대' : '프로젝트 초대'}
+            </h2>
+
             <div className="bg-gray-50 rounded-lg p-4 mb-6 space-y-3">
               <div>
-                <div className="text-sm text-gray-500 mb-1">프로젝트</div>
-                <div className="font-semibold text-gray-900">{invitationInfo.projectName}</div>
+                <div className="text-sm text-gray-500 mb-1">
+                  {invitationInfo.type === 'organization' ? '조직' : '프로젝트'}
+                </div>
+                <div className="font-semibold text-gray-900">
+                  {invitationInfo.type === 'organization' ? invitationInfo.organizationName : invitationInfo.projectName}
+                </div>
               </div>
               <div>
                 <div className="text-sm text-gray-500 mb-1">초대된 이메일</div>
@@ -164,8 +175,10 @@ export default function AcceptInvitationPage() {
               <div>
                 <div className="text-sm text-gray-500 mb-1">역할</div>
                 <div className="font-semibold text-gray-900">
-                  {invitationInfo.role === 'admin' ? '관리자' : 
-                   invitationInfo.role === 'developer' ? '개발자' : '뷰어'}
+                  {invitationInfo.type === 'organization'
+                    ? invitationInfo.role.charAt(0).toUpperCase() + invitationInfo.role.slice(1)
+                    : invitationInfo.role === 'admin' ? '관리자'
+                    : invitationInfo.role === 'developer' ? '개발자' : '뷰어'}
                 </div>
               </div>
             </div>

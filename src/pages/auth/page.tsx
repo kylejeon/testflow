@@ -12,6 +12,7 @@ type AuthMode = 'login' | 'signup' | 'reset' | 'new_password';
 interface InvitationInfo {
   token: string;
   projectName?: string;
+  organizationName?: string;
   role?: string;
 }
 
@@ -270,16 +271,33 @@ export default function AuthPage() {
         .gt('expires_at', new Date().toISOString())
         .maybeSingle();
 
-      if (invError || !invitationData) {
-        setError('유효하지 않거나 만료된 초대 링크입니다.');
+      if (invitationData) {
+        setInvitation({ token, projectName: invitationData.projects?.name, role: invitationData.role });
+        setEmail(invitationData.email);
+        setMode('signup');
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) await acceptInvitation(token);
         return;
       }
-      setInvitation({ token, projectName: invitationData.projects?.name, role: invitationData.role });
-      setEmail(invitationData.email);
-      setMode('signup');
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) await acceptInvitation(token);
+      // project 초대가 아니면 org 초대인지 엣지함수 verify 로 확인.
+      // (organization_invitations 는 RLS 상 클라이언트가 직접 조회할 수 없음)
+      try {
+        const resp = await edgeFetch('accept-invitation', { token, action: 'verify' }, { allowAnonymous: true });
+        const result = await resp.json();
+        if (resp.ok && result.type === 'organization' && result.invitation) {
+          setInvitation({ token, organizationName: result.invitation.organizationName, role: result.invitation.role });
+          setEmail(result.invitation.email);
+          setMode('signup');
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) await acceptInvitation(token);
+          return;
+        }
+      } catch (e) {
+        console.error('org invitation verify failed:', e);
+      }
+
+      setError('유효하지 않거나 만료된 초대 링크입니다.');
     } catch (err) {
       console.error('Failed to check invitation:', err);
     } finally {
@@ -294,11 +312,12 @@ export default function AuthPage() {
       // ES256-safe: edgeFetch 가 anon key 를 Authorization 에, 유저 JWT 를 x-user-token 에 넣음.
       const response = await edgeFetch('accept-invitation', { token });
       const result = await response.json();
-      if (response.ok && result.projectId) {
+      if (response.ok && (result.projectId || result.organizationId)) {
         setSuccess(result.message);
-        setTimeout(() => navigate(`/projects/${result.projectId}`), 1500);
+        const dest = result.organizationId ? '/settings?tab=members' : `/projects/${result.projectId}`;
+        setTimeout(() => navigate(dest), 1500);
       } else {
-        throw new Error(result.error);
+        throw new Error(result.error || 'Failed to accept invitation.');
       }
     } catch (err: any) {
       setError(err.message || 'Failed to accept invitation.');
@@ -588,9 +607,9 @@ export default function AuthPage() {
                   <i className="ri-mail-open-line text-indigo-600 text-xl"></i>
                 </div>
                 <div>
-                  <p className="font-semibold text-indigo-900">Project Invitation</p>
+                  <p className="font-semibold text-indigo-900">{invitation.organizationName ? 'Organization Invitation' : 'Project Invitation'}</p>
                   <p className="text-sm text-indigo-700">
-                    You have been invited to <span className="font-medium">{invitation.projectName}</span> as
+                    You have been invited to <span className="font-medium">{invitation.organizationName ?? invitation.projectName}</span> as
                     <span className="ml-1 px-1.5 py-0.5 bg-indigo-200 rounded text-xs font-medium">
                       {invitation.role === 'admin' ? 'Admin' : invitation.role === 'member' ? 'Member' : 'Viewer'}
                     </span>
