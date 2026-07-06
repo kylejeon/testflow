@@ -82,8 +82,17 @@ export default function AuthPage() {
     if (inviteToken) {
       checkInvitation(inviteToken);
     } else if (!isRecoveryHash) {
-      // recovery / error 해시가 있으면 checkUser 건너뜀 (레이스 컨디션 방지)
-      checkUser();
+      // accept-invitation → /auth 리다이렉트는 초대 토큰을 sessionStorage 로 넘긴다
+      // (URL 에 invite 파라미터 없음). 이 경우에도 초대를 확인해 가입 탭을 열어
+      // 미가입자가 가입할 수 있게 한다. 토큰은 여기서 제거하지 않는다 —
+      // handleLogin(기존 유저) / handleSignup(신규 유저)이 소비/정리한다.
+      const storedInviteToken = sessionStorage.getItem('invitation_token');
+      if (storedInviteToken) {
+        checkInvitation(storedInviteToken);
+      } else {
+        // recovery / error 해시가 있으면 checkUser 건너뜀 (레이스 컨디션 방지)
+        checkUser();
+      }
     }
 
     const lastEmail = localStorage.getItem('testably_last_email');
@@ -409,6 +418,8 @@ export default function AuthPage() {
           teamMemberCount: '1',
         });
         if (invitation?.token && data.session) {
+          // 즉시 세션 발급(이메일 확인 불필요) — 초대 수락 후 stale 토큰 정리.
+          sessionStorage.removeItem('invitation_token');
           await acceptInvitation(invitation.token);
         } else if (invitation?.token) {
           setSuccess('Account created! Log in to join the project automatically.');
