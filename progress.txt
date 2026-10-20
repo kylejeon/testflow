@@ -2339,3 +2339,20 @@ CEO 요청: 설정→멤버의 조직 초대가 "기존 계정만" 되던 걸, �
 
 ### 여전히 미결
 - yhjeon@connecteve.com tier 7 UPDATE — 프로덕션 DB 승인 대기 (기능상 무의미, 표시용).
+
+---
+
+## 2026-10-20 세션 — Run 모달 TC ID 정렬
+
+### 뭘 했나
+- 질문 응답: Run에서 TC 제외 = Runs 목록 ⋯ → Edit → Select Cases에서 체크 해제 (별도 제외 기능 없음).
+- 구현 (커밋 2a0431e): Add/Edit Run 모달 Select Cases 목록을 TC ID(custom_id) 자연 정렬
+  (TC-GW-2 < TC-GW-10). custom_id 없는 TC는 맨 뒤. Draft 포함 시 Active/Draft 구분 없이 ID 순.
+  파일: src/pages/project-runs/page.tsx (baseTCs).
+
+### 검증 상태
+- tsc 에러 수 변경 전후 동일(407, 기존 에러). 브라우저 확인은 안 함.
+
+### 다음
+- 프론트 변경이라 main merge + 배포 후 반영 (CEO 수동).
+- 필요 시: Run 상세에서 TC 바로 제외 기능 / 제외된 TC의 기존 결과가 다른 화면에 남는지 확인.
