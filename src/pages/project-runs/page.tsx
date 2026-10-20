@@ -2468,7 +2468,15 @@ export default function ProjectRunsPage() {
         // TC lists for step 2 (exclude deprecated always)
         const activeTCs = testCases.filter((tc: TestCase & { lifecycle_status?: string }) => (tc.lifecycle_status || 'active') === 'active');
         const draftTCs = testCases.filter((tc: TestCase & { lifecycle_status?: string }) => (tc.lifecycle_status || 'active') === 'draft');
-        const baseTCs = includeDraftTCs ? [...activeTCs, ...draftTCs] : activeTCs;
+        // TC ID(custom_id) 자연 정렬 (TC-GW-2 < TC-GW-10), ID 없는 TC는 뒤로
+        const baseTCs = (includeDraftTCs ? [...activeTCs, ...draftTCs] : activeTCs).slice().sort((a, b) => {
+          const idA = (a as any).custom_id as string | null | undefined;
+          const idB = (b as any).custom_id as string | null | undefined;
+          if (!idA && !idB) return 0;
+          if (!idA) return 1;
+          if (!idB) return -1;
+          return idA.localeCompare(idB, undefined, { numeric: true, sensitivity: 'base' });
+        });
         const visibleTCs = selectedCaseFolder
           ? baseTCs.filter(tc => selectedCaseFolder === '__none__' ? !tc.folder : tc.folder === selectedCaseFolder)
           : baseTCs;
