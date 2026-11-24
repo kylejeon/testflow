@@ -447,6 +447,7 @@ export const runs = {
         searchPlaceholder: 'TC 검색…',
         empty: '일치하는 테스트 케이스 없음',
         openTooltip: '사이드바 열기 ({{shortcut}})',
+        resize: '드래그하여 폭 조절 · 더블클릭하면 기본값',
       },
       body: {
         previously: '이전 결과: {{status}}',

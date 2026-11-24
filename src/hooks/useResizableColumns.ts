@@ -52,6 +52,8 @@ export function useResizableColumns<K extends string>(
     return defaults;
   });
 
+  const [resizingKey, setResizingKey] = useState<K | null>(null);
+
   const widthsRef = useRef(widths);
   widthsRef.current = widths;
 
@@ -81,6 +83,7 @@ export function useResizableColumns<K extends string>(
       const prevSelect = document.body.style.userSelect;
       document.body.style.cursor = 'col-resize';
       document.body.style.userSelect = 'none';
+      setResizingKey(key);
 
       const onMove = (ev: MouseEvent) => {
         const growth = Math.min((ev.clientX - startX) * direction, maxGrowth);
@@ -93,6 +96,7 @@ export function useResizableColumns<K extends string>(
         document.body.style.cursor = prevCursor;
         document.body.style.userSelect = prevSelect;
         cleanupRef.current = null;
+        setResizingKey(null);
         persist(widthsRef.current);
       };
       window.addEventListener('mousemove', onMove);
@@ -114,5 +118,5 @@ export function useResizableColumns<K extends string>(
     [persist],
   );
 
-  return { widths, startResize, resetColumn };
+  return { widths, startResize, resetColumn, resizingKey };
 }

@@ -5,6 +5,7 @@ import { invokeEdge } from '../lib/aiFetch';
 import { type AnyStep, isSharedStepRef } from '../types/shared-steps';
 import { expandFlatSteps, type SharedStepCache } from '../lib/expandSharedSteps';
 import { formatRelativeTime } from '../lib/formatRelativeTime';
+import { useResizableColumns } from '../hooks/useResizableColumns';
 
 export type TestStatus = 'passed' | 'failed' | 'blocked' | 'retest' | 'untested';
 
@@ -153,6 +154,15 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
 
   // Sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Sidebar width — drag the right edge to resize, double-click to reset (persisted)
+  const {
+    widths: { sidebar: sidebarWidth },
+    startResize: startSidebarResize,
+    resetColumn: resetSidebarWidth,
+    resizingKey: sidebarResizing,
+  } = useResizableColumns('testably:focus-mode:sidebar-width:v1', {
+    sidebar: { default: 280, min: 200, max: 640 },
+  });
   const [sidebarFilter, setSidebarFilter] = useState<'all' | TestStatus>('all');
   const [sidebarSearch, setSidebarSearch] = useState('');
   const [sharedStepsCaches, setSharedStepsCaches] = useState<Record<string, SharedStepCache>>({});
@@ -726,10 +736,10 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
       {/* ④ Focus layout: Sidebar + Body */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
 
-        {/* ── SIDEBAR (280px collapsible) ── */}
+        {/* ── SIDEBAR (resizable, collapsible) ── */}
         <div
           style={{
-            width: sidebarOpen ? 280 : 0,
+            width: sidebarOpen ? sidebarWidth : 0,
             minWidth: 0,
             background: '#FAFBFC',
             borderRight: sidebarOpen ? '1px solid #E2E8F0' : 'none',
@@ -737,12 +747,12 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
             flexDirection: 'column',
             overflow: 'hidden',
             flexShrink: 0,
-            transition: 'width 0.25s cubic-bezier(0.4,0,0.2,1)',
+            transition: sidebarResizing ? 'none' : 'width 0.25s cubic-bezier(0.4,0,0.2,1)',
             position: 'relative',
           }}
         >
-          {/* Sidebar inner — fixed 280px width so content doesn't reflow during animation */}
-          <div style={{ width: 280, display: 'flex', flexDirection: 'column', height: '100%', opacity: sidebarOpen ? 1 : 0, transition: 'opacity 0.15s', pointerEvents: sidebarOpen ? 'auto' : 'none' }}>
+          {/* Sidebar inner — fixed width so content doesn't reflow during open/close animation */}
+          <div style={{ width: sidebarWidth, display: 'flex', flexDirection: 'column', height: '100%', opacity: sidebarOpen ? 1 : 0, transition: 'opacity 0.15s', pointerEvents: sidebarOpen ? 'auto' : 'none' }}>
 
             {/* Progress */}
             <div style={{ padding: '0.875rem 1rem 0.625rem', borderBottom: '1px solid #E2E8F0', flexShrink: 0 }}>
@@ -874,6 +884,25 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
               )}
             </div>
           </div>
+
+          {/* Sidebar resize handle (right edge) — drag to resize, double-click to reset */}
+          {sidebarOpen && (
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              title={t('runs:detail.focusMode.sidebar.resize')}
+              onMouseDown={e => startSidebarResize('sidebar', 1, e)}
+              onDoubleClick={() => resetSidebarWidth('sidebar')}
+              style={{
+                position: 'absolute', top: 0, bottom: 0, right: 0, width: 6,
+                cursor: 'col-resize', zIndex: 5,
+                background: sidebarResizing ? '#818CF8' : 'transparent',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#C7D2FE'; }}
+              onMouseLeave={e => { if (!sidebarResizing) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+            />
+          )}
 
           {/* Sidebar toggle handle (24×56px, right edge) */}
           <button

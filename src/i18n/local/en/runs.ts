@@ -454,6 +454,7 @@ export const runs = {
         searchPlaceholder: 'Search TC...',
         empty: 'No test cases match',
         openTooltip: 'Open sidebar ({{shortcut}})',
+        resize: 'Drag to resize · Double-click to reset',
       },
       body: {
         previously: 'Previously {{status}}',
