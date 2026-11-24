@@ -192,6 +192,7 @@ export const runs = {
         testCase: 'Test Case',
         folder: 'Folder',
       },
+      resizeColumn: 'Drag to resize · Double-click to reset',
       empty: {
         title: 'No test cases',
         hint: 'This run does not include any test cases.',

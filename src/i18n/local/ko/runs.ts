@@ -186,6 +186,7 @@ export const runs = {
         testCase: '테스트 케이스',
         folder: '폴더',
       },
+      resizeColumn: '드래그하여 폭 조절 · 더블클릭하면 기본값',
       empty: {
         title: '테스트 케이스가 없습니다',
         hint: '이 실행에 테스트 케이스가 포함되어 있지 않습니다.',

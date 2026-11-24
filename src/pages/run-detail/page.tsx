@@ -15,6 +15,7 @@ import { type AnyStep, isSharedStepRef } from '../../types/shared-steps';
 import { type FlatStep, type SharedStepCache, expandFlatSteps } from '../../lib/expandSharedSteps';
 import { ExportModal, type ExportFormat } from '../../components/ExportModal';
 import { useToast } from '../../components/Toast';
+import { useResizableColumns } from '../../hooks/useResizableColumns';
 import { formatShortDate, formatLongDateTime } from '../../lib/dateFormat';
 
 interface TestCase {
@@ -218,6 +219,34 @@ export default function RunDetail() {
   const [bulkAssignee, setBulkAssignee] = useState('');
   const [runAssignees, setRunAssignees] = useState<Map<string, string>>(new Map());
   const [openAssigneeDropdown, setOpenAssigneeDropdown] = useState<string | null>(null);
+  // TC 목록 컬럼 폭 조절 (Test Case 컬럼이 남는 공간을 흡수)
+  const { widths: tcColW, startResize: startTcColResize, resetColumn: resetTcCol } = useResizableColumns(
+    'testably:run-detail:tc-col-widths:v1',
+    {
+      id:       { default: 96,  min: 64 },
+      priority: { default: 84,  min: 56 },
+      folder:   { default: 140, min: 60 },
+      assignee: { default: 72,  min: 48 },
+      status:   { default: 104, min: 72 },
+    },
+  );
+  const tcTitleHeaderRef = useRef<HTMLDivElement>(null);
+  const tcGridStyle = {
+    gridTemplateColumns: `20px ${tcColW.id}px minmax(0, 1fr) ${tcColW.priority}px ${tcColW.folder}px ${tcColW.assignee}px ${tcColW.status}px`,
+  };
+  const renderTcColHandle = (key: keyof typeof tcColW, direction: 1 | -1) => (
+    <div
+      role="separator"
+      aria-orientation="vertical"
+      title={t('runs:detail.tcList.resizeColumn')}
+      className="group absolute top-[-0.5rem] bottom-[-0.5rem] right-[-0.75rem] w-2 z-[1] flex justify-center cursor-col-resize select-none"
+      onMouseDown={(e) => startTcColResize(key, direction, e, tcTitleHeaderRef.current)}
+      onDoubleClick={(e) => { e.stopPropagation(); resetTcCol(key); }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="w-px h-full bg-slate-200 group-hover:w-0.5 group-hover:bg-indigo-400 transition-colors" />
+    </div>
+  );
   const [showAISummary, setShowAISummary] = useState(false);
   const [aiSummaryData, setAiSummaryData] = useState<AISummaryResult | null>(null);
   const [includeAiInPdf, setIncludeAiInPdf] = useState(false);
@@ -3349,8 +3378,8 @@ export default function RunDetail() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-12 gap-4 px-4 py-2 bg-slate-50 border-b border-gray-200">
-                    <div className="col-span-1 flex items-center" onClick={(e) => e.stopPropagation()}>
+                  <div className="grid gap-4 px-4 py-2 bg-slate-50 border-b border-gray-200" style={tcGridStyle}>
+                    <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         className="w-[15px] h-[15px] accent-indigo-600 cursor-pointer"
@@ -3358,22 +3387,27 @@ export default function RunDetail() {
                         onChange={(e) => handleSelectAll(e.target.checked)}
                       />
                     </div>
-                    <div className="col-span-1">
-                      <span className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">{t('runs:detail.tcList.header.idVer')}</span>
+                    <div className="relative min-w-0">
+                      <span className="block truncate text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">{t('runs:detail.tcList.header.idVer')}</span>
+                      {renderTcColHandle('id', 1)}
                     </div>
-                    <div className="col-span-3">
-                      <span className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">{t('runs:detail.tcList.header.testCase')}</span>
+                    <div ref={tcTitleHeaderRef} className="relative min-w-0">
+                      <span className="block truncate text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">{t('runs:detail.tcList.header.testCase')}</span>
+                      {renderTcColHandle('priority', -1)}
                     </div>
-                    <div className="col-span-1">
-                      <span className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">{t('common:priority')}</span>
+                    <div className="relative min-w-0">
+                      <span className="block truncate text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">{t('common:priority')}</span>
+                      {renderTcColHandle('folder', -1)}
                     </div>
-                    <div className="col-span-2">
-                      <span className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">{t('runs:detail.tcList.header.folder')}</span>
+                    <div className="relative min-w-0">
+                      <span className="block truncate text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">{t('runs:detail.tcList.header.folder')}</span>
+                      {renderTcColHandle('assignee', -1)}
                     </div>
-                    <div className="col-span-1 flex items-center">
-                      <span className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">{t('common:assignee')}</span>
+                    <div className="relative min-w-0 flex items-center">
+                      <span className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em] truncate">{t('common:assignee')}</span>
+                      {renderTcColHandle('status', -1)}
                     </div>
-                    <div className="col-span-3 flex items-center">
+                    <div className="min-w-0 flex items-center">
                       <span className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.04em]">{t('common:status')}</span>
                     </div>
                   </div>
@@ -3390,13 +3424,13 @@ export default function RunDetail() {
                     filteredTestCases.map((testCase) => (
                       <div
                         key={testCase.id}
-                        className={`grid grid-cols-12 gap-4 px-4 py-[0.625rem] border-b border-slate-100 hover:bg-violet-50 transition-colors cursor-pointer ${
+                        className={`grid gap-4 px-4 py-[0.625rem] border-b border-slate-100 hover:bg-violet-50 transition-colors cursor-pointer ${
                           selectedTestCase?.id === testCase.id ? 'bg-indigo-50' : ''
                         }`}
-                        style={(testCase as any).lifecycle_status === 'deprecated' ? { opacity: 0.6 } : undefined}
+                        style={(testCase as any).lifecycle_status === 'deprecated' ? { ...tcGridStyle, opacity: 0.6 } : tcGridStyle}
                         onClick={() => selectTestCase(testCase)}
                       >
-                        <div className="col-span-1 flex items-center" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
                           <input
                             type="checkbox"
                             className="w-[15px] h-[15px] accent-indigo-600 cursor-pointer"
@@ -3404,8 +3438,8 @@ export default function RunDetail() {
                             onChange={(e) => handleSelectOne(testCase.id, e.target.checked)}
                           />
                         </div>
-                        <div className="col-span-1 flex flex-col justify-center gap-0.5">
-                          <span className="font-mono text-[0.8125rem] text-indigo-600 font-semibold whitespace-nowrap">
+                        <div className="min-w-0 flex flex-col justify-center gap-0.5">
+                          <span className="font-mono text-[0.8125rem] text-indigo-600 font-semibold whitespace-nowrap truncate">
                             {(testCase as any).custom_id || '-'}
                           </span>
                           {(() => {
@@ -3443,7 +3477,7 @@ export default function RunDetail() {
                             );
                           })()}
                         </div>
-                        <div className="col-span-3 flex items-center gap-1.5 min-w-0">
+                        <div className="flex items-center gap-1.5 min-w-0">
                           <span className="text-[0.8125rem] font-semibold text-slate-900 truncate hover:text-indigo-600 min-w-0">
                             {testCase.title}
                           </span>
@@ -3469,8 +3503,8 @@ export default function RunDetail() {
                             );
                           })()}
                         </div>
-                        <div className="col-span-1 flex items-center">
-                          <span className="inline-flex items-center gap-1.5 text-[0.6875rem] text-slate-600">
+                        <div className="min-w-0 flex items-center">
+                          <span className="inline-flex items-center gap-1.5 text-[0.6875rem] text-slate-600 min-w-0 truncate">
                             <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
                               testCase.priority === 'critical' ? 'bg-rose-500' :
                               testCase.priority === 'high' ? 'bg-amber-500' :
@@ -3487,7 +3521,7 @@ export default function RunDetail() {
                             })()}
                           </span>
                         </div>
-                        <div className="col-span-2 flex items-center">
+                        <div className="min-w-0 flex items-center">
                           {(() => {
                             const folder = folders.find(f => f.name === testCase.folder);
                             if (!testCase.folder) return <span className="text-sm text-gray-400">—</span>;
@@ -3502,7 +3536,7 @@ export default function RunDetail() {
                             );
                           })()}
                         </div>
-                        <div className="col-span-1 flex items-center" onClick={(e) => e.stopPropagation()}>
+                        <div className="min-w-0 flex items-center" onClick={(e) => e.stopPropagation()}>
                           {(() => {
                             const assigneeName = runAssignees.get(testCase.id) || '';
                             const isOpen = openAssigneeDropdown === testCase.id;
@@ -3555,7 +3589,7 @@ export default function RunDetail() {
                             );
                           })()}
                         </div>
-                        <div className="col-span-3 flex items-center">
+                        <div className="min-w-0 flex items-center">
                           <StatusBadge status={testCase.runStatus as TestStatus} size="sm" />
                         </div>
                       </div>
