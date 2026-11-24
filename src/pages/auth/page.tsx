@@ -225,7 +225,7 @@ export default function AuthPage() {
         full_name: fullName,
         avatar_url: avatarUrl,
         role: 'member',
-        subscription_tier: 1,
+        subscription_tier: 7,
         trial_started_at: null,
         trial_ends_at: null,
         is_trial: false,
@@ -410,7 +410,7 @@ export default function AuthPage() {
         const now = new Date();
         const { error: profileError } = await supabase.from('profiles').upsert({
           id: data.user.id, email, full_name: fullName, role: 'member',
-          subscription_tier: 1, trial_started_at: null,
+          subscription_tier: 7, trial_started_at: null,
           trial_ends_at: null, is_trial: false,
         });
         if (profileError && profileError.code !== '23505') console.error('Profile creation error:', profileError);

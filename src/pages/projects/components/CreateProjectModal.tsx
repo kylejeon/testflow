@@ -92,7 +92,7 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
           email: user.email,
           full_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || null,
           role: 'member',
-          subscription_tier: 1,
+          subscription_tier: 7,
         });
 
         if (insertError && insertError.code !== '23505') {

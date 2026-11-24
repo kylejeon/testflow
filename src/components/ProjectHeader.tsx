@@ -118,7 +118,7 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
           id: user.id,
           email: user.email || '',
           full_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
-          subscription_tier: 1,
+          subscription_tier: 7,
         });
       }
     } catch {}

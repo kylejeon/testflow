@@ -1,3 +1,23 @@
+2026-11-24: 전 사용자 Enterprise L(tier 7) 강제
+
+## 뭘 했냐
+- 원인: 5/20 internal-only 전환 후에도 src/pages/auth/page.tsx 가입 코드가 DB 트리거 직후 subscription_tier=1로 upsert → 이후 가입자 4명이 Free(1)로 남음. 엣지 함수(Jira/GitHub 이슈, CI 업로드, AI)는 DB tier를 직접 보므로 실제로 기능 차단 상태였음.
+- 신규 마이그레이션 supabase/migrations/20261124_force_enterprise_l_tier.sql
+  - profiles BEFORE INSERT OR UPDATE 트리거 trg_force_enterprise_l_tier: subscription_tier=7, is_trial=false 강제
+  - 기존 row backfill
+  - 운영 DB에 supabase db query --linked -f 로 직접 적용 완료 (schema_migrations 이력엔 미등록 — idempotent라 db push 재실행해도 무해)
+- 검증: 전 사용자 tier 7 / is_trial false. 롤백 트랜잭션에서 tier=1 UPDATE 시도 → 7 유지 확인.
+- 프론트: tier 1 쓰던 곳 → 7 (auth/page.tsx x2, settings/page.tsx x3, CreateProjectModal, ProjectHeader)
+
+## 어디까지 됐냐
+- DB는 즉시 반영됨 (main 배포 없이도 효과). 코드 변경은 claude 브랜치 푸시.
+
+## 다음엔 뭘 해야 해
+- CEO: main 머지 (프론트 코드 정합성용, 기능상 필수는 아님)
+- 참고: 트리거 때문에 Admin 화면에서 tier 변경해도 항상 7로 고정됨 (의도된 동작)
+
+---
+
 2026-05-13 (심야): D-Day 런칭 콘텐츠 풀패키지 작성 완료
 
 ## 뭘 했냐

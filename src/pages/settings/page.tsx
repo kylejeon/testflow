@@ -229,7 +229,7 @@ async function loadSettingsData(): Promise<{
       id: user.id,
       email: user.email || '',
       full_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
-      subscription_tier: 1,
+      subscription_tier: 7,
       payment_provider: null,
       trial_started_at: null,
       trial_ends_at: null,
@@ -731,7 +731,7 @@ export default function SettingsPage() {
         setUserProfile({
           email: authEmail,
           full_name: authName,
-          subscription_tier: 1,
+          subscription_tier: 7,
           trial_started_at: null,
           trial_ends_at: null,
           is_trial: false,
@@ -744,7 +744,7 @@ export default function SettingsPage() {
           id: user.id,
           email: authEmail,
           full_name: authName,
-          subscription_tier: 1,
+          subscription_tier: 7,
           avatar_emoji: '🐶',
         }, { onConflict: 'id' });
       }
